@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/* eslint-disable react/sort-prop-types */
 import React from 'react'
 import { Formik } from 'formik'
 import bind from 'autobind-decorator'
@@ -140,10 +141,10 @@ Form.propTypes = {
   // formik props
   onSubmit: PropTypes.func.isRequired,
   onReset: PropTypes.func,
-  initialValues: PropTypes.object.isRequired,
+  initialValues: PropTypes.shape({}).isRequired,
   validateOnBlur: PropTypes.bool,
   validateOnChange: PropTypes.bool,
-  validationSchema: PropTypes.object,
+  validationSchema: PropTypes.shape({}),
   isInitialValid: PropTypes.bool,
   formikRef: PropTypes.shape({ current: PropTypes.instanceOf(Formik) }),
   // custom props
@@ -155,11 +156,11 @@ Form.propTypes = {
 
 Form.defaultProps = {
   className: null,
-  submitEnabledWhenInvalid: false,
   validateOnBlur: true,
   validateOnChange: false,
   validationSchema: {},
   isInitialValid: false,
+  formikRef: undefined,
   onReset: () => null,
   error: '',
   horizontal: true,

@@ -124,32 +124,34 @@ class Event extends React.PureComponent {
 }
 
 Event.propTypes = {
-  /** The time of the event. */
-  time: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.instanceOf(Date)])
-    .isRequired,
-  /** The icon of the event. */
-  icon: PropTypes.node,
-  /** The entity identifier of the event. */
-  emitter: PropTypes.string.isRequired,
+  className: PropTypes.string,
   /** Custom content of the event. */
   content: PropTypes.node.isRequired,
-  /**
-   * A flag identifying whether the event is displayed within the
-   * events widget component. This disabled the expanded view.
-   */
-  widget: PropTypes.bool,
   /**
    * A stringified data of the event to be displayed in the
    * expanded view.
    */
   data: PropTypes.object,
-  /** Additional styling for the event overview */
-  overviewClassName: PropTypes.string,
+  /** The entity identifier of the event. */
+  emitter: PropTypes.string.isRequired,
   /** Additional styling for the event expanded view */
   expandedClassName: PropTypes.string,
+  /** The icon of the event. */
+  icon: PropTypes.node,
+  /** Additional styling for the event overview */
+  overviewClassName: PropTypes.string,
+  /** The time of the event. */
+  time: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.instanceOf(Date)])
+    .isRequired,
+  /**
+   * A flag identifying whether the event is displayed within the
+   * events widget component. This disabled the expanded view.
+   */
+  widget: PropTypes.bool,
 }
 
 Event.defaultProps = {
+  className: undefined,
   icon: 'event',
   content: null,
   widget: false,

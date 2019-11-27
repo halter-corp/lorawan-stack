@@ -144,7 +144,9 @@ class Events extends React.Component {
 }
 
 Events.propTypes = {
+  className: PropTypes.string,
   emitterId: PropTypes.string.isRequired,
+  error: PropTypes.error,
   events: PropTypes.arrayOf(PropTypes.event),
   limit: PropTypes.number,
   onClear: PropTypes.func.isRequired,
@@ -152,13 +154,16 @@ Events.propTypes = {
 }
 
 Events.defaultProps = {
+  className: '',
   events: [],
   limit: 100,
+  error: undefined,
 }
 
 Events.Widget = EventsWidget
 
 const Header = function(props) {
+  // eslint-disable-next-line react/prop-types
   const { paused, onPause, onClear } = props
 
   const pauseMessage = paused ? sharedMessages.resume : sharedMessages.pause
@@ -180,6 +185,7 @@ const Header = function(props) {
 }
 
 const Footer = function(props) {
+  // eslint-disable-next-line react/prop-types
   const { truncated } = props
 
   return (

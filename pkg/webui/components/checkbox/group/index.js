@@ -91,20 +91,22 @@ class CheckboxGroup extends React.Component {
 }
 
 CheckboxGroup.propTypes = {
+  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
   className: PropTypes.string,
-  name: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
   horizontal: PropTypes.bool,
-  value: PropTypes.object,
-  initialValue: PropTypes.object,
-  onChange: PropTypes.func,
+  initialValue: PropTypes.oneOfType([PropTypes.message, PropTypes.bool]),
   onBlur: PropTypes.func,
+  onChange: PropTypes.func,
   onFocus: PropTypes.func,
-  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
+  value: PropTypes.oneOfType([PropTypes.message, PropTypes.bool]),
 }
 
 CheckboxGroup.defaultProps = {
+  className: undefined,
   disabled: false,
+  initialValue: false,
+  value: false,
   horizontal: false,
   onChange: () => null,
   onBlur: () => null,
