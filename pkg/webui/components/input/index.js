@@ -45,18 +45,31 @@ class Input extends React.Component {
     placeholder: PropTypes.message,
     readOnly: PropTypes.bool,
     title: PropTypes.message,
-    type: PropTypes.string.isRequired,
+    type: PropTypes.string,
     valid: PropTypes.bool,
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     warning: PropTypes.bool,
   }
 
   static defaultProps = {
+    action: undefined,
+    code: false,
+    disabled: false,
+    error: false,
+    icon: undefined,
+    label: undefined,
+    loading: false,
     onFocus: () => null,
     onBlur: () => null,
     onChange: () => null,
     onEnter: () => null,
+    placeholder: undefined,
+    readOnly: false,
+    title: undefined,
     type: 'text',
+    valid: false,
+    value: undefined,
+    warning: false,
   }
 
   state = {

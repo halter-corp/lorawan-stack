@@ -155,7 +155,7 @@ Form.propTypes = {
 }
 
 Form.defaultProps = {
-  className: null,
+  className: undefined,
   validateOnBlur: true,
   validateOnChange: false,
   validationSchema: {},

@@ -154,7 +154,7 @@ Events.propTypes = {
 }
 
 Events.defaultProps = {
-  className: '',
+  className: undefined,
   events: [],
   limit: 100,
   error: undefined,
