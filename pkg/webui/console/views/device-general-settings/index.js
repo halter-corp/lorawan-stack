@@ -48,6 +48,14 @@ import NetworkServerForm from './network-server-form'
 import DeleteSection from './delete-section'
 import Collapse from './collapse'
 
+const getComponentBaseUrl = config => {
+  try {
+    const { base_url } = config
+
+    return new URL(base_url).hostname
+  } catch (e) {}
+}
+
 @connect(
   state => ({
     device: selectSelectedDevice(state),
@@ -162,7 +170,9 @@ export default class DeviceGeneralSettings extends React.Component {
     // 1. Disable the section if AS is not in cluster.
     // 2. Disable the section if the device is OTAA, since no OTAA related fields are stored in the AS.
     // 3. Disable the section if NS is not in cluster, since activation mode is unknown.
-    const asDisabled = !asEnabled || isOTAA || !nsEnabled
+    // 4. Disable the seciton if `application_server_address` is not equal to the cluster AS address
+    const sameAsAddress = getComponentBaseUrl(asConfig) === device.application_server_address
+    const asDisabled = !asEnabled || isOTAA || !nsEnabled || !sameAsAddress
     let asDescription = m.asDescription
     if (!asEnabled) {
       asDescription = m.asDescriptionMissing
@@ -170,13 +180,17 @@ export default class DeviceGeneralSettings extends React.Component {
       asDescription = m.activationModeUnknown
     } else if (isOTAA) {
       asDescription = m.asDescriptionOTAA
+    } else if (!sameAsAddress) {
+      asDescription = m.notInCluster
     }
 
     // 1. Disable the section if JS is not in cluster.
     // 2. Disable the section if the device is ABP/Multicast, since JS does not store ABP/Multicast
     // devices.
     // 3. Disable the section if NS is not in cluster, since activation mode is unknown.
-    const jsDisabled = !jsEnabled || !isOTAA || !nsEnabled
+    // 4. Disable the seciton if `join_server_address` is not equal to the cluster JS address
+    const sameJsAddress = getComponentBaseUrl(jsConfig) === device.join_server_address
+    const jsDisabled = !jsEnabled || !isOTAA || !nsEnabled || !sameJsAddress
     let jsDescription = m.jsDescription
     if (!jsEnabled) {
       jsDescription = m.jsDescriptionMissing
@@ -184,12 +198,19 @@ export default class DeviceGeneralSettings extends React.Component {
       jsDescription = m.activationModeUnknown
     } else if (!isOTAA) {
       jsDescription = m.jsDescriptionOTAA
+    } else if (!sameJsAddress) {
+      jsDescription = m.notInCluster
     }
 
-    const nsDisabled = !nsEnabled
+    // 1. Disable the section if NS is not in cluster.
+    // 2. Disable the seciton if `network_server_address` is not equal to the cluster NS address
+    const sameNsAddress = getComponentBaseUrl(nsConfig) === device.network_server_address
+    const nsDisabled = !nsEnabled || !sameNsAddress
     let nsDescription = m.nsDescription
     if (!nsEnabled) {
       nsDescription = m.nsDescriptionMissing
+    } else if (!sameNsAddress) {
+      nsDescription = m.notInCluster
     }
 
     return (
