@@ -34,123 +34,45 @@ import validationSchema from './validation-schema'
 const isNwkKeyHidden = ({ root_keys }) => Boolean(root_keys) && !Boolean(root_keys.nwk_key)
 const isAppKeyHidden = ({ root_keys }) => Boolean(root_keys) && !Boolean(root_keys.app_key)
 
-const actionTypes = Object.freeze({
-  EXTERNAL_JS: 'change-external-js',
-  RESETS_JOIN_NONCES: 'change-resets-join-nonces',
-})
-
-const reducer = (state, action) => {
-  switch (action.type) {
-    case actionTypes.EXTERNAL_JS:
-      const externalJs = !state.externalJs
-      return {
-        externalJs,
-        resetsJoinNonces: externalJs ? false : state.resetsJoinNonces,
-      }
-    case actionTypes.RESETS_JOIN_NONCES:
-      return {
-        ...state,
-        resetsJoinNonces: !state.resetsJoinNonces,
-      }
-    default:
-      return state
-  }
-}
-
 const JoinServerForm = React.memo(props => {
-  const { device, onSubmit, jsConfig } = props
+  const { device, onSubmit } = props
 
   const isNewLorawanVersion = parseLorawanMacVersion(device.lorawan_version) >= 110
+  const externalJs = hasExternalJs(device)
 
-  // Setup and memoize initial reducer state.
-  const initialState = React.useMemo(() => {
-    const { resets_join_nonces: resetsJoinNonces = false } = device
-    const externalJs = hasExternalJs(device)
-
-    return {
-      resetsJoinNonces,
-      externalJs,
-    }
-  }, [device])
-  const [state, dispatch] = React.useReducer(reducer, initialState)
+  const formRef = React.useRef(null)
+  const [error, setError] = React.useState('')
+  const [resetsJoinNonces, setResetsJoinNonces] = React.useState(device.resets_join_nonces)
 
   // Setup and memoize initial form state.
   const initialValues = React.useMemo(() => {
-    const externalJs = hasExternalJs(device)
+    const extJs = hasExternalJs(device)
     const {
       root_keys = {
         nwk_key: {},
         app_key: {},
       },
       resets_join_nonces,
-      join_server_address = '',
       lorawan_version,
       net_id = '',
     } = device
 
     return {
-      join_server_address: externalJs ? undefined : join_server_address,
       resets_join_nonces,
       root_keys,
       _external_js: hasExternalJs(device),
       _lorawan_version: lorawan_version,
-      net_id: externalJs ? undefined : net_id,
+      net_id: extJs ? undefined : net_id,
     }
   }, [device])
 
-  // Setup and memoize callbacks for changes to `resets_join_nonces` and `_external_js`.
-  const handleResetsJoinNoncesChange = React.useCallback(() => {
-    dispatch({
-      type: actionTypes.RESETS_JOIN_NONCES,
-    })
-  }, [])
-  // Note: If the end device is provisioned on an external JS, we reset `root_keys` and
-  // `resets_join_nonces` fields.
-  const handleExternalJsChange = React.useCallback(
+  // Setup and memoize callbacks for changes to `resets_join_nonces` for displaying the field warning.
+  const handleResetsJoinNoncesChange = React.useCallback(
     evt => {
-      dispatch({
-        type: actionTypes.EXTERNAL_JS,
-      })
-
-      const { checked: externalJsChecked } = evt.target
-      const { setValues, state: formState } = formRef.current
-
-      if (externalJsChecked) {
-        setValues({
-          ...formState.values,
-          root_keys: {
-            nwk_key: {},
-            app_key: {},
-          },
-          resets_join_nonces: false,
-          join_server_address: '',
-          _external_js: externalJsChecked,
-          net_id: undefined,
-        })
-      } else {
-        let { join_server_address = '' } = initialValues
-        const { resets_join_nonces, root_keys, net_id = '' } = initialValues
-        if (typeof join_server_address === undefined) {
-          // always fallback to the default js address when resetting from
-          // the 'provisioned by external js' option.
-          join_server_address = new URL(jsConfig.base_url).hostname
-        }
-
-        setValues({
-          ...formState.values,
-          join_server_address,
-          root_keys,
-          _external_js: externalJsChecked,
-          resets_join_nonces,
-          net_id,
-        })
-      }
+      setResetsJoinNonces(evt.target.checked)
     },
-    [initialValues, jsConfig.base_url],
+    [setResetsJoinNonces],
   )
-
-  const formRef = React.useRef(null)
-  const [error, setError] = React.useState('')
 
   const onFormSubmit = React.useCallback(
     async (values, { setSubmitting, resetForm }) => {
@@ -173,14 +95,14 @@ const JoinServerForm = React.memo(props => {
   const appKeyHidden = isAppKeyHidden(device)
 
   let appKeyPlaceholder = m.leaveBlankPlaceholder
-  if (state.externalJs) {
+  if (externalJs) {
     appKeyPlaceholder = sharedMessages.provisionedOnExternalJoinServer
   } else if (appKeyHidden) {
     appKeyPlaceholder = m.unexposed
   }
 
   let nwkKeyPlaceholder = m.leaveBlankPlaceholder
-  if (state.externalJs) {
+  if (externalJs) {
     nwkKeyPlaceholder = sharedMessages.provisionedOnExternalJoinServer
   } else if (nwkKeyHidden) {
     nwkKeyPlaceholder = m.unexposed
@@ -196,20 +118,6 @@ const JoinServerForm = React.memo(props => {
       enableReinitialize
     >
       <Form.Field
-        title={m.externalJoinServer}
-        description={m.externalJoinServerDescription}
-        name="_external_js"
-        onChange={handleExternalJsChange}
-        component={Checkbox}
-      />
-      <Form.Field
-        title={sharedMessages.joinServerAddress}
-        placeholder={state.externalJs ? m.external : sharedMessages.addressPlaceholder}
-        name="join_server_address"
-        component={Input}
-        disabled={state.externalJs}
-      />
-      <Form.Field
         title={m.netID}
         description={m.netIDDescription}
         name="net_id"
@@ -217,7 +125,7 @@ const JoinServerForm = React.memo(props => {
         min={3}
         max={3}
         component={Input}
-        disabled={state.externalJs}
+        disabled={externalJs}
       />
       <Form.Field
         title={sharedMessages.appKey}
@@ -228,7 +136,7 @@ const JoinServerForm = React.memo(props => {
         placeholder={appKeyPlaceholder}
         description={m.appKeyDescription}
         component={Input}
-        disabled={state.externalJs || appKeyHidden}
+        disabled={externalJs || appKeyHidden}
       />
       {isNewLorawanVersion && (
         <Form.Field
@@ -240,17 +148,17 @@ const JoinServerForm = React.memo(props => {
           placeholder={nwkKeyPlaceholder}
           description={m.nwkKeyDescription}
           component={Input}
-          disabled={state.externalJs || nwkKeyHidden}
+          disabled={externalJs || nwkKeyHidden}
         />
       )}
       {isNewLorawanVersion && (
         <Form.Field
           title={m.resetsJoinNonces}
           onChange={handleResetsJoinNoncesChange}
-          warning={state.resetsJoinNonces ? m.resetWarning : undefined}
+          warning={resetsJoinNonces ? m.resetWarning : undefined}
           name="resets_join_nonces"
           component={Checkbox}
-          disabled={state.externalJs}
+          disabled={externalJs}
         />
       )}
       <Form.Field
@@ -270,7 +178,6 @@ const JoinServerForm = React.memo(props => {
 
 JoinServerForm.propTypes = {
   device: PropTypes.device.isRequired,
-  jsConfig: PropTypes.stackComponent.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 

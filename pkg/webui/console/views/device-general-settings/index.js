@@ -203,7 +203,11 @@ export default class DeviceGeneralSettings extends React.Component {
               disabled={isDisabled}
               initialCollapsed={false}
             >
-              <IdentityServerForm device={device} onSubmit={this.handleSubmit} />
+              <IdentityServerForm
+                device={device}
+                onSubmit={this.handleSubmit}
+                jsConfig={jsConfig}
+              />
             </Collapse>
             <Collapse title={m.nsTitle} description={nsDescription} disabled={nsDisabled}>
               <NetworkServerForm device={device} onSubmit={this.handleSubmit} />

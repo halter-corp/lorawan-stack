@@ -19,39 +19,22 @@ import SubmitButton from '../../../../components/submit-button'
 import SubmitBar from '../../../../components/submit-bar'
 import Input from '../../../../components/input'
 import Form from '../../../../components/form'
+import Checkbox from '../../../../components/checkbox'
 
 import diff from '../../../../lib/diff'
 import m from '../../../components/device-data-form/messages'
-import { id as deviceIdRegexp, address as addressRegexp } from '../../../lib/regexp'
 import PropTypes from '../../../../lib/prop-types'
 import sharedMessages from '../../../../lib/shared-messages'
 
 import { parseLorawanMacVersion, hasExternalJs, isDeviceOTAA } from '../utils'
-
-const validationSchema = Yup.object().shape({
-  ids: Yup.object().shape({
-    device_id: Yup.string()
-      .matches(deviceIdRegexp, sharedMessages.validateAlphanum)
-      .min(2, sharedMessages.validateTooShort)
-      .max(36, sharedMessages.validateTooLong)
-      .required(sharedMessages.validateRequired),
-  }),
-  name: Yup.string()
-    .min(2, sharedMessages.validateTooShort)
-    .max(50, sharedMessages.validateTooLong),
-  description: Yup.string().max(2000, sharedMessages.validateTooLong),
-  network_server_address: Yup.string().matches(addressRegexp, sharedMessages.validateAddressFormat),
-  application_server_address: Yup.string().matches(
-    addressRegexp,
-    sharedMessages.validateAddressFormat,
-  ),
-  join_server_address: Yup.string().matches(addressRegexp, sharedMessages.validateAddressFormat),
-})
+import validationSchema from './validation-schema'
 
 const IdentityServerForm = React.memo(props => {
-  const { device, onSubmit } = props
+  const { device, onSubmit, jsConfig } = props
 
+  const formRef = React.useRef(null)
   const [error, setError] = React.useState('')
+  const [externalJs, setExternaljs] = React.useState(hasExternalJs(device))
 
   const initialValues = React.useMemo(() => {
     const extJs = hasExternalJs(device)
@@ -62,6 +45,13 @@ const IdentityServerForm = React.memo(props => {
       network_server_address,
       application_server_address,
       join_server_address,
+      lorawan_version,
+      // JS form fields that should be reset when provisioning devices on an external JS.
+      resets_join_nonces,
+      root_keys = {
+        nwk_key: {},
+        app_key: {},
+      },
     } = device
 
     return {
@@ -69,15 +59,61 @@ const IdentityServerForm = React.memo(props => {
       description,
       application_server_address,
       network_server_address,
+      _lorawan_version: lorawan_version,
       join_server_address: extJs ? undefined : join_server_address,
+      _external_js: extJs,
       ids,
+      // JS form fields that should be reset when provisioning devices on an external JS.
+      root_keys,
+      resets_join_nonces,
     }
   }, [device])
+
+  const handleExternalJsChange = React.useCallback(
+    evt => {
+      const { checked: externalJsChecked } = evt.target
+      const { setValues, state: formState } = formRef.current
+
+      setExternaljs(externalJsChecked)
+
+      // Note: If the end device is provisioned on an external JS, we reset `root_keys` and
+      // `resets_join_nonces` fields.
+      if (externalJsChecked) {
+        setValues({
+          ...formState.values,
+          root_keys: {
+            nwk_key: {},
+            app_key: {},
+          },
+          resets_join_nonces: false,
+          join_server_address: '',
+          _external_js: externalJsChecked,
+        })
+      } else {
+        const { join_server_address = '' } = initialValues
+        const { resets_join_nonces, root_keys } = initialValues
+        // if JS address is not set, always fallback to the default js address
+        // when resetting from the 'provisioned by external js' option.
+        if (typeof join_server_address === undefined) {
+          join_server_address = new URL(jsConfig.base_url).hostname
+        }
+
+        setValues({
+          ...formState.values,
+          join_server_address,
+          root_keys,
+          _external_js: externalJsChecked,
+          resets_join_nonces,
+        })
+      }
+    },
+    [initialValues, jsConfig.base_url],
+  )
 
   const onFormSubmit = React.useCallback(
     async (values, { resetForm, setSubmitting }) => {
       const castedValues = validationSchema.cast(values)
-      const updatedValues = diff(initialValues, castedValues)
+      const updatedValues = diff(initialValues, castedValues, ['_external_js', '_lorawan_version'])
 
       setError('')
       try {
@@ -92,7 +128,6 @@ const IdentityServerForm = React.memo(props => {
   )
 
   const isOTAA = isDeviceOTAA(device)
-  const externalJs = hasExternalJs(device)
   const isNewLorawanVersion = parseLorawanMacVersion(device.lorawan_version) >= 110
   const hasJoinEUI = Boolean(device.ids.join_eui)
   const hasDevEUI = Boolean(device.ids.dev_eui)
@@ -103,6 +138,7 @@ const IdentityServerForm = React.memo(props => {
       initialValues={initialValues}
       onSubmit={onFormSubmit}
       error={error}
+      formikRef={formRef}
       enableReinitialize
     >
       <Form.Field
@@ -167,6 +203,13 @@ const IdentityServerForm = React.memo(props => {
         component={Input}
       />
       <Form.Field
+        title={m.externalJoinServer}
+        description={m.externalJoinServerDescription}
+        name="_external_js"
+        onChange={handleExternalJsChange}
+        component={Checkbox}
+      />
+      <Form.Field
         title={sharedMessages.joinServerAddress}
         placeholder={isOTAA && externalJs ? m.external : sharedMessages.addressPlaceholder}
         name="join_server_address"
@@ -182,6 +225,7 @@ const IdentityServerForm = React.memo(props => {
 
 IdentityServerForm.propTypes = {
   device: PropTypes.device.isRequired,
+  jsConfig: PropTypes.stackComponent.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
