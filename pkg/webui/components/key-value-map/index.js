@@ -88,17 +88,20 @@ class KeyValueMap extends React.PureComponent {
 }
 
 KeyValueMap.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  value: PropTypes.array,
-  keyPlaceholder: PropTypes.message.isRequired,
-  valuePlaceholder: PropTypes.message.isRequired,
   addMessage: PropTypes.message,
-  onChange: PropTypes.func,
+  className: PropTypes.string,
+  keyPlaceholder: PropTypes.message.isRequired,
+  name: PropTypes.string.isRequired,
   onBlur: PropTypes.func,
+  onChange: PropTypes.func,
+  value: PropTypes.arrayOf(PropTypes.shape({ key: PropTypes.string, value: PropTypes.string })),
+  valuePlaceholder: PropTypes.message.isRequired,
 }
 
 KeyValueMap.defaultProps = {
+  className: undefined,
+  onBlur: () => null,
+  onChange: () => null,
   value: [],
   addMessage: m.addEntry,
 }

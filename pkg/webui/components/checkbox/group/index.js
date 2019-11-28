@@ -99,7 +99,7 @@ CheckboxGroup.propTypes = {
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
   onFocus: PropTypes.func,
-  value: PropTypes.oneOfType([PropTypes.message, PropTypes.bool]),
+  value: PropTypes.oneOfType([PropTypes.message, PropTypes.bool, PropTypes.shape({})]),
 }
 
 CheckboxGroup.defaultProps = {
