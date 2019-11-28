@@ -246,6 +246,7 @@
   "console.views.device-general-settings.messages.deleteSuccess": "The end device has been deleted successfully",
   "console.views.device-general-settings.messages.deleteFailure": "End device deletion failed",
   "console.views.device-general-settings.messages.activationModeUnknown": "Activation mode unknown because Network Server is not available",
+  "console.views.device-general-settings.messages.notInCluster": "Not registered in this cluster",
   "console.views.device-location.index.setDeviceLocation": "Set Device Location",
   "console.views.device-overview.index.activationInfo": "Activation Information",
   "console.views.device-overview.index.rootKeyId": "Root Key ID",
