@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import React from 'react'
-import * as Yup from 'yup'
 
 import SubmitButton from '../../../../components/submit-button'
 import SubmitBar from '../../../../components/submit-bar'
@@ -90,12 +89,12 @@ const IdentityServerForm = React.memo(props => {
           _external_js: externalJsChecked,
         })
       } else {
-        const { join_server_address = '' } = initialValues
+        let { join_server_address } = initialValues
         const { resets_join_nonces, root_keys } = initialValues
         // if JS address is not set, always fallback to the default js address
         // when resetting from the 'provisioned by external js' option.
-        if (typeof join_server_address === undefined) {
-          join_server_address = new URL(jsConfig.base_url).hostname
+        if (!Boolean(join_server_address)) {
+          join_server_address = new URL(jsConfig.base_url).hostname || ''
         }
 
         setValues({
