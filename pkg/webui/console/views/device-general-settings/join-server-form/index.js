@@ -75,7 +75,6 @@ const JoinServerForm = React.memo(props => {
       network_server_kek_label,
       _external_js: hasExternalJs(device),
       _lorawan_version: lorawan_version,
-      // net_id: extJs ? undefined : net_id,
       net_id,
     }
   }, [device])
