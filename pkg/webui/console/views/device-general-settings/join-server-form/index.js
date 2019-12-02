@@ -28,6 +28,14 @@ import sharedMessages from '../../../../lib/shared-messages'
 import { parseLorawanMacVersion, hasExternalJs } from '../utils'
 import validationSchema from './validation-schema'
 
+const getComponentBaseUrl = config => {
+  try {
+    const { base_url } = config
+
+    return new URL(base_url).hostname
+  } catch (e) {}
+}
+
 // The Join Server can store end device fields while not exposing the root keys. This means
 // that the `root_keys` object is present while `root_keys.nwk_key` == nil or `root_keys.app_key == nil`
 // must hold. See https://github.com/TheThingsNetwork/lorawan-stack/issues/1473
@@ -35,7 +43,7 @@ const isNwkKeyHidden = ({ root_keys }) => Boolean(root_keys) && !Boolean(root_ke
 const isAppKeyHidden = ({ root_keys }) => Boolean(root_keys) && !Boolean(root_keys.app_key)
 
 const JoinServerForm = React.memo(props => {
-  const { device, onSubmit } = props
+  const { device, onSubmit, asConfig, nsConfig } = props
 
   const isNewLorawanVersion = parseLorawanMacVersion(device.lorawan_version) >= 110
   const externalJs = hasExternalJs(device)
@@ -46,7 +54,6 @@ const JoinServerForm = React.memo(props => {
 
   // Setup and memoize initial form state.
   const initialValues = React.useMemo(() => {
-    const extJs = hasExternalJs(device)
     const {
       root_keys = {
         nwk_key: {},
@@ -55,14 +62,21 @@ const JoinServerForm = React.memo(props => {
       resets_join_nonces,
       lorawan_version,
       net_id = '',
+      application_server_id = '',
+      application_server_kek_label = '',
+      network_server_kek_label = '',
     } = device
 
     return {
       resets_join_nonces,
       root_keys,
+      application_server_id,
+      application_server_kek_label,
+      network_server_kek_label,
       _external_js: hasExternalJs(device),
       _lorawan_version: lorawan_version,
-      net_id: extJs ? undefined : net_id,
+      // net_id: extJs ? undefined : net_id,
+      net_id,
     }
   }, [device])
 
@@ -106,6 +120,20 @@ const JoinServerForm = React.memo(props => {
     nwkKeyPlaceholder = sharedMessages.provisionedOnExternalJoinServer
   } else if (nwkKeyHidden) {
     nwkKeyPlaceholder = m.unexposed
+  }
+
+  const sameAsBaseUrl = getComponentBaseUrl(asConfig) === device.application_server_address
+  let asServerIDPlaceholder = m.asServerIDPlaceholder
+  let asServerKekLabelPlaceholder = m.asServerKekLabelPlaceholder
+  if (!asConfig.enabled || !sameAsBaseUrl) {
+    asServerIDPlaceholder = m.notInCluster
+    asServerKekLabelPlaceholder = m.asNotInCluster
+  }
+
+  const sameNsBaseUrl = getComponentBaseUrl(nsConfig) === device.network_server_address
+  let nsServerKekLabelPlaceholder = m.asServerKekLabelPlaceholder
+  if (!nsConfig.enabled || !sameNsBaseUrl) {
+    nsServerKekLabelPlaceholder = m.asNotInCluster
   }
 
   return (
@@ -162,6 +190,30 @@ const JoinServerForm = React.memo(props => {
         />
       )}
       <Form.Field
+        title={m.asServerID}
+        name="application_server_id"
+        description={m.asServerIDDescription}
+        placeholder={asServerIDPlaceholder}
+        component={Input}
+        disabled={!sameAsBaseUrl || externalJs}
+      />
+      <Form.Field
+        title={m.asServerKekLabel}
+        name="application_server_kek_label"
+        description={m.asServerKekLabelDescription}
+        placeholder={asServerKekLabelPlaceholder}
+        component={Input}
+        disabled={!sameAsBaseUrl || externalJs}
+      />
+      <Form.Field
+        title={m.nsServerKekLabel}
+        name="network_server_kek_label"
+        description={m.nsServerKekLabelDescription}
+        placeholder={nsServerKekLabelPlaceholder}
+        component={Input}
+        disabled={!sameNsBaseUrl || externalJs}
+      />
+      <Form.Field
         title={sharedMessages.macVersion}
         name="_lorawan_version"
         component={Input}
@@ -177,7 +229,9 @@ const JoinServerForm = React.memo(props => {
 })
 
 JoinServerForm.propTypes = {
+  asConfig: PropTypes.stackComponent.isRequired,
   device: PropTypes.device.isRequired,
+  nsConfig: PropTypes.stackComponent.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 

@@ -38,7 +38,7 @@ import {
   selectJsConfig,
   selectNsConfig,
 } from '../../../lib/selectors/env'
-import { isDeviceOTAA } from './utils'
+import { hasExternalJs, isDeviceOTAA } from './utils'
 import m from './messages'
 
 import IdentityServerForm from './identity-server-form'
@@ -189,8 +189,10 @@ export default class DeviceGeneralSettings extends React.Component {
     // devices.
     // 3. Disable the section if NS is not in cluster, since activation mode is unknown.
     // 4. Disable the seciton if `join_server_address` is not equal to the cluster JS address
+    // 5. Disable the seciton if an external JS is used
     const sameJsAddress = getComponentBaseUrl(jsConfig) === device.join_server_address
-    const jsDisabled = !jsEnabled || !isOTAA || !nsEnabled || !sameJsAddress
+    const externalJs = hasExternalJs(device)
+    const jsDisabled = !jsEnabled || !isOTAA || !nsEnabled || !sameJsAddress || externalJs
     let jsDescription = m.jsDescription
     if (!jsEnabled) {
       jsDescription = m.jsDescriptionMissing
@@ -198,7 +200,7 @@ export default class DeviceGeneralSettings extends React.Component {
       jsDescription = m.activationModeUnknown
     } else if (!isOTAA) {
       jsDescription = m.jsDescriptionOTAA
-    } else if (!sameJsAddress) {
+    } else if (!sameJsAddress || externalJs) {
       jsDescription = m.notInCluster
     }
 
@@ -237,7 +239,12 @@ export default class DeviceGeneralSettings extends React.Component {
               <ApplicationServerForm device={device} onSubmit={this.handleSubmit} />
             </Collapse>
             <Collapse title={m.jsTitle} description={jsDescription} disabled={jsDisabled}>
-              <JoinServerForm device={device} onSubmit={this.handleSubmit} jsConfig={jsConfig} />
+              <JoinServerForm
+                device={device}
+                onSubmit={this.handleSubmit}
+                asConfig={asConfig}
+                nsConfig={nsConfig}
+              />
             </Collapse>
             <Collapse title={m.consoleTitle} description={m.consoleDescription}>
               <DeleteSection

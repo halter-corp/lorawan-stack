@@ -16,6 +16,7 @@ import * as Yup from 'yup'
 
 import randomByteString from '../../../lib/random-bytes'
 import m from '../../../components/device-data-form/messages'
+import sharedMessages from '../../../../lib/shared-messages'
 
 import { parseLorawanMacVersion } from '../utils'
 
@@ -65,6 +66,9 @@ const validationSchema = Yup.object().shape({
     then: schema => schema,
     otherwise: schema => schema.strip(),
   }),
+  application_server_id: Yup.string().max(100, sharedMessages.validateTooLong),
+  application_server_kek_label: Yup.string().max(2048, sharedMessages.validateTooLong),
+  network_server_kek_label: Yup.string().max(2048, sharedMessages.validateTooLong),
   _external_js: Yup.boolean(),
   _lorawan_version: Yup.string(),
 })
