@@ -383,6 +383,7 @@
   "lib.shared-messages.downlinksScheduled": "Xxxxxxxxx (xx)xxxxxxxxx",
   "lib.shared-messages.edit": "Xxxx",
   "lib.shared-messages.email": "Xxxxx",
+  "lib.shared-messages.empty": "Xxxxx",
   "lib.shared-messages.enabled": "Xxxxxxx",
   "lib.shared-messages.entityId": "Xxxxxx XX",
   "lib.shared-messages.eventsCannotShow": "Xxxxxx xxxx xxxxxx",
