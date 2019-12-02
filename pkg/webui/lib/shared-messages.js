@@ -94,6 +94,7 @@ export default defineMessages({
   downlinksScheduled: 'Downlinks (re)scheduled',
   edit: 'Edit',
   email: 'Email',
+  empty: 'Empty',
   enabled: 'Enabled',
   entityId: 'Entity ID',
   eventsCannotShow: 'Cannot show events',

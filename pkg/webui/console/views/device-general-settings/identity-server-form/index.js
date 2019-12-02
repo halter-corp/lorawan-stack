@@ -132,6 +132,13 @@ const IdentityServerForm = React.memo(props => {
   const hasJoinEUI = Boolean(device.ids.join_eui)
   const hasDevEUI = Boolean(device.ids.dev_eui)
 
+  let joinServerAddressPlaceholder = sharedMessages.addressPlaceholder
+  if (isOTAA && externalJs) {
+    joinServerAddressPlaceholder = m.external
+  } else if (!isOTAA) {
+    joinServerAddressPlaceholder = sharedMessages.empty
+  }
+
   return (
     <Form
       validationSchema={validationSchema}
@@ -211,7 +218,7 @@ const IdentityServerForm = React.memo(props => {
       />
       <Form.Field
         title={sharedMessages.joinServerAddress}
-        placeholder={isOTAA && externalJs ? m.external : sharedMessages.addressPlaceholder}
+        placeholder={joinServerAddressPlaceholder}
         name="join_server_address"
         component={Input}
         disabled={!isOTAA || externalJs}
