@@ -50,8 +50,7 @@ class Modal extends React.PureComponent {
       logo,
       approval,
       formName,
-      buttonMessage = this.props.approval ? sharedMessages.approve : sharedMessages.ok,
-      cancelButtonMessage = sharedMessages.cancel,
+      cancelButtonMessage,
       onComplete,
       bottomLine,
       inline,
@@ -68,6 +67,7 @@ class Modal extends React.PureComponent {
     const RootComponent = this.props.method ? 'form' : 'div'
     const messageElement = <Message content={message} className={style.message} />
     const bottomLineElement = <Message content={bottomLine} />
+    const buttonMessage = approval ? sharedMessages.approve : sharedMessages.ok
 
     let buttons = (
       <div>
@@ -127,25 +127,40 @@ class Modal extends React.PureComponent {
   }
 }
 
+Modal.propTypes = {
+  approval: PropTypes.bool,
+  bottomLine: PropTypes.oneOfType([PropTypes.element, PropTypes.message]),
+  buttonName: PropTypes.message,
+  cancelButtonMessage: PropTypes.message,
+  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.element), PropTypes.element]),
+  danger: PropTypes.bool,
+  formName: PropTypes.string,
+  inline: PropTypes.bool,
+  logo: PropTypes.bool,
+  message: PropTypes.message,
+  method: PropTypes.string,
+  name: PropTypes.string,
+  onComplete: PropTypes.func,
+  subtitle: PropTypes.message,
+  title: PropTypes.message,
+}
+
 Modal.defaultProps = {
+  bottomLine: undefined,
+  buttonName: undefined,
+  cancelButtonMessage: sharedMessages.cancel,
+  children: undefined,
+  danger: false,
+  formName: undefined,
+  logo: false,
+  message: undefined,
+  method: undefined,
   onComplete: () => null,
   inline: false,
   approval: true,
-}
-
-Modal.propTypes = {
-  title: PropTypes.message,
-  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.element), PropTypes.element]),
-  message: PropTypes.message,
-  subtitle: PropTypes.message,
-  bottomLine: PropTypes.oneOfType([PropTypes.element, PropTypes.message]),
-  approval: PropTypes.bool,
-  buttonMessage: PropTypes.message,
-  cancelButtonMessage: PropTypes.message,
-  method: PropTypes.string,
-  buttonName: PropTypes.message,
-  inline: PropTypes.bool,
-  danger: PropTypes.bool,
+  subtitle: undefined,
+  title: undefined,
+  name: undefined,
 }
 
 export default Modal

@@ -37,12 +37,6 @@ const m = defineMessages({
   deleteSuccess: 'The location has been removed successfully',
 })
 
-const defaultValues = {
-  longitude: undefined,
-  latitude: undefined,
-  altitude: undefined,
-}
-
 @bind
 class LocationForm extends Component {
   constructor(props) {
@@ -95,7 +89,7 @@ class LocationForm extends Component {
 
     const { error } = this.state
 
-    const entryExists = Boolean(initialValues)
+    const entryExists = initialValues.latitude && initialValues.altitude && initialValues.longitude
 
     return (
       <React.Fragment>
@@ -104,7 +98,7 @@ class LocationForm extends Component {
           error={error}
           horizontal
           validateOnChange
-          initialValues={initialValues || defaultValues}
+          initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={this.onSubmit}
           formikRef={this.form}
@@ -156,16 +150,29 @@ class LocationForm extends Component {
 }
 
 LocationForm.propTypes = {
+  entityId: PropTypes.string.isRequired,
+  /** The title message shown at the top of the form */
+  formTitle: PropTypes.message.isRequired,
   /** The initial values of the form */
-  initialValues: PropTypes.object,
-  /** The handler for the submit function of the form */
-  onSubmit: PropTypes.func.isRequired,
+  initialValues: PropTypes.shape({
+    latitude: PropTypes.number,
+    longitude: PropTypes.number,
+    altitude: PropTypes.number,
+  }),
   /** The handler for the delete function of the form */
   onDelete: PropTypes.func.isRequired,
-  /** The title message shown at the top of the form */
-  formTitle: PropTypes.message,
+  /** The handler for the submit function of the form */
+  onSubmit: PropTypes.func.isRequired,
   /** The validation schema of the form */
-  validationSchema: PropTypes.object,
+  validationSchema: PropTypes.shape({}).isRequired,
+}
+
+LocationForm.defaultProps = {
+  initialValues: {
+    latitude: undefined,
+    longitude: undefined,
+    altitude: undefined,
+  },
 }
 
 export default LocationForm

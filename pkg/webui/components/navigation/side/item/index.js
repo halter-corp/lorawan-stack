@@ -137,18 +137,12 @@ const LinkItem = ({ title, icon, exact, path, onExpand }) => (
 )
 
 SideNavigationItem.propTypes = {
-  /** The title of the side navigation item */
-  title: PropTypes.message.isRequired,
-  /** The name of the icon for the side navigation item */
-  icon: PropTypes.string,
-  /** The path of the linkable side navigation item */
-  path: PropTypes.string,
   /** A flag specifying whether the path of the linkable item should be matched exactly or not */
   exact: PropTypes.bool,
+  /** The name of the icon for the side navigation item */
+  icon: PropTypes.string,
   /** A flag specifying whether the side navigation item is active or not */
   isActive: PropTypes.bool.isRequired,
-  /** A flag specifying whether the side navigation item is minimized or not */
-  isMinimized: PropTypes.bool.isRequired,
   /**
    * A flag specifying whether the side navigation item is composed of multiple
    * entries and is collapsable/expandable
@@ -156,8 +150,14 @@ SideNavigationItem.propTypes = {
   isCollapsable: PropTypes.bool.isRequired,
   /** A flag specifying whether the side navigation item is expanded */
   isExpanded: PropTypes.bool.isRequired,
+  /** A flag specifying whether the side navigation item is minimized or not */
+  isMinimized: PropTypes.bool.isRequired,
   /** Function to be called when the item gets selected */
   onExpand: PropTypes.func.isRequired,
+  /** The path of the linkable side navigation item */
+  path: PropTypes.string,
+  /** The title of the side navigation item */
+  title: PropTypes.message.isRequired,
 }
 
 export default SideNavigationItem

@@ -36,9 +36,9 @@ class SideNavigationList extends React.Component {
       className,
       items,
       isMinimized,
-      onItemExpand = () => null,
-      isExpanded = false,
-      depth = 0,
+      onItemExpand,
+      isExpanded,
+      depth,
       itemsExpanded = {},
     } = this.props
 
@@ -85,17 +85,16 @@ class SideNavigationList extends React.Component {
 }
 
 SideNavigationList.propTypes = {
-  /** A flag specifying whether the side navigation list of items is minimized or not */
-  isMinimized: PropTypes.bool.isRequired,
+  className: PropTypes.string,
+  /** The depth of the current list starting at 0 for the root list */
+  depth: PropTypes.number,
   /**
    * A flag specifying whether the side navigation list is expanded or not.
    * Applicable to nested lists.
    */
   isExpanded: PropTypes.bool,
-  /** The depth of the current list starting at 0 for the root list */
-  depth: PropTypes.number,
-  /** Function to be called when an side navigation item gets selected */
-  onItemExpand: PropTypes.func,
+  /** A flag specifying whether the side navigation list of items is minimized or not */
+  isMinimized: PropTypes.bool.isRequired,
   /** A list of items to be displayed within the side navigation list */
   items: PropTypes.arrayOf(
     PropTypes.oneOfType([
@@ -109,6 +108,9 @@ SideNavigationList.propTypes = {
       }),
     ]),
   ).isRequired,
+  itemsExpanded: PropTypes.shape({}),
+  /** Function to be called when an side navigation item gets selected */
+  onItemExpand: PropTypes.func,
   /**
    * A map of expanded items, where:
    *  - The key: index of the item
@@ -117,7 +119,13 @@ SideNavigationList.propTypes = {
    *    - isLink - boolean flag specifying whether a link is selected within
    *                this opened item
    */
-  itemsExpanded: PropTypes.object,
 }
 
+SideNavigationList.defaultProps = {
+  className: undefined,
+  depth: 0,
+  itemsExpanded: {},
+  isExpanded: false,
+  onItemExpand: () => null,
+}
 export default SideNavigationList

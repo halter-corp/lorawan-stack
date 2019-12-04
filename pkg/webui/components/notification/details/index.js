@@ -17,6 +17,7 @@ import { defineMessages } from 'react-intl'
 import bind from 'autobind-decorator'
 
 import Button from '../../button'
+import PropTypes from '../../../lib/prop-types'
 import style from './details.styl'
 
 const m = defineMessages({
@@ -79,6 +80,10 @@ export default class Details extends React.PureComponent {
       </div>
     )
   }
+}
+
+Details.propTypes = {
+  details: PropTypes.oneOfType([PropTypes.string, PropTypes.error]).isRequired,
 }
 
 export { Details }
