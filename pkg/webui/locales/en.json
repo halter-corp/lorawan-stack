@@ -64,7 +64,7 @@
   "console.components.device-data-form.messages.deleteWarning": "Are you sure you want to delete \"{deviceId}\"? Deleting an end device cannot be undone!",
   "console.components.device-data-form.messages.deviceDescDescription": "Optional device description; can also be used to save notes about the device",
   "console.components.device-data-form.messages.deviceDescPlaceholder": "Description for my new device",
-  "console.components.device-data-form.messages.deviceEUIDescription": "The DevEUI is the unique identifier for this device on the network",
+  "console.components.device-data-form.messages.deviceEUIDescription": "The DevEUI is the unique identifier for this device",
   "console.components.device-data-form.messages.deviceIdPlaceholder": "my-new-device",
   "console.components.device-data-form.messages.deviceNamePlaceholder": "My New Device",
   "console.components.device-data-form.messages.external": "External",

@@ -64,7 +64,7 @@
   "console.components.device-data-form.messages.deleteWarning": "Xxx xxx xxxx xxx xxxx xx xxxxxx \"{deviceId}\"? Xxxxxxxx xx xxx xxxxxx xxxxxx xx xxxxxx!",
   "console.components.device-data-form.messages.deviceDescDescription": "Xxxxxxxx xxxxxx xxxxxxxxxxx; xxx xxxx xx xxxx xx xxxx xxxxx xxxxx xxx xxxxxx",
   "console.components.device-data-form.messages.deviceDescPlaceholder": "Xxxxxxxxxxx xxx xx xxx xxxxxx",
-  "console.components.device-data-form.messages.deviceEUIDescription": "Xxx XxxXXX xx xxx xxxxxx xxxxxxxxxx xxx xxxx xxxxxx xx xxx xxxxxxx",
+  "console.components.device-data-form.messages.deviceEUIDescription": "Xxx XxxXXX xx xxx xxxxxx xxxxxxxxxx xxx xxxx xxxxxx",
   "console.components.device-data-form.messages.deviceIdPlaceholder": "xx-xxx-xxxxxx",
   "console.components.device-data-form.messages.deviceNamePlaceholder": "Xx Xxx Xxxxxx",
   "console.components.device-data-form.messages.external": "Xxxxxxxx",
