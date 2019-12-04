@@ -48,7 +48,7 @@
   "console.components.device-data-form.messages.abp": "Activation By Personalization (ABP)",
   "console.components.device-data-form.messages.activationMode": "Activation Mode",
   "console.components.device-data-form.messages.activationSettings": "Activation Settings",
-  "console.components.device-data-form.messages.appEUIDescription": "AppEUI identifies the Join Server",
+  "console.components.device-data-form.messages.appEUIDescription": "The AppEUI is a global application ID that uniquely identifies the owner of the ­device",
   "console.components.device-data-form.messages.appKeyDescription": "The root key to derive the application session key to secure communication between the device and the application",
   "console.components.device-data-form.messages.appSKeyDescription": "Application Session Key",
   "console.components.device-data-form.messages.asNotInCluster": "AS is not in this cluster",
