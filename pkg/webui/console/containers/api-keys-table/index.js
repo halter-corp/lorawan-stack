@@ -97,3 +97,7 @@ ApiKeysTable.propTypes = {
   getItemsAction: PropTypes.func.isRequired,
   pageSize: PropTypes.number.isRequired,
 }
+
+ApiKeysTable.defaultProps = {
+  entityId: undefined,
+}

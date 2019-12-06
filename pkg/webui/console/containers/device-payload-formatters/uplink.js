@@ -63,8 +63,13 @@ class DevicePayloadFormatters extends React.PureComponent {
   static propTypes = {
     appId: PropTypes.string.isRequired,
     devId: PropTypes.string.isRequired,
-    formatters: PropTypes.object.isRequired,
+    error: PropTypes.error,
+    formatters: PropTypes.formatters.isRequired,
     updateDevice: PropTypes.func.isRequired,
+  }
+
+  static defaultProps = {
+    error: undefined,
   }
 
   async onSubmit(values) {

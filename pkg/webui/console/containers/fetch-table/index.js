@@ -20,6 +20,7 @@ import classnames from 'classnames'
 
 import debounce from '../../../lib/debounce'
 
+import PropTypes from '../../../lib/prop-types'
 import sharedMessages from '../../../lib/shared-messages'
 import Tabular from '../../../components/table'
 import Input from '../../../components/input'
@@ -275,10 +276,57 @@ class FetchTable extends Component {
   }
 }
 
+FetchTable.propTypes = {
+  addMessage: PropTypes.message,
+  fetching: PropTypes.bool,
+  fetchingSearch: PropTypes.bool,
+  handlesPagination: PropTypes.bool,
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      displayName: PropTypes.message.isRequired,
+      getValue: PropTypes.func,
+      name: PropTypes.string,
+      render: PropTypes.func,
+      centered: PropTypes.bool,
+      sortable: PropTypes.bool,
+      width: PropTypes.number,
+    }),
+  ),
+  itemPathPrefix: PropTypes.string,
+  items: PropTypes.arrayOf(PropTypes.shape({})),
+  mayAdd: PropTypes.bool,
+  pageSize: PropTypes.number,
+  pathname: PropTypes.string,
+  searchable: PropTypes.bool,
+  tableTitle: PropTypes.message,
+  tabs: PropTypes.arrayOf(
+    PropTypes.shape({
+      title: PropTypes.message.isRequired,
+      name: PropTypes.string.isRequired,
+      icon: PropTypes.string,
+      disabled: PropTypes.bool,
+    }),
+  ),
+  totalCount: PropTypes.number,
+
+}
+
 FetchTable.defaultProps = {
   pageSize: 20,
   filterValidator,
   itemPathPrefix: '',
+  mayAdd: false,
+  searchable: false,
+  handlesPagination: false,
+  fetching: false,
+  totalCount: 0,
+  items: [],
+  pathname: undefined,
+  headers: [],
+  fetchingSearch: false,
+  addMessage: undefined,
+  tableTitle: undefined,
+  tabs: [],
 }
 
 export default FetchTable

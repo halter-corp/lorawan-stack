@@ -31,6 +31,7 @@ import { selectSelectedApplicationId } from '../../store/selectors/applications'
 import {
   selectSelectedDeviceId,
   selectSelectedDeviceFormatters,
+  selectUpdateDeviceError,
 } from '../../store/selectors/device'
 
 @connect(
@@ -40,6 +41,7 @@ import {
     return {
       appId: selectSelectedApplicationId(state),
       devId: selectSelectedDeviceId(state),
+      error: selectUpdateDeviceError(state),
       formatters,
     }
   },
@@ -61,8 +63,13 @@ class DevicePayloadFormatters extends React.PureComponent {
   static propTypes = {
     appId: PropTypes.string.isRequired,
     devId: PropTypes.string.isRequired,
-    formatters: PropTypes.object.isRequired,
+    error: PropTypes.error,
+    formatters: PropTypes.formatters.isRequired,
     updateDevice: PropTypes.func.isRequired,
+  }
+
+  static defaultProps = {
+    error: undefined,
   }
 
   async onSubmit(values) {
@@ -85,7 +92,7 @@ class DevicePayloadFormatters extends React.PureComponent {
   }
 
   render() {
-    const { formatters } = this.props
+    const { formatters, error } = this.props
 
     return (
       <React.Fragment>
@@ -93,6 +100,7 @@ class DevicePayloadFormatters extends React.PureComponent {
         <PayloadFormattersForm
           uplink={false}
           linked
+          error={error}
           onSubmit={this.onSubmit}
           title={sharedMessages.payloadFormattersDownlink}
           initialType={formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE}

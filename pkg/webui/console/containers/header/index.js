@@ -49,21 +49,33 @@ import {
 @bind
 class Header extends Component {
   static propTypes = {
+    /** Flag identifying whether links should be rendered as plain anchor link */
+    anchored: PropTypes.bool,
+    /** A handler for when the user clicks the logout button */
+    handleLogout: PropTypes.func.isRequired,
+    /** A handler for when the user used the search input */
+    handleSearchRequest: PropTypes.func,
+    /** The rights of the current user */
+    mayViewApplications: PropTypes.bool,
+    /** A flag identifying whether the header should display the search input */
+    mayViewGateways: PropTypes.bool,
+    mayViewOrganizations: PropTypes.bool,
+    searchable: PropTypes.bool,
     /**
      * The User object, retrieved from the API. If it is `undefined`, then the
      * guest header is rendered
      */
-    anchored: PropTypes.bool,
-    /** Flag identifying whether links should be rendered as plain anchor link */
-    handleLogout: PropTypes.func.isRequired,
-    /** A handler for when the user used the search input */
-    handleSearchRequest: PropTypes.func,
-    /** A handler for when the user clicks the logout button */
-    searchable: PropTypes.bool,
-    /** A flag identifying whether the header should display the search input */
-    user: PropTypes.object,
-    /** The rights of the current user */
-    rights: PropTypes.rights,
+    user: PropTypes.user,
+  }
+
+  static defaultProps = {
+    anchored: false,
+    handleSearchRequest: undefined,
+    user: undefined,
+    mayViewGateways: false,
+    mayViewOrganizations: false,
+    mayViewApplications: false,
+    searchable: false,
   }
 
   render() {
