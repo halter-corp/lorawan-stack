@@ -89,6 +89,7 @@ class TagGroup extends React.Component {
   }
 
   render() {
+    // eslint-disable-next-line react/prop-types
     const { className, tags } = this.props
     const { left } = this.state
 

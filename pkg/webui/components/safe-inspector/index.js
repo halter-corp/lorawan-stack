@@ -73,16 +73,16 @@ export class SafeInspector extends Component {
     /** The data to be displayed */
     disableResize: PropTypes.bool,
     /** Whether the component should resize when its data is truncated */
-    hideable: PropTypes.bool,
     /** Whether the data can be hidden (like passwords) */
+    hideable: PropTypes.bool,
     initiallyVisible: PropTypes.bool,
     /** Whether the data is initially visible */
     intl: PropTypes.shape({
       formatMessage: PropTypes.func,
     }).isRequired,
     /** Utility functions passed via react-intl hoc **/
-    isBytes: PropTypes.bool,
     /** Whether the data is in byte format */
+    isBytes: PropTypes.bool,
     noCopyPopup: PropTypes.bool,
     /** Whether a smaller style should be rendered (useful for display in tables) */
     small: PropTypes.bool,

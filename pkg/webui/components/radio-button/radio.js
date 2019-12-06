@@ -110,22 +110,27 @@ class RadioButton extends React.PureComponent {
 }
 
 RadioButton.propTypes = {
+  autoFocus: PropTypes.bool,
+  checked: PropTypes.bool,
   className: PropTypes.string,
+  disabled: PropTypes.bool,
   label: PropTypes.message,
   name: PropTypes.string,
-  value: PropTypes.string,
-  checked: PropTypes.bool,
-  disabled: PropTypes.bool,
-  readOnly: PropTypes.bool,
-  autoFocus: PropTypes.bool,
-  onChange: PropTypes.func,
   onBlur: PropTypes.func,
+  onChange: PropTypes.func,
   onFocus: PropTypes.func,
+  readOnly: PropTypes.bool,
+  value: PropTypes.string,
 }
 
 RadioButton.defaultProps = {
+  className: undefined,
+  checked: false,
   disabled: false,
+  label: undefined,
+  name: undefined,
   readOnly: false,
+  value: undefined,
   autoFocus: false,
   onChange: () => null,
   onBlur: () => null,

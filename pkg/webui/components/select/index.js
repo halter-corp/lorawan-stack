@@ -28,33 +28,6 @@ const getValue = (opts, val) => opts.find(o => o.value === val)
 
 @bind
 class Select extends React.PureComponent {
-  static propTypes = {
-    onChange: PropTypes.func,
-    onBlur: PropTypes.func,
-    onFocus: PropTypes.func,
-    value: PropTypes.string,
-    disabled: PropTypes.bool,
-    options: PropTypes.arrayOf(
-      PropTypes.shape({
-        value: PropTypes.string,
-        label: PropTypes.message,
-      }),
-    ),
-    error: PropTypes.bool,
-    warning: PropTypes.bool,
-    name: PropTypes.string.isRequired,
-  }
-
-  static defaultProps = {
-    onChange: () => null,
-    onBlur: () => null,
-    onFocus: () => null,
-    options: [],
-    disabled: false,
-    error: false,
-    warning: false,
-  }
-
   constructor(props) {
     super(props)
 
@@ -149,6 +122,39 @@ class Select extends React.PureComponent {
       />
     )
   }
+}
+
+Select.propTypes = {
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  error: PropTypes.bool,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func,
+  }).isRequired,
+  name: PropTypes.string.isRequired,
+  onBlur: PropTypes.func,
+  onChange: PropTypes.func,
+  onFocus: PropTypes.func,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string,
+      label: PropTypes.message,
+    }),
+  ),
+  value: PropTypes.string,
+  warning: PropTypes.bool,
+}
+
+Select.defaultProps = {
+  className: undefined,
+  onChange: () => null,
+  onBlur: () => null,
+  onFocus: () => null,
+  options: [],
+  disabled: false,
+  error: false,
+  warning: false,
+  value: false,
 }
 
 export default injectIntl(Select)

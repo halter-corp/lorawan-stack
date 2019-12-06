@@ -43,6 +43,8 @@ class Modal extends React.PureComponent {
 
   render() {
     const {
+      buttonName,
+      buttonMessage,
       title,
       subtitle,
       children,
@@ -67,11 +69,16 @@ class Modal extends React.PureComponent {
     const RootComponent = this.props.method ? 'form' : 'div'
     const messageElement = <Message content={message} className={style.message} />
     const bottomLineElement = <Message content={bottomLine} />
-    const buttonMessage = approval ? sharedMessages.approve : sharedMessages.ok
 
+    const approveButtonMessage =
+      buttonMessage !== undefined
+        ? buttonMessage
+        : approval
+        ? sharedMessages.approve
+        : sharedMessages.ok
     let buttons = (
       <div>
-        <Button message={buttonMessage} onClick={this.handleApprove} icon="check" />
+        <Button message={approveButtonMessage} onClick={this.handleApprove} icon="check" />
       </div>
     )
 
@@ -88,7 +95,7 @@ class Modal extends React.PureComponent {
             {...name}
           />
           <Button
-            message={buttonMessage}
+            message={approveButtonMessage}
             onClick={this.handleApprove}
             name={formName}
             icon="check"
@@ -130,6 +137,7 @@ class Modal extends React.PureComponent {
 Modal.propTypes = {
   approval: PropTypes.bool,
   bottomLine: PropTypes.oneOfType([PropTypes.element, PropTypes.message]),
+  buttonMessage: PropTypes.message,
   buttonName: PropTypes.message,
   cancelButtonMessage: PropTypes.message,
   children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.element), PropTypes.element]),
@@ -147,6 +155,7 @@ Modal.propTypes = {
 
 Modal.defaultProps = {
   bottomLine: undefined,
+  buttonMessage: undefined,
   buttonName: undefined,
   cancelButtonMessage: sharedMessages.cancel,
   children: undefined,

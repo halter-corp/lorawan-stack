@@ -27,6 +27,7 @@ import style from './message.styl'
 @bind
 class MessageEvent extends React.PureComponent {
   render() {
+    // eslint-disable-next-line react/prop-types
     const { className, event, type, widget, overviewClassName, expandedClassName } = this.props
 
     const entityId = getEntityId(event.identifiers[0])
@@ -54,7 +55,7 @@ class MessageEvent extends React.PureComponent {
 
 MessageEvent.propTypes = {
   event: PropTypes.event.isRequired,
-  type: PropTypes.oneOf(['downlink', 'uplink']),
+  type: PropTypes.oneOf(['downlink', 'uplink']).isRequired,
   widget: PropTypes.bool,
 }
 

@@ -41,16 +41,6 @@ const dropdownItemsPropTypes = PropTypes.arrayOf(
 
 @bind
 export default class ProfileDropdown extends React.PureComponent {
-  static propTypes = {
-    /** The id of the current user */
-    userId: PropTypes.string,
-    /**
-     * A list of items for the dropdown component
-     * See `<Dropdown />`'s `items` proptypes for details
-     */
-    dropdownItems: dropdownItemsPropTypes,
-  }
-
   state = {
     expanded: false,
   }
@@ -106,6 +96,18 @@ export default class ProfileDropdown extends React.PureComponent {
   }
 }
 
+ProfileDropdown.propTypes = {
+  anchored: PropTypes.bool.isRequired,
+  /**
+   * A list of items for the dropdown component
+   * See `<Dropdown />`'s `items` proptypes for details
+   */
+  // eslint-disable-next-line react/require-default-props
+  dropdownItems: dropdownItemsPropTypes,
+  /** The id of the current user */
+  userId: PropTypes.string.isRequired,
+}
+
 const Dropdown = ({ items, anchored }) => (
   <ul className={styles.dropdown}>
     {items.map(function(item) {
@@ -136,6 +138,8 @@ const Dropdown = ({ items, anchored }) => (
 )
 
 Dropdown.propTypes = {
+  /** Flag identifying whether link should be rendered as plain anchor link */
+  anchored: PropTypes.bool.isRequired,
   /**
    * A list of items for the dropdown
    * @param {(string|Object)} title - The title to be displayed
@@ -143,9 +147,8 @@ Dropdown.propTypes = {
    * @param {string} path - The path for a navigation tab
    * @param {function} action - Alternatively, the function to be called on click
    */
+  // eslint-disable-next-line react/require-default-props
   items: dropdownItemsPropTypes,
-  /** Flag identifying whether link should be rendered as plain anchor link */
-  anchored: PropTypes.bool,
 }
 
 export { Dropdown }

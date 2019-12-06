@@ -28,6 +28,12 @@ class ToastContainer extends React.Component {
 }
 
 ToastContainer.propTypes = {
+  autoClose: PropTypes.oneOfType([PropTypes.bool, PropTypes.number]),
+  closeButton: PropTypes.oneOfType([PropTypes.bool, PropTypes.element]),
+  closeOnClick: PropTypes.bool,
+  hideProgressBar: PropTypes.bool,
+  pauseOnFocusLoss: PropTypes.bool,
+  pauseOnHover: PropTypes.bool,
   position: PropTypes.oneOf([
     'bottom-right',
     'bottom-left',
@@ -36,12 +42,6 @@ ToastContainer.propTypes = {
     'top-center',
     'bottom-center',
   ]),
-  autoClose: PropTypes.oneOfType([PropTypes.bool, PropTypes.number]),
-  closeButton: PropTypes.oneOfType([PropTypes.bool, PropTypes.element]),
-  hideProgressBar: PropTypes.bool,
-  pauseOnHover: PropTypes.bool,
-  closeOnClick: PropTypes.bool,
-  pauseOnFocusLoss: PropTypes.bool,
   transition: PropTypes.func,
 }
 

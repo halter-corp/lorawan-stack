@@ -21,6 +21,7 @@ import { getEntityId } from '../../../../lib/selectors/id'
 
 class DefaultEvent extends React.PureComponent {
   render() {
+    // eslint-disable-next-line react/prop-types
     const { className, event, widget, overviewClassName, expandedClassName } = this.props
 
     const entityId = getEntityId(event.identifiers[0])

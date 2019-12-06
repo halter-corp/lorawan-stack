@@ -74,17 +74,33 @@ class Tab extends React.PureComponent {
 }
 
 Tab.propTypes = {
+  /** A flag specifying whether the tab is active */
+  active: PropTypes.bool,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  /** A flag specifying whether the tab is disabled */
+  disabled: PropTypes.bool,
+  exact: PropTypes.bool,
+  link: PropTypes.string,
+  /** The name of the tab */
+  name: PropTypes.string.isRequired,
+  narrow: PropTypes.bool,
   /**
    * A click handler to be called when the selected tab changes. Passes
    * the name of the new active tab as an argument.
    */
   onClick: PropTypes.func,
-  /** A flag specifying whether the tab is active */
-  active: PropTypes.bool,
-  /** A flag specifying whether the tab is disabled */
-  disabled: PropTypes.bool,
-  /** The name of the tab */
-  name: PropTypes.string.isRequired,
+}
+
+Tab.defaultProps = {
+  children: undefined,
+  className: undefined,
+  link: undefined,
+  onClick: () => null,
+  active: false,
+  disabled: false,
+  narrow: false,
+  exact: true,
 }
 
 export default Tab

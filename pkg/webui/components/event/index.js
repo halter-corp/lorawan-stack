@@ -131,7 +131,7 @@ Event.propTypes = {
    * A stringified data of the event to be displayed in the
    * expanded view.
    */
-  data: PropTypes.object,
+  data: PropTypes.shape({}),
   /** The entity identifier of the event. */
   emitter: PropTypes.string.isRequired,
   /** Additional styling for the event expanded view */
@@ -152,8 +152,9 @@ Event.propTypes = {
 
 Event.defaultProps = {
   className: undefined,
+  expandedClassName: undefined,
+  overviewClassName: undefined,
   icon: 'event',
-  content: null,
   widget: false,
   data: null,
 }

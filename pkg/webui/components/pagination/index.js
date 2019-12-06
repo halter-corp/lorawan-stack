@@ -31,8 +31,8 @@ class Pagination extends React.PureComponent {
   render() {
     const {
       className,
-      forcePage = 1,
-      initialPage = 1,
+      forcePage,
+      initialPage,
       pageRangeDisplayed,
       marginPagesDisplayed,
       hideIfOnlyOnePage,
@@ -78,15 +78,17 @@ class Pagination extends React.PureComponent {
 }
 
 Pagination.propTypes = {
-  /** The total number of pages */
-  pageCount: PropTypes.number.isRequired,
-  /**
-   * The number of pages to be displayed. If is bigger than
-   * pageCount, then all pages will be displayed without gaps.
-   */
-  pageRangeDisplayed: PropTypes.number,
+  className: PropTypes.string,
   /** Page to be displayed immediately */
   forcePage: PropTypes.number,
+  /** A flag indicating whether the pagination should be hidden when there is
+   * only one page.
+   */
+  hideIfOnlyOnePage: PropTypes.bool,
+  /** The initial page number to be selected when the component
+   * gets rendered for the first time. Is 1-based.
+   */
+  initialPage: PropTypes.number,
   /**
    * The number of pages to be displayed in the beginning/end of
    * the component. For example, marginPagesDisplayed = 2, then the
@@ -95,24 +97,24 @@ Pagination.propTypes = {
    *
    */
   marginPagesDisplayed: PropTypes.number,
-  /** The initial page number to be selected when the component
-   * gets rendered for the first time. Is 1-based.
-   */
-  initialPage: PropTypes.number,
   /** An onClick handler that gets called with the new page number */
   onPageChange: PropTypes.func.isRequired,
-  /** A flag indicating whether the pagination should be hidden when there is
-   * only one page.
+  /** The total number of pages */
+  pageCount: PropTypes.number.isRequired,
+  /**
+   * The number of pages to be displayed. If is bigger than
+   * pageCount, then all pages will be displayed without gaps.
    */
-  hideIfOnlyOnePage: PropTypes.bool,
+  pageRangeDisplayed: PropTypes.number,
 }
 
 Pagination.defaultProps = {
-  onPageChange: () => null,
-  pageRangeDisplayed: 1,
-  marginPagesDisplayed: 1,
-  initialPage: 1,
+  className: undefined,
+  forcePage: 1,
   hideIfOnlyOnePage: true,
+  initialPage: 1,
+  marginPagesDisplayed: 1,
+  pageRangeDisplayed: 1,
 }
 
 export default Pagination

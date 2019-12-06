@@ -24,17 +24,6 @@ const id = () => `grad-${Math.round(Math.random() * 10000)}`
 
 @bind
 export default class Spinner extends React.PureComponent {
-  static propTypes = {
-    center: PropTypes.bool,
-    small: PropTypes.bool,
-    faded: PropTypes.bool,
-    after: PropTypes.number,
-  }
-
-  static defaultProps = {
-    after: 350,
-  }
-
   constructor(props) {
     super(props)
 
@@ -59,8 +48,8 @@ export default class Spinner extends React.PureComponent {
   render() {
     const {
       className,
-      center = false,
-      small = false,
+      center,
+      small,
       micro = false,
       faded = false,
       children,
@@ -100,4 +89,26 @@ export default class Spinner extends React.PureComponent {
       </div>
     )
   }
+}
+
+Spinner.propTypes = {
+  after: PropTypes.number,
+  center: PropTypes.bool,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  faded: PropTypes.bool,
+  inline: PropTypes.bool,
+  micro: PropTypes.bool,
+  small: PropTypes.bool,
+}
+
+Spinner.defaultProps = {
+  after: 350,
+  center: false,
+  children: undefined,
+  className: undefined,
+  faded: false,
+  inline: false,
+  micro: false,
+  small: false,
 }

@@ -37,16 +37,17 @@ class SubmitButton extends React.PureComponent {
 }
 
 SubmitButton.propTypes = {
-  message: PropTypes.message.isRequired,
-  isSubmitting: PropTypes.bool.isRequired,
-  isValidating: PropTypes.bool.isRequired,
   dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool,
   icon: PropTypes.string,
+  isSubmitting: PropTypes.bool.isRequired,
+  isValidating: PropTypes.bool.isRequired,
+  message: PropTypes.message.isRequired,
 }
 
 SubmitButton.defaultProps = {
   disabled: false,
+  icon: undefined,
 }
 
 export default SubmitButton

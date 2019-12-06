@@ -28,55 +28,6 @@ import style from './input.styl'
 
 @bind
 class Input extends React.Component {
-  static propTypes = {
-    action: PropTypes.shape({
-      ...Button.propTypes,
-    }),
-    className: PropTypes.string,
-    code: PropTypes.bool,
-    component: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
-    disabled: PropTypes.bool,
-    error: PropTypes.bool,
-    icon: PropTypes.string,
-    intl: PropTypes.shape({}).isRequired,
-    label: PropTypes.string,
-    loading: PropTypes.bool,
-    onBlur: PropTypes.func,
-    onChange: PropTypes.func,
-    onEnter: PropTypes.func,
-    onFocus: PropTypes.func,
-    placeholder: PropTypes.message,
-    readOnly: PropTypes.bool,
-    title: PropTypes.message,
-    type: PropTypes.string,
-    valid: PropTypes.bool,
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    warning: PropTypes.bool,
-  }
-
-  static defaultProps = {
-    action: undefined,
-    className: undefined,
-    code: false,
-    component: 'input',
-    disabled: false,
-    error: false,
-    icon: undefined,
-    label: undefined,
-    loading: false,
-    onFocus: () => null,
-    onBlur: () => null,
-    onChange: () => null,
-    onEnter: () => null,
-    placeholder: undefined,
-    readOnly: false,
-    title: undefined,
-    type: 'text',
-    valid: false,
-    value: '',
-    warning: false,
-  }
-
   state = {
     focus: false,
   }
@@ -233,5 +184,56 @@ const Valid = function(props) {
 }
 
 Input.Toggled = Toggled
+
+Input.propTypes = {
+  action: PropTypes.shape({
+    ...Button.propTypes,
+  }),
+  className: PropTypes.string,
+  code: PropTypes.bool,
+  component: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  disabled: PropTypes.bool,
+  error: PropTypes.bool,
+  icon: PropTypes.string,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func,
+  }).isRequired,
+  label: PropTypes.string,
+  loading: PropTypes.bool,
+  onBlur: PropTypes.func,
+  onChange: PropTypes.func,
+  onEnter: PropTypes.func,
+  onFocus: PropTypes.func,
+  placeholder: PropTypes.message,
+  readOnly: PropTypes.bool,
+  title: PropTypes.message,
+  type: PropTypes.string,
+  valid: PropTypes.bool,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  warning: PropTypes.bool,
+}
+
+Input.defaultProps = {
+  action: undefined,
+  className: undefined,
+  code: false,
+  component: 'input',
+  disabled: false,
+  error: false,
+  icon: undefined,
+  label: undefined,
+  loading: false,
+  onFocus: () => null,
+  onBlur: () => null,
+  onChange: () => null,
+  onEnter: () => null,
+  placeholder: undefined,
+  readOnly: false,
+  title: undefined,
+  type: 'text',
+  valid: false,
+  value: '',
+  warning: false,
+}
 
 export default injectIntl(Input, { forwardRef: true })

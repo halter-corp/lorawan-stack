@@ -36,14 +36,15 @@ class SideNavigationItem extends React.PureComponent {
 
   render() {
     const {
+      // eslint-disable-next-line react/prop-types
       className,
       title,
       depth,
-      icon = null,
-      path = null,
-      exact = true,
+      icon,
+      path,
+      exact,
       onExpand,
-      isCollapsable = false,
+      isCollapsable,
       isMinimized,
       isExpanded,
       isActive,
@@ -147,7 +148,7 @@ SideNavigationItem.propTypes = {
    * A flag specifying whether the side navigation item is composed of multiple
    * entries and is collapsable/expandable
    */
-  isCollapsable: PropTypes.bool.isRequired,
+  isCollapsable: PropTypes.bool,
   /** A flag specifying whether the side navigation item is expanded */
   isExpanded: PropTypes.bool.isRequired,
   /** A flag specifying whether the side navigation item is minimized or not */
@@ -160,4 +161,10 @@ SideNavigationItem.propTypes = {
   title: PropTypes.message.isRequired,
 }
 
+SideNavigationItem.defaultProps = {
+  exact: true,
+  icon: undefined,
+  isCollapsable: false,
+  path: undefined,
+}
 export default SideNavigationItem
