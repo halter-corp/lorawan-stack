@@ -154,7 +154,7 @@ Select.defaultProps = {
   disabled: false,
   error: false,
   warning: false,
-  value: false,
+  value: undefined,
 }
 
 export default injectIntl(Select)

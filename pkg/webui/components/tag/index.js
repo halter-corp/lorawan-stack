@@ -26,7 +26,7 @@ const Tag = function(props) {
 
 Tag.propTypes = {
   className: PropTypes.string,
-  content: PropTypes.shape({}).isRequired,
+  content: PropTypes.string.isRequired,
 }
 
 Tag.defaultProps = {
