@@ -143,6 +143,23 @@ class Devices {
       delete requestTree.js
     }
 
+    if (!create) {
+      const { network_server_address, application_server_address } = await this._getDevice(
+        appId,
+        devId,
+        [['application_server_address'], ['network_server_address']],
+        false,
+      )
+
+      if (application_server_address !== this._stackConfig.as) {
+        delete requestTree.as
+      }
+
+      if (network_server_address !== this._stackConfig.ns) {
+        delete requestTree.ns
+      }
+    }
+
     // Retrieve necessary EUIs in case of a join server query being necessary
     if ('js' in requestTree) {
       if (!create && (!ids || !ids.join_eui || !ids.dev_eui)) {
