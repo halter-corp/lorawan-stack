@@ -151,13 +151,21 @@ class Devices {
         false,
       )
 
-      if (application_server_address !== this._stackConfig.as) {
-        delete requestTree.as
-      }
+      try {
+        const nsHost = new URL(this._stackConfig.ns).hostname
 
-      if (network_server_address !== this._stackConfig.ns) {
-        delete requestTree.ns
-      }
+        if (network_server_address !== nsHost) {
+          delete requestTree.as
+        }
+      } catch (e) {}
+
+      try {
+        const asHost = new URL(this._stackConfig.as).hostname
+
+        if (application_server_address !== asHost) {
+          delete requestTree.as
+        }
+      } catch (e) {}
     }
 
     // Retrieve necessary EUIs in case of a join server query being necessary
