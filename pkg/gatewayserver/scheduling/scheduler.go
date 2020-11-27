@@ -279,6 +279,7 @@ type Options struct {
 // If there are round-trip times available, the nth percentile (n = scheduleLateRTTPercentile) value will be used instead of ScheduleTimeShort.
 func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, error) {
 	defer trace.StartRegion(ctx, "schedule transmission").End()
+	logger := log.FromContext(ctx)
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -289,28 +290,37 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 		return Emission{}, errNoClockSync.New()
 	}
 	minScheduleTime := ScheduleTimeShort
-	var medianRTT *time.Duration
+	tripTimeToGateway := ScheduleTimeLong
 	if opts.RTTs != nil {
-		if _, _, median, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now()); n >= scheduleMinRTTCount {
+		min, max, medianRTT, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now())
+		if n >= scheduleMinRTTCount {
 			minScheduleTime = np/2 + QueueDelay
-			medianRTT = &median
+			tripTimeToGateway = medianRTT / 2
 		}
+		logger.WithFields(log.Fields(
+			"min", min,
+			"max", max,
+			"median_rtt", medianRTT,
+			"np", np,
+			"n", n,
+			"min_schedule_time", minScheduleTime,
+			"trip_time_to_gateway", tripTimeToGateway,
+		)).Info("RTT Stats")
+	} else {
+		logger.Info("Unknown RTT for gateway")
 	}
+
 	var starts ConcentratorTime
 	now, ok := s.clock.FromServerTime(s.timeSource.Now())
 	if opts.Time != nil {
 		var ok bool
 		starts, ok = s.clock.FromGatewayTime(*opts.Time)
 		if !ok {
-			if medianRTT != nil {
-				serverTime, ok := s.clock.FromServerTime(*opts.Time)
-				if !ok {
-					return Emission{}, errNoServerTime.New()
-				}
-				starts = serverTime - ConcentratorTime(*medianRTT/2)
-			} else {
-				return Emission{}, errNoAbsoluteGatewayTime.New()
+			serverTime, ok := s.clock.FromServerTime(*opts.Time)
+			if !ok {
+				return Emission{}, errNoServerTime.New()
 			}
+			starts = serverTime - ConcentratorTime(tripTimeToGateway)
 		}
 		// Assume that the absolute time is the time of arrival, not time of transmission.
 		toa, err := toa.Compute(opts.PayloadSize, opts.TxSettings)
