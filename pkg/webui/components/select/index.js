@@ -13,39 +13,56 @@
 // limitations under the License.
 
 import React from 'react'
-import ReactSelect from 'react-select'
+import ReactSelect, { components } from 'react-select'
 import { injectIntl } from 'react-intl'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import PropTypes from '../../lib/prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './select.styl'
+
+const Input = props => {
+  const { selectProps } = props
+
+  return <components.Input {...props} aria-describedby={selectProps['aria-describedby']} />
+}
+
+Input.propTypes = {
+  selectProps: PropTypes.shape({
+    'aria-describedby': PropTypes.string,
+  }).isRequired,
+}
 
 // Map value to a plain string, instead of value object.
 // See: https://github.com/JedWatson/react-select/issues/2841
 const getValue = (opts, val) => opts.find(o => o.value === val)
 
-@bind
 class Select extends React.PureComponent {
   static propTypes = {
-    onChange: PropTypes.func,
-    onBlur: PropTypes.func,
-    onFocus: PropTypes.func,
-    value: PropTypes.string,
+    className: PropTypes.string,
     disabled: PropTypes.bool,
+    error: PropTypes.bool,
+    id: PropTypes.string,
+    intl: PropTypes.shape({
+      formatMessage: PropTypes.func,
+    }).isRequired,
+    name: PropTypes.string.isRequired,
+    onBlur: PropTypes.func,
+    onChange: PropTypes.func,
+    onFocus: PropTypes.func,
     options: PropTypes.arrayOf(
       PropTypes.shape({
         value: PropTypes.string,
         label: PropTypes.message,
       }),
     ),
-    error: PropTypes.bool,
+    value: PropTypes.string,
     warning: PropTypes.bool,
-    name: PropTypes.string.isRequired,
   }
 
   static defaultProps = {
+    className: undefined,
     onChange: () => null,
     onBlur: () => null,
     onFocus: () => null,
@@ -53,6 +70,8 @@ class Select extends React.PureComponent {
     disabled: false,
     error: false,
     warning: false,
+    value: undefined,
+    id: undefined,
   }
 
   constructor(props) {
@@ -78,6 +97,7 @@ class Select extends React.PureComponent {
     return null
   }
 
+  @bind
   async onChange({ value }) {
     const { onChange } = this.props
 
@@ -88,12 +108,13 @@ class Select extends React.PureComponent {
     onChange(value)
   }
 
+  @bind
   onBlur(event) {
     const { value } = this.state
     const { onBlur, name } = this.props
 
     // https://github.com/JedWatson/react-select/issues/3523
-    // make sure the input name is always present in the event object
+    // Make sure the input name is always present in the event object.
     event.target.name = name
 
     if (typeof value !== 'undefined') {
@@ -117,6 +138,7 @@ class Select extends React.PureComponent {
       error,
       warning,
       name,
+      id,
       ...rest
     } = this.props
 
@@ -137,6 +159,7 @@ class Select extends React.PureComponent {
     return (
       <ReactSelect
         className={cls}
+        inputId={id}
         classNamePrefix="select"
         value={getValue(translatedOptions, value)}
         options={translatedOptions}
@@ -145,6 +168,8 @@ class Select extends React.PureComponent {
         onFocus={onFocus}
         isDisabled={disabled}
         name={name}
+        components={{ Input }}
+        aria-describedby={rest['aria-describedby']}
         {...rest}
       />
     )

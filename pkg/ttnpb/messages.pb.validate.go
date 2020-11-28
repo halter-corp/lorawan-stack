@@ -78,13 +78,6 @@ func (m *UplinkMessage) ValidateFields(paths ...string) error {
 
 		case "rx_metadata":
 
-			if len(m.GetRxMetadata()) < 1 {
-				return UplinkMessageValidationError{
-					field:  "rx_metadata",
-					reason: "value must contain at least 1 item(s)",
-				}
-			}
-
 			for idx, item := range m.GetRxMetadata() {
 				_, _ = idx, item
 
@@ -132,6 +125,18 @@ func (m *UplinkMessage) ValidateFields(paths ...string) error {
 				return UplinkMessageValidationError{
 					field:  "device_channel_index",
 					reason: "value must be less than or equal to 255",
+				}
+			}
+
+		case "consumed_airtime":
+
+			if v, ok := interface{}(m.GetConsumedAirtime()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UplinkMessageValidationError{
+						field:  "consumed_airtime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
 				}
 			}
 
@@ -469,6 +474,108 @@ var _ interface {
 	ErrorName() string
 } = TxAcknowledgmentValidationError{}
 
+// ValidateFields checks the field values on GatewayUplinkMessage with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GatewayUplinkMessage) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = GatewayUplinkMessageFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "message":
+
+			if m.UplinkMessage == nil {
+				return GatewayUplinkMessageValidationError{
+					field:  "message",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.UplinkMessage).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GatewayUplinkMessageValidationError{
+						field:  "message",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "band_id":
+			// no validation rules for BandID
+		default:
+			return GatewayUplinkMessageValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// GatewayUplinkMessageValidationError is the validation error returned by
+// GatewayUplinkMessage.ValidateFields if the designated constraints aren't met.
+type GatewayUplinkMessageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GatewayUplinkMessageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GatewayUplinkMessageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GatewayUplinkMessageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GatewayUplinkMessageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GatewayUplinkMessageValidationError) ErrorName() string {
+	return "GatewayUplinkMessageValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GatewayUplinkMessageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGatewayUplinkMessage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GatewayUplinkMessageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GatewayUplinkMessageValidationError{}
+
 // ValidateFields checks the field values on ApplicationUplink with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -525,6 +632,8 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "decoded_payload_warnings":
+
 		case "rx_metadata":
 
 			if len(m.GetRxMetadata()) < 1 {
@@ -571,6 +680,53 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 						cause:  err,
 					}
 				}
+			}
+
+		case "app_s_key":
+
+			if v, ok := interface{}(m.GetAppSKey()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationUplinkValidationError{
+						field:  "app_s_key",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "last_a_f_cnt_down":
+			// no validation rules for LastAFCntDown
+		case "confirmed":
+			// no validation rules for Confirmed
+		case "consumed_airtime":
+
+			if v, ok := interface{}(m.GetConsumedAirtime()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationUplinkValidationError{
+						field:  "consumed_airtime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "locations":
+
+			for key, val := range m.GetLocations() {
+				_ = val
+
+				// no validation rules for Locations[key]
+
+				if v, ok := interface{}(val).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return ApplicationUplinkValidationError{
+							field:  fmt.Sprintf("locations[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
 			}
 
 		default:
@@ -950,6 +1106,8 @@ func (m *ApplicationDownlink) ValidateFields(paths ...string) error {
 					}
 				}
 			}
+
+		case "decoded_payload_warnings":
 
 		case "confirmed":
 			// no validation rules for Confirmed
@@ -1370,6 +1528,101 @@ var _ interface {
 	ErrorName() string
 } = ApplicationInvalidatedDownlinksValidationError{}
 
+// ValidateFields checks the field values on ApplicationServiceData with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *ApplicationServiceData) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = ApplicationServiceDataFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "service":
+			// no validation rules for Service
+		case "data":
+
+			if v, ok := interface{}(m.GetData()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationServiceDataValidationError{
+						field:  "data",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return ApplicationServiceDataValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// ApplicationServiceDataValidationError is the validation error returned by
+// ApplicationServiceData.ValidateFields if the designated constraints aren't met.
+type ApplicationServiceDataValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ApplicationServiceDataValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ApplicationServiceDataValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ApplicationServiceDataValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ApplicationServiceDataValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ApplicationServiceDataValidationError) ErrorName() string {
+	return "ApplicationServiceDataValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ApplicationServiceDataValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sApplicationServiceData.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ApplicationServiceDataValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ApplicationServiceDataValidationError{}
+
 // ValidateFields checks the field values on ApplicationUp with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -1423,6 +1676,8 @@ func (m *ApplicationUp) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "simulated":
+			// no validation rules for Simulated
 		case "up":
 			if m.Up == nil {
 				return ApplicationUpValidationError{
@@ -1432,7 +1687,7 @@ func (m *ApplicationUp) ValidateFields(paths ...string) error {
 			}
 			if len(subs) == 0 {
 				subs = []string{
-					"uplink_message", "join_accept", "downlink_ack", "downlink_nack", "downlink_sent", "downlink_failed", "downlink_queued", "downlink_queue_invalidated", "location_solved",
+					"uplink_message", "join_accept", "downlink_ack", "downlink_nack", "downlink_sent", "downlink_failed", "downlink_queued", "downlink_queue_invalidated", "location_solved", "service_data",
 				}
 			}
 			for name, subs := range _processPaths(subs) {
@@ -1576,6 +1831,22 @@ func (m *ApplicationUp) ValidateFields(paths ...string) error {
 						if err := v.ValidateFields(subs...); err != nil {
 							return ApplicationUpValidationError{
 								field:  "location_solved",
+								reason: "embedded message failed validation",
+								cause:  err,
+							}
+						}
+					}
+
+				case "service_data":
+					w, ok := m.Up.(*ApplicationUp_ServiceData)
+					if !ok || w == nil {
+						continue
+					}
+
+					if v, ok := interface{}(m.GetServiceData()).(interface{ ValidateFields(...string) error }); ok {
+						if err := v.ValidateFields(subs...); err != nil {
+							return ApplicationUpValidationError{
+								field:  "service_data",
 								reason: "embedded message failed validation",
 								cause:  err,
 							}
@@ -1780,6 +2051,13 @@ func (m *DownlinkQueueRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "downlinks":
+
+			if len(m.GetDownlinks()) > 100000 {
+				return DownlinkQueueRequestValidationError{
+					field:  "downlinks",
+					reason: "value must contain no more than 100000 item(s)",
+				}
+			}
 
 			for idx, item := range m.GetDownlinks() {
 				_, _ = idx, item

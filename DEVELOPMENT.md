@@ -4,7 +4,7 @@ The Things Stack components are primarily built in Go, we use React for web fron
 
 ## Development Environment
 
-The Things Network's development tooling uses [Mage](https://magefile.org/). Under the hood, `mage` calls other tools such as `git`, `go`, `yarn`, `docker` etc. Recent versions are supported; Node v12.x and Go v1.13.x.
+The Things Network's development tooling uses [Mage](https://magefile.org/). Under the hood, `mage` calls other tools such as `git`, `go`, `yarn`, `docker` etc. Recent versions are supported; Node v12.x and Go v1.14x.
 
 - Follow [Go's installation guide](https://golang.org/doc/install) to install Go.
 - Download Node.js [from their website](https://nodejs.org) and install it.
@@ -25,40 +25,131 @@ $ make init
 
 You may want to run this commands from time to time.
 
-Now you can initialize the development databases with some defaults.
+## Running a development build of The Things Stack
 
->Note: this requires Docker to be running.
+This section explains how to get a bare-bones version of The Things Stack running on your local machine. This will build whatever code is present in your local repository (along with local changes) and run in it using the default ports.
 
-```bash
-$ make dev.stack.init
+If you want to just run a docker image of The Things Stack, then check the [Installation](https://thethingsstack.io/getting-started/installation/) section of the documentation.
+
+### Pre-requisites
+
+1. This section requires that the required tools from [Development Environment](##Development-Environment) are installed.
+2. This repository must be cloned inside the `GOPATH`. Check the [official documentation](https://golang.org/doc/gopath_code.html) on working with `GOPATH`.
+3. Make sure that you've run `$ make init` before continuing.
+4. If this is not the first time running the stack, make sure to clear any environment variables that you've been using earlier. You can do check what variables are set currently by using
+
+```
+$ printenv | grep "TTN_LW_*"
 ```
 
-This starts a CockroachDB and Redis database in Docker containers, creates a database, migrates tables and creates a user `admin` with password `admin`.
+### Steps
+
+1. Build the frontend assets
+
+```bash
+$ tools/bin/mage js:build
+```
+
+This will build the frontend assets and place it in the `public` folder.
+
+2. Start the databases
+
+```bash
+$ tools/bin/mage dev:dbStart # This requires Docker to be running.
+```
+
+This will start one instance each of `CockroachDB` and `Redis` as Docker containers. To verify this, you can run
+
+```bash
+$ docker ps
+```
+
+3. Initialize the database with defaults.
+
+```bash
+$ tools/bin/mage dev:initStack
+```
+
+This creates a database, migrates tables and creates a user `admin` with password `admin`.
+
+4. Start an development instance of The Things Stack
+
+```bash
+$ go run ./cmd/ttn-lw-stack -c ./config/stack/ttn-lw-stack.yml start
+```
+
+5. Login to The Things Stack via the Console
+
+In a web browser, navigate to `http://localhost:1885/` and login using credentials from step 3.
+
+6. Customizing configuration
+
+To customize the configuration, copy the configuration file `/config/stack/ttn-lw-stack.yml` to a different location (ex: the `.env` folder in your repo). The configuration is documented in the [Configuration Reference](https://thethingsstack.io/reference/configuration/).
+
+You can now use the modified configuration with
+
+```bash
+$ go run ./cmd/ttn-lw-stack -c <custom-location>/ttn-lw-stack.yml start
+```
+
+## Using the CLI with the Development Environment
+
+In order to login, you will need to use the correct OAuth Server Address. `make init` uses CFSSL to generate a `ca.pem` CA certificate to support https:
+
+```bash
+$ export TTN_LW_CA=./ca.pem
+$ export TTN_LW_OAUTH_SERVER_ADDRESS=https://localhost:8885/oauth
+$ go run ./cmd/ttn-lw-cli login
+```
 
 ## Managing the Development Databases
 
 You can use the following commands to start, stop and erase databases.
 
 ```bash
-$ make dev.databases.start # Starts all databases in a Docker container
-$ make dev.databases.stop  # Stops all databases
+$ tools/bin/mage dev:dbStart # Starts all databases in a Docker container.
+$ tools/bin/mage dev:dbStop  # Stops all databases.
 
-# The contents of the databases will be saved in .dev/data.
+# The contents of the databases will be saved in .env/data
 
-$ make dev.databases.erase # Stop all databases and erase storage.
+$ tools/bin/mage dev:dbErase # Stops all databases and erase storage.
 ```
 
 ### CockroachDB
 
 CockroachDB is a distributed SQL database that we use in the Identity Server.
 
-You can use `make dev.databases.sql` to enter an SQL shell.
+You can use `tools/bin/mage dev:dbSQL` to enter an SQL shell.
 
 ### Redis
 
 Redis is an in-memory data store that we use as a database for "hot" data.
 
-You can use `make dev.databases.redis-cli` to enter a Redis-CLI shell.
+You can use `tools/bin/mage dev:dbRedisCli` to enter a Redis-CLI shell.
+
+## Building the Frontend
+
+You can use `tools/bin/mage js:build` to build the frontend.
+
+## Starting The Things Stack
+
+You can use `go run ./cmd/ttn-lw-stack start` to start The Things Stack.
+
+#### Codec
+
+Most data is stored as base64-encoded protocol buffers. For debugging purposes it is often useful to inspect or update the stored database models - you can use Redis codec tool located at `./pkg/redis/codec` to decode/encode them to/from JSON.
+
+##### Example
+
+###### Get and decode
+```
+redis-cli get "ttn:v3:ns:devices:uid:test-app:test-dev" | go run ./pkg/redis/codec -type 'ttnpb.EndDevice'
+```
+
+###### Get, decode, modify, encode and set
+```
+redis-cli get "ttn:v3:ns:devices:uid:test-app.test-dev" | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' | jq '.supports_join = false' | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' -encode | redis-cli -x set "ttn:v3:ns:devices:uid:test-app.test-dev"
+```
 
 ## Project Structure
 
@@ -74,7 +165,7 @@ The folder structure of the project looks as follows:
 ├── Dockerfile          formula for building Docker images
 ├── LICENSE             the license that explains what you're allowed to do with this code
 ├── Makefile            dev/test/build tooling
-├── .mage               dev/test/build tooling
+├── tools               dev/test/build tooling
 ├── README.md           general information about this project
 │   ...
 ├── api                 contains the protocol buffer definitions for our API
@@ -110,24 +201,12 @@ Our APIs are defined in `.proto` files in the `api` folder. These files describe
 From the `.proto` files, we generate code using the `protoc` compiler. As we plan to compile to a number of different languages, we decided to put the compiler and its dependencies in a [Docker image](https://github.com/TheThingsIndustries/docker-protobuf). The actual commands for compilation are handled by our tooling, so the only thing you have to execute when updating the API, is:
 
 ```bash
-$ ./mage proto:clean proto:all jsSDK:definitions
+$ tools/bin/mage proto:clean proto:all jsSDK:definitions
 ```
 
 ### Documentation
 
-The documentation site for The Things Stack is built from the `doc` folder. 
-All content is stored as Markdown files in `doc/content`.
-
-In order to build the documentation site with the right theme, you need to run
-`./mage docs:deps` from time to time. 
-
-You can start a development server with live reloading by running
-`./mage docs:server`. This command will print the address of the server.
-
-The documentation site can be built by running `./mage docs:build`. This will 
-output the site to `docs/public`.
-
-For more details on how our documentation site is written, see the [Hugo docs](https://gohugo.io/documentation/).
+The documentation site for The Things Stack is built from the [`lorawan-stack-docs`(https://github.com/TheThingsIndustries/lorawan-stack-docs) repository.
 
 ### Web UI
 
@@ -155,18 +234,19 @@ The folder structure of the frontend looks as follows:
 ├── styles            global stylus (~css) styles and mixins
 ├── console.js        entry point of the console app
 ├── oauth.js          entry point of the oauth app
-├── manifest.go       generated manifest of the frontend, containing file hashes
 ├── template.go       go template module used to render the frontend HTML
 ```
 
-For development purposes, the frontend can be run using `webpack-dev-server`. After following the [Getting Started](#getting-started) section to initialize The Things Stack and doing an initial build of the frontend via `mage js:build`, it can be served using:
+For development purposes, the frontend can be run using `webpack-dev-server`. After following the [Getting Started](#getting-started) section to initialize The Things Stack and doing an initial build of the frontend via `tools/bin/mage js:build`, it can be served using:
 
 ```bash
 $ export NODE_ENV=development
-$ mage js:serve
+$ tools/bin/mage js:serve
 ```
 
 The development server runs on `http://localhost:8080` and will proxy all api calls to port `1885`. The serve command watches any changes inside `pkg/webui` and refreshes automatically.
+
+#### Development Configuration
 
 In order to set up The Things Stack to support running the frontend via `webpack-dev-server`, the following environment setup is needed:
 
@@ -177,11 +257,31 @@ TTN_LW_IS_OAUTH_UI_JS_FILE="libs.bundle.js oauth.js"
 TTN_LW_CONSOLE_UI_JS_FILE="libs.bundle.js console.js"
 TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
 TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="http://localhost:8080/oauth/authorize"
+TTN_LW_CONSOLE_OAUTH_LOGOUT_URL="http://localhost:8080/oauth/logout"
 TTN_LW_CONSOLE_OAUTH_TOKEN_URL="http://localhost:8080/oauth/token"
 TTN_LW_IS_OAUTH_UI_CANONICAL_URL="http://localhost:8080/oauth"
 TTN_LW_IS_EMAIL_NETWORK_IDENTITY_SERVER_URL="http://localhost:8080/oauth.js"
 TTN_LW_CONSOLE_UI_ASSETS_BASE_URL="http://localhost:8080/assets"
 ```
+
+#### Optional Configuration
+
+##### Disable [Hot Module Replacement](https://webpack.js.org/concepts/hot-module-replacement/)
+
+> Note: Webpack-related configuration can be loaded from environment variables only. It cannot be sourced from a config file.
+
+```bash
+WEBPACK_DEV_SERVER_DISABLE_HMR="true"
+```
+
+##### Enable TLS in `webpack-dev-server`
+
+```bash
+WEBPACK_DEV_SERVER_USE_TLS="true"
+```
+This option uses the key and certificate set via `TTN_LW_TLS_KEY` and `TTN_LW_TLS_CERTIFICATE` environment variables. Useful when developing functionalities that rely on TLS.
+
+> Note: To use this option, The Things Stack for LoRaWAN must be properly setup for TLS. You can obtain more information about this in the **Getting Started** section of the The Things Stack for LoRaWAN documentation.
 
 ## Code Style
 
@@ -215,11 +315,14 @@ We use [`revive`](http://github.com/mgechev/revive) to lint Go code and [`eslint
 
 ### Documentation Site
 
-Please respect the following guidelines for content in our documentation site:
+Please respect the following guidelines for content in our documentation site. A copy and paste template for creating new documentation can be found [here](doc/content/example-template).
 
+- Use the `{{< new-in-version "3.8.5" >}}` shortcode to tag documentation for features added in a particular version. For documentation that targets `v3.n`, that's the next patch bump, e.g `3.8.x`. For documentation targeting `v3.n+1` that's the next minor bump, e.g `3.9.0`.
 - The title of a doc page is already rendered by the build system as a h1, don't add an extra one.
 - Use title case for headings.
 - A documentation page starts with an introduction, and then the first heading. The first paragraph of the introduction is typically a summary of the page. Use a `<!--more-->` to indicate where the summary ends.
+- Divide long documents into separate files, each with its own folder and `_index.md`.
+- Use the `weight`tag in the [Front Matter](https://gohugo.io/content-management/front-matter/) to manually sort sections if necessary. If not, they will be sorted alphabetically.
 - Since the title is a `h1`, everything in the content is at least `h2` (`##`).
 - Paragraphs typically consist of at least two sentences.
 - Use an empty line between all blocks (headings, paragraphs, lists, ...).
@@ -232,7 +335,8 @@ Please respect the following guidelines for content in our documentation site:
 - Taking screenshots is done as follows:
   - In Chrome: activate the **Developer Tools** and toggle the **Device Toolbar**. In the **Device Toolbar**, select **Laptop with HiDPI screen** (add it if not already there), and click **Capture Screenshot** in the menu on the right.
   - In Firefox: enter **Responsive Design Mode**. In the **Device Toolbar**, select "Laptop with HiDPI screen" (add it if not already there) and **Take a screenshot of the viewport**.
-- Use `**Strong**` when referring to buttons in the Console
+- Use `**Strong**` when referring to buttons in the Console.
+- Use `>Note:`to add a note.
 - Use fenced code blocks with a language:
   - `bash` for lists of environment variables: `SOME_ENV="value"`.
   - `bash` for CLI examples. Prefix commands with `$ `. Wrap strings with double quotes `""` (except when working with JSON, which already uses double quotes).
@@ -274,11 +378,11 @@ We follow the [official go guidelines](https://github.com/golang/go/wiki/CodeRev
 | :------------------: | :-----: | :-----------------------------------------------------------: |
 | context              | ctx     | context.Context                                               |
 | mutex                | mu      | sync.Mutex                                                    |
-| configuration        | conf    | go.thethings.network/lorawan-stack/pkg/config.Config          |
-| logger               | logger  | go.thethings.network/lorawan-stack/pkg/log.Logger             |
-| message              | msg     | go.thethings.network/lorawan-stack/api/gateway.UplinkMessage  |
-| status               | st      | go.thethings.network/lorawan-stack/api/gateway.Status         |
-| server               | srv     | go.thethings.network/lorawan-stack/pkg/network-server.Server  |
+| configuration        | conf    | go.thethings.network/lorawan-stack/v3/pkg/config.Config       |
+| logger               | logger  | go.thethings.network/lorawan-stack/v3/pkg/log.Logger          |
+| message              | msg     | go.thethings.network/lorawan-stack/v3/api/gateway.UplinkMessage  |
+| status               | st      | go.thethings.network/lorawan-stack/v3/api/gateway.Status         |
+| server               | srv     | go.thethings.network/lorawan-stack/v3/pkg/networkserver.Server|
 | ID                   | id      | string                                                        |
 | unique ID            | uid     | string                                                        |
 | counter              | cnt     | int                                                           |
@@ -324,7 +428,7 @@ meaning is obvious from the context.
 
 ### Event Naming
 
-Events are defined with 
+Events are defined with
 
 ```go
 events.Define("event_name", "event description")
@@ -378,6 +482,184 @@ Comments can also be used to indicate steps to take in the future (*TODOs*). Suc
 
 In our API definitions (`.proto` files) we'd like to see short comments on every service, method, message and field. Code that is generated from these files does not have to comply with guidelines (such as Go's guideline for starting the comment with the name of the thing that is commented on).
 
+## JavaScript Code Style
+
+For our frontend development, we use a syntax based on ES6 with a couple of extensions from later standards. The code is transpiled via [`webpack`](https://webpack.js.org/) using [`babel`](https://babeljs.io/) to be interpreted by the browser or Node.JS.
+
+### Code Formatting
+
+We use [`prettier`](https://prettier.io/) and [`eslint`](https://eslint.org/) to conform our code to our guidelines as far as possible. Committed code that violates these rules will cause a CI failure. For your convenience, it is hence recommended to set up your development environment to apply autoformatting on every save. We usually don't enforce any formatting or styles that go beyond of what we can ensure using our linting setup. You can check the respective configuration in `/config/eslintrc.yaml`, `/config/.prettierrc.yaml` as well as the global `.editorconfig`.
+
+To run the linter, you can use `mage js:lint` and to format all JavaScript files, you can run `mage js:fmt`.
+
+### Code Comments
+
+Additionally to the overall code comment rules outlined above, we use [JSDoc](https://jsdoc.app)-conform documentation of classes and functions. We also use full English sentences and ending sentence periods here.
+
+Please make sure that these multi-line comments follow the correct format, especially leaving the first line of this multiline JSDoc comments empty:
+
+```js
+// Bad.
+
+/** Converts a byte string from hex to base64.
+ * @param {string} bytes - The bytes, represented as hex string.
+ * @returns {string} The bytes, represented as base64 string.
+ */
+
+// Good.
+
+/**
+ * Converts a byte string from hex to base64.
+ * @param {string} bytes - The bytes, represented as hex string.
+ * @returns {string} The bytes, represented as base64 string.
+ */
+```
+
+It also makes sense to wrap code bits, variable names and URLs in \`\`  quotes, so they can easily be recognized and do not clash with our capitalization rules enforced by eslint, when they are at the beginning of a sentence:
+
+```js
+// Bad. This will get flagged by the linter.
+
+// devAddr is a hex string.
+const devAddr = '270000FF'
+
+// Good.
+
+// `devAddr` is a hex string.
+const devAddr = '270000FF'
+```
+
+### Import Statement Order
+
+Our `import` statements use the following order, each separated by empty newlines:
+
+1. Node "builtin" modules (e.g. `path`)
+2. External modules (e.g. `react`)
+3. Internal modules (e.g. `@ttn-lw/*`, `@console`, etc.)
+  1. Constants
+  2. API module
+  3. Components
+    1. Global presentational components (`@ttn-lw/components/*`)
+    2. Global container components (`@ttn-lw/containers/*`)
+    3. Global utility components (`@ttn-lw/lib/components/*`)
+    4. Local presentational components (`@{console|oauth}/components/*`)
+    5. Local container components (`@{console|oauth}/containers/*`)
+    6. Local utility components (`@{console|oauth}/lib/components/*`)
+    7. View components (`@{console|oauth}/views/*`)
+  4. Utilities
+    1. Global utilities (`@ttn-lw/lib/*`)
+    2. Local utilities (`@{console|oauth}/lib/*`)
+  5. Store modules
+    1. Actions
+    2. Reducers
+    3. Selectors
+    4. Middleware and logics
+  6. Assets and styles
+4. Parent modules (e.g. `../../../module`)
+5. Sibling modules (e.g. `./validation-schema`, `./button.styl`)
+6. Index of the current directory (`.`)
+
+Note that this order is enforced by our linter and will cause a CI fail when not respected. Again, settting up your development environment to integrate linting will assist you greatly here.
+
+### React Component Syntax (Functional, Class Components and Hooks)
+
+Lately, we have been embracing [react hooks](https://reactjs.org/docs/hooks-overview.html) and write all new components using this approach. However, there are a lot of class components from the time before react hooks which we will try to refactor successively.
+
+#### A note on decorators and HOCs
+
+Decorators provided an easy syntax to wrap Classes around functions and we have used this syntax extensively during early stages of development. We now consider decorators and HOCs as hindrance with regards to our aim to adopt hooks. As a result, we refrain from introducing new higher order components and implement hooks instead. This will help us avoiding decorators as well as literal (concatenated) wrappers for function components.
+
+### React Component Types
+
+We differentiate four different component scopes:
+- Presentational Components (global and application level)
+- Container Components (global and application level)
+- View Components
+- Utility Components (global and application level)
+
+The differentiation is not always 100% clear and we tend not to be too dogmatic about it. Additionally, the introduction of react hooks tends too break up these traditional categorizations even more and might necessitate a review of these in the near future.
+
+Generally we understand these component types as follows:
+
+#### Presentational Components
+
+These are UI elements that primarily serve a presentational purpose. They implement the basic visual interface elements of the application, focusing on interaction and plain UI logic. They never connect to the store or perform any data fetching or have any other side effects and render rich DOM trees which are also styled according to our design guidelines.
+
+Examples for presentational components are simple UI elements such as buttons, input elements, navigations, breadcrumbs. They can also combine and extend functionality of other presentational components by composition to achieve more complex elements, such as forms. We also regard our application specific forms as such components, as long as they don't connect to the store or perform the data fetching themselves.
+
+To decide whether a component is a presentational component, ask yourself:
+- Is this component more concerned with how things look, rather than how things work?
+- Does this component use no state or only UI state?
+- Does this component not fetch or send data?
+- Does this component render a lot of (nested and styled) DOM nodes?
+
+If you answered more than 2 questions with yes, then you likely have a presentational component.
+
+Presentational components should **always** define storybook stories, to provide usage information for other developers.
+
+#### Container Components
+
+Container components focus more on state logic, data fetching, store management and similar concerns. They usually perform business logic and eventually render results using presentational components.
+
+An example for a container components are our table components, that manage the fetching and preparation of the respective entity and render the result using our `<Table />` component.
+
+To decide whether a component is a container component, ask yourself:
+- Is this component more concerned with how things work, rather than how things look?
+- Does this component connect to the store?
+- Does this component fetch or send data?
+- Is the component generated by higher order components (e.g. `withFeatureRequirement`)?
+- Does this component render simple nodes, like a single presentational component?
+
+If you can answer more than 2 questions with yes, then you likely have a container component.
+
+#### View components
+
+View components always represent a single view of the application, represented by a single route. They structurize the overall appearance of the page, obtain global state information, fetch necessary data and pass it down (implicitly via the store or explicitly as props) mostly to container components, but also to presentational components. Usually, these components also define submit and error handlers of the forms that they render. Otherwise, these components should not employ excessive (stateful) logic which should rather be handled by container components. It should focus on globally structurizing the page using the grid system and respective containers.
+
+##### View component checklist
+
+- Conciseness and no stateful logic (use containers instead)
+- Uses `<PageTitle />` component to define heading and page title
+- Uses breadcrumbs (if within breadcrumb view)
+- Fetching necessary data (via `withRequest` HOC), if not done by a container
+- Unavailable "catch-all"-routes are caught by `<NotFoundRoute />` component, including subviews
+- Errors should be caught by the `<ErrorView />` error boundary component
+- `withFeatureRequirement` HOC is used to prevent access to routes that the user has no rights for
+- Ensured responsiveness and usage of the grid system
+
+#### Utility components
+
+These components do not render any DOM elements and are hence not *visible* by themselves. Utility components can be higher order components or similar components, that modify their children or introduce a side effect to the render tree.
+
+To decide whether a component is a utility component ask yourself:
+- Is this component a higher order component?
+- Is this component invisible on its own?
+- Is this component an abstraction layer on top of another component?
+
+If you can answer at least one of those questions with yes, then you likely have a container component.
+
+#### Global or Application Scope?
+
+Components can be categorized as either local (e.g. `pkg/webui/{console|oauth}/{components|containers}`) or global (e.g. `pkg/webui/{components|containers}`). The distinction should come naturally: Global components are ones that can be used universally in every application. Local components are tied to a specific use case inside the respective application.
+
+Sometimes, you might find that during implementing an application specific component that it can actually be generalized without much refactoring and hence be a useful addition to our global component library.
+
+### Frontend Related Pull Requests
+
+Pull requests for frontend related changes generally follow our overall pull request scheme. However, in order to assist reviewers, a browser screenshot of the changes is included in the PR comment, if applicable.
+
+It might help you to employ the following checklist before opening the pull request:
+
+* [ ] All visible text is using [i18n messages](#frontend-translations)?
+* [ ] Assets minified or compressed if possible (e.g. SVG assets)?
+* [ ] Screenshot in PR description?
+* [ ] Responsiveness checked?
+* [ ] New components [categorized correctly](#global-or-application-scope) (global/local, container/component)?
+* [ ] Feature flags added (if applicable)?
+* [ ] All views use  `<PageTitle />` or `<IntlHelmet />` properly?
+* [ ] Storybook story added / updated?
+* [ ] Prop types / default props added?
+
 ## Translations
 
 We do our best to make all text that could be visible to users available for translation. This means that all text of the console's user interface, as well as all text that it may forward from the backend, needs to be defined in such a way that it can be translated into other languages than English.
@@ -389,7 +671,7 @@ In the API, the enum descriptions, error messages and event descriptions availab
 These messages are then collected in the `config/messages.json` file, which will be processed in the frontend build process, but may also be used by other (native) user interfaces. When you define new enums, errors or events or when you change them, the messages need to be updated into the `config/messages.json` file.
 
 ```bash
-$ ./mage go:messages
+$ tools/bin/mage go:messages
 ```
 
 If you forget to do so, this will cause a CI failure.
@@ -409,18 +691,320 @@ The workflow for defining messages is as follows:
 After adding messages this way, it needs to be added the locales file `pkg/webui/locales/*.js` by using:
 
 ```bash
-$ mage js:translations
+$ tools/bin/mage js:translations
 ```
 
-> Note: When using `mage js:serve`, this command will be run automatically after any change.
+> Note: When using `tools/bin/mage js:serve`, this command will be run automatically after any change.
 
 The message definitions in `pkg/webui/locales` can be used to provide translations in other languages (e.g. `fr.js`). Keep in mind that locale files are checked in and committed, any discrepancy in the locales file with the defined messages will lead to a CI failure.
 
-## Testing
+## Events
+
+In addition to the previously described translation file that we generate, we also generate a data file that contains all event definitions. This file is then loaded by the documentation system so that we can generate documentation for our events.
+
+After adding or changing events, regenerate this file with:
 
 ```bash
-$ ./mage go:test js:test jsSDK:test
+$ tools/bin/mage go:eventData
 ```
+
+## Testing
+
+### Unit Tests
+
+To run unit tests, use the following mage targets:
+
+```bash
+$ tools/bin/mage go:test js:test jsSDK:test
+```
+
+### End-to-end Tests
+
+We use [Cypress](https://cypress.io) for running frontend-based end-to-end tests. The tests specifications are located at `/cypress/integration`.
+
+#### Running frontend end-to-end tests locally
+
+Make sure to [build the frontend assets](#building-the-frontend), [start The Things Stack](#starting-the-things-stack) and run `tools/bin/mage dev:sqlDump` to save database dump before executing end-to-end tests.
+
+`Cypress` provides two modes for running tests: headless and interactive.
+- Headless mode - will not display any browser GUI and output test progress into your terminal instead. This is helpful when one just needs see the results of the tests.
+- Interactive mode - will run an `Electron` based application together with the full-fledged browser. This is helpful when developig frontend applications as it provides hot reload, time travelling, browser extensions and DOM access.
+
+> Note: Currently, we test our frontend only in Chromium based browsers.
+
+You can run `Cypress` in the headless mode by running the following command:
+
+```bash
+$ tools/bin/mage js:cypressHeadless
+```
+
+You can run `Cypress` in the interactive mode by running the following command:
+
+```bash
+$ tools/bin/mage js:cypressInteractive
+```
+
+#### Code coverage
+
+Code coverage can be used to verify that tests invoke code for handling edge cases.
+To generate code coverage report run:
+
+- Global text summary.
+
+```bash
+$ npx nyc report --reporter=text-summary
+```
+
+- Per file text.
+
+```bash
+$ npx nyc report --reporter=text
+```
+
+- Per file with UI. This command will generate `index.html` file in the `coverage/cypress` folder.
+
+```bash
+$ npx nyc report --reporter=html
+```
+
+#### JavaScript based tests
+
+We find the [JS Unit Testing Guide](https://github.com/mawrkus/js-unit-testing-guide) a good starting point for informing our testing guidelines and we recommend reading through this guide. Note, that we employ some different approaches regarding [Grammar and Capitalization](#Grammar-and-capitalization).
+
+We have extracted and adapted the most important parts below.
+
+##### Pattern
+
+The goal of naming our tests is to have a concise and streamlined description helping us to understand what a test is testing specifically. In order to do that, we follow a **"unit of work - scenario/context - expected behaviour"** pattern:
+```js
+// Schema.
+describe('[unit of work]', () => {
+  it('[expected behaviour] when [scenario/context]', () => {
+    …
+  });
+});
+
+// Example.
+describe('Login', () => {
+  it('succeeds when using correct credentials', () => {
+    …
+  });
+});
+```
+
+This pattern will also help you organizing your tests better.
+
+##### Grammar and Capitalization
+
+Avoid using the modal verb `should` when describing tests. This will add redundancy and unnecessary verbosity to the test description. Instead, use a simple present tense sentence without any modality and with `when` as conjunction. Don't use end of sentence periods.
+
+The `[unit of work]` bit, as part of the outermost `describe()` function is always capitalized, whereas the `[expected behavior]` part of the `it()` function is always lowercase. This way, the suit will generate proper english sentences when concatenating the test descriptions.
+
+```js
+// Bad: using `should`.
+describe('Login', () => {
+  it('should succeed when using correct credentials', () => {
+    …
+  });
+});
+
+// Bad: wrong capitalization.
+describe('login', () => {
+  it('Succeeds when using correct credentials', () => {
+    …
+  });
+});
+
+// Good: No should and proper capitalization.
+describe('Login', () => {
+  it('succeeds when using correct credentials', () => {
+    …
+  });
+});
+
+```
+
+##### React Components
+
+When testing react components, the name of the component is written as `<ReactComponent />`.
+
+```js
+// Bad: not using JSX syntax.
+describe('MyComponent', () => {
+  it('matches snapshot', () => {
+    …
+  });
+});
+
+// Bad: describing the component instead of naming it.
+describe('My component', () => {
+  it('matches snapshot', () => {
+    …
+  });
+});
+
+// Good
+describe('<MyComponent />', () => {
+  it('matches snapshot', () => {
+    …
+  });
+});
+
+```
+
+##### Structurizing tests
+
+We always use the `describe() / it()` hooks to write all tests, even if there's only one test in the suite. This keeps our tests streamlined and allows for easy extension of the test suite.
+
+```js
+// Bad: using `test()` hook.
+test('flattens the object', () => {
+  …
+});
+
+// Good: using `describe() / it()` hooks
+describe('Get by path', () => {
+  it('succeeds when using correct credentials', () => {
+    …
+  });
+});
+
+```
+
+It's fine to use multiple hierarchies of `describe()` to group related tests more accurately:
+
+```js
+describe('User registration', () => {
+  it('succeeds when using valid inputs', () => {
+  });
+
+  describe('when using invalid input values', () => {
+    it('shows an error notification', () => {
+    });
+
+    it('does not perform a redirect', () => {
+    });
+  });
+
+  describe('when using an already registered email', () => {
+    it('shows an error notification', () => {
+    });
+  });
+});
+```
+
+##### Test Driven Development (TDD)
+
+Test Driven Development is a development philosophy that puts tests at the core of development. At The Things Industries, we don't enforce this method but we strongly encourage to adopt a process that emphasizes testing. Since adding fontend-based end-to-end tests to our codebase, we plan to do the following:
+
+1. Writing end-to-end tests for all newly added features
+2. Writing end-to-end tests for each (significant) bug that was resolved
+3. Gradually adding coverage to existing features
+
+Currently, we only employ frontend-based end-to-end tests, meaning that these tests can only be written if they are also operable through the frontend.
+
+#### Writing End-to-End Tests
+
+It is highly suggested to read [Cypress documentation](https://docs.cypress.io/guides) before starting to write tests.
+
+##### Guiding Principle
+
+We follow the following principle for writing useful end-to-end tests:
+
+> The more your tests resemble the way your software is used, the more confidence they can give you.
+
+This means that when writing tests, we always consider the real-life equivalent of the test scenario to design the test setup. This means:
+
+##### Selecting elements
+
+In line with the principle mentioned above, we have also included [`Testing Library`](https://testing-library.com/) to use advanced testing utilities. `Testing Library` has a good guide for [how to select elements](https://testing-library.com/docs/guide-which-query). We try to follow this guide for our end-to-end tests.
+
+In some cases it can be necessary to select DOM elements using a special selection data attribute. We use `data-test-id` for this purpose. Use this attribute to select DOM elements when more realistic means of selection are not sufficient. Use meaningful but concise ID values, such as `error-notification`.
+
+- Select DOM elements using text captions and labels when possible.
+  - Select form fields by its label via `cy.findByLabelText`, e.g. `cy.findByLabelText('User ID')`. Same for field errors,warnings and descriptions, use `cy.findErrorByLabelText`, `cy.findWarningByLabelText` and `cy.findDescriptionByLabelText`.
+  - Select buttons, links, tabs and other elements that are described by [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques#Roles) via `cy.findByRole`, e.g. `cy.findByRole('button', {name: 'Submit'})`.
+  - Select text elements via `cy.findByText`.
+- Assert that selected elements are visible.
+
+  ```html
+  <!-- Instead of `visibility: hidden` it could be `display:none` or `z-index: -1` as well. -->
+  <div data-test-id="test" style="visibility: hidden">
+    Test content
+  </div>
+  ```
+
+  ```js
+  // Bad. This assertions will pass while not being visible to the user.
+  cy.findByTestId('test').should('exists')
+
+  // Good. This assertion will rightfully fail.
+  cy.findByTestId('test').should('be.visible')
+  ```
+
+##### Test runner globals
+
+`Cypress` uses [Mocha](https://mochajs.org/) as the test runner internally, while for unit tests we use [Jest](https://jestjs.io/). To keep our tests consistent we prefer using globals from `Jest` when possible.
+
+
+Jest globals | Mocha globals | Used for
+--- | --- | ---
+`describe` | `describe` | Group together related tests
+`it` | `it` | Define a single test
+`beforeEach`/`afterEach` | `beforeEach`/`AfterEach` | Hook before/after each test (`it`)
+`beforeAll`/`afterAll` | `before`/`after` | Hook before/after test block (`describe`)
+
+##### End-to-end tests file structure
+
+```bash
+./pkg/cypress
+|-- fixtures                    Cypress mocks
+|-- integration                 frontend end-to-end specifications (1)
+|   |-- console                 Console related end-to-end tests
+|   |   |-- users               tests related to user entity
+|   |   |-- ...
+|   |   |-- shared              tests that are not directly related to a specific entity (2)
+|   |-- oauth                   OAuth related end-to-end tests
+|   |   `-- ...
+|   `--smoke                    smoke tests (3)
+|-- plugins                     Cypress plugins
+|-- support                     Cypress commands and test utilities
+|-- screenshots                 screenshots generated when running tests (4)
+`-- videos                      videos generated when running tests (5)
+```
+
+1. `pkg/cypress/integration` contains all test specifications.
+  - Each test file must be placed into corresponding folder (`console`/`oauth`/`smoke`).
+  - Each test must follow the following naming: `{context}.spec.js`.
+  - One test file must have end-to-end tests dedicated only to a specific entity or view.
+2. `pkg/cypress/{console|oauth}/shared` contains all test specification not directly related to a single entity or a view. For example, `side-navigation.spec.js` or `header.spec.js` must be placed into the `cypress/console/shared` folder because both components are present on multiple views and are partially related to the stack entities. Make sure to scope cypress selections within the tested component using `cy.within`.
+3. `pkg/cypress/integration/smoke` contains tests that simulate a complete user story trying to do almost everything a typical user would do. For example, a typical smoke test can verify that the user is able to register, login, create application and register The Things Uno. For more details and diffeence between regular end-to-end and smoke tests see the [End-to-end tests structure](#organizing-end-to-end-tests) section.
+4. and 5. `Cypress` stores screenshots and videos to the appropriate folder after running end-to-end tests. These should not be added to the repository.
+
+##### Organizing end-to-end tests
+
+When writing end-to-end tests we comply with the following guidelines:
+
+- Tests are grouped by views for a specific entity. For example, when testing creation of application API keys:
+  1. Add test file `cypress/integration/console/applications/api-keys/create.spec.js`.
+  2. Test the behavior of the API key create view independently from any other specification.
+- Do not repeat actions via the UI that are not related to the current test context. Consider adding reusable [Cypress commands](https://docs.cypress.io/api/cypress-api/custom-commands.html) that do necessary test setup programmatically. This means that when testing any UI that is not the login specification and requires the user to be logged in, there is no need to log in through the login page, while we simply fetch the access token. Note: this does not mean that one cannot create a cypress command that performs actions via UI.
+- Extract components that appear on various views and test them separately instead of making assertions in each test where this component is used. For example, such components could be the page header and side navigation.
+- Dedicate at least one test to assert that the view displays its UI elements in place on initial load. Assert on UI changes in tests that trigger these changes.
+- Prefer duplicating entities with non-conflicting ids in tests instead of executing database teardown before each test. For example, when testing various scenarios for registering gateway, consider creating gateways with different ID's and EUI's instead of using a single gateway and drop the database before each test. Note: try to use this approach when possible, otherwise do not hesitate to restore database state before each test.
+- Consider various stack configurations when writing end-to-end tests. Some views have different UI depending on availability of different stack components. For example, the end device wizard looks different for deployments with complete cluster (NS+JS+AS) and for JS-only configuration. Likewise, sections and entire views can be enabled or disabled based on our feature toggles. If your test scenario differs based on different feature toggle conditions, make sure to probe these preconditions in your tests.
+
+##### Smoke tests
+
+We distinguish between regular end-to-end tests and smoke tests. While regular end-to-end tests are scoped to a specific view or component and tests those in depth, smoke tests are testing complete user stories that are critical to the overall integrity of the application and usually comprise multiple components and views, e.g. login flow, user registration or creation of applications. When writing smoke tests we comply with the following guidelines:
+
+- Smoke tests are testing complete user stories in a **wide and shallow** manner, meaning:
+  - performing some complex and critical flow that touches multiple components, APIs and/or views
+  - not testing different configurations or preconditions of the same flow in depth
+  - For example, when testing registration of The Things Uno:
+    1. Add test file `cypress/integration/smoke/devices/create.js`
+    2. Describe the whole user story to register the device including creating an application (or using an existing one), link the application and create the end device.
+- One smoke test should be encapsulated into a single `describeSmokeTest` declaration.
 
 ## Building and Running
 
@@ -439,7 +1023,7 @@ The difference of a development build includes:
 The frontend can then be built using:
 
 ```bash
-$ mage js:build
+$ tools/bin/mage js:build
 ```
 
 For development/testing purposes we suggest to run the binaries directly via `go run`:
@@ -452,7 +1036,7 @@ It is also possible to use `go build`, or release snapshots, as described below.
 
 ## Releasing
 
-You can build a release snapshot with `go run github.com/goreleaser/goreleaser --snapshot`.
+You can build a release snapshot with `cd tools && go run github.com/goreleaser/goreleaser --snapshot`.
 
 > Note: You will at least need to have [`rpm`](http://rpm5.org/) and [`snapcraft`](https://snapcraft.io/) in your `PATH`.
 
@@ -461,72 +1045,146 @@ This will compile binaries for all supported platforms, `deb`, `rpm` and Snapcra
 > Note: The operating system and architecture represent the name of the directory in `dist` in which the binaries are placed.
 > For example, the binaries for Darwin x64 (macOS) will be located at `dist/darwin_amd64`.
 
-Releasing a new version consists of the following steps:
+A new version is released from the `v3.n` branch. The necessary steps for each are detailed below.
 
-1. Creating a `release/<version>` branch(further, called "release branch") (e.g. `release/3.2.1`).
-2. Updating the `CHANGELOG.md` file:
-  - Change the **Unreleased** section to the new version and add date obtained via `date +%Y-%m-%d` (e.g. `## [3.2.1] - 2019-10-11`)
-  - Check if we didn't forget anything important
-  - Remove empty subsections
-  - Update the list of links in the bottom of the file
-  - Add new **Unreleased** section:
-    ```md
-    ## [Unreleased]
+> Note: To get the target version, you can run `version=$(tools/bin/mage version:bumpXXX version:current)`, where xxx is the type of new release (minor/patch/RC). Check the section [Version Bump](#version-bump) for more information.
 
-    ### Added
+### Release From Master
 
-    ### Changed
+Create a `Release` issue in this repository and follow the steps.
 
-    ### Deprecated
+### Release Backports
 
-    ### Removed
+Create a `Backport Release` issue in this repository and follow the steps.
 
-    ### Fixed
+## Troubleshooting
 
-    ### Security
-    ```
-3. Updating the `SECURITY.md` file with the supported versions
-4. Bumping the version
-5. Writing the version files
-6. Creating the version bump commit
-7. Creating a pull request from release branch containing all changes made so far to `master`
-8. Merging all commits from release branch to `master` locally via `git merge --ff-only release/<version>`
-9. Creating the version tag
-10. Pushing the version tag
-11. Pushing `master`
-12. Building the release and pushing to package managers (this is done by CI)
+### Console
 
-Our development tooling helps with this process. The `mage` command has the following commands for version bumps:
+#### Problem: Assets are not found
 
-```bash
-$ ./mage version:bumpMajor   # bumps a major version (from 3.4.5 -> 4.0.0).
-$ ./mage version:bumpMinor   # bumps a minor version (from 3.4.5 -> 3.5.0).
-$ ./mage version:bumpPatch   # bumps a patch version (from 3.4.5 -> 3.4.6).
-$ ./mage version:bumpRC      # bumps a release candidate version (from 3.4.5-rc1 -> 3.4.5-rc2).
-$ ./mage version:bumpRelease # bumps a pre-release to a release version (from 3.4.5-rc1 -> 3.4.5).
+The Console will render a blank page and you can see backend logs like e.g.:
+```
+INFO Request handled                          duration=40.596µs error=error:pkg/errors/web:unknown (Not Found) message=Not Found method=GET namespace=web remote_addr=[::1]:50450 request_id=01DZ2CJDWKAFS10QD1NKZ1D56H status=404 url=/assets/console.36fcac90fa2408a19e4b.js
 ```
 
-These bumps can be combined (i.e. `version:bumpMinor version:bumpRC` bumps 3.4.5 -> 3.5.0-rc1). Apart from these bump commands, we have commands for writing version files (`version:files`), creating the bump commit (`version:commitBump`) and the version tag (`version:tag`).
-
-A typical release process is executed directly on the `master` branch and looks like this:
-
-```bash
-$ version=$(./mage version:bumpPatch version:current)
-$ git checkout -b "release/${version}"
-$ ${EDITOR:-vim} CHANGELOG.md SECURITY.md # edit CHANGELOG.md and SECURITY.md
-$ git add CHANGELOG.md SECURITY.md
-$ ./mage version:bumpPatch version:files version:commitBump
-$ git push origin "release/${version}"
+You might also see error messages in the Console such as:
+```
+Uncaught ReferenceError: libs_472226f4872c9448fc26 is not defined
+    at eval (eval at dll-reference libs_472226f4872c9448fc26 (console.js:26130), <anonymous>:1:18)
+    at Object.dll-reference libs_472226f4872c9448fc26 (console.js:26130)
+    at …
 ```
 
-After this, open a pull request from `release/${version}`. After it is approved:
+#### Possible causes
 
-```bash
-$ git checkout master
-$ git merge --ff-only "release/${version}"
-$ ./mage version:bumpPatch version:tag
-$ git push origin ${version}
-$ git push origin master
+##### Missing restart
+
+The stack has not been restarted after the Console bundle has changed. In production mode, The Things Stack will access the bundle via a filename that contains a content-hash, which is set during the build process of the Console. The hash cannot be updated during runtime and will take effect only after a restart.
+
+##### Possible solution
+
+  1. Restart the The Things Stack
+
+##### Accidentally deleted bundle files
+
+The bundle files have been deleted. This might happen e.g. when a mage target encountered an error and quit before running through.
+
+##### Possible solution
+
+  1. Rebuild the Console `tools/bin/mage js:clean js:build`
+  2. Restart The Things Stack
+
+##### Mixing up production and development builds
+
+If you switch between production and development builds of the Console, you might forget to re-run the build process and to restart The Things Stack. Likewise, you might have arbitrary config options set that are specific to a respective build type.
+
+##### Possible solution
+
+  1. Double check whether you have set the correct environment: `echo $NODE_ENV`, it should be either `production` or `development`
+  2. Double check whether [your The Things Stack config](#development-configuration) is set correctly (especially `TTN_LW_CONSOLE_UI_JS_FILE`, `TTN_LW_CONSOLE_UI_CANONICAL_URL` and similar settings). Run `ttn-lw-stack config --env` to see all environment variables
+  3. Make sure to rebuild the Console `tools/bin/mage js:clean js:build`
+  4. Restart The Things Stack
+
+#### Problem: Console rendering blank page and showing arbitrary error message in console logs, e.g.:
+
+```
+console.4e67a17c1ce5a74f3f50.js:104 Uncaught TypeError: m.subscribe is not a function
+    at Object../pkg/webui/console/api/index.js (console.4e67a17c1ce5a74f3f50.js:104)
+    at o (console.4e67a17c1ce5a74f3f50.js:1)
+    at Object../pkg/webui/console/store/middleware/logics/index.js (console.4e67a17c1ce5a74f3f50.js:104)
+    at o (console.4e67a17c1ce5a74f3f50.js:1)
+    at Object.<anonymous> (console.4e67a17c1ce5a74f3f50.js:104)
+    at Object../pkg/webui/console/store/index.js (console.4e67a17c1ce5a74f3f50.js:104)
+    at o (console.4e67a17c1ce5a74f3f50.js:1)
+    at Module../pkg/webui/console.js (console.4e67a17c1ce5a74f3f50.js:104)
+    at o (console.4e67a17c1ce5a74f3f50.js:1)
+    at Object.0 (console.4e67a17c1ce5a74f3f50.js:104)
 ```
 
-After pushing the tag, our CI system will start building the release. When this is done, you'll find a new release on the [releases page](https://github.com/TheThingsNetwork/lorawan-stack/releases). After this is done, you'll need to edit the release notes. We typically copy-paste these from `CHANGELOG.md`.
+#### Possible causes
+
+##### Bundle using old JS SDK
+
+The bundle integrates an old version of the JS SDK. This is likely a caching/linking issue of the JS SDK dependency.
+
+##### Possible solutions
+
+- Re-establish a proper module link between the Console and the JS SDK
+  - Run `tools/bin/mage js:cleanDeps js:deps`
+  - Check whether the `ttn-lw` symlink exists inside `node_modules` and whether it points to the right destination: `lorawan-stack/sdk/js/dist`
+    - If you have cloned multiple `lorawan-stack` forks in different locations, `yarn link` might associate the JS SDK module with the SDK on another ttn repository
+  - Rebuild the Console and (only after the build has finished) restart The Things Stack
+
+#### Problem: Console rendering blank page and showing `Module not found` message in console logs, e.g.:
+
+```
+ERROR in ./node_modules/redux-logic/node_modules/rxjs/operators/index.js Module not found: Error: Can't resolve '../internal/operators/audit' in '/lorawan-stack/node_modules/redux-logic/node_modules/rxjs/operators'
+```
+
+##### Possible cause: Broken yarn or npm cache
+
+##### Possible solution: Clean package manager caches
+
+- Clean yarn cache: `yarn cache clean`
+- Clean npm cache: `npm cache clean`
+- Clean and reinstall dependencies: `tools/bin/mage js:cleanDeps js:deps`
+
+#### Problem: The build crashes without showing any helpful error message
+
+##### Cause: Not running mage in verbose mode
+
+`tools/bin/mage` runs in silent mode by default. In verbose mode, you might get more helpful error messages
+
+##### Solution
+
+Run mage in verbose mode: `tools/bin/mage -v {target}`
+
+#### Problem: Browser displays error:
+`Cannot GET /`
+
+##### Cause: No endpoint is exposed at root
+
+##### Solution:
+
+Console is typically exposed at `http://localhost:8080/console`,
+API at `http://localhost:8080/console`,
+OAuth at `http://localhost:8080/oauth`,
+etc
+
+#### Problem: Browser displays error:
+`Error occurred while trying to proxy to: localhost:8080/console`
+
+##### Cause: Stack is not available or not running
+
+##### Solution:
+
+For development, remember to run the stack with `go run`:
+
+```bash
+$ go run ./cmd/ttn-lw-stack start
+```
+
+#### General advice
+
+A lot of problems during build stem from fragmented, incomplete runs of mage targets (due to arbitrary errors happening during a run). Oftentimes, it then helps to build the entire Web UI from scratch: `tools/bin/mage jsSDK:cleanDeps jsSDK:clean js:cleanDeps js:clean js:build`, and (re-)start The Things Stack after running this.

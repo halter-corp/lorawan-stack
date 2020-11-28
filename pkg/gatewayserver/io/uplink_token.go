@@ -14,21 +14,28 @@
 
 package io
 
-import "go.thethings.network/lorawan-stack/pkg/ttnpb"
+import (
+	"time"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+)
 
 // UplinkToken returns an uplink token from the given downlink path.
-func UplinkToken(ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32) ([]byte, error) {
+func UplinkToken(ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32, concentratorTime scheduling.ConcentratorTime, serverTime time.Time) ([]byte, error) {
 	token := ttnpb.UplinkToken{
 		GatewayAntennaIdentifiers: ids,
 		Timestamp:                 timestamp,
+		ServerTime:                serverTime,
+		ConcentratorTime:          int64(concentratorTime),
 	}
 	return token.Marshal()
 }
 
 // MustUplinkToken returns an uplink token from the given downlink path.
 // This function panics if an error occurs. Use UplinkToken to handle errors.
-func MustUplinkToken(ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32) []byte {
-	token, err := UplinkToken(ids, timestamp)
+func MustUplinkToken(ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32, concentratorTime scheduling.ConcentratorTime, serverTime time.Time) []byte {
+	token, err := UplinkToken(ids, timestamp, concentratorTime, serverTime)
 	if err != nil {
 		panic(err)
 	}
@@ -36,12 +43,10 @@ func MustUplinkToken(ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32) []by
 }
 
 // ParseUplinkToken returns the downlink path from the given uplink token.
-func ParseUplinkToken(buf []byte) (ids ttnpb.GatewayAntennaIdentifiers, timestamp uint32, err error) {
+func ParseUplinkToken(buf []byte) (*ttnpb.UplinkToken, error) {
 	var token ttnpb.UplinkToken
-	if err = token.Unmarshal(buf); err != nil {
-		return
+	if err := token.Unmarshal(buf); err != nil {
+		return nil, err
 	}
-	ids = token.GatewayAntennaIdentifiers
-	timestamp = token.Timestamp
-	return
+	return &token, nil
 }

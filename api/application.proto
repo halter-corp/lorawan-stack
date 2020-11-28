@@ -16,7 +16,6 @@ syntax = "proto3";
 
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "google/api/annotations.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "lorawan-stack/api/contact_info.proto";
@@ -25,7 +24,7 @@ import "lorawan-stack/api/rights.proto";
 
 package ttn.lorawan.v3;
 
-option go_package = "go.thethings.network/lorawan-stack/pkg/ttnpb";
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
 // Application is the message that defines an Application in the network.
 message Application {
@@ -35,7 +34,11 @@ message Application {
 
   string name = 4 [(validate.rules).string.max_len = 50];
   string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this application. Typically used for organizing applications or for storing integration-specific data.
   map<string,string> attributes = 6 [(validate.rules).map.keys.string = {pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$" , max_len: 36}];
+
+  // Contact information for this application. Typically used to indicate who to contact with technical/security questions about the application.
   repeated ContactInfo contact_info = 7;
 }
 
@@ -45,6 +48,7 @@ message Applications {
 
 message GetApplicationRequest {
   ApplicationIdentifiers application_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
+  // The names of the application fields that should be returned.
   google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
 }
 
@@ -52,12 +56,14 @@ message ListApplicationsRequest {
   // By default we list all applications the caller has rights on.
   // Set the user or the organization (not both) to instead list the applications
   // where the user or organization is collaborator on.
-
   OrganizationOrUserIdentifiers collaborator = 1;
+  // The names of the application fields that should be returned.
   google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
   // Order the results by this field path (must be present in the field mask).
   // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
-  string order = 3;
+  string order = 3 [
+    (validate.rules).string = { in: ["", "application_id", "-application_id", "name", "-name", "created_at", "-created_at"] }
+  ];
   // Limit the number of results per page.
   uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
   // Page number for pagination. 0 is interpreted as 1.
@@ -72,6 +78,7 @@ message CreateApplicationRequest {
 
 message UpdateApplicationRequest {
   Application application = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
+  // The names of the application fields that should be updated.
   google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
 }
 

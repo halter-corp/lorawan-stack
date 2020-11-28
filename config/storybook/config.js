@@ -18,28 +18,35 @@ import { configure, addDecorator } from '@storybook/react'
 import { Provider } from 'react-redux'
 import { ConnectedRouter } from 'connected-react-router'
 import { IntlProvider } from 'react-intl'
-import createHistory from 'history/createMemoryHistory'
+import { createMemoryHistory } from 'history'
+
+import messages from '@ttn-lw/locales/en.json'
+import backendMessages from '@ttn-lw/locales/.backend/en.json'
+
+import { EnvProvider } from '@ttn-lw/lib/components/env'
 
 import '../../pkg/webui/styles/main.styl'
 import 'focus-visible/dist/focus-visible'
 import createStore from './store'
-
 import Center from './center'
+import env from './env'
 
-const history = createHistory()
+const history = createMemoryHistory()
 const store = createStore(history)
 const req = require.context('../../pkg/webui/', true, /story\.js$/)
 const load = () => req.keys().forEach(req)
 
 addDecorator(function(story) {
   return (
-    <Provider store={store}>
-      <IntlProvider key="key" messages={{}} locale="en-US">
-        <ConnectedRouter history={history}>
-          <Center>{story()}</Center>
-        </ConnectedRouter>
-      </IntlProvider>
-    </Provider>
+    <EnvProvider env={env}>
+      <Provider store={store}>
+        <IntlProvider key="key" messages={{ ...messages, ...backendMessages }} locale="en-US">
+          <ConnectedRouter history={history}>
+            <Center>{story()}</Center>
+          </ConnectedRouter>
+        </IntlProvider>
+      </Provider>
+    </EnvProvider>
   )
 })
 

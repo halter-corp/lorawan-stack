@@ -16,14 +16,16 @@ import React from 'react'
 import classnames from 'classnames'
 import bind from 'autobind-decorator'
 
-import PropTypes from '../../../lib/prop-types'
-import Message from '../../../lib/components/message'
-import Icon from '../../icon'
+import Icon from '@ttn-lw/components/icon'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './sort-button.styl'
 
-@bind
 class SortButton extends React.PureComponent {
+  @bind
   onSort() {
     const { name, onSort } = this.props
 
@@ -38,26 +40,37 @@ class SortButton extends React.PureComponent {
       [style.buttonDesc]: active && direction === 'desc',
     })
 
+    let icon = 'sort_order'
+    if (active && direction) {
+      icon += `_${direction}`
+    }
+
     return (
       <button className={buttonClassNames} type="button" onClick={this.onSort}>
         <Message content={title} />
-        <Icon className={style.icon} icon="sort" />
+        <Icon className={style.icon} icon={icon} nudgeUp />
       </button>
     )
   }
 }
 
 SortButton.propTypes = {
-  /** The name of the column that the sort button represents */
-  name: PropTypes.string.isRequired,
-  /** A flag identifying whether the button is active */
+  /** A flag identifying whether the button is active. */
   active: PropTypes.bool.isRequired,
-  /** The text of the button */
-  title: PropTypes.message.isRequired,
-  /** Function to be called when the button is pressed */
-  onSort: PropTypes.func.isRequired,
-  /** The current ordering (ascending/descending/none) */
+  className: PropTypes.string,
+  /** The current ordering (ascending/descending/none). */
   direction: PropTypes.string,
+  /** The name of the column that the sort button represents. */
+  name: PropTypes.string.isRequired,
+  /** Function to be called when the button is pressed. */
+  onSort: PropTypes.func.isRequired,
+  /** The text of the button. */
+  title: PropTypes.message.isRequired,
+}
+
+SortButton.defaultProps = {
+  className: undefined,
+  direction: undefined,
 }
 
 export default SortButton

@@ -72,8 +72,16 @@ func (v3) DownlinkQueuedTopic(applicationUID, deviceID string) []string {
 	return []string{topicV3, applicationUID, "devices", deviceID, "down", "queued"}
 }
 
+func (v3) DownlinkQueueInvalidatedTopic(applicationUID, deviceID string) []string {
+	return []string{topicV3, applicationUID, "devices", deviceID, "down", "invalidated"}
+}
+
 func (v3) LocationSolvedTopic(applicationUID, deviceID string) []string {
 	return []string{topicV3, applicationUID, "devices", deviceID, "location", "solved"}
+}
+
+func (v3) ServiceDataTopic(applicationUID, deviceID string) []string {
+	return []string{topicV3, applicationUID, "devices", deviceID, "service", "data"}
 }
 
 func (v3) DownlinkPushTopic(applicationUID, deviceID string) []string {

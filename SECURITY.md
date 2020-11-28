@@ -4,12 +4,11 @@
 
 We provide security fixes for the two most recent minor versions of the v3 major.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.0.x   | :warning:          |
-| 3.1.x   | :warning:          |
-| 3.2.x   | :white_check_mark: |
-| 3.3.x   | :white_check_mark: |
+| Version         | Supported          |
+| --------------- | ------------------ |
+| 3.8.x and below | :warning:          |
+| 3.9.x           | :white_check_mark: |
+| 3.10.x          | :white_check_mark: |
 
 ## Reporting a Vulnerability
 

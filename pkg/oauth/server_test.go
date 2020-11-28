@@ -29,15 +29,15 @@ import (
 
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/auth/pbkdf2"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/oauth"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/webui"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/pbkdf2"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/oauth"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/webui"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -62,11 +62,16 @@ var (
 		UserIdentifiers: ttnpb.UserIdentifiers{UserID: "user"},
 	}
 	mockClient = &ttnpb.Client{
-		ClientIdentifiers: ttnpb.ClientIdentifiers{ClientID: "client"},
-		State:             ttnpb.STATE_APPROVED,
-		Grants:            []ttnpb.GrantType{ttnpb.GRANT_AUTHORIZATION_CODE, ttnpb.GRANT_REFRESH_TOKEN},
-		RedirectURIs:      []string{"https://uri/callback", "http://uri/callback"},
-		Rights:            []ttnpb.Right{ttnpb.RIGHT_USER_INFO},
+		ClientIdentifiers:  ttnpb.ClientIdentifiers{ClientID: "client"},
+		State:              ttnpb.STATE_APPROVED,
+		Grants:             []ttnpb.GrantType{ttnpb.GRANT_AUTHORIZATION_CODE, ttnpb.GRANT_REFRESH_TOKEN},
+		RedirectURIs:       []string{"https://uri/callback", "http://uri/callback"},
+		LogoutRedirectURIs: []string{"https://uri/logout-callback", "http://uri/logout-callback", "http://uri/alternative-logout-callback", "http://other-host/logout-callback"},
+		Rights:             []ttnpb.Right{ttnpb.RIGHT_USER_INFO},
+	}
+	mockAccessToken = &ttnpb.OAuthAccessToken{
+		UserIDs:       ttnpb.UserIdentifiers{UserID: "user"},
+		UserSessionID: "session_id",
 	}
 )
 
@@ -91,7 +96,6 @@ func init() {
 }
 
 func TestOAuthFlow(t *testing.T) {
-	ctx := test.Context()
 	store := &mockStore{}
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
@@ -107,8 +111,9 @@ func TestOAuthFlow(t *testing.T) {
 			},
 		},
 	})
-	s := oauth.NewServer(ctx, store, oauth.Config{
-		Mount: "/oauth",
+	s, err := oauth.NewServer(c, store, oauth.Config{
+		Mount:       "/oauth",
+		CSRFAuthKey: []byte("12345678123456781234567812345678"),
 		UI: oauth.UIConfig{
 			TemplateData: webui.TemplateData{
 				SiteName:     "The Things Network",
@@ -117,8 +122,29 @@ func TestOAuthFlow(t *testing.T) {
 			},
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
 	c.RegisterWeb(s)
 	componenttest.StartComponent(t, c)
+
+	var csrfToken string
+	var r *http.Request
+
+	// Obtain CSRF token.
+	r = httptest.NewRequest("GET", "/oauth/login", nil)
+	r.URL.Scheme, r.URL.Host = "http", r.Host
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	c.ServeHTTP(rr, r)
+	csrfToken = rr.Header().Get("X-CSRF-Token")
+
+	if cookies := rr.Result().Cookies(); len(cookies) > 0 {
+		jar.SetCookies(r.URL, cookies)
+	}
 
 	for _, tt := range []struct {
 		Name             string
@@ -132,10 +158,10 @@ func TestOAuthFlow(t *testing.T) {
 		ExpectedBody     string
 	}{
 		{
-			Method:       "GET",
-			Path:         "/oauth",
-			ExpectedCode: http.StatusOK,
-			ExpectedBody: "The Things Network OAuth",
+			Method:           "GET",
+			Path:             "/oauth/",
+			ExpectedCode:     http.StatusFound,
+			ExpectedRedirect: "/oauth/login",
 		},
 		{
 			Method:           "GET",
@@ -386,6 +412,7 @@ func TestOAuthFlow(t *testing.T) {
 				a.So(s.calls, should.Contain, "CreateAuthorizationCode")
 				a.So(s.req.authorizationCode.UserIDs, should.Resemble, mockUser.UserIdentifiers)
 				a.So(s.req.authorizationCode.ClientIDs, should.Resemble, mockClient.ClientIdentifiers)
+				a.So(s.req.authorizationCode.UserSessionID, should.Equal, mockSession.SessionID)
 				a.So(s.req.authorizationCode.Rights, should.Resemble, mockClient.Rights)
 				a.So(s.req.authorizationCode.Code, should.NotBeEmpty)
 				a.So(s.req.authorizationCode.RedirectURI, should.Equal, "http://uri/callback")
@@ -408,6 +435,112 @@ func TestOAuthFlow(t *testing.T) {
 				a.So(s.req.sessionID, should.Equal, "session_id")
 			},
 		},
+		{
+			Name: "client-initiated logout",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.accessToken = mockAccessToken
+			},
+			Method:           "GET",
+			Path:             "/oauth/logout?access_token_id=access-token-id&post_logout_redirect_uri=http://uri/alternative-logout-callback?foo=bar",
+			ExpectedCode:     http.StatusFound,
+			ExpectedRedirect: "/alternative-logout-callback?foo=bar",
+			StoreCheck: func(t *testing.T, s *mockStore) {
+				a := assertions.New(t)
+				a.So(s.calls, should.Contain, "DeleteSession")
+				a.So(s.calls, should.Contain, "GetAccessToken")
+				a.So(s.calls, should.Contain, "DeleteAccessToken")
+				a.So(s.calls, should.Contain, "GetClient")
+			},
+		},
+		{
+			Name: "client-initiated logout with redirect to different host",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.accessToken = mockAccessToken
+			},
+			Method:           "GET",
+			Path:             "/oauth/logout?access_token_id=access-token-id&post_logout_redirect_uri=http://other-host/logout-callback?foo=bar",
+			ExpectedCode:     http.StatusFound,
+			ExpectedRedirect: "http://other-host/logout-callback?foo=bar",
+			StoreCheck: func(t *testing.T, s *mockStore) {
+				a := assertions.New(t)
+				a.So(s.calls, should.Contain, "DeleteSession")
+				a.So(s.calls, should.Contain, "GetAccessToken")
+				a.So(s.calls, should.Contain, "DeleteAccessToken")
+				a.So(s.calls, should.Contain, "GetClient")
+			},
+		},
+		{
+			Name: "client-initiated logout without redirect uri",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.accessToken = mockAccessToken
+			},
+			Method:           "GET",
+			Path:             "/oauth/logout?access_token_id=access-token-id",
+			ExpectedCode:     http.StatusFound,
+			ExpectedRedirect: "/logout-callback",
+			StoreCheck: func(t *testing.T, s *mockStore) {
+				a := assertions.New(t)
+				a.So(s.calls, should.Contain, "DeleteSession")
+				a.So(s.calls, should.Contain, "GetAccessToken")
+				a.So(s.calls, should.Contain, "DeleteAccessToken")
+				a.So(s.calls, should.Contain, "GetClient")
+			},
+		},
+		{
+			Name: "client-initiated logout with invalid redirect uri",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.accessToken = mockAccessToken
+			},
+			Method:       "GET",
+			Path:         "/oauth/logout?access_token_id=access-token-id&post_logout_redirect_uri=http://uri/false-callback",
+			ExpectedCode: http.StatusBadRequest,
+			StoreCheck: func(t *testing.T, s *mockStore) {
+				a := assertions.New(t)
+				a.So(s.calls, should.Contain, "DeleteSession")
+				a.So(s.calls, should.Contain, "DeleteAccessToken")
+				a.So(s.calls, should.Contain, "GetAccessToken")
+				a.So(s.calls, should.Contain, "GetClient")
+			},
+		},
+		{
+			Name: "client-initiated without logout redirect URI set in the client",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.client.LogoutRedirectURIs = []string{}
+				s.res.accessToken = mockAccessToken
+			},
+			Method:           "GET",
+			Path:             "/oauth/logout?access_token_id=access-token-id&post_logout_redirect_uri=http://uri/logout-callback",
+			ExpectedCode:     http.StatusFound,
+			ExpectedRedirect: "/oauth",
+			StoreCheck: func(t *testing.T, s *mockStore) {
+				a := assertions.New(t)
+				a.So(s.calls, should.Contain, "DeleteSession")
+				a.So(s.calls, should.Contain, "DeleteAccessToken")
+				a.So(s.calls, should.Contain, "GetAccessToken")
+				a.So(s.calls, should.Contain, "GetClient")
+			},
+		},
+		{
+			Name: "client-initiated logout without access token",
+			StoreSetup: func(s *mockStore) {
+				s.res.session = mockSession
+				s.res.client = mockClient
+				s.res.accessToken = mockAccessToken
+			},
+			Method:       "GET",
+			Path:         "/oauth/logout",
+			ExpectedCode: http.StatusForbidden,
+		},
 	} {
 		name := tt.Name
 		if name == "" {
@@ -422,16 +555,12 @@ func TestOAuthFlow(t *testing.T) {
 			req := httptest.NewRequest(tt.Method, tt.Path, nil)
 			req.URL.Scheme, req.URL.Host = "http", req.Host
 
-			var csrfToken string
-
 			var body *bytes.Buffer
+
+			req.Header.Set("X-CSRF-Token", csrfToken)
 
 			for _, c := range jar.Cookies(req.URL) {
 				req.AddCookie(c)
-				if c.Name == "_csrf" {
-					csrfToken = c.Value
-					req.Header.Set("X-CSRF-Token", c.Value)
-				}
 			}
 
 			var contentType string
@@ -499,7 +628,6 @@ func TestOAuthFlow(t *testing.T) {
 }
 
 func TestTokenExchange(t *testing.T) {
-	ctx := test.Context()
 	store := &mockStore{}
 	c := componenttest.NewComponent(t, &component.Config{
 		ServiceBase: config.ServiceBase{
@@ -511,7 +639,7 @@ func TestTokenExchange(t *testing.T) {
 			},
 		},
 	})
-	s := oauth.NewServer(ctx, store, oauth.Config{
+	s, err := oauth.NewServer(c, store, oauth.Config{
 		Mount: "/oauth",
 		UI: oauth.UIConfig{
 			TemplateData: webui.TemplateData{
@@ -520,6 +648,9 @@ func TestTokenExchange(t *testing.T) {
 			},
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
 	c.RegisterWeb(s)
 	componenttest.StartComponent(t, c)
 
@@ -538,14 +669,15 @@ func TestTokenExchange(t *testing.T) {
 			StoreSetup: func(s *mockStore) {
 				s.res.client = mockClient
 				s.res.authorizationCode = &ttnpb.OAuthAuthorizationCode{
-					UserIDs:     mockUser.UserIdentifiers,
-					ClientIDs:   mockClient.ClientIdentifiers,
-					Rights:      mockClient.Rights,
-					Code:        "the code",
-					RedirectURI: "http://uri/callback",
-					State:       "foo",
-					CreatedAt:   time.Now().Truncate(time.Second),
-					ExpiresAt:   time.Now().Truncate(time.Second).Add(time.Hour),
+					UserIDs:       mockUser.UserIdentifiers,
+					ClientIDs:     mockClient.ClientIdentifiers,
+					UserSessionID: mockSession.SessionID,
+					Rights:        mockClient.Rights,
+					Code:          "the code",
+					RedirectURI:   "http://uri/callback",
+					State:         "foo",
+					CreatedAt:     time.Now().Truncate(time.Second),
+					ExpiresAt:     time.Now().Truncate(time.Second).Add(time.Hour),
 				}
 			},
 			Method: "POST",
@@ -566,7 +698,9 @@ func TestTokenExchange(t *testing.T) {
 				a.So(s.calls, should.Contain, "CreateAccessToken")
 				a.So(s.req.token.UserIDs, should.Resemble, mockUser.UserIdentifiers)
 				a.So(s.req.token.ClientIDs, should.Resemble, mockClient.ClientIdentifiers)
+				a.So(s.req.token.UserSessionID, should.Equal, mockSession.SessionID)
 				a.So(s.req.token.Rights, should.Resemble, mockClient.Rights)
+				a.So(s.req.token.AccessToken, should.NotBeEmpty)
 				a.So(s.req.token.AccessToken, should.NotBeEmpty)
 				a.So(s.req.token.RefreshToken, should.NotBeEmpty)
 			},
@@ -576,13 +710,14 @@ func TestTokenExchange(t *testing.T) {
 			StoreSetup: func(s *mockStore) {
 				s.res.client = mockClient
 				s.res.accessToken = &ttnpb.OAuthAccessToken{
-					UserIDs:      mockUser.UserIdentifiers,
-					ClientIDs:    mockClient.ClientIdentifiers,
-					ID:           "SFUBFRKYTGULGPAXXM4SHIBYMKCPTIMQBM63ZGQ",
-					RefreshToken: "PBKDF2$sha256$20000$IGAiKs46xX_M64E5$4xpyqnQT8SOa_Vf4xhEPk6WOZnhmAjG2mqGQiYBhm2s",
-					Rights:       mockClient.Rights,
-					CreatedAt:    time.Now().Truncate(time.Second),
-					ExpiresAt:    time.Now().Truncate(time.Second).Add(time.Hour),
+					UserIDs:       mockUser.UserIdentifiers,
+					ClientIDs:     mockClient.ClientIdentifiers,
+					UserSessionID: mockSession.SessionID,
+					ID:            "SFUBFRKYTGULGPAXXM4SHIBYMKCPTIMQBM63ZGQ",
+					RefreshToken:  "PBKDF2$sha256$20000$IGAiKs46xX_M64E5$4xpyqnQT8SOa_Vf4xhEPk6WOZnhmAjG2mqGQiYBhm2s",
+					Rights:        mockClient.Rights,
+					CreatedAt:     time.Now().Truncate(time.Second),
+					ExpiresAt:     time.Now().Truncate(time.Second).Add(time.Hour),
 				}
 			},
 			Method: "POST",
@@ -605,6 +740,7 @@ func TestTokenExchange(t *testing.T) {
 				a.So(s.req.token.Rights, should.Resemble, mockClient.Rights)
 				a.So(s.req.token.AccessToken, should.NotBeEmpty)
 				a.So(s.req.token.RefreshToken, should.NotBeEmpty)
+				a.So(s.req.token.UserSessionID, should.Equal, mockSession.SessionID)
 				a.So(s.req.previousID, should.Equal, "IBTFXELDVVT64Y26IZZFFNSL7GWZY2Y3ALQQI3A")
 			},
 		},

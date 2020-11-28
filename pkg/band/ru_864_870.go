@@ -15,7 +15,7 @@
 package band
 
 import (
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 //revive:disable:var-naming
@@ -29,8 +29,14 @@ const RU_864_870 = "RU_864_870"
 
 func init() {
 	defaultChannels := []Channel{
-		{Frequency: 868900000, MinDataRate: 0, MaxDataRate: 5},
-		{Frequency: 869100000, MinDataRate: 0, MaxDataRate: 5},
+		{
+			Frequency:   868900000,
+			MaxDataRate: ttnpb.DATA_RATE_5,
+		},
+		{
+			Frequency:   869100000,
+			MaxDataRate: ttnpb.DATA_RATE_5,
+		},
 	}
 
 	downlinkDRTable := [8][6]ttnpb.DataRateIndex{
@@ -46,6 +52,8 @@ func init() {
 
 	ru_864_870 = Band{
 		ID: RU_864_870,
+
+		EnableADR: true,
 
 		MaxUplinkChannels: 16,
 		UplinkChannels:    defaultChannels,
@@ -63,42 +71,17 @@ func init() {
 			},
 		},
 
-		DataRates: [16]DataRate{
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 12,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(59)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 11,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(59)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 10,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(59)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 9,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(123)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 8,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(230)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 7,
-				Bandwidth:       125000,
-			}}}, DefaultMaxSize: constPayloadSizer(230)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
-				SpreadingFactor: 7,
-				Bandwidth:       250000,
-			}}}, DefaultMaxSize: constPayloadSizer(230)},
-			{Rate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_FSK{FSK: &ttnpb.FSKDataRate{
-				BitRate: 50000,
-			}}}, DefaultMaxSize: constPayloadSizer(230)},
-			{}, {}, {}, {}, {}, {}, {},
-			{}, // Used by LinkADRReq starting from LoRaWAN Regional Parameters 1.1, RFU before
+		DataRates: map[ttnpb.DataRateIndex]DataRate{
+			ttnpb.DATA_RATE_0: makeLoRaDataRate(12, 125000, makeConstMaxMACPayloadSizeFunc(59)),
+			ttnpb.DATA_RATE_1: makeLoRaDataRate(11, 125000, makeConstMaxMACPayloadSizeFunc(59)),
+			ttnpb.DATA_RATE_2: makeLoRaDataRate(10, 125000, makeConstMaxMACPayloadSizeFunc(59)),
+			ttnpb.DATA_RATE_3: makeLoRaDataRate(9, 125000, makeConstMaxMACPayloadSizeFunc(123)),
+			ttnpb.DATA_RATE_4: makeLoRaDataRate(8, 125000, makeConstMaxMACPayloadSizeFunc(230)),
+			ttnpb.DATA_RATE_5: makeLoRaDataRate(7, 125000, makeConstMaxMACPayloadSizeFunc(230)),
+			ttnpb.DATA_RATE_6: makeLoRaDataRate(7, 250000, makeConstMaxMACPayloadSizeFunc(230)),
+			ttnpb.DATA_RATE_7: makeFSKDataRate(50000, makeConstMaxMACPayloadSizeFunc(230)),
 		},
-		MaxADRDataRateIndex: 5,
+		MaxADRDataRateIndex: ttnpb.DATA_RATE_5,
 
 		ReceiveDelay1:    defaultReceiveDelay1,
 		ReceiveDelay2:    defaultReceiveDelay2,
@@ -110,17 +93,21 @@ func init() {
 		MinAckTimeout:    defaultAckTimeout - defaultAckTimeoutMargin,
 		MaxAckTimeout:    defaultAckTimeout + defaultAckTimeoutMargin,
 
-		DefaultMaxEIRP: 14,
-		TxOffset: [16]float32{
-			0, -2, -4, -6, -8, -10, -12, -14,
-			0, 0, 0, 0, 0, 0, 0, // RFU
-			0, // Used by LinkADRReq starting from LoRaWAN Regional Parameters 1.1, RFU before
+		DefaultMaxEIRP: 16,
+		TxOffset: []float32{
+			0,
+			-2,
+			-4,
+			-6,
+			-8,
+			-10,
+			-12,
+			-14,
 		},
-		MaxTxPowerIndex: 7,
 
 		Rx1Channel: channelIndexIdentity,
 		Rx1DataRate: func(idx ttnpb.DataRateIndex, offset uint32, _ bool) (ttnpb.DataRateIndex, error) {
-			if idx > 7 {
+			if idx > ttnpb.DATA_RATE_7 {
 				return 0, errDataRateIndexTooHigh.WithAttributes("max", 7)
 			}
 			if offset > 5 {
@@ -138,19 +125,20 @@ func init() {
 		ImplementsCFList: true,
 		CFListType:       ttnpb.CFListType_FREQUENCIES,
 
-		DefaultRx2Parameters: Rx2Parameters{0, 869100000},
+		DefaultRx2Parameters: Rx2Parameters{ttnpb.DATA_RATE_0, 869100000},
 
 		Beacon: Beacon{
-			DataRateIndex:    3,
+			DataRateIndex:    ttnpb.DATA_RATE_3,
 			CodingRate:       "4/5",
-			PingSlotChannels: []uint32{868900000},
-			BroadcastChannel: func(_ float64) uint32 { return 869100000 },
+			ComputeFrequency: func(_ float64) uint64 { return 869100000 },
 		},
+		PingSlotFrequency: uint64Ptr(868900000),
 
 		// No LoRaWAN Regional Parameters 1.0
 		// No LoRaWAN Regional Parameters 1.0.1
 		// No LoRaWAN Regional Parameters 1.0.2
-		regionalParameters1_1RevA: bandIdentity,
+		regionalParameters1_0_3RevA: bandIdentity,
+		regionalParameters1_1RevA:   bandIdentity,
 	}
 	All[RU_864_870] = ru_864_870
 }

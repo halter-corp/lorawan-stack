@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 type singleFileConfig struct {
@@ -87,10 +87,10 @@ func TestReadMultiConfig(t *testing.T) {
 	err = mgr.Unmarshal(res)
 	a.So(err, should.BeNil)
 
-	a.So(res.Foo, should.Resemble, "20")
+	a.So(res.Foo, should.Resemble, "10")
 	a.So(res.Bar, should.Resemble, map[string]string{
 		"a": "baz",
-		"b": "hey",
+		"b": "quu",
 		"c": "yo!",
 	})
 }

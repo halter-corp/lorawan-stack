@@ -68,11 +68,9 @@
       "file": "lorawan-stack/api/application_services.proto",
       "http": [
         {
-          "method": "get",
-          "pattern": "/applications/{application_ids.application_id}/collaborator",
-          "parameters": [
-            "application_ids.application_id"
-          ]
+          "method": "",
+          "pattern": "",
+          "parameters": []
         },
         {
           "method": "get",
@@ -289,6 +287,20 @@
           ]
         }
       ]
+    },
+    "SimulateUplink": {
+      "file": "lorawan-stack/api/applicationserver.proto",
+      "http": [
+        {
+          "method": "post",
+          "pattern": "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/simulate",
+          "body": "*",
+          "parameters": [
+            "end_device_ids.application_ids.application_id",
+            "end_device_ids.device_id"
+          ]
+        }
+      ]
     }
   },
   "As": {
@@ -311,6 +323,7 @@
         "default_formatters.up_formatter",
         "default_formatters.up_formatter_parameter",
         "network_server_address",
+        "skip_payload_crypto",
         "tls"
       ]
     },
@@ -334,6 +347,7 @@
         "default_formatters.up_formatter",
         "default_formatters.up_formatter_parameter",
         "network_server_address",
+        "skip_payload_crypto",
         "tls"
       ]
     },
@@ -402,6 +416,8 @@
         "session.keys.app_s_key.key",
         "session.keys.session_key_id",
         "session.last_a_f_cnt_down",
+        "skip_payload_crypto",
+        "skip_payload_crypto_override",
         "version_ids",
         "version_ids.brand_id",
         "version_ids.firmware_version",
@@ -447,6 +463,8 @@
         "session.keys.app_s_key.key",
         "session.keys.session_key_id",
         "session.last_a_f_cnt_down",
+        "skip_payload_crypto",
+        "skip_payload_crypto_override",
         "version_ids",
         "version_ids.brand_id",
         "version_ids.firmware_version",
@@ -464,6 +482,32 @@
             "application_ids.application_id",
             "device_id"
           ]
+        }
+      ]
+    }
+  },
+  "ApplicationUpStorage": {
+    "GetStoredApplicationUp": {
+      "file": "lorawan-stack/api/applicationserver_integrations_storage.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/packages/storage/{type}",
+          "parameters": [
+            "end_device_ids.application_ids.application_id",
+            "end_device_ids.device_id",
+            "type"
+          ],
+          "stream": true
+        },
+        {
+          "method": "get",
+          "pattern": "/as/applications/{application_ids.application_id}/packages/storage/{type}",
+          "parameters": [
+            "application_ids.application_id",
+            "type"
+          ],
+          "stream": true
         }
       ]
     }
@@ -582,6 +626,88 @@
           ]
         }
       ]
+    },
+    "GetDefaultAssociation": {
+      "file": "lorawan-stack/api/applicationserver_packages.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/as/applications/{ids.application_ids.application_id}/packages/associations/{ids.f_port}",
+          "parameters": [
+            "ids.application_ids.application_id",
+            "ids.f_port"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "created_at",
+        "data",
+        "ids",
+        "ids.application_ids",
+        "ids.application_ids.application_id",
+        "ids.f_port",
+        "package_name",
+        "updated_at"
+      ]
+    },
+    "ListDefaultAssociations": {
+      "file": "lorawan-stack/api/applicationserver_packages.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/as/applications/{ids.application_id}/packages/associations",
+          "parameters": [
+            "ids.application_id"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "created_at",
+        "data",
+        "ids",
+        "ids.application_ids",
+        "ids.application_ids.application_id",
+        "ids.f_port",
+        "package_name",
+        "updated_at"
+      ]
+    },
+    "SetDefaultAssociation": {
+      "file": "lorawan-stack/api/applicationserver_packages.proto",
+      "http": [
+        {
+          "method": "put",
+          "pattern": "/as/applications/{default.ids.application_ids.application_id}/packages/associations/{default.ids.f_port}",
+          "body": "*",
+          "parameters": [
+            "default.ids.application_ids.application_id",
+            "default.ids.f_port"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "created_at",
+        "data",
+        "ids",
+        "ids.application_ids",
+        "ids.application_ids.application_id",
+        "ids.f_port",
+        "package_name",
+        "updated_at"
+      ]
+    },
+    "DeleteDefaultAssociation": {
+      "file": "lorawan-stack/api/applicationserver_packages.proto",
+      "http": [
+        {
+          "method": "delete",
+          "pattern": "/as/applications/{application_ids.application_id}/packages/associations/{f_port}",
+          "parameters": [
+            "application_ids.application_id",
+            "f_port"
+          ]
+        }
+      ]
     }
   },
   "ApplicationPubSubRegistry": {
@@ -618,6 +744,8 @@
         "downlink_nack.topic",
         "downlink_push",
         "downlink_push.topic",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.topic",
         "downlink_queued",
         "downlink_queued.topic",
         "downlink_replace",
@@ -634,8 +762,23 @@
         "location_solved",
         "location_solved.topic",
         "provider",
+        "provider.aws_iot",
+        "provider.aws_iot.access_key",
+        "provider.aws_iot.access_key.access_key_id",
+        "provider.aws_iot.access_key.secret_access_key",
+        "provider.aws_iot.access_key.session_token",
+        "provider.aws_iot.assume_role",
+        "provider.aws_iot.assume_role.arn",
+        "provider.aws_iot.assume_role.external_id",
+        "provider.aws_iot.assume_role.session_duration",
+        "provider.aws_iot.deployment",
+        "provider.aws_iot.deployment.default",
+        "provider.aws_iot.deployment.default.stack_name",
+        "provider.aws_iot.endpoint_address",
+        "provider.aws_iot.region",
         "provider.mqtt",
         "provider.mqtt.client_id",
+        "provider.mqtt.headers",
         "provider.mqtt.password",
         "provider.mqtt.publish_qos",
         "provider.mqtt.server_url",
@@ -647,6 +790,8 @@
         "provider.mqtt.username",
         "provider.nats",
         "provider.nats.server_url",
+        "service_data",
+        "service_data.topic",
         "updated_at",
         "uplink_message",
         "uplink_message.topic"
@@ -674,6 +819,8 @@
         "downlink_nack.topic",
         "downlink_push",
         "downlink_push.topic",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.topic",
         "downlink_queued",
         "downlink_queued.topic",
         "downlink_replace",
@@ -690,8 +837,23 @@
         "location_solved",
         "location_solved.topic",
         "provider",
+        "provider.aws_iot",
+        "provider.aws_iot.access_key",
+        "provider.aws_iot.access_key.access_key_id",
+        "provider.aws_iot.access_key.secret_access_key",
+        "provider.aws_iot.access_key.session_token",
+        "provider.aws_iot.assume_role",
+        "provider.aws_iot.assume_role.arn",
+        "provider.aws_iot.assume_role.external_id",
+        "provider.aws_iot.assume_role.session_duration",
+        "provider.aws_iot.deployment",
+        "provider.aws_iot.deployment.default",
+        "provider.aws_iot.deployment.default.stack_name",
+        "provider.aws_iot.endpoint_address",
+        "provider.aws_iot.region",
         "provider.mqtt",
         "provider.mqtt.client_id",
+        "provider.mqtt.headers",
         "provider.mqtt.password",
         "provider.mqtt.publish_qos",
         "provider.mqtt.server_url",
@@ -703,6 +865,8 @@
         "provider.mqtt.username",
         "provider.nats",
         "provider.nats.server_url",
+        "service_data",
+        "service_data.topic",
         "updated_at",
         "uplink_message",
         "uplink_message.topic"
@@ -740,6 +904,8 @@
         "downlink_nack.topic",
         "downlink_push",
         "downlink_push.topic",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.topic",
         "downlink_queued",
         "downlink_queued.topic",
         "downlink_replace",
@@ -756,8 +922,23 @@
         "location_solved",
         "location_solved.topic",
         "provider",
+        "provider.aws_iot",
+        "provider.aws_iot.access_key",
+        "provider.aws_iot.access_key.access_key_id",
+        "provider.aws_iot.access_key.secret_access_key",
+        "provider.aws_iot.access_key.session_token",
+        "provider.aws_iot.assume_role",
+        "provider.aws_iot.assume_role.arn",
+        "provider.aws_iot.assume_role.external_id",
+        "provider.aws_iot.assume_role.session_duration",
+        "provider.aws_iot.deployment",
+        "provider.aws_iot.deployment.default",
+        "provider.aws_iot.deployment.default.stack_name",
+        "provider.aws_iot.endpoint_address",
+        "provider.aws_iot.region",
         "provider.mqtt",
         "provider.mqtt.client_id",
+        "provider.mqtt.headers",
         "provider.mqtt.password",
         "provider.mqtt.publish_qos",
         "provider.mqtt.server_url",
@@ -769,6 +950,8 @@
         "provider.mqtt.username",
         "provider.nats",
         "provider.nats.server_url",
+        "service_data",
+        "service_data.topic",
         "updated_at",
         "uplink_message",
         "uplink_message.topic"
@@ -812,6 +995,7 @@
       ],
       "allowedFieldMaskPaths": [
         "base_url",
+        "create_downlink_api_key",
         "description",
         "documentation_url",
         "downlink_ack",
@@ -820,6 +1004,8 @@
         "downlink_failed.path",
         "downlink_nack",
         "downlink_nack.path",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.path",
         "downlink_queued",
         "downlink_queued.path",
         "downlink_sent",
@@ -836,6 +1022,8 @@
         "location_solved.path",
         "logo_url",
         "name",
+        "service_data",
+        "service_data.path",
         "uplink_message",
         "uplink_message.path"
       ]
@@ -851,6 +1039,7 @@
       ],
       "allowedFieldMaskPaths": [
         "base_url",
+        "create_downlink_api_key",
         "description",
         "documentation_url",
         "downlink_ack",
@@ -859,6 +1048,8 @@
         "downlink_failed.path",
         "downlink_nack",
         "downlink_nack.path",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.path",
         "downlink_queued",
         "downlink_queued.path",
         "downlink_sent",
@@ -875,6 +1066,8 @@
         "location_solved.path",
         "logo_url",
         "name",
+        "service_data",
+        "service_data.path",
         "uplink_message",
         "uplink_message.path"
       ]
@@ -896,10 +1089,13 @@
         "created_at",
         "downlink_ack",
         "downlink_ack.path",
+        "downlink_api_key",
         "downlink_failed",
         "downlink_failed.path",
         "downlink_nack",
         "downlink_nack.path",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.path",
         "downlink_queued",
         "downlink_queued.path",
         "downlink_sent",
@@ -914,6 +1110,8 @@
         "join_accept.path",
         "location_solved",
         "location_solved.path",
+        "service_data",
+        "service_data.path",
         "template_fields",
         "template_ids",
         "template_ids.template_id",
@@ -938,10 +1136,13 @@
         "created_at",
         "downlink_ack",
         "downlink_ack.path",
+        "downlink_api_key",
         "downlink_failed",
         "downlink_failed.path",
         "downlink_nack",
         "downlink_nack.path",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.path",
         "downlink_queued",
         "downlink_queued.path",
         "downlink_sent",
@@ -956,6 +1157,8 @@
         "join_accept.path",
         "location_solved",
         "location_solved.path",
+        "service_data",
+        "service_data.path",
         "template_fields",
         "template_ids",
         "template_ids.template_id",
@@ -990,10 +1193,13 @@
         "created_at",
         "downlink_ack",
         "downlink_ack.path",
+        "downlink_api_key",
         "downlink_failed",
         "downlink_failed.path",
         "downlink_nack",
         "downlink_nack.path",
+        "downlink_queue_invalidated",
+        "downlink_queue_invalidated.path",
         "downlink_queued",
         "downlink_queued.path",
         "downlink_sent",
@@ -1008,6 +1214,8 @@
         "join_accept.path",
         "location_solved",
         "location_solved.path",
+        "service_data",
+        "service_data.path",
         "template_fields",
         "template_ids",
         "template_ids.template_id",
@@ -1047,11 +1255,9 @@
       "file": "lorawan-stack/api/client_services.proto",
       "http": [
         {
-          "method": "get",
-          "pattern": "/clients/{client_ids.client_id}/collaborator",
-          "parameters": [
-            "client_ids.client_id"
-          ]
+          "method": "",
+          "pattern": "",
+          "parameters": []
         },
         {
           "method": "get",
@@ -1139,6 +1345,7 @@
         "grants",
         "ids",
         "ids.client_id",
+        "logout_redirect_uris",
         "name",
         "redirect_uris",
         "rights",
@@ -1179,6 +1386,7 @@
         "grants",
         "ids",
         "ids.client_id",
+        "logout_redirect_uris",
         "name",
         "redirect_uris",
         "rights",
@@ -1208,6 +1416,7 @@
         "grants",
         "ids",
         "ids.client_id",
+        "logout_redirect_uris",
         "name",
         "redirect_uris",
         "rights",
@@ -1547,11 +1756,9 @@
       "file": "lorawan-stack/api/gateway_services.proto",
       "http": [
         {
-          "method": "get",
-          "pattern": "/gateways/{gateway_ids.gateway_id}/collaborator",
-          "parameters": [
-            "gateway_ids.gateway_id"
-          ]
+          "method": "",
+          "pattern": "",
+          "parameters": []
         },
         {
           "method": "get",
@@ -1646,15 +1853,21 @@
         "downlink_path_constraint",
         "enforce_duty_cycle",
         "frequency_plan_id",
+        "frequency_plan_ids",
         "gateway_server_address",
         "ids",
         "ids.eui",
         "ids.gateway_id",
+        "lbs_lns_secret",
+        "lbs_lns_secret.key_id",
+        "lbs_lns_secret.value",
         "location_public",
         "name",
+        "schedule_anytime_delay",
         "schedule_downlink_late",
         "status_public",
         "update_channel",
+        "update_location_from_status",
         "updated_at",
         "version_ids",
         "version_ids.brand_id",
@@ -1700,15 +1913,21 @@
         "downlink_path_constraint",
         "enforce_duty_cycle",
         "frequency_plan_id",
+        "frequency_plan_ids",
         "gateway_server_address",
         "ids",
         "ids.eui",
         "ids.gateway_id",
+        "lbs_lns_secret",
+        "lbs_lns_secret.key_id",
+        "lbs_lns_secret.value",
         "location_public",
         "name",
+        "schedule_anytime_delay",
         "schedule_downlink_late",
         "status_public",
         "update_channel",
+        "update_location_from_status",
         "updated_at",
         "version_ids",
         "version_ids.brand_id",
@@ -1739,15 +1958,21 @@
         "downlink_path_constraint",
         "enforce_duty_cycle",
         "frequency_plan_id",
+        "frequency_plan_ids",
         "gateway_server_address",
         "ids",
         "ids.eui",
         "ids.gateway_id",
+        "lbs_lns_secret",
+        "lbs_lns_secret.key_id",
+        "lbs_lns_secret.value",
         "location_public",
         "name",
+        "schedule_anytime_delay",
         "schedule_downlink_late",
         "status_public",
         "update_channel",
+        "update_location_from_status",
         "updated_at",
         "version_ids",
         "version_ids.brand_id",
@@ -1832,6 +2057,84 @@
           "pattern": "/auth_info",
           "parameters": []
         }
+      ]
+    }
+  },
+  "Is": {
+    "GetConfiguration": {
+      "file": "lorawan-stack/api/identityserver.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/is/configuration",
+          "parameters": []
+        }
+      ]
+    }
+  },
+  "ApplicationActivationSettingRegistry": {
+    "Get": {
+      "file": "lorawan-stack/api/joinserver.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/js/applications/{application_ids.application_id}/settings",
+          "parameters": [
+            "application_ids.application_id"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "application_server_id",
+        "home_net_id",
+        "kek",
+        "kek.encrypted_key",
+        "kek.kek_label",
+        "kek.key",
+        "kek_label"
+      ]
+    },
+    "Set": {
+      "file": "lorawan-stack/api/joinserver.proto",
+      "http": [
+        {
+          "method": "post",
+          "pattern": "/js/applications/{application_ids.application_id}/settings",
+          "body": "*",
+          "parameters": [
+            "application_ids.application_id"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "application_server_id",
+        "home_net_id",
+        "kek",
+        "kek.encrypted_key",
+        "kek.kek_label",
+        "kek.key",
+        "kek_label"
+      ]
+    },
+    "Delete": {
+      "file": "lorawan-stack/api/joinserver.proto",
+      "http": [
+        {
+          "method": "delete",
+          "pattern": "/js/applications/{application_ids.application_id}/settings",
+          "parameters": [
+            "application_ids.application_id"
+          ]
+        }
+      ],
+      "allowedFieldMaskPaths": [
+        "application_server_id",
+        "home_net_id",
+        "kek",
+        "kek.encrypted_key",
+        "kek.kek_label",
+        "kek.key",
+        "kek_label"
       ]
     }
   },
@@ -2028,14 +2331,16 @@
       "http": []
     }
   },
-  "DownlinkMessageProcessor": {
-    "Process": {
+  "MessageProcessor": {
+    "EncodeDownlink": {
       "file": "lorawan-stack/api/message_services.proto",
       "http": []
-    }
-  },
-  "UplinkMessageProcessor": {
-    "Process": {
+    },
+    "DecodeUplink": {
+      "file": "lorawan-stack/api/message_services.proto",
+      "http": []
+    },
+    "DecodeDownlink": {
       "file": "lorawan-stack/api/message_services.proto",
       "http": []
     }
@@ -2105,14 +2410,19 @@
         "lorawan_version",
         "mac_settings",
         "mac_settings.adr_margin",
+        "mac_settings.beacon_frequency",
         "mac_settings.class_b_timeout",
         "mac_settings.class_c_timeout",
         "mac_settings.desired_adr_ack_delay_exponent",
         "mac_settings.desired_adr_ack_delay_exponent.value",
         "mac_settings.desired_adr_ack_limit_exponent",
         "mac_settings.desired_adr_ack_limit_exponent.value",
+        "mac_settings.desired_beacon_frequency",
         "mac_settings.desired_max_duty_cycle",
         "mac_settings.desired_max_duty_cycle.value",
+        "mac_settings.desired_ping_slot_data_rate_index",
+        "mac_settings.desired_ping_slot_data_rate_index.value",
+        "mac_settings.desired_ping_slot_frequency",
         "mac_settings.desired_rx1_data_rate_offset",
         "mac_settings.desired_rx1_delay",
         "mac_settings.desired_rx1_delay.value",
@@ -2340,6 +2650,205 @@
         "max_frequency",
         "min_frequency",
         "multicast",
+        "pending_mac_state",
+        "pending_mac_state.current_parameters",
+        "pending_mac_state.current_parameters.adr_ack_delay",
+        "pending_mac_state.current_parameters.adr_ack_delay_exponent",
+        "pending_mac_state.current_parameters.adr_ack_delay_exponent.value",
+        "pending_mac_state.current_parameters.adr_ack_limit",
+        "pending_mac_state.current_parameters.adr_ack_limit_exponent",
+        "pending_mac_state.current_parameters.adr_ack_limit_exponent.value",
+        "pending_mac_state.current_parameters.adr_data_rate_index",
+        "pending_mac_state.current_parameters.adr_nb_trans",
+        "pending_mac_state.current_parameters.adr_tx_power_index",
+        "pending_mac_state.current_parameters.beacon_frequency",
+        "pending_mac_state.current_parameters.channels",
+        "pending_mac_state.current_parameters.downlink_dwell_time",
+        "pending_mac_state.current_parameters.max_duty_cycle",
+        "pending_mac_state.current_parameters.max_eirp",
+        "pending_mac_state.current_parameters.ping_slot_data_rate_index",
+        "pending_mac_state.current_parameters.ping_slot_frequency",
+        "pending_mac_state.current_parameters.rejoin_count_periodicity",
+        "pending_mac_state.current_parameters.rejoin_time_periodicity",
+        "pending_mac_state.current_parameters.rx1_data_rate_offset",
+        "pending_mac_state.current_parameters.rx1_delay",
+        "pending_mac_state.current_parameters.rx2_data_rate_index",
+        "pending_mac_state.current_parameters.rx2_frequency",
+        "pending_mac_state.current_parameters.uplink_dwell_time",
+        "pending_mac_state.desired_parameters",
+        "pending_mac_state.desired_parameters.adr_ack_delay",
+        "pending_mac_state.desired_parameters.adr_ack_delay_exponent",
+        "pending_mac_state.desired_parameters.adr_ack_delay_exponent.value",
+        "pending_mac_state.desired_parameters.adr_ack_limit",
+        "pending_mac_state.desired_parameters.adr_ack_limit_exponent",
+        "pending_mac_state.desired_parameters.adr_ack_limit_exponent.value",
+        "pending_mac_state.desired_parameters.adr_data_rate_index",
+        "pending_mac_state.desired_parameters.adr_nb_trans",
+        "pending_mac_state.desired_parameters.adr_tx_power_index",
+        "pending_mac_state.desired_parameters.beacon_frequency",
+        "pending_mac_state.desired_parameters.channels",
+        "pending_mac_state.desired_parameters.downlink_dwell_time",
+        "pending_mac_state.desired_parameters.max_duty_cycle",
+        "pending_mac_state.desired_parameters.max_eirp",
+        "pending_mac_state.desired_parameters.ping_slot_data_rate_index",
+        "pending_mac_state.desired_parameters.ping_slot_frequency",
+        "pending_mac_state.desired_parameters.rejoin_count_periodicity",
+        "pending_mac_state.desired_parameters.rejoin_time_periodicity",
+        "pending_mac_state.desired_parameters.rx1_data_rate_offset",
+        "pending_mac_state.desired_parameters.rx1_delay",
+        "pending_mac_state.desired_parameters.rx2_data_rate_index",
+        "pending_mac_state.desired_parameters.rx2_frequency",
+        "pending_mac_state.desired_parameters.uplink_dwell_time",
+        "pending_mac_state.device_class",
+        "pending_mac_state.last_confirmed_downlink_at",
+        "pending_mac_state.last_dev_status_f_cnt_up",
+        "pending_mac_state.lorawan_version",
+        "pending_mac_state.pending_application_downlink",
+        "pending_mac_state.pending_application_downlink.class_b_c",
+        "pending_mac_state.pending_application_downlink.class_b_c.absolute_time",
+        "pending_mac_state.pending_application_downlink.class_b_c.gateways",
+        "pending_mac_state.pending_application_downlink.confirmed",
+        "pending_mac_state.pending_application_downlink.correlation_ids",
+        "pending_mac_state.pending_application_downlink.decoded_payload",
+        "pending_mac_state.pending_application_downlink.f_cnt",
+        "pending_mac_state.pending_application_downlink.f_port",
+        "pending_mac_state.pending_application_downlink.frm_payload",
+        "pending_mac_state.pending_application_downlink.priority",
+        "pending_mac_state.pending_application_downlink.session_key_id",
+        "pending_mac_state.pending_join_request",
+        "pending_mac_state.pending_join_request.cf_list",
+        "pending_mac_state.pending_join_request.cf_list.ch_masks",
+        "pending_mac_state.pending_join_request.cf_list.freq",
+        "pending_mac_state.pending_join_request.cf_list.type",
+        "pending_mac_state.pending_join_request.correlation_ids",
+        "pending_mac_state.pending_join_request.dev_addr",
+        "pending_mac_state.pending_join_request.downlink_settings",
+        "pending_mac_state.pending_join_request.downlink_settings.opt_neg",
+        "pending_mac_state.pending_join_request.downlink_settings.rx1_dr_offset",
+        "pending_mac_state.pending_join_request.downlink_settings.rx2_dr",
+        "pending_mac_state.pending_join_request.net_id",
+        "pending_mac_state.pending_join_request.payload",
+        "pending_mac_state.pending_join_request.payload.Payload",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.cf_list",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.cf_list.ch_masks",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.cf_list.freq",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.cf_list.type",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.dev_addr",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.dl_settings",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.dl_settings.opt_neg",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.dl_settings.rx1_dr_offset",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.dl_settings.rx2_dr",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.encrypted",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.join_nonce",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.net_id",
+        "pending_mac_state.pending_join_request.payload.Payload.join_accept_payload.rx_delay",
+        "pending_mac_state.pending_join_request.payload.Payload.join_request_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.join_request_payload.dev_eui",
+        "pending_mac_state.pending_join_request.payload.Payload.join_request_payload.dev_nonce",
+        "pending_mac_state.pending_join_request.payload.Payload.join_request_payload.join_eui",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.decoded_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.dev_addr",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_cnt",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl.ack",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl.adr",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl.adr_ack_req",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl.class_b",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_ctrl.f_pending",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_hdr.f_opts",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.f_port",
+        "pending_mac_state.pending_join_request.payload.Payload.mac_payload.frm_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload.dev_eui",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload.join_eui",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload.net_id",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload.rejoin_cnt",
+        "pending_mac_state.pending_join_request.payload.Payload.rejoin_request_payload.rejoin_type",
+        "pending_mac_state.pending_join_request.payload.m_hdr",
+        "pending_mac_state.pending_join_request.payload.m_hdr.m_type",
+        "pending_mac_state.pending_join_request.payload.m_hdr.major",
+        "pending_mac_state.pending_join_request.payload.mic",
+        "pending_mac_state.pending_join_request.raw_payload",
+        "pending_mac_state.pending_join_request.rx_delay",
+        "pending_mac_state.pending_join_request.selected_mac_version",
+        "pending_mac_state.pending_requests",
+        "pending_mac_state.ping_slot_periodicity",
+        "pending_mac_state.queued_join_accept",
+        "pending_mac_state.queued_join_accept.keys",
+        "pending_mac_state.queued_join_accept.keys.app_s_key",
+        "pending_mac_state.queued_join_accept.keys.app_s_key.key",
+        "pending_mac_state.queued_join_accept.keys.f_nwk_s_int_key",
+        "pending_mac_state.queued_join_accept.keys.f_nwk_s_int_key.key",
+        "pending_mac_state.queued_join_accept.keys.nwk_s_enc_key",
+        "pending_mac_state.queued_join_accept.keys.nwk_s_enc_key.key",
+        "pending_mac_state.queued_join_accept.keys.s_nwk_s_int_key",
+        "pending_mac_state.queued_join_accept.keys.s_nwk_s_int_key.key",
+        "pending_mac_state.queued_join_accept.keys.session_key_id",
+        "pending_mac_state.queued_join_accept.payload",
+        "pending_mac_state.queued_join_accept.request",
+        "pending_mac_state.queued_join_accept.request.cf_list",
+        "pending_mac_state.queued_join_accept.request.cf_list.ch_masks",
+        "pending_mac_state.queued_join_accept.request.cf_list.freq",
+        "pending_mac_state.queued_join_accept.request.cf_list.type",
+        "pending_mac_state.queued_join_accept.request.correlation_ids",
+        "pending_mac_state.queued_join_accept.request.dev_addr",
+        "pending_mac_state.queued_join_accept.request.downlink_settings",
+        "pending_mac_state.queued_join_accept.request.downlink_settings.opt_neg",
+        "pending_mac_state.queued_join_accept.request.downlink_settings.rx1_dr_offset",
+        "pending_mac_state.queued_join_accept.request.downlink_settings.rx2_dr",
+        "pending_mac_state.queued_join_accept.request.net_id",
+        "pending_mac_state.queued_join_accept.request.payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.cf_list",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.cf_list.ch_masks",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.cf_list.freq",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.cf_list.type",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.dev_addr",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.dl_settings",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.dl_settings.opt_neg",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.dl_settings.rx1_dr_offset",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.dl_settings.rx2_dr",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.encrypted",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.join_nonce",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.net_id",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_accept_payload.rx_delay",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_request_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_request_payload.dev_eui",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_request_payload.dev_nonce",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.join_request_payload.join_eui",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.decoded_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.dev_addr",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_cnt",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl.ack",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl.adr",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl.adr_ack_req",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl.class_b",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_ctrl.f_pending",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_hdr.f_opts",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.f_port",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.mac_payload.frm_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload.dev_eui",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload.join_eui",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload.net_id",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload.rejoin_cnt",
+        "pending_mac_state.queued_join_accept.request.payload.Payload.rejoin_request_payload.rejoin_type",
+        "pending_mac_state.queued_join_accept.request.payload.m_hdr",
+        "pending_mac_state.queued_join_accept.request.payload.m_hdr.m_type",
+        "pending_mac_state.queued_join_accept.request.payload.m_hdr.major",
+        "pending_mac_state.queued_join_accept.request.payload.mic",
+        "pending_mac_state.queued_join_accept.request.raw_payload",
+        "pending_mac_state.queued_join_accept.request.rx_delay",
+        "pending_mac_state.queued_join_accept.request.selected_mac_version",
+        "pending_mac_state.queued_responses",
+        "pending_mac_state.rx_windows_available",
         "pending_session",
         "pending_session.dev_addr",
         "pending_session.keys",
@@ -2353,6 +2862,7 @@
         "pending_session.last_conf_f_cnt_down",
         "pending_session.last_f_cnt_up",
         "pending_session.last_n_f_cnt_down",
+        "pending_session.queued_application_downlinks",
         "power_state",
         "queued_application_downlinks",
         "recent_adr_uplinks",
@@ -2372,6 +2882,7 @@
         "session.last_f_cnt_up",
         "session.last_n_f_cnt_down",
         "session.started_at",
+        "session.queued_application_downlinks",
         "supports_class_b",
         "supports_class_c",
         "supports_join",
@@ -2416,14 +2927,19 @@
         "lorawan_version",
         "mac_settings",
         "mac_settings.adr_margin",
+        "mac_settings.beacon_frequency",
         "mac_settings.class_b_timeout",
         "mac_settings.class_c_timeout",
         "mac_settings.desired_adr_ack_delay_exponent",
         "mac_settings.desired_adr_ack_delay_exponent.value",
         "mac_settings.desired_adr_ack_limit_exponent",
         "mac_settings.desired_adr_ack_limit_exponent.value",
+        "mac_settings.desired_beacon_frequency",
         "mac_settings.desired_max_duty_cycle",
         "mac_settings.desired_max_duty_cycle.value",
+        "mac_settings.desired_ping_slot_data_rate_index",
+        "mac_settings.desired_ping_slot_data_rate_index.value",
+        "mac_settings.desired_ping_slot_frequency",
         "mac_settings.desired_rx1_data_rate_offset",
         "mac_settings.desired_rx1_delay",
         "mac_settings.desired_rx1_delay.value",
@@ -2449,6 +2965,25 @@
         "mac_settings.status_time_periodicity",
         "mac_settings.supports_32_bit_f_cnt",
         "mac_settings.use_adr",
+        "mac_state.current_parameters.adr_ack_delay_exponent",
+        "mac_state.current_parameters.adr_ack_delay_exponent.value",
+        "mac_state.current_parameters.adr_ack_limit_exponent",
+        "mac_state.current_parameters.adr_ack_limit_exponent.value",
+        "mac_state.current_parameters.adr_nb_trans",
+        "mac_state.current_parameters.adr_tx_power_index",
+        "mac_state.current_parameters.beacon_frequency",
+        "mac_state.current_parameters.downlink_dwell_time",
+        "mac_state.current_parameters.max_duty_cycle",
+        "mac_state.current_parameters.max_eirp",
+        "mac_state.current_parameters.ping_slot_data_rate_index",
+        "mac_state.current_parameters.ping_slot_frequency",
+        "mac_state.current_parameters.rejoin_count_periodicity",
+        "mac_state.current_parameters.rejoin_time_periodicity",
+        "mac_state.current_parameters.rx1_data_rate_offset",
+        "mac_state.current_parameters.rx1_delay",
+        "mac_state.current_parameters.rx2_data_rate_index",
+        "mac_state.current_parameters.rx2_frequency",
+        "mac_state.current_parameters.uplink_dwell_time",
         "mac_state.desired_parameters.adr_ack_delay_exponent",
         "mac_state.desired_parameters.adr_ack_delay_exponent.value",
         "mac_state.desired_parameters.adr_ack_limit_exponent",
@@ -2633,11 +3168,9 @@
       "file": "lorawan-stack/api/organization_services.proto",
       "http": [
         {
-          "method": "get",
-          "pattern": "/organizations/{organization_ids.organization_id}/collaborator",
-          "parameters": [
-            "organization_ids.organization_id"
-          ]
+          "method": "",
+          "pattern": "",
+          "parameters": []
         },
         {
           "method": "get",
@@ -2774,6 +3307,18 @@
       ]
     }
   },
+  "GsPba": {
+    "PublishUplink": {
+      "file": "lorawan-stack/api/packetbrokeragent.proto",
+      "http": []
+    }
+  },
+  "NsPba": {
+    "PublishDownlink": {
+      "file": "lorawan-stack/api/packetbrokeragent.proto",
+      "http": []
+    }
+  },
   "EndDeviceQRCodeGenerator": {
     "GetFormat": {
       "file": "lorawan-stack/api/qrcodegenerator.proto",
@@ -2886,6 +3431,7 @@
         "grants",
         "ids",
         "ids.client_id",
+        "logout_redirect_uris",
         "name",
         "redirect_uris",
         "rights",
@@ -2913,15 +3459,21 @@
         "downlink_path_constraint",
         "enforce_duty_cycle",
         "frequency_plan_id",
+        "frequency_plan_ids",
         "gateway_server_address",
         "ids",
         "ids.eui",
         "ids.gateway_id",
+        "lbs_lns_secret",
+        "lbs_lns_secret.key_id",
+        "lbs_lns_secret.value",
         "location_public",
         "name",
+        "schedule_anytime_delay",
         "schedule_downlink_late",
         "status_public",
         "update_channel",
+        "update_location_from_status",
         "updated_at",
         "version_ids",
         "version_ids.brand_id",

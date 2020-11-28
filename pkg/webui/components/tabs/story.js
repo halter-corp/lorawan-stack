@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/* eslint-disable react/prop-types */
+
 import React, { Component } from 'react'
 import bind from 'autobind-decorator'
 import { storiesOf } from '@storybook/react'
@@ -19,7 +21,6 @@ import { withInfo } from '@storybook/addon-info'
 
 import Tabs from '.'
 
-@bind
 class Example extends Component {
   constructor(props) {
     super(props)
@@ -29,6 +30,7 @@ class Example extends Component {
     }
   }
 
+  @bind
   onTabChange(activeTab) {
     this.setState({ activeTab })
   }
@@ -63,13 +65,18 @@ storiesOf('Tabs', module)
 
     return <Example tabs={tabs} active={tabs[0].name} />
   })
+  .add('Default (narrow)', function() {
+    const tabs = [{ title: 'All', name: 'all' }, { title: 'Starred', name: 'starred' }]
+
+    return <Example tabs={tabs} active={tabs[0].name} narrow />
+  })
   .add('With icons', function() {
     const tabs = [
       { title: 'People', name: 'people', icon: 'organization' },
       { title: 'Data', name: 'data', icon: 'data' },
     ]
 
-    return <Example tabs={tabs} active={tabs[0].name} />
+    return <Example tabs={tabs} active={tabs[0].name} narrow />
   })
   .add('With icons (disabled)', function() {
     const tabs = [
@@ -78,4 +85,28 @@ storiesOf('Tabs', module)
     ]
 
     return <Example tabs={tabs} active={tabs[0].name} />
+  })
+  .add('Link', function() {
+    const tabs = [
+      { title: 'People', name: 'people', link: '/people' },
+      { title: 'Data', name: 'data', link: '/data' },
+    ]
+
+    return <Example tabs={tabs} />
+  })
+  .add('Link (disabled)', function() {
+    const tabs = [
+      { title: 'People', name: 'people', link: '/people' },
+      { title: 'Data', name: 'data', link: '/data', disabled: true },
+    ]
+
+    return <Example tabs={tabs} />
+  })
+  .add('Link (narrow)', function() {
+    const tabs = [
+      { title: 'People', name: 'people', link: '/people' },
+      { title: 'Data', name: 'data', link: '/data' },
+    ]
+
+    return <Example tabs={tabs} narrow />
   })

@@ -23,8 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetApplicationStore returns an ApplicationStore on the given db (or transaction).
@@ -85,6 +85,7 @@ func (s *applicationStore) FindApplications(ctx context.Context, ids []*ttnpb.Ap
 	}
 	query := s.query(ctx, Application{}, withApplicationID(idStrings...))
 	query = selectApplicationFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "applications", "application_id", "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query.Model(&Application{}))
 		query = query.Limit(limit).Offset(offset)

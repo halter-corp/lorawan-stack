@@ -22,19 +22,20 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	. "go.thethings.network/lorawan-stack/pkg/applicationserver/io/grpc"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/mock"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	. "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/grpc"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -58,7 +59,7 @@ func TestAuthentication(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -143,7 +144,7 @@ func TestTraffic(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -257,7 +258,6 @@ func TestTraffic(t *testing.T) {
 					{
 						SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44}, // This gets discarded.
 						FPort:          1,
-						FCnt:           100, // This gets discarded.
 						FRMPayload:     []byte{0x01, 0x01, 0x01},
 						Confirmed:      true,
 						CorrelationIDs: []string{"test"},
@@ -325,7 +325,6 @@ func TestTraffic(t *testing.T) {
 				Downlinks: []*ttnpb.ApplicationDownlink{
 					{
 						FPort:      4,
-						FCnt:       100, // This gets discarded.
 						FRMPayload: []byte{0x04, 0x04, 0x04},
 						Confirmed:  true,
 					},
@@ -369,7 +368,7 @@ func TestMQTTConfig(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},

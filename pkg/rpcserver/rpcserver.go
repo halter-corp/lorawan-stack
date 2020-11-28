@@ -20,31 +20,30 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/textproto"
 	"os"
 	"runtime/debug"
-	"strconv"
 	"time"
 
-	"github.com/getsentry/raven-go"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.opencensus.io/plugin/ocgrpc"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/fillcontext"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/metrics"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware"
-	rpcfillcontext "go.thethings.network/lorawan-stack/pkg/rpcmiddleware/fillcontext"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/hooks"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/sentry"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/validator"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/fillcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware"
+	rpcfillcontext "go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/fillcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
+	sentrymiddleware "go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/sentry"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/validator"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip" // Register gzip compression.
 	"google.golang.org/grpc/keepalive"
@@ -60,11 +59,11 @@ func init() {
 
 type options struct {
 	contextFillers     []fillcontext.Filler
-	fieldExtractor     grpc_ctxtags.RequestFieldExtractorFunc
 	streamInterceptors []grpc.StreamServerInterceptor
 	unaryInterceptors  []grpc.UnaryServerInterceptor
 	serverOptions      []grpc.ServerOption
-	sentry             *raven.Client
+	trustedProxies     []string
+	logIgnoreMethods   []string
 }
 
 // Option for the gRPC server
@@ -84,13 +83,6 @@ func WithContextFiller(contextFillers ...fillcontext.Filler) Option {
 	}
 }
 
-// WithFieldExtractor sets a field extractor
-func WithFieldExtractor(fieldExtractor grpc_ctxtags.RequestFieldExtractorFunc) Option {
-	return func(o *options) {
-		o.fieldExtractor = fieldExtractor
-	}
-}
-
 // WithStreamInterceptors adds gRPC stream interceptors
 func WithStreamInterceptors(interceptors ...grpc.StreamServerInterceptor) Option {
 	return func(o *options) {
@@ -105,10 +97,17 @@ func WithUnaryInterceptors(interceptors ...grpc.UnaryServerInterceptor) Option {
 	}
 }
 
-// WithSentry sets a sentry server
-func WithSentry(sentry *raven.Client) Option {
+// WithTrustedProxies adds trusted proxies from which proxy headers are trusted.
+func WithTrustedProxies(cidrs ...string) Option {
 	return func(o *options) {
-		o.sentry = sentry
+		o.trustedProxies = append(o.trustedProxies, cidrs...)
+	}
+}
+
+// WithLogIgnoreMethods sets a list of methods for which no log messages are printed on success.
+func WithLogIgnoreMethods(methods []string) Option {
+	return func(o *options) {
+		o.logIgnoreMethods = methods
 	}
 }
 
@@ -127,13 +126,20 @@ func New(ctx context.Context, opts ...Option) *Server {
 	}
 	server := &Server{ctx: ctx}
 	ctxtagsOpts := []grpc_ctxtags.Option{
-		grpc_ctxtags.WithFieldExtractor(options.fieldExtractor),
+		grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor),
 	}
+	var proxyHeaders rpcmiddleware.ProxyHeaders
+	proxyHeaders.ParseAndAddTrusted(options.trustedProxies...)
 	recoveryOpts := []grpc_recovery.Option{
 		grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 			fmt.Fprintln(os.Stderr, p)
 			os.Stderr.Write(debug.Stack())
-			return ErrRPCRecovered.WithAttributes("panic", p)
+			if pErr, ok := p.(error); ok {
+				err = ErrRPCRecovered.WithCause(pErr)
+			} else {
+				err = ErrRPCRecovered.WithAttributes("panic", p)
+			}
+			return err
 		}),
 	}
 
@@ -141,12 +147,15 @@ func New(ctx context.Context, opts ...Option) *Server {
 		rpcfillcontext.StreamServerInterceptor(options.contextFillers...),
 		grpc_ctxtags.StreamServerInterceptor(ctxtagsOpts...),
 		rpcmiddleware.RequestIDStreamServerInterceptor(),
+		proxyHeaders.StreamServerInterceptor(),
 		grpc_opentracing.StreamServerInterceptor(),
 		events.StreamServerInterceptor,
-		rpclog.StreamServerInterceptor(ctx),
+		rpclog.StreamServerInterceptor(ctx, rpclog.WithIgnoreMethods(options.logIgnoreMethods)),
 		metrics.StreamServerInterceptor,
-		sentry.StreamServerInterceptor(options.sentry),
 		errors.StreamServerInterceptor(),
+		// NOTE: All middleware that works with lorawan-stack/pkg/errors errors must be placed below.
+		sentrymiddleware.StreamServerInterceptor(),
+		grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		validator.StreamServerInterceptor(),
 		hooks.StreamServerInterceptor(),
 	}
@@ -155,12 +164,15 @@ func New(ctx context.Context, opts ...Option) *Server {
 		rpcfillcontext.UnaryServerInterceptor(options.contextFillers...),
 		grpc_ctxtags.UnaryServerInterceptor(ctxtagsOpts...),
 		rpcmiddleware.RequestIDUnaryServerInterceptor(),
+		proxyHeaders.UnaryServerInterceptor(),
 		grpc_opentracing.UnaryServerInterceptor(),
 		events.UnaryServerInterceptor,
-		rpclog.UnaryServerInterceptor(ctx),
+		rpclog.UnaryServerInterceptor(ctx, rpclog.WithIgnoreMethods(options.logIgnoreMethods)),
 		metrics.UnaryServerInterceptor,
-		sentry.UnaryServerInterceptor(options.sentry),
 		errors.UnaryServerInterceptor(),
+		// NOTE: All middleware that works with lorawan-stack/pkg/errors errors must be placed below.
+		sentrymiddleware.UnaryServerInterceptor(),
+		grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
 		validator.UnaryServerInterceptor(),
 		hooks.UnaryServerInterceptor(),
 	}
@@ -168,21 +180,21 @@ func New(ctx context.Context, opts ...Option) *Server {
 	baseOptions := []grpc.ServerOption{
 		grpc.StatsHandler(rpcmiddleware.StatsHandlers{new(ocgrpc.ServerHandler), metrics.StatsHandler}),
 		grpc.MaxConcurrentStreams(math.MaxUint16),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             1 * time.Minute,
+			PermitWithoutStream: true,
+		}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle: 6 * time.Hour,
 			MaxConnectionAge:  24 * time.Hour,
+			Time:              1 * time.Minute,
+			Timeout:           20 * time.Second,
 		}),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			append(
-				append(streamInterceptors, options.streamInterceptors...),
-				grpc_recovery.StreamServerInterceptor(recoveryOpts...),
-			)...,
+			append(streamInterceptors, options.streamInterceptors...)...,
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			append(
-				append(unaryInterceptors, options.unaryInterceptors...),
-				grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
-			)...,
+			append(unaryInterceptors, options.unaryInterceptors...)...,
 		)),
 	}
 	server.Server = grpc.NewServer(append(baseOptions, options.serverOptions...)...)
@@ -195,15 +207,23 @@ func New(ctx context.Context, opts ...Option) *Server {
 				Host: req.Host,
 				URI:  req.RequestURI,
 			}
-
-			q := req.URL.Query()
-			md.Page, _ = strconv.ParseUint(q.Get("page"), 10, 64)
-			if md.Page == 0 {
-				md.Page = 1
-			}
-			md.Limit, _ = strconv.ParseUint(q.Get("limit"), 10, 64)
-
 			return md.ToMetadata()
+		}),
+		runtime.WithIncomingHeaderMatcher(func(s string) (string, bool) {
+			s = textproto.CanonicalMIMEHeaderKey(s)
+			switch s {
+			case "Forwarded",
+				"X-Request-Id",
+				"X-Forwarded-For",
+				"X-Real-Ip",
+				"X-Forwarded-Host",
+				"X-Forwarded-Proto",
+				"X-Forwarded-Client-Cert",
+				"X-Forwarded-Tls-Client-Cert",
+				"X-Forwarded-Tls-Client-Cert-Info":
+				return s, true
+			}
+			return runtime.DefaultHeaderMatcher(s)
 		}),
 		runtime.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
 			// NOTE: When adding headers, also add them to CORSConfig in ../component/grpc.go.

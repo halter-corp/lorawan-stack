@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Marshaler from '../util/marshaler'
+
 import ApiKeys from './api-keys'
 import Collaborators from './collaborators'
 
@@ -37,7 +38,7 @@ class Organizations {
     })
   }
 
-  // Retrieval
+  // Retrieval.
 
   async getAll(params, selector) {
     const response = await this._api.OrganizationRegistry.List(undefined, {
@@ -60,7 +61,16 @@ class Organizations {
     return Marshaler.payloadSingleResponse(response)
   }
 
-  // Create
+  async search(params, selector) {
+    const response = await this._api.EntityRegistrySearch.SearchOrganizations(undefined, {
+      ...params,
+      ...Marshaler.selectorToFieldMask(selector),
+    })
+
+    return Marshaler.payloadListResponse('organizations', response)
+  }
+
+  // Creation.
 
   async create(userId, organization) {
     const response = await this._api.OrganizationRegistry.Create(
@@ -73,7 +83,7 @@ class Organizations {
     return Marshaler.payloadSingleResponse(response)
   }
 
-  // Update
+  // Update.
 
   async updateById(id, patch, mask = Marshaler.fieldMaskFromPatch(patch)) {
     const response = await this._api.OrganizationRegistry.Update(
@@ -91,7 +101,7 @@ class Organizations {
     return Marshaler.payloadSingleResponse(response)
   }
 
-  // Delete
+  // Deletion.
 
   async deleteById(organizationId) {
     const response = await this._api.OrganizationRegistry.Delete({
@@ -109,7 +119,7 @@ class Organizations {
     return Marshaler.unwrapRights(result)
   }
 
-  // Events Stream
+  // Events stream.
 
   async openStream(identifiers, tail, after) {
     const payload = {

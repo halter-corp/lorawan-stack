@@ -13,14 +13,16 @@
 // limitations under the License.
 
 import axios from 'axios'
+
 import Token from '../../util/token'
+
 import { notify, EVENTS } from './shared'
 
 /**
  * Opens a new stream.
  *
  * @async
- * @param {Object} payload  - The body of the initial request.
+ * @param {object} payload -  - The body of the initial request.
  * @param {string} url - The stream endpoint.
  *
  * @example
@@ -30,18 +32,18 @@ import { notify, EVENTS } from './shared'
  *      'http://localhost:1885/api/v3/events',
  *    )
  *
- *    // add listeners to the stream
+ *    // Add listeners to the stream.
  *    stream
- *      .on('start', () => console.log('conn opened'));
- *      .on('chunk', chunk => console.log('received chunk', chunk));
- *      .on('error', error => console.log(error));
+ *      .on('start', () => console.log('conn opened'))
+ *      .on('chunk', chunk => console.log('received chunk', chunk))
+ *      .on('error', error => console.log(error))
  *      .on('close', () => console.log('conn closed'))
  *
- *    // close the stream after 20 s
+ *    // Close the stream after 20 s.
  *    setTimeout(() => stream.close(), 20000)
  * })()
  *
- * @returns {Object} The stream subscription object with the `on` function for
+ * @returns {object} The stream subscription object with the `on` function for
  * attaching listeners and the `close` function to close the stream.
  */
 export default async function(payload, url) {
@@ -56,6 +58,7 @@ export default async function(payload, url) {
   }
 
   let reader = null
+  let buffer = ''
   axios({
     url,
     data: JSON.stringify(payload),
@@ -63,6 +66,7 @@ export default async function(payload, url) {
     responseType: 'stream',
     headers: {
       Authorization,
+      Accept: 'text/event-stream',
     },
   })
     .then(response => response.data)
@@ -72,10 +76,11 @@ export default async function(payload, url) {
 
       stream.on('data', function(data) {
         const parsed = data.toString('utf8')
-
-        for (const line of parsed.trim().split('\n')) {
-          const result = JSON.parse(line).result
-          notify(listeners[EVENTS.CHUNK], result)
+        buffer += parsed
+        const lines = buffer.split(/\n\n/)
+        buffer = lines.pop()
+        for (const line of lines) {
+          notify(listeners[EVENTS.CHUNK], JSON.parse(line).result)
         }
       })
       stream.on('end', function() {

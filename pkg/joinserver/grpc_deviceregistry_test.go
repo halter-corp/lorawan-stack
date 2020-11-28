@@ -23,17 +23,17 @@ import (
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/mohae/deepcopy"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoutil"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	. "go.thethings.network/lorawan-stack/pkg/joinserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	. "go.thethings.network/lorawan-stack/v3/pkg/joinserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 var errNotFound = errors.DefineNotFound("not_found", "not found")
@@ -104,7 +104,8 @@ func TestDeviceRegistryGet(t *testing.T) {
 				EndDeviceIdentifiers: deepcopy.Copy(registeredDevice.EndDeviceIdentifiers).(ttnpb.EndDeviceIdentifiers),
 				FieldMask: pbtypes.FieldMask{
 					Paths: []string{"ids"},
-				}},
+				},
+			},
 			ErrorAssertion: func(t *testing.T, err error) bool {
 				a := assertions.New(t)
 				return a.So(errors.IsPermissionDenied(err), should.BeTrue)
@@ -129,7 +130,7 @@ func TestDeviceRegistryGet(t *testing.T) {
 				})
 				a.So(devID, should.Equal, unregisteredDeviceID)
 				a.So(paths, should.HaveSameElementsDeep, []string{"ids"})
-				return nil, errNotFound
+				return nil, errNotFound.New()
 			},
 			DeviceRequest: &ttnpb.GetEndDeviceRequest{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
@@ -403,7 +404,7 @@ func TestDeviceRegistryGet(t *testing.T) {
 				return ctx
 			})
 			js.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, js.Component)
 			defer js.Close()
@@ -801,7 +802,7 @@ func TestDeviceRegistrySet(t *testing.T) {
 				return ctx
 			})
 			js.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, js.Component)
 			defer js.Close()
@@ -890,42 +891,6 @@ func TestDeviceRegistryDelete(t *testing.T) {
 		},
 
 		{
-			Name: "Invalid application ID",
-			ContextFunc: func(ctx context.Context) context.Context {
-				return rights.NewContext(ctx, rights.Rights{
-					ApplicationRights: map[string]*ttnpb.Rights{
-						unique.ID(test.Context(), ttnpb.ApplicationIdentifiers{ApplicationID: "bar-application"}): ttnpb.RightsFrom(
-							ttnpb.RIGHT_APPLICATION_DEVICES_WRITE,
-						),
-					},
-				})
-			},
-			DeviceRequest: &ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-					ApplicationID: "bar-application",
-				},
-				DeviceID: "bar-device",
-				JoinEUI:  registeredJoinEUI,
-				DevEUI:   registeredDevEUI,
-			},
-			SetByIDFunc: func(ctx context.Context, appID ttnpb.ApplicationIdentifiers, devID string, paths []string, cb func(*ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error)) (*ttnpb.EndDevice, error) {
-				a := assertions.New(test.MustTFromContext(ctx))
-				a.So(appID, should.Resemble, ttnpb.ApplicationIdentifiers{
-					ApplicationID: "bar-application",
-				})
-				a.So(devID, should.Equal, "bar-device")
-				a.So(paths, should.BeNil)
-				dev, _, err := cb(CopyEndDevice(registeredDevice))
-				return dev, err
-			},
-			ErrorAssertion: func(t *testing.T, err error) bool {
-				a := assertions.New(t)
-				return a.So(errors.IsNotFound(err), should.BeTrue)
-			},
-			SetByIDCalls: 1,
-		},
-
-		{
 			Name: "Not found",
 			ContextFunc: func(ctx context.Context) context.Context {
 				return rights.NewContext(ctx, rights.Rights{
@@ -951,7 +916,7 @@ func TestDeviceRegistryDelete(t *testing.T) {
 				})
 				a.So(devID, should.Equal, unregisteredDeviceID)
 				a.So(paths, should.BeNil)
-				return nil, errNotFound
+				return nil, errNotFound.New()
 			},
 			ErrorAssertion: func(t *testing.T, err error) bool {
 				a := assertions.New(t)
@@ -1010,7 +975,7 @@ func TestDeviceRegistryDelete(t *testing.T) {
 				return ctx
 			})
 			js.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, js.Component)
 			defer js.Close()

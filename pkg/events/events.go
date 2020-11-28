@@ -20,21 +20,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gogoproto"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	pbtypes "github.com/gogo/protobuf/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/gogoproto"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Event interface
 type Event interface {
+	UniqueID() string
 	Context() context.Context
 	Name() string
 	Time() time.Time
@@ -44,6 +45,11 @@ type Event interface {
 	Origin() string
 	Caller() string
 	Visibility() *ttnpb.Rights
+	AuthType() string
+	AuthTokenID() string
+	AuthTokenType() string
+	RemoteIP() string
+	UserAgent() string
 }
 
 func local(evt Event) *event {
@@ -52,6 +58,7 @@ func local(evt Event) *event {
 		localEvent = &event{
 			ctx: evt.Context(),
 			innerEvent: ttnpb.Event{
+				UniqueID:       evt.UniqueID(),
 				Name:           evt.Name(),
 				Time:           evt.Time(),
 				Identifiers:    evt.Identifiers(),
@@ -73,6 +80,14 @@ type event struct {
 	caller     string
 }
 
+var pathPrefix = func() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("could not determine location of events.go")
+	}
+	return strings.TrimSuffix(file, filepath.Join("pkg", "events", "events.go"))
+}()
+
 // IncludeCaller indicates whether the caller of Publish should be included in the event
 var IncludeCaller bool
 
@@ -81,12 +96,8 @@ var IncludeCaller bool
 func (e *event) withCaller() *event {
 	if IncludeCaller && e.caller == "" {
 		if _, file, line, ok := runtime.Caller(2); ok {
-			split := strings.SplitAfter(file, "lorawan-stack/")
-			if len(split) > 1 {
-				file = split[1]
-			}
 			clone := *e
-			clone.caller = fmt.Sprintf("%s:%d", file, line)
+			clone.caller = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, pathPrefix), line)
 			return &clone
 		}
 	}
@@ -116,6 +127,7 @@ func (e *event) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (e event) UniqueID() string                        { return e.innerEvent.UniqueID }
 func (e event) Context() context.Context                { return e.ctx }
 func (e event) Name() string                            { return e.innerEvent.Name }
 func (e event) Time() time.Time                         { return e.innerEvent.Time }
@@ -125,6 +137,28 @@ func (e event) CorrelationIDs() []string                { return e.innerEvent.Co
 func (e event) Origin() string                          { return e.innerEvent.Origin }
 func (e event) Caller() string                          { return e.caller }
 func (e event) Visibility() *ttnpb.Rights               { return e.innerEvent.Visibility }
+func (e event) UserAgent() string                       { return e.innerEvent.UserAgent }
+func (e event) RemoteIP() string                        { return e.innerEvent.RemoteIP }
+func (e event) AuthType() string {
+	if e.innerEvent.Authentication == nil {
+		return ""
+	}
+	return e.innerEvent.Authentication.Type
+}
+
+func (e event) AuthTokenType() string {
+	if e.innerEvent.Authentication == nil {
+		return ""
+	}
+	return e.innerEvent.Authentication.TokenType
+}
+
+func (e event) AuthTokenID() string {
+	if e.innerEvent.Authentication == nil {
+		return ""
+	}
+	return e.innerEvent.Authentication.TokenID
+}
 
 var hostname string
 
@@ -133,33 +167,35 @@ func init() {
 }
 
 // New returns a new Event.
-// Event names are dot-separated for namespacing.
-// Event identifiers identify the entities that are related to the event.
-// System events have nil identifiers.
-// Event data will in most cases be marshaled to JSON, but ideally is a proto message.
-func New(ctx context.Context, name string, identifiers CombinedIdentifiers, data interface{}, requiredRights ...ttnpb.Right) Event {
-	evt := &event{
-		ctx: ctx,
-		innerEvent: ttnpb.Event{
-			Name:           name,
-			Time:           time.Now().UTC(),
-			Origin:         hostname,
-			CorrelationIDs: CorrelationIDsFromContext(ctx),
-			Visibility:     ttnpb.RightsFrom(requiredRights...),
-		},
-		data: data,
-	}
-	if data, ok := data.(interface{ GetCorrelationIDs() []string }); ok {
-		if cids := data.GetCorrelationIDs(); len(cids) > 0 {
-			cids = append(cids[:0:0], cids...)
-			sort.Strings(cids)
-			evt.innerEvent.CorrelationIDs = mergeStrings(evt.innerEvent.CorrelationIDs, cids)
+// Instead of using New, most implementations should first define an event,
+// and then create a new event from that definition.
+func New(ctx context.Context, name, description string, opts ...Option) Event {
+	return (&definition{name: name, description: description}).New(ctx, opts...)
+}
+
+func marshalData(data interface{}) (*pbtypes.Any, error) {
+	var (
+		any *pbtypes.Any
+		err error
+	)
+	if protoMessage, ok := data.(proto.Message); ok {
+		any, err = pbtypes.MarshalAny(protoMessage)
+	} else if errData, ok := data.(error); ok {
+		if ttnErrData, ok := errors.From(errData); ok {
+			any, err = pbtypes.MarshalAny(ttnpb.ErrorDetailsToProto(ttnErrData))
+		} else {
+			any, err = pbtypes.MarshalAny(&pbtypes.StringValue{Value: errData.Error()})
+		}
+	} else {
+		value, err := gogoproto.Value(data)
+		if err != nil {
+			return nil, err
+		}
+		if _, isNull := value.Kind.(*pbtypes.Value_NullValue); !isNull {
+			any, err = pbtypes.MarshalAny(value)
 		}
 	}
-	if identifiers != nil {
-		evt.innerEvent.Identifiers = identifiers.CombinedIdentifiers().GetEntityIdentifiers()
-	}
-	return evt
+	return any, err
 }
 
 // Proto returns the protobuf representation of the event.
@@ -173,23 +209,7 @@ func Proto(e Event) (*ttnpb.Event, error) {
 	pb.Context = ctx
 	if evt.data != nil {
 		var err error
-		if protoMessage, ok := evt.data.(proto.Message); ok {
-			pb.Data, err = types.MarshalAny(protoMessage)
-		} else if errData, ok := evt.data.(error); ok {
-			if ttnErrData, ok := errors.From(errData); ok {
-				pb.Data, err = types.MarshalAny(ttnpb.ErrorDetailsToProto(ttnErrData))
-			} else {
-				pb.Data, err = types.MarshalAny(&types.StringValue{Value: errData.Error()})
-			}
-		} else {
-			value, err := gogoproto.Value(evt.data)
-			if err != nil {
-				return nil, err
-			}
-			if _, isNull := value.Kind.(*types.Value_NullValue); !isNull {
-				pb.Data, err = types.MarshalAny(value)
-			}
-		}
+		pb.Data, err = marshalData(e.Data())
 		if err != nil {
 			return nil, err
 		}
@@ -203,36 +223,44 @@ func FromProto(pb *ttnpb.Event) (Event, error) {
 	if err != nil {
 		return nil, err
 	}
-	evt := &event{
-		ctx:        ctx,
-		innerEvent: *pb,
-	}
-	if evt.innerEvent.Data != nil {
-		any, err := types.EmptyAny(evt.innerEvent.Data)
+	var data interface{}
+	if pb.Data != nil {
+		any, err := pbtypes.EmptyAny(pb.Data)
 		if err != nil {
 			return nil, err
 		}
-		err = types.UnmarshalAny(evt.innerEvent.Data, any)
-		if err != nil {
+		if err = pbtypes.UnmarshalAny(pb.Data, any); err != nil {
 			return nil, err
 		}
-		evt.data = any
-		if value, ok := evt.data.(*types.Value); ok {
-			evt.data, err = gogoproto.Interface(value)
+		data = any
+		v, ok := any.(*pbtypes.Value)
+		if ok {
+			iface, err := gogoproto.Interface(v)
 			if err != nil {
 				return nil, err
 			}
+			data = iface
 		}
-		evt.innerEvent.Data = nil
 	}
-	return evt, nil
+	return &event{
+		ctx:  ctx,
+		data: data,
+		innerEvent: ttnpb.Event{
+			UniqueID:       pb.UniqueID,
+			Name:           pb.Name,
+			Time:           pb.Time,
+			Identifiers:    pb.Identifiers,
+			CorrelationIDs: pb.CorrelationIDs,
+			Origin:         pb.Origin,
+			Visibility:     pb.Visibility,
+		},
+	}, nil
 }
 
 // UnmarshalJSON unmarshals an event as JSON.
 func UnmarshalJSON(data []byte) (Event, error) {
 	e := new(event)
-	err := json.Unmarshal(data, e)
-	if err != nil {
+	if err := json.Unmarshal(data, e); err != nil {
 		return nil, err
 	}
 	return e, nil

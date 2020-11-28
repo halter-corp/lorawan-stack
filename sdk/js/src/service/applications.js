@@ -13,30 +13,35 @@
 // limitations under the License.
 
 import Marshaler from '../util/marshaler'
-import Devices from '../service/devices'
-import Application from '../entity/application'
+import combineStreams from '../util/combine-streams'
+import { STACK_COMPONENTS_MAP } from '../util/constants'
+
+import Devices from './devices'
 import ApiKeys from './api-keys'
 import Link from './link'
 import Collaborators from './collaborators'
 import Webhooks from './webhooks'
 import PubSubs from './pubsubs'
+import Packages from './application-packages'
+
+const { is: IS, as: AS, ns: NS, js: JS, dtc: DTC } = STACK_COMPONENTS_MAP
 
 /**
  * Applications Class provides an abstraction on all applications and manages
  * data handling from different sources. It exposes an API to easily work with
  * application data.
- * @param {Object} api - The connector to be used by the service.
- * @param {Object} config - The configuration for the service
+ *
+ * @param {object} api - The connector to be used by the service.
+ * @param {object} config - The configuration for the service.
  * @param {string} config.defaultUserId - The users identifier to be used in
  * user related requests.
  * @param {boolean} config.proxy - The flag to identify if the results
- *  should be proxied with the wrapper objects.
+ * should be proxied with the wrapper objects.
  */
 class Applications {
-  constructor(api, { defaultUserId, stackConfig, proxy = true }) {
+  constructor(api, { defaultUserId, stackConfig }) {
     this._defaultUserId = defaultUserId
     this._api = api
-    this._proxy = proxy
     this._stackConfig = stackConfig
 
     this.ApiKeys = new ApiKeys(api.ApplicationAccess, {
@@ -48,7 +53,7 @@ class Applications {
       },
     })
     this.Link = new Link(api.As)
-    this.Devices = new Devices(api, { proxy, stackConfig })
+    this.Devices = new Devices(api, { stackConfig })
     this.Collaborators = new Collaborators(api.ApplicationAccess, {
       parentRoutes: {
         get: 'application_ids.application_id',
@@ -58,16 +63,10 @@ class Applications {
     })
     this.Webhooks = new Webhooks(api.ApplicationWebhookRegistry)
     this.PubSubs = new PubSubs(api.ApplicationPubSubRegistry)
+    this.Packages = new Packages(api.ApplicationPackageRegistry)
   }
 
-  _responseTransform(response, single = true) {
-    return Marshaler[single ? 'unwrapApplication' : 'unwrapApplications'](
-      response,
-      this._proxy ? app => new Application(this, app, false) : undefined,
-    )
-  }
-
-  // Retrieval
+  // Retrieval.
 
   async getAll(params, selector) {
     const response = await this._api.ApplicationRegistry.List(undefined, {
@@ -75,7 +74,7 @@ class Applications {
       ...Marshaler.selectorToFieldMask(selector),
     })
 
-    return this._responseTransform(response, false)
+    return Marshaler.unwrapApplications(response)
   }
 
   async getById(id, selector) {
@@ -87,7 +86,7 @@ class Applications {
       fieldMask,
     )
 
-    return this._responseTransform(response)
+    return Marshaler.unwrapApplication(response)
   }
 
   async getByOrganization(organizationId) {
@@ -95,7 +94,7 @@ class Applications {
       routeParams: { 'collaborator.organization_ids.organization_id': organizationId },
     })
 
-    return this._responseTransform(response)
+    return Marshaler.unwrapApplications(response)
   }
 
   async getByCollaborator(userId) {
@@ -103,20 +102,28 @@ class Applications {
       routeParams: { 'collaborator.user_ids.user_id': userId },
     })
 
-    return this._responseTransform(response)
+    return Marshaler.unwrapApplications(response)
   }
 
-  async search(params) {
-    const response = await this._api.EntityRegistrySearch.SearchApplications({
-      queryParams: params,
+  async search(params, selector) {
+    const response = await this._api.EntityRegistrySearch.SearchApplications(undefined, {
+      ...params,
+      ...Marshaler.selectorToFieldMask(selector),
     })
 
-    return this._responseTransform(response, false)
+    return Marshaler.unwrapApplications(response)
   }
 
-  // Update
+  // Update.
 
-  async updateById(id, patch, mask = Marshaler.fieldMaskFromPatch(patch)) {
+  async updateById(
+    id,
+    patch,
+    mask = Marshaler.fieldMaskFromPatch(
+      patch,
+      this._api.ApplicationRegistry.UpdateAllowedFieldMaskPaths,
+    ),
+  ) {
     const response = await this._api.ApplicationRegistry.Update(
       {
         routeParams: {
@@ -128,10 +135,10 @@ class Applications {
         field_mask: Marshaler.fieldMask(mask),
       },
     )
-    return Marshaler.unwrapApplication(response, this._applicationTransform)
+    return Marshaler.unwrapApplication(response)
   }
 
-  // Create
+  // Creation.
 
   async create(ownerId = this._defaultUserId, application, isUserOwner = true) {
     const routeParams = isUserOwner
@@ -143,10 +150,10 @@ class Applications {
       },
       { application },
     )
-    return this._responseTransform(response)
+    return Marshaler.unwrapApplication(response)
   }
 
-  // Delete
+  // Deletion.
 
   async deleteById(applicationId) {
     const response = await this._api.ApplicationRegistry.Delete({
@@ -155,6 +162,8 @@ class Applications {
 
     return Marshaler.payloadSingleResponse(response)
   }
+
+  // Miscellaneous.
 
   async getRightsById(applicationId) {
     const result = await this._api.ApplicationAccess.ListRights({
@@ -183,7 +192,23 @@ class Applications {
       after,
     }
 
-    return this._api.Events.Stream(undefined, payload)
+    // Event streams can come from multiple stack components. It is necessary to
+    // check for stack components on different hosts and open distinct stream
+    // connections for any distinct host if need be.
+    const distinctComponents = this._stackConfig.getComponentsWithDistinctBaseUrls([
+      IS,
+      JS,
+      NS,
+      AS,
+      DTC,
+    ])
+
+    const streams = distinctComponents.map(component =>
+      this._api.Events.Stream({ component }, payload),
+    )
+
+    // Combine all stream sources to one subscription generator.
+    return combineStreams(streams)
   }
 }
 

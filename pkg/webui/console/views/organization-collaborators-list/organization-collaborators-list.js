@@ -15,22 +15,23 @@
 import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 
-import CollaboratorsTable from '../../containers/collaborators-table'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
-import PAGE_SIZES from '../../constants/page-sizes'
+import CollaboratorsTable from '@console/containers/collaborators-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 class OrganizationCollaboratorsList extends React.Component {
   static propTypes = {
-    getOrganizationCollaboratorsList: PropTypes.func.isRequired,
+    getCollaboratorsList: PropTypes.func.isRequired,
     selectTableData: PropTypes.func.isRequired,
   }
 
   render() {
-    const { getOrganizationCollaboratorsList, selectTableData } = this.props
+    const { getCollaboratorsList, selectTableData } = this.props
 
     return (
       <Container>
@@ -40,7 +41,7 @@ class OrganizationCollaboratorsList extends React.Component {
             <CollaboratorsTable
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={selectTableData}
-              getItemsAction={getOrganizationCollaboratorsList}
+              getItemsAction={getCollaboratorsList}
             />
           </Col>
         </Row>

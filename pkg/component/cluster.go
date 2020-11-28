@@ -17,8 +17,9 @@ package component
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"google.golang.org/grpc"
 )
 
@@ -30,7 +31,8 @@ func (c *Component) initCluster() (err error) {
 	if tlsConfig, err := c.GetTLSClientConfig(c.Context()); err == nil {
 		clusterOpts = append(clusterOpts, cluster.WithTLSConfig(tlsConfig))
 	}
-	c.cluster, err = c.clusterNew(c.ctx, &c.config.ServiceBase.Cluster, clusterOpts...)
+	ctx := log.NewContextWithField(c.ctx, "namespace", "cluster")
+	c.cluster, err = c.clusterNew(ctx, &c.config.ServiceBase.Cluster, clusterOpts...)
 	if err != nil {
 		return err
 	}

@@ -21,10 +21,10 @@ import (
 	"time"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/gpstime"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/datarate"
-	"go.thethings.network/lorawan-stack/pkg/version"
+	"go.thethings.network/lorawan-stack/v3/pkg/gpstime"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/datarate"
+	"go.thethings.network/lorawan-stack/v3/pkg/version"
 )
 
 const (
@@ -193,6 +193,7 @@ func convertUplink(rx RxPacket, md UpstreamMetadata) (ttnpb.UplinkMessage, error
 		for _, md := range up.RxMetadata {
 			md.Time = &goTime
 		}
+		up.Settings.Time = &goTime
 	}
 
 	up.Settings.DataRate = rx.DatR.DataRate
@@ -297,8 +298,15 @@ func FromGatewayUp(up *ttnpb.GatewayUp) (rxs []*RxPacket, stat *Stat, ack *TxPac
 		})
 	}
 	if up.GatewayStatus != nil {
+		// TODO: Handle multiple antenna locations (https://github.com/TheThingsNetwork/lorawan-stack/issues/2006).
 		stat = &Stat{
 			Time: ExpandedTime(up.GatewayStatus.Time),
+		}
+		if len(up.GatewayStatus.AntennaLocations) > 0 {
+			loc := up.GatewayStatus.AntennaLocations[0]
+			stat.Long = &loc.Longitude
+			stat.Lati = &loc.Latitude
+			stat.Alti = &loc.Altitude
 		}
 	}
 	if up.TxAcknowledgment != nil {
@@ -324,8 +332,8 @@ func ToDownlinkMessage(tx *TxPacket) (*ttnpb.DownlinkMessage, error) {
 		scheduled.CodingRate = tx.CodR
 	}
 	if tx.Time != nil {
-		gpsTime := gpstime.Parse(int64(*tx.Tmms))
-		scheduled.Time = &gpsTime
+		t := gpstime.Parse(time.Duration(*tx.Tmms) * time.Millisecond)
+		scheduled.Time = &t
 	}
 	buf, err := base64.RawStdEncoding.DecodeString(strings.TrimRight(tx.Data, "="))
 	if err != nil {
@@ -344,7 +352,7 @@ func FromDownlinkMessage(msg *ttnpb.DownlinkMessage) (*TxPacket, error) {
 	payload := msg.GetRawPayload()
 	scheduled := msg.GetScheduled()
 	if scheduled == nil {
-		return nil, errNotScheduled
+		return nil, errNotScheduled.New()
 	}
 	tx := &TxPacket{
 		Freq: float64(scheduled.Frequency) / 1000000,
@@ -355,8 +363,8 @@ func FromDownlinkMessage(msg *ttnpb.DownlinkMessage) (*TxPacket, error) {
 		Tmst: scheduled.Timestamp,
 	}
 	if scheduled.Time != nil {
-		gpsTime := uint64(gpstime.ToGPS(*scheduled.Time))
-		tx.Tmms = &gpsTime
+		t := uint64(gpstime.ToGPS(*scheduled.Time) / time.Millisecond)
+		tx.Tmms = &t
 	} else if scheduled.Timestamp == 0 {
 		tx.Imme = true
 	}

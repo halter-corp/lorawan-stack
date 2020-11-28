@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/band"
-	. "go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/gpstime"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/band"
+	. "go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/gpstime"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestLoRaWANEncodingMAC(t *testing.T) {
@@ -73,8 +73,8 @@ func TestLoRaWANEncodingMAC(t *testing.T) {
 		{
 			"LinkADRReq",
 			&ttnpb.MACCommand_LinkADRReq{
-				DataRateIndex: 0x5,
-				TxPowerIndex:  0x2,
+				DataRateIndex: 0b0101,
+				TxPowerIndex:  0b0010,
 				ChannelMask: []bool{
 					false, false, true, false, false, false, false, false,
 					false, true, false, false, false, false, false, false,
@@ -82,7 +82,7 @@ func TestLoRaWANEncodingMAC(t *testing.T) {
 				ChannelMaskControl: 1,
 				NbTrans:            1,
 			},
-			[]byte{0x03, 0x52, 0x04, 0x02, 0x11},
+			[]byte{0x03, 0b0101_0010, 0b00000100, 0b00000010, 0b0_001_0001},
 			false,
 		},
 		{
@@ -259,7 +259,7 @@ func TestLoRaWANEncodingMAC(t *testing.T) {
 		{
 			"DeviceTimeAns",
 			&ttnpb.MACCommand_DeviceTimeAns{
-				Time: gpstime.Parse(0x42ffffff).Add(0x42 * time.Duration(math.Pow(0.5, 8)*float64(time.Second))).UTC(),
+				Time: gpstime.Parse(0x42ffffff*time.Second + 0x42*time.Duration(math.Pow(0.5, 8)*float64(time.Second))).UTC(),
 			},
 			[]byte{0x0D, 0xff, 0xff, 0xff, 0x42, 0x42},
 			false,
@@ -342,7 +342,7 @@ func TestLoRaWANEncodingMAC(t *testing.T) {
 		{
 			"BeaconFreqReq",
 			&ttnpb.MACCommand_BeaconFreqReq{
-				Frequency: 0x1a2bff9c, // 0x42ffff * 100
+				Frequency: 0x42ffff * 100,
 			},
 			[]byte{0x13, 0xff, 0xff, 0x42},
 			false,

@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +31,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 var (
 	filter_As_GetLink_0 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
@@ -91,7 +93,10 @@ func local_request_As_GetLink_0(ctx context.Context, marshaler runtime.Marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_As_GetLink_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_As_GetLink_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -544,7 +549,10 @@ func local_request_AppAs_DownlinkQueueList_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "device_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_AppAs_DownlinkQueueList_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AppAs_DownlinkQueueList_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -603,6 +611,98 @@ func local_request_AppAs_GetMQTTConnectionInfo_0(ctx context.Context, marshaler 
 	}
 
 	msg, err := server.GetMQTTConnectionInfo(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_AppAs_SimulateUplink_0(ctx context.Context, marshaler runtime.Marshaler, client AppAsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ApplicationUp
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["end_device_ids.application_ids.application_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "end_device_ids.application_ids.application_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "end_device_ids.application_ids.application_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.application_ids.application_id", err)
+	}
+
+	val, ok = pathParams["end_device_ids.device_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "end_device_ids.device_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "end_device_ids.device_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.device_id", err)
+	}
+
+	msg, err := client.SimulateUplink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_AppAs_SimulateUplink_0(ctx context.Context, marshaler runtime.Marshaler, server AppAsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ApplicationUp
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["end_device_ids.application_ids.application_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "end_device_ids.application_ids.application_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "end_device_ids.application_ids.application_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.application_ids.application_id", err)
+	}
+
+	val, ok = pathParams["end_device_ids.device_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "end_device_ids.device_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "end_device_ids.device_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.device_id", err)
+	}
+
+	msg, err := server.SimulateUplink(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -689,7 +789,10 @@ func local_request_AsEndDeviceRegistry_Get_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.device_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_AsEndDeviceRegistry_Get_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AsEndDeviceRegistry_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -942,7 +1045,10 @@ func local_request_AsEndDeviceRegistry_Delete_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "device_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_AsEndDeviceRegistry_Delete_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AsEndDeviceRegistry_Delete_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -954,11 +1060,14 @@ func local_request_AsEndDeviceRegistry_Delete_0(ctx context.Context, marshaler r
 // RegisterAsHandlerServer registers the http handlers for service As to "mux".
 // UnaryRPC     :call AsServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAsHandlerFromEndpoint instead.
 func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AsServer) error {
 
 	mux.Handle("GET", pattern_As_GetLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -966,6 +1075,7 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 			return
 		}
 		resp, md, err := local_request_As_GetLink_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -979,6 +1089,8 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 	mux.Handle("PUT", pattern_As_SetLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -986,6 +1098,7 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 			return
 		}
 		resp, md, err := local_request_As_SetLink_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -999,6 +1112,8 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 	mux.Handle("DELETE", pattern_As_DeleteLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1006,6 +1121,7 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 			return
 		}
 		resp, md, err := local_request_As_DeleteLink_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1019,6 +1135,8 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 	mux.Handle("GET", pattern_As_GetLinkStats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1026,6 +1144,7 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 			return
 		}
 		resp, md, err := local_request_As_GetLinkStats_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1042,11 +1161,14 @@ func RegisterAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 // RegisterAppAsHandlerServer registers the http handlers for service AppAs to "mux".
 // UnaryRPC     :call AppAsServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAppAsHandlerFromEndpoint instead.
 func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AppAsServer) error {
 
 	mux.Handle("POST", pattern_AppAs_DownlinkQueuePush_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1054,6 +1176,7 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 		resp, md, err := local_request_AppAs_DownlinkQueuePush_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1067,6 +1190,8 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("POST", pattern_AppAs_DownlinkQueueReplace_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1074,6 +1199,7 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 		resp, md, err := local_request_AppAs_DownlinkQueueReplace_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1087,6 +1213,8 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("GET", pattern_AppAs_DownlinkQueueList_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1094,6 +1222,7 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 		resp, md, err := local_request_AppAs_DownlinkQueueList_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1107,6 +1236,8 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 	mux.Handle("GET", pattern_AppAs_GetMQTTConnectionInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1114,6 +1245,7 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 		resp, md, err := local_request_AppAs_GetMQTTConnectionInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1124,17 +1256,43 @@ func RegisterAppAsHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
+	mux.Handle("POST", pattern_AppAs_SimulateUplink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_AppAs_SimulateUplink_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_AppAs_SimulateUplink_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
 // RegisterAsEndDeviceRegistryHandlerServer registers the http handlers for service AsEndDeviceRegistry to "mux".
 // UnaryRPC     :call AsEndDeviceRegistryServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAsEndDeviceRegistryHandlerFromEndpoint instead.
 func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AsEndDeviceRegistryServer) error {
 
 	mux.Handle("GET", pattern_AsEndDeviceRegistry_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1142,6 +1300,7 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_AsEndDeviceRegistry_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1155,6 +1314,8 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("PUT", pattern_AsEndDeviceRegistry_Set_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1162,6 +1323,7 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_AsEndDeviceRegistry_Set_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1175,6 +1337,8 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("POST", pattern_AsEndDeviceRegistry_Set_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1182,6 +1346,7 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_AsEndDeviceRegistry_Set_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1195,6 +1360,8 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("DELETE", pattern_AsEndDeviceRegistry_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1202,6 +1369,7 @@ func RegisterAsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_AsEndDeviceRegistry_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1474,6 +1642,26 @@ func RegisterAppAsHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
+	mux.Handle("POST", pattern_AppAs_SimulateUplink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_AppAs_SimulateUplink_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_AppAs_SimulateUplink_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -1485,6 +1673,8 @@ var (
 	pattern_AppAs_DownlinkQueueList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"as", "applications", "application_ids.application_id", "devices", "device_id", "down"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_AppAs_GetMQTTConnectionInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"as", "applications", "application_id", "mqtt-connection-info"}, "", runtime.AssumeColonVerbOpt(true)))
+
+	pattern_AppAs_SimulateUplink_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 2, 6}, []string{"as", "applications", "end_device_ids.application_ids.application_id", "devices", "end_device_ids.device_id", "up", "simulate"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
@@ -1495,6 +1685,8 @@ var (
 	forward_AppAs_DownlinkQueueList_0 = runtime.ForwardResponseMessage
 
 	forward_AppAs_GetMQTTConnectionInfo_0 = runtime.ForwardResponseMessage
+
+	forward_AppAs_SimulateUplink_0 = runtime.ForwardResponseMessage
 )
 
 // RegisterAsEndDeviceRegistryHandlerFromEndpoint is same as RegisterAsEndDeviceRegistryHandler but

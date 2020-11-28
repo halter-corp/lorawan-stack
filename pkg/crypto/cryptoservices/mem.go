@@ -17,10 +17,10 @@ package cryptoservices
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 type mem struct {
@@ -42,12 +42,12 @@ func (d *mem) getNwkKey(version ttnpb.MACVersion) (*types.AES128Key, error) {
 	switch {
 	case version.Compare(ttnpb.MAC_V1_1) >= 0:
 		if d.nwkKey == nil {
-			return nil, errNoNwkKey
+			return nil, errNoNwkKey.New()
 		}
 		return d.nwkKey, nil
 	default:
 		if d.appKey == nil {
-			return nil, errNoAppKey
+			return nil, errNoAppKey.New()
 		}
 		return d.appKey, nil
 	}
@@ -59,7 +59,7 @@ func (d *mem) JoinRequestMIC(ctx context.Context, dev *ttnpb.EndDevice, version 
 		return
 	}
 	if key == nil {
-		return [4]byte{}, errNoNwkKey
+		return [4]byte{}, errNoNwkKey.New()
 	}
 	return crypto.ComputeJoinRequestMIC(*key, payload)
 }
@@ -70,18 +70,18 @@ var (
 )
 
 func (d *mem) JoinAcceptMIC(ctx context.Context, dev *ttnpb.EndDevice, version ttnpb.MACVersion, joinReqType byte, dn types.DevNonce, payload []byte) ([4]byte, error) {
-	if dev.JoinEUI == nil || dev.JoinEUI.IsZero() {
-		return [4]byte{}, errNoJoinEUI
+	if dev.JoinEUI == nil {
+		return [4]byte{}, errNoJoinEUI.New()
 	}
 	if dev.DevEUI == nil || dev.DevEUI.IsZero() {
-		return [4]byte{}, errNoDevEUI
+		return [4]byte{}, errNoDevEUI.New()
 	}
 	key, err := d.getNwkKey(version)
 	if err != nil {
 		return [4]byte{}, err
 	}
 	if key == nil {
-		return [4]byte{}, errNoNwkKey
+		return [4]byte{}, errNoNwkKey.New()
 	}
 	switch {
 	case version.Compare(ttnpb.MAC_V1_1) >= 0:
@@ -98,7 +98,7 @@ func (d *mem) EncryptJoinAccept(ctx context.Context, dev *ttnpb.EndDevice, versi
 		return nil, err
 	}
 	if key == nil {
-		return nil, errNoNwkKey
+		return nil, errNoNwkKey.New()
 	}
 	return crypto.EncryptJoinAccept(*key, payload)
 }
@@ -107,30 +107,30 @@ func (d *mem) EncryptRejoinAccept(ctx context.Context, dev *ttnpb.EndDevice, ver
 	if version.Compare(ttnpb.MAC_V1_1) < 0 {
 		panic("This statement is unreachable. Please version check.")
 	}
-	if dev.JoinEUI == nil || dev.JoinEUI.IsZero() {
-		return nil, errNoJoinEUI
+	if dev.JoinEUI == nil {
+		return nil, errNoJoinEUI.New()
 	}
 	if dev.DevEUI == nil || dev.DevEUI.IsZero() {
-		return nil, errNoDevEUI
+		return nil, errNoDevEUI.New()
 	}
 	if d.nwkKey == nil {
-		return nil, errNoNwkKey
+		return nil, errNoNwkKey.New()
 	}
 	jsEncKey := crypto.DeriveJSEncKey(*d.nwkKey, *dev.DevEUI)
 	return crypto.EncryptJoinAccept(jsEncKey, payload)
 }
 
 func (d *mem) DeriveNwkSKeys(ctx context.Context, dev *ttnpb.EndDevice, version ttnpb.MACVersion, jn types.JoinNonce, dn types.DevNonce, nid types.NetID) (NwkSKeys, error) {
-	if dev.JoinEUI == nil || dev.JoinEUI.IsZero() {
-		return NwkSKeys{}, errNoJoinEUI
+	if dev.JoinEUI == nil {
+		return NwkSKeys{}, errNoJoinEUI.New()
 	}
 	if dev.DevEUI == nil || dev.DevEUI.IsZero() {
-		return NwkSKeys{}, errNoDevEUI
+		return NwkSKeys{}, errNoDevEUI.New()
 	}
 	switch {
 	case version.Compare(ttnpb.MAC_V1_1) >= 0:
 		if d.nwkKey == nil {
-			return NwkSKeys{}, errNoNwkKey
+			return NwkSKeys{}, errNoNwkKey.New()
 		}
 		return NwkSKeys{
 			FNwkSIntKey: crypto.DeriveFNwkSIntKey(*d.nwkKey, jn, *dev.JoinEUI, dn),
@@ -140,7 +140,7 @@ func (d *mem) DeriveNwkSKeys(ctx context.Context, dev *ttnpb.EndDevice, version 
 
 	default:
 		if d.appKey == nil {
-			return NwkSKeys{}, errNoAppKey
+			return NwkSKeys{}, errNoAppKey.New()
 		}
 		return NwkSKeys{
 			FNwkSIntKey: crypto.DeriveLegacyNwkSKey(*d.appKey, jn, nid, dn),
@@ -150,7 +150,7 @@ func (d *mem) DeriveNwkSKeys(ctx context.Context, dev *ttnpb.EndDevice, version 
 
 func (d *mem) GetNwkKey(ctx context.Context, dev *ttnpb.EndDevice) (*types.AES128Key, error) {
 	if d.nwkKey == nil {
-		return nil, errNoNwkKey
+		return nil, errNoNwkKey.New()
 	}
 	return d.nwkKey, nil
 }
@@ -158,14 +158,14 @@ func (d *mem) GetNwkKey(ctx context.Context, dev *ttnpb.EndDevice) (*types.AES12
 var errNoAppKey = errors.DefineCorruption("no_app_key", "no AppKey specified")
 
 func (d *mem) DeriveAppSKey(ctx context.Context, dev *ttnpb.EndDevice, version ttnpb.MACVersion, jn types.JoinNonce, dn types.DevNonce, nid types.NetID) (types.AES128Key, error) {
-	if dev.JoinEUI == nil || dev.JoinEUI.IsZero() {
-		return types.AES128Key{}, errNoJoinEUI
+	if dev.JoinEUI == nil {
+		return types.AES128Key{}, errNoJoinEUI.New()
 	}
 	if dev.DevEUI == nil || dev.DevEUI.IsZero() {
-		return types.AES128Key{}, errNoDevEUI
+		return types.AES128Key{}, errNoDevEUI.New()
 	}
 	if d.appKey == nil {
-		return types.AES128Key{}, errNoAppKey
+		return types.AES128Key{}, errNoAppKey.New()
 	}
 
 	switch {
@@ -178,7 +178,7 @@ func (d *mem) DeriveAppSKey(ctx context.Context, dev *ttnpb.EndDevice, version t
 
 func (d *mem) GetAppKey(ctx context.Context, dev *ttnpb.EndDevice) (*types.AES128Key, error) {
 	if d.appKey == nil {
-		return nil, errNoAppKey
+		return nil, errNoAppKey.New()
 	}
 	return d.appKey, nil
 }

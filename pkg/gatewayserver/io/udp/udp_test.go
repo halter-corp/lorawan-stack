@@ -24,17 +24,19 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/mock"
-	. "go.thethings.network/lorawan-stack/pkg/gatewayserver/io/udp"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	encoding "go.thethings.network/lorawan-stack/pkg/ttnpb/udp"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mock"
+	. "go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	encoding "go.thethings.network/lorawan-stack/v3/pkg/ttnpb/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 var (
@@ -59,6 +61,7 @@ func TestConnection(t *testing.T) {
 	defer cancelCtx()
 
 	c := componenttest.NewComponent(t, &component.Config{})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	componenttest.StartComponent(t, c)
 	defer c.Close()
 
@@ -69,7 +72,7 @@ func TestConnection(t *testing.T) {
 		t.FailNow()
 	}
 
-	Start(ctx, gs, lis, testConfig)
+	go Serve(ctx, gs, lis, testConfig)
 
 	connections := &sync.Map{}
 	eui := types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}
@@ -198,6 +201,7 @@ func TestTraffic(t *testing.T) {
 	defer cancelCtx()
 
 	c := componenttest.NewComponent(t, &component.Config{})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	componenttest.StartComponent(t, c)
 	defer c.Close()
 
@@ -208,7 +212,7 @@ func TestTraffic(t *testing.T) {
 		t.FailNow()
 	}
 
-	Start(ctx, gs, lis, testConfig)
+	go Serve(ctx, gs, lis, testConfig)
 
 	connections := &sync.Map{}
 	eui1 := types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}
@@ -366,6 +370,8 @@ func TestTraffic(t *testing.T) {
 						UplinkToken: io.MustUplinkToken(
 							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
 							uint32(300*test.Delay/time.Microsecond),
+							scheduling.ConcentratorTime(300*test.Delay),
+							time.Unix(0, int64(300*test.Delay)),
 						),
 					},
 				},
@@ -378,6 +384,7 @@ func TestTraffic(t *testing.T) {
 							Rx1Delay:         ttnpb.RX_DELAY_1,
 							Rx1DataRateIndex: 5,
 							Rx1Frequency:     868100000,
+							FrequencyPlanID:  test.EUFrequencyPlanID,
 						},
 					},
 				},
@@ -397,6 +404,8 @@ func TestTraffic(t *testing.T) {
 						UplinkToken: io.MustUplinkToken(
 							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
 							uint32(600*test.Delay/time.Microsecond),
+							scheduling.ConcentratorTime(600*test.Delay),
+							time.Unix(0, int64(600*test.Delay)),
 						),
 					},
 				},
@@ -409,6 +418,7 @@ func TestTraffic(t *testing.T) {
 							Rx1Delay:         ttnpb.RX_DELAY_1,
 							Rx1DataRateIndex: 5,
 							Rx1Frequency:     868100000,
+							FrequencyPlanID:  test.EUFrequencyPlanID,
 						},
 					},
 				},
@@ -428,6 +438,8 @@ func TestTraffic(t *testing.T) {
 						UplinkToken: io.MustUplinkToken(
 							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
 							uint32((15*time.Second+300*test.Delay)/time.Microsecond),
+							scheduling.ConcentratorTime(15*time.Second+300*test.Delay),
+							time.Unix(0, int64((15*time.Second+300*test.Delay))),
 						),
 					},
 				},
@@ -440,6 +452,7 @@ func TestTraffic(t *testing.T) {
 							Rx1Delay:         ttnpb.RX_DELAY_1,
 							Rx1DataRateIndex: 5,
 							Rx1Frequency:     868100000,
+							FrequencyPlanID:  test.EUFrequencyPlanID,
 						},
 					},
 				},

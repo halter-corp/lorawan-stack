@@ -23,17 +23,17 @@ import (
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/mohae/deepcopy"
 	"github.com/smartystreets/assertions"
-	. "go.thethings.network/lorawan-stack/pkg/applicationserver"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	. "go.thethings.network/lorawan-stack/v3/pkg/applicationserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestDeviceRegistryGet(t *testing.T) {
@@ -163,7 +163,7 @@ func TestDeviceRegistryGet(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"formatters",
 				})
-				return nil, errNotFound
+				return nil, errNotFound.New()
 			},
 			DeviceRequest: &ttnpb.GetEndDeviceRequest{
 				EndDeviceIdentifiers: registeredDevice.EndDeviceIdentifiers,
@@ -267,6 +267,8 @@ func TestDeviceRegistryGet(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"formatters",
 					"session",
+					"skip_payload_crypto",
+					"skip_payload_crypto_override",
 				})
 				return deepcopy.Copy(registeredDevice).(*ttnpb.EndDevice), nil
 			},
@@ -318,7 +320,7 @@ func TestDeviceRegistryGet(t *testing.T) {
 				return ctx
 			})
 			as.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, as.Component)
 			defer as.Close()
@@ -547,7 +549,7 @@ func TestDeviceRegistrySet(t *testing.T) {
 				return ctx
 			})
 			as.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, as.Component)
 			defer as.Close()
@@ -648,7 +650,7 @@ func TestDeviceRegistryDelete(t *testing.T) {
 				a := assertions.New(t)
 				a.So(ids, should.Resemble, registeredDevice.EndDeviceIdentifiers)
 				dev, sets, err := f(nil)
-				a.So(err, should.BeNil)
+				a.So(errors.IsNotFound(err), should.BeTrue)
 				a.So(sets, should.BeNil)
 				a.So(dev, should.BeNil)
 				return nil, nil
@@ -705,7 +707,7 @@ func TestDeviceRegistryDelete(t *testing.T) {
 				return ctx
 			})
 			as.AddContextFiller(func(ctx context.Context) context.Context {
-				return test.ContextWithT(ctx, t)
+				return test.ContextWithTB(ctx, t)
 			})
 			componenttest.StartComponent(t, as.Component)
 			defer as.Close()

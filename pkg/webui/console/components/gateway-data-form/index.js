@@ -14,51 +14,62 @@
 
 import React from 'react'
 import bind from 'autobind-decorator'
-import { defineMessages } from 'react-intl'
-import * as Yup from 'yup'
+import glossaryId from '@console/constants/glossary-ids'
 
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import Checkbox from '../../../components/checkbox'
-import SubmitBar from '../../../components/submit-bar'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
-import { GsFrequencyPlansSelect } from '../../containers/freq-plans-select'
-import sharedMessages from '../../../lib/shared-messages'
-import { id as gatewayIdRegexp, address as addressRegexp } from '../../lib/regexp'
-import OwnersSelect from '../../containers/owners-select'
+import delay from '@console/constants/delays'
 
-const m = defineMessages({
-  enforced: 'Enforced',
-  dutyCycle: 'Duty Cycle',
-  gatewayIdPlaceholder: 'my-new-gateway',
-  gatewayNamePlaceholder: 'My New Gateway',
-  gsServerAddressDescription: 'The address of the Gateway Server to connect to',
-  gatewayDescPlaceholder: 'Description for my new gateway',
-  gatewayDescDescription:
-    'Optional gateway description; can also be used to save notes about the gateway',
-})
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import Checkbox from '@ttn-lw/components/checkbox'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import UnitInput from '@ttn-lw/components/unit-input'
+import KeyValueMap from '@ttn-lw/components/key-value-map'
 
-const validationSchema = Yup.object().shape({
-  owner_id: Yup.string(),
-  ids: Yup.object().shape({
-    gateway_id: Yup.string()
-      .matches(gatewayIdRegexp, sharedMessages.validateAlphanum)
-      .min(2, sharedMessages.validateTooShort)
-      .max(36, sharedMessages.validateTooLong)
-      .required(sharedMessages.validateRequired),
-    eui: Yup.nullableString().length(8 * 2, sharedMessages.validateTooShort),
-  }),
-  name: Yup.string()
-    .min(2, sharedMessages.validateTooShort)
-    .max(50, sharedMessages.validateTooLong),
-  description: Yup.string().max(2000, sharedMessages.validateTooLong),
-  frequency_plan_id: Yup.string().required(sharedMessages.validateRequired),
-  gateway_server_address: Yup.string().matches(addressRegexp, sharedMessages.validateAddressFormat),
-})
+import Message from '@ttn-lw/lib/components/message'
 
-@bind
+import { GsFrequencyPlansSelect } from '@console/containers/freq-plans-select'
+import OwnersSelect from '@console/containers/owners-select'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { unit as unitRegexp, emptyDuration as emptyDurationRegexp } from '@console/lib/regexp'
+
+import validationSchema from './validation-schema'
+
 class GatewayDataForm extends React.Component {
+  static propTypes = {
+    /** The SubmitBar content. */
+    children: PropTypes.node.isRequired,
+    error: PropTypes.error,
+    /** React reference to be passed to the form. */
+    formRef: PropTypes.shape({}),
+    initialValues: PropTypes.gateway,
+    onSubmit: PropTypes.func.isRequired,
+    update: PropTypes.bool,
+  }
+
+  static defaultProps = {
+    formRef: undefined,
+    update: false,
+    error: '',
+    initialValues: validationSchema.cast({}),
+  }
+
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      shouldDisplayWarning: this.isNotValidDuration(props.initialValues.schedule_anytime_delay),
+    }
+  }
+
+  @bind
+  onScheduleAnytimeDelayChange(value) {
+    this.setState({ shouldDisplayWarning: this.isNotValidDuration(value) })
+  }
+
+  @bind
   onSubmit(values, helpers) {
     const { onSubmit } = this.props
     const castedValues = validationSchema.cast(values)
@@ -66,8 +77,38 @@ class GatewayDataForm extends React.Component {
     onSubmit(castedValues, helpers)
   }
 
+  decodeDelayValue(value) {
+    if (emptyDurationRegexp.test(value)) {
+      return {
+        duration: undefined,
+        unit: value,
+      }
+    }
+    const duration = value.split(unitRegexp)[0]
+    const unit = value.split(duration)[1]
+    return {
+      duration: duration ? Number(duration) : undefined,
+      unit,
+    }
+  }
+
+  isNotValidDuration(value) {
+    const { duration, unit } = this.decodeDelayValue(value)
+    switch (unit) {
+      case 'ms':
+        return duration < delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY
+      case 's':
+        return duration < delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY / 1000
+      case 'm':
+        return duration < delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY / 60000
+      case 'h':
+        return duration < delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY / 3600000
+    }
+  }
+
   render() {
     const { update, error, initialValues, formRef, children } = this.props
+    const { shouldDisplayWarning } = this.state
 
     return (
       <Form
@@ -82,7 +123,7 @@ class GatewayDataForm extends React.Component {
         <Form.Field
           title={sharedMessages.gatewayID}
           name="ids.gateway_id"
-          placeholder={m.gatewayIdPlaceholder}
+          placeholder={sharedMessages.gatewayIdPlaceholder}
           required
           disabled={update}
           component={Input}
@@ -95,59 +136,111 @@ class GatewayDataForm extends React.Component {
           max={8}
           placeholder={sharedMessages.gatewayEUI}
           component={Input}
+          glossaryId={glossaryId.GATEWAY_EUI}
         />
         <Form.Field
           title={sharedMessages.gatewayName}
-          placeholder={m.gatewayNamePlaceholder}
+          placeholder={sharedMessages.gatewayNamePlaceholder}
           name="name"
           component={Input}
         />
         <Form.Field
           title={sharedMessages.gatewayDescription}
-          description={m.gatewayDescDescription}
-          placeholder={m.gatewayDescPlaceholder}
+          description={sharedMessages.gatewayDescDescription}
+          placeholder={sharedMessages.gatewayDescPlaceholder}
           name="description"
           type="textarea"
           component={Input}
         />
         <Form.Field
           title={sharedMessages.gatewayServerAddress}
-          description={m.gsServerAddressDescription}
+          description={sharedMessages.gsServerAddressDescription}
           placeholder={sharedMessages.addressPlaceholder}
           name="gateway_server_address"
           component={Input}
         />
-        <Message component="h4" content={sharedMessages.lorawanOptions} />
-        <GsFrequencyPlansSelect name="frequency_plan_id" menuPlacement="top" required />
         <Form.Field
-          title={m.dutyCycle}
+          title={sharedMessages.gatewayStatus}
+          name="status_public"
+          component={Checkbox}
+          label={sharedMessages.public}
+          description={sharedMessages.statusDescription}
+        />
+        <Form.Field
+          name="attributes"
+          title={sharedMessages.attributes}
+          keyPlaceholder={sharedMessages.key}
+          valuePlaceholder={sharedMessages.value}
+          addMessage={sharedMessages.addAttributes}
+          component={KeyValueMap}
+          description={sharedMessages.attributeDescription}
+        />
+        <Message component="h4" content={sharedMessages.lorawanOptions} />
+        <GsFrequencyPlansSelect
+          name="frequency_plan_id"
+          menuPlacement="top"
+          glossaryId={glossaryId.FREQUENCY_PLAN}
+        />
+        <Form.Field
+          title={sharedMessages.gatewayScheduleDownlinkLate}
+          name="schedule_downlink_late"
+          component={Checkbox}
+          description={sharedMessages.scheduleDownlinkLateDescription}
+        />
+        <Form.Field
+          title={sharedMessages.dutyCycle}
           name="enforce_duty_cycle"
           component={Checkbox}
-          label={m.enforced}
+          label={sharedMessages.enforced}
+          description={sharedMessages.enforceDutyCycleDescription}
+        />
+        <Form.Field
+          title={sharedMessages.scheduleAnyTimeDelay}
+          name="schedule_anytime_delay"
+          component={UnitInput}
+          description={{
+            ...sharedMessages.scheduleAnyTimeDescription,
+            values: {
+              minimumValue: delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY,
+              defaultValue: delay.DEFAULT_GATEWAY_SCHEDULE_ANYTIME_DELAY,
+            },
+          }}
+          units={[
+            { label: sharedMessages.milliseconds, value: 'ms' },
+            { label: sharedMessages.seconds, value: 's' },
+            { label: sharedMessages.minutes, value: 'm' },
+            { label: sharedMessages.hours, value: 'h' },
+          ]}
+          onChange={this.onScheduleAnytimeDelayChange}
+          warning={
+            shouldDisplayWarning
+              ? {
+                  ...sharedMessages.delayWarning,
+                  values: { minimumValue: delay.MINIMUM_GATEWAY_SCHEDULE_ANYTIME_DELAY },
+                }
+              : undefined
+          }
+          required
+        />
+        <Message component="h4" content={sharedMessages.gatewayUpdateOptions} />
+        <Form.Field
+          title={sharedMessages.automaticUpdates}
+          name="auto_update"
+          component={Checkbox}
+          description={sharedMessages.autoUpdateDescription}
+        />
+        <Form.Field
+          title={sharedMessages.channel}
+          description={sharedMessages.updateChannelDescription}
+          placeholder={sharedMessages.stable}
+          name="update_channel"
+          component={Input}
+          autoComplete="on"
         />
         <SubmitBar>{children}</SubmitBar>
       </Form>
     )
   }
-}
-
-GatewayDataForm.propTypes = {
-  children: PropTypes.node.isRequired,
-  error: PropTypes.error,
-  formRef: PropTypes.object,
-  initialValues: PropTypes.object,
-  mapErrorsToFields: PropTypes.object,
-  /** React reference to be passed to the form */
-  onSubmit: PropTypes.func.isRequired,
-  /** SubmitBar contents */
-  update: PropTypes.bool,
-}
-
-GatewayDataForm.defaultProps = {
-  update: false,
-  error: '',
-  initialValues: {},
-  mapErrorsToFields: {},
 }
 
 export default GatewayDataForm

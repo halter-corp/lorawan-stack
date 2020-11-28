@@ -19,13 +19,17 @@ import (
 	"context"
 	"os"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/spf13/cobra"
-	"go.thethings.network/lorawan-stack/cmd/internal/commands"
-	"go.thethings.network/lorawan-stack/cmd/internal/shared"
-	"go.thethings.network/lorawan-stack/cmd/internal/shared/version"
-	conf "go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/commands"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared/version"
+	conf "go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	logobservability "go.thethings.network/lorawan-stack/v3/pkg/log/middleware/observability"
+	logsentry "go.thethings.network/lorawan-stack/v3/pkg/log/middleware/sentry"
+	pkgversion "go.thethings.network/lorawan-stack/v3/pkg/version"
 )
 
 var errMissingFlag = errors.DefineInvalidArgument("missing_flag", "missing CLI flag `{flag}`")
@@ -57,20 +61,37 @@ var (
 				return err
 			}
 
+			// initialize configuration fallbacks
+			if err := shared.InitializeFallbacks(&config.ServiceBase); err != nil {
+				return err
+			}
+
 			// create logger
-			logger, err = log.NewLogger(
+			logger = log.NewLogger(
 				log.WithLevel(config.Base.Log.Level),
 				log.WithHandler(log.NewCLI(os.Stdout)),
 			)
 
-			ctx = log.NewContext(ctx, logger)
+			logger.Use(logobservability.New())
 
-			// initialize shared packages
-			if err := shared.Initialize(ctx, config.ServiceBase); err != nil {
-				return err
+			if config.Sentry.DSN != "" {
+				opts := sentry.ClientOptions{
+					Dsn:     config.Sentry.DSN,
+					Release: pkgversion.String(),
+				}
+				if hostname, err := os.Hostname(); err == nil {
+					opts.ServerName = hostname
+				}
+				err = sentry.Init(opts)
+				if err != nil {
+					return err
+				}
+				logger.Use(logsentry.New())
 			}
 
-			return err
+			ctx = log.NewContext(ctx, logger)
+
+			return nil
 		},
 	}
 )
@@ -81,4 +102,5 @@ func init() {
 	Root.AddCommand(commands.GenManPages(Root))
 	Root.AddCommand(commands.GenMDDoc(Root))
 	Root.AddCommand(commands.GenYAMLDoc(Root))
+	Root.AddCommand(commands.Complete())
 }

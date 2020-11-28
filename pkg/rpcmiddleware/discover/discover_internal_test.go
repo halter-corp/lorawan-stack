@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"github.com/smartystreets/assertions/should"
 )
 
 func TestDefaultPort(t *testing.T) {
@@ -38,11 +38,65 @@ func TestDefaultPort(t *testing.T) {
 		"[::":            "", // Invalid address
 	} {
 		t.Run(input, func(t *testing.T) {
-			target, err := defaultPort(input, 8884)
+			target, err := DefaultPort(input, 8884)
 			if err != nil {
 				target = ""
 			}
 			assertions.New(t).So(target, should.Equal, expected)
+		})
+	}
+}
+
+func TestDefaultURL(t *testing.T) {
+	for _, tc := range []struct {
+		target   string
+		port     int
+		tls      bool
+		expected string
+	}{
+		{
+			target:   "localhost",
+			port:     80,
+			tls:      false,
+			expected: "http://localhost",
+		},
+		{
+			target:   "localhost",
+			port:     8080,
+			tls:      false,
+			expected: "http://localhost:8080",
+		},
+		{
+			target:   "host.with.port:http",
+			port:     8000,
+			tls:      false,
+			expected: "http://host.with.port:http",
+		},
+		{
+			target:   "hostname:433",
+			port:     4000,
+			tls:      true,
+			expected: "https://hostname:433",
+		},
+		{
+			target:   "hostname",
+			port:     443,
+			tls:      true,
+			expected: "https://hostname",
+		},
+		{
+			target:   "hostname",
+			port:     8443,
+			tls:      true,
+			expected: "https://hostname:8443",
+		},
+	} {
+		t.Run(tc.expected, func(t *testing.T) {
+			target, err := DefaultURL(tc.target, tc.port, tc.tls)
+			if err != nil {
+				target = ""
+			}
+			assertions.New(t).So(target, should.Equal, tc.expected)
 		})
 	}
 }

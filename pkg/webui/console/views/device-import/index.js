@@ -15,32 +15,53 @@
 import React, { Component } from 'react'
 import { Container, Col, Row } from 'react-grid-system'
 import { connect } from 'react-redux'
+import { defineMessages } from 'react-intl'
 
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import Message from '../../../lib/components/message'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import DeviceImporter from '../../containers/device-importer'
-import sharedMessages from '../../../lib/shared-messages'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Notification from '@ttn-lw/components/notification'
+
+import Message from '@ttn-lw/lib/components/message'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import DeviceImporter from '@console/containers/device-importer'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import {
+  selectDeviceTemplateFormats,
+  selectDeviceTemplateFormatsFetching,
+} from '@console/store/selectors/device-template-formats'
 
 import style from './device-import.styl'
 
+const m = defineMessages({
+  noTemplatesTitle: 'No end device templates found',
+  noTemplates:
+    'There are currently no end device templates set up. Please set up an end device template to make use of the bulk device import feature. For more information please refer to the documentation.',
+})
+
 @connect(state => ({
-  appId: selectSelectedApplicationId(state),
+  deviceTemplateFormats: selectDeviceTemplateFormats(state),
+  deviceTemplateFormatsFetching: selectDeviceTemplateFormatsFetching(state),
 }))
 @withBreadcrumb('devices.import', function(props) {
   const { appId } = props
   return (
-    <Breadcrumb
-      path={`/applications/${appId}/devices/import`}
-      icon="import_devices"
-      content={sharedMessages.import}
-    />
+    <Breadcrumb path={`/applications/${appId}/devices/import`} content={sharedMessages.import} />
   )
 })
 export default class DeviceAddBulk extends Component {
+  static propTypes = {
+    deviceTemplateFormats: PropTypes.shape().isRequired,
+    deviceTemplateFormatsFetching: PropTypes.bool.isRequired,
+  }
+
   render() {
+    const { deviceTemplateFormatsFetching, deviceTemplateFormats } = this.props
+    const showEmptyWarning =
+      !deviceTemplateFormatsFetching && Object.keys(deviceTemplateFormats).length === 0
     return (
       <Container>
         <Row>
@@ -55,6 +76,9 @@ export default class DeviceAddBulk extends Component {
         </Row>
         <Row>
           <Col lg={8} md={12}>
+            {showEmptyWarning && (
+              <Notification warning title={m.noTemplatesTitle} content={m.noTemplates} />
+            )}
             <DeviceImporter />
           </Col>
         </Row>

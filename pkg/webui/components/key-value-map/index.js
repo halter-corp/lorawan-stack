@@ -17,8 +17,10 @@ import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 import classnames from 'classnames'
 
-import PropTypes from '../../lib/prop-types'
-import Button from '../button'
+import Button from '@ttn-lw/components/button'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import Entry from './entry'
 
 import style from './key-value-map.styl'
@@ -27,18 +29,39 @@ const m = defineMessages({
   addEntry: 'Add entry',
 })
 
-@bind
 class KeyValueMap extends React.PureComponent {
+  static propTypes = {
+    addMessage: PropTypes.message,
+    className: PropTypes.string,
+    keyPlaceholder: PropTypes.message.isRequired,
+    name: PropTypes.string.isRequired,
+    onBlur: PropTypes.func,
+    onChange: PropTypes.func,
+    value: PropTypes.arrayOf(PropTypes.shape({ key: PropTypes.string, value: PropTypes.string })),
+    valuePlaceholder: PropTypes.message.isRequired,
+  }
+
+  static defaultProps = {
+    className: undefined,
+    onBlur: () => null,
+    onChange: () => null,
+    value: [],
+    addMessage: m.addEntry,
+  }
+
+  @bind
   handleEntryChange(index, newValues) {
     const { onChange, value } = this.props
     onChange(value.map((kv, i) => (index !== i ? kv : { ...kv, ...newValues })))
   }
 
+  @bind
   removeEntry(index) {
     const { onChange, value } = this.props
     onChange(value.filter((_, i) => i !== index) || [], true)
   }
 
+  @bind
   addEmptyEntry() {
     const { onChange, value } = this.props
     onChange([...value, { key: '', value: '' }])
@@ -56,7 +79,7 @@ class KeyValueMap extends React.PureComponent {
     } = this.props
 
     return (
-      <div className={classnames(className, style.container)}>
+      <div data-test-id={'key-value-map'} className={classnames(className, style.container)}>
         <div>
           {value &&
             value.map((value, index) => (
@@ -85,22 +108,6 @@ class KeyValueMap extends React.PureComponent {
       </div>
     )
   }
-}
-
-KeyValueMap.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  value: PropTypes.array,
-  keyPlaceholder: PropTypes.message.isRequired,
-  valuePlaceholder: PropTypes.message.isRequired,
-  addMessage: PropTypes.message,
-  onChange: PropTypes.func,
-  onBlur: PropTypes.func,
-}
-
-KeyValueMap.defaultProps = {
-  value: [],
-  addMessage: m.addEntry,
 }
 
 export default KeyValueMap

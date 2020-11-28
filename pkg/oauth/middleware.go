@@ -21,7 +21,7 @@ import (
 	"path"
 
 	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 var errUnauthenticated = errors.DefineUnauthenticated("not_authenticated", "not authenticated")
@@ -30,7 +30,7 @@ func (s *server) requireLogin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := s.getSession(c)
 		if err != nil {
-			return errUnauthenticated
+			return errUnauthenticated.New()
 		}
 		return next(c)
 	}

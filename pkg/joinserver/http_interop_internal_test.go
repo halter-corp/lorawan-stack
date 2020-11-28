@@ -20,13 +20,13 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/interop"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/interop"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 type mockInteropHandler struct {
@@ -276,7 +276,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				},
 			},
 			HandleJoinFunc: func() (*ttnpb.JoinResponse, error) {
-				return nil, errDecodePayload
+				return nil, errDecodePayload.New()
 			},
 			ErrorAssertion: func(t *testing.T, err error) bool {
 				a := assertions.New(t)
@@ -320,7 +320,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				},
 			},
 			HandleJoinFunc: func() (*ttnpb.JoinResponse, error) {
-				return nil, errMICMismatch
+				return nil, errMICMismatch.New()
 			},
 			ErrorAssertion: func(t *testing.T, err error) bool {
 				a := assertions.New(t)
@@ -364,7 +364,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				},
 			},
 			HandleJoinFunc: func() (*ttnpb.JoinResponse, error) {
-				return nil, errReuseDevNonce
+				return nil, errReuseDevNonce.New()
 			},
 			ErrorAssertion: func(t *testing.T, err error) bool {
 				a := assertions.New(t)

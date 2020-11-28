@@ -15,22 +15,25 @@
 import { connect } from 'react-redux'
 import { replace } from 'connected-react-router'
 
-import withRequest from '../../../lib/components/with-request'
+import api from '@console/api'
 
-import { getOrganizationCollaborator } from '../../store/actions/organizations'
+import withRequest from '@ttn-lw/lib/components/with-request'
+
+import { getCollaborator } from '@console/store/actions/collaborators'
+
 import {
   selectSelectedOrganizationId,
   selectOrganizationRights,
   selectOrganizationPseudoRights,
   selectOrganizationRightsFetching,
   selectOrganizationRightsError,
-  selectOrganizationUserCollaborator,
-  selectOrganizationOrganizationCollaborator,
-  selectOrganizationCollaboratorFetching,
-  selectOrganizationCollaboratorError,
-} from '../../store/selectors/organizations'
-
-import api from '../../api'
+} from '@console/store/selectors/organizations'
+import {
+  selectUserCollaborator,
+  selectOrganizationCollaborator,
+  selectCollaboratorFetching,
+  selectCollaboratorError,
+} from '@console/store/selectors/collaborators'
 
 export default OrganizationCollaboratorEdit =>
   connect(
@@ -41,13 +44,11 @@ export default OrganizationCollaboratorEdit =>
 
       const collaborator =
         collaboratorType === 'user'
-          ? selectOrganizationUserCollaborator(state)
-          : selectOrganizationOrganizationCollaborator(state)
+          ? selectUserCollaborator(state)
+          : selectOrganizationCollaborator(state)
 
-      const fetching =
-        selectOrganizationRightsFetching(state) || selectOrganizationCollaboratorFetching(state)
-      const error =
-        selectOrganizationRightsError(state) || selectOrganizationCollaboratorError(state)
+      const fetching = selectOrganizationRightsFetching(state) || selectCollaboratorFetching(state)
+      const error = selectOrganizationRightsError(state) || selectCollaboratorError(state)
 
       return {
         collaboratorId,
@@ -62,7 +63,7 @@ export default OrganizationCollaboratorEdit =>
     },
     dispatch => ({
       getOrganizationCollaborator(orgId, collaboratorId, isUser) {
-        dispatch(getOrganizationCollaborator(orgId, collaboratorId, isUser))
+        dispatch(getCollaborator('organization', orgId, collaboratorId, isUser))
       },
       redirectToList(orgId) {
         dispatch(replace(`/organizations/${orgId}/collaborators`))

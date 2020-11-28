@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // LoRaAllianceTR005Draft2 is the LoRa Alliance defined format in Technical Recommendation TR005 Draft 2.
@@ -39,10 +39,10 @@ type LoRaAllianceTR005Draft2 struct {
 // Encode implements the Data interface.
 func (m *LoRaAllianceTR005Draft2) Encode(dev *ttnpb.EndDevice) error {
 	if dev.JoinEUI == nil {
-		return errNoJoinEUI
+		return errNoJoinEUI.New()
 	}
 	if dev.DevEUI == nil {
-		return errNoDevEUI
+		return errNoDevEUI.New()
 	}
 	*m = LoRaAllianceTR005Draft2{
 		JoinEUI:              *dev.JoinEUI,
@@ -106,7 +106,7 @@ func (m *LoRaAllianceTR005Draft2) UnmarshalText(text []byte) error {
 		!bytes.Equal(parts[0], []byte("URN")) ||
 		!bytes.Equal(parts[1], []byte("LW")) ||
 		!bytes.Equal(parts[2], []byte("DP")) {
-		return errFormat
+		return errFormat.New()
 	}
 	*m = LoRaAllianceTR005Draft2{}
 	if err := m.JoinEUI.UnmarshalText(parts[3]); err != nil {
@@ -120,7 +120,7 @@ func (m *LoRaAllianceTR005Draft2) UnmarshalText(text []byte) error {
 		copy(m.VendorID[:], prodID[:2])
 		copy(m.ModelID[:], prodID[2:])
 	} else if n != 4 {
-		return errFormat
+		return errFormat.New()
 	} else {
 		return err
 	}

@@ -123,13 +123,15 @@ center-absolute()
   transform: translate(-50%, -50%)
 
 
-// Fullscreen forces an element to be full screen using position absolute
-full-screen()
-  position: absolute
-  top: 0
-  left: 0
-  width: 100vw
-  height: 100vh
+// Fullscreen forces an element to be full screen using position fixed
+full-screen($padding = 0)
+  position: fixed
+  top: $padding
+  left: $padding
+  right: $padding
+  bottom: $padding
+  width: auto
+  height: auto
   transform: translate(0, 0)
   max-width: initial
   max-height: initial
@@ -143,17 +145,22 @@ full-screen()
 h1()
   font-size: $fs.xxl
   line-height: $lh.xxl
-  font-weight: 600
+  font-weight: $fwh.bold
 
 h2()
   font-size: $fs.xl
   line-height: $lh.xl
-  font-weight: bold
+  font-weight: $fwh.bolder
 
 h3()
   font-size: $fs.l
   line-height: $lh.l
-  font-weight: 400
+  font-weight: $fwh.bold
+
+h4()
+  font-size: $fs.m
+  line-height: $lh.m
+  font-weight: $fwh.bold
 
 // One liner, sets line-height to 1, makes components spacing a lot easier.
 // Only suitable for texts that will not wrap at all. Otherwise use
@@ -250,6 +257,10 @@ media-query-between($min, $max)
   @media screen and (min-width: $min + 1) and (max-width: $max)
     {block} // @stylint ignore
 
+media-query-height($max)
+  @media screen and (max-height: $max)
+    {block} // @stylint ignore
+
 
 // FUNCTIONAL
 // ==========
@@ -306,3 +317,8 @@ reset-button()
 
 transition-color()
   transition: color $ad.xs
+
+sidebar-transition($properties)
+  transition-timing-function: cubic-bezier(.18,.71,.3,.99)
+  transition-duration: 330ms
+  transition-property: $properties

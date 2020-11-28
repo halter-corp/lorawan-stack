@@ -19,16 +19,7 @@ import {
   createPaginationDeleteBaseActionType,
   createPaginationDeleteActions,
 } from './pagination'
-import createApiKeysRequestActions, { createGetApiKeysListActionType } from './api-keys'
-import createApiKeyRequestActions, { createGetApiKeyActionType } from './api-key'
-import {
-  createGetCollaboratorsListRequestActions,
-  createGetCollaboratorsListActionType,
-  createGetCollaboratorRequestActions,
-  createGetCollaboratorActionType,
-} from './collaborators'
 import { createRequestActions } from './lib'
-
 import {
   startEventsStream,
   createStartEventsStreamActionType,
@@ -36,20 +27,38 @@ import {
   createStartEventsStreamSuccessActionType,
   startEventsStreamFailure,
   createStartEventsStreamFailureActionType,
+  pauseEventsStream,
+  createPauseEventsStreamActionType,
+  resumeEventsStream,
+  createResumeEventsStreamActionType,
   stopEventsStream,
   createStopEventsStreamActionType,
   clearEvents,
   createClearEventsActionType,
+  createGetEventMessageSuccessActionType,
 } from './events'
 
-export const SHARED_NAME = 'APPLICATIONS'
-export const SHARED_NAME_SINGLE = 'APPLICATION'
+export const SHARED_NAME = 'APPLICATION'
 
 export const GET_APP_BASE = 'GET_APPLICATION'
 export const [
   { request: GET_APP, success: GET_APP_SUCCESS, failure: GET_APP_FAILURE },
   { request: getApplication, success: getApplicationSuccess, failure: getApplicationFailure },
 ] = createRequestActions(GET_APP_BASE, id => ({ id }), (id, selector) => ({ selector }))
+
+export const GET_APP_DEV_COUNT_BASE = 'GET_APPLICATION_DEVICE_COUNT'
+export const [
+  {
+    request: GET_APP_DEV_COUNT,
+    success: GET_APP_DEV_COUNT_SUCCESS,
+    failure: GET_APP_DEV_COUNT_FAILURE,
+  },
+  {
+    request: getApplicationDeviceCount,
+    success: getApplicationDeviceCountSuccess,
+    failure: getApplicationDeviceCountFailure,
+  },
+] = createRequestActions(GET_APP_DEV_COUNT_BASE, id => ({ id }))
 
 export const UPDATE_APP_BASE = 'UPDATE_APPLICATION'
 export const [
@@ -61,7 +70,7 @@ export const [
   },
 ] = createRequestActions(UPDATE_APP_BASE, (id, patch) => ({ id, patch }))
 
-export const DELETE_APP_BASE = createPaginationDeleteBaseActionType(SHARED_NAME_SINGLE)
+export const DELETE_APP_BASE = createPaginationDeleteBaseActionType(SHARED_NAME)
 export const [
   { request: DELETE_APP, success: DELETE_APP_SUCCESS, failure: DELETE_APP_FAILURE },
   {
@@ -69,9 +78,9 @@ export const [
     success: deleteApplicationSuccess,
     failure: deleteApplicationFailure,
   },
-] = createPaginationDeleteActions(SHARED_NAME_SINGLE, id => ({ id }))
+] = createPaginationDeleteActions(SHARED_NAME, id => ({ id }))
 
-export const GET_APPS_LIST_BASE = createPaginationBaseActionType(SHARED_NAME_SINGLE)
+export const GET_APPS_LIST_BASE = createPaginationBaseActionType(SHARED_NAME)
 export const [
   { request: GET_APPS_LIST, success: GET_APPS_LIST_SUCCESS, failure: GET_APPS_LIST_FAILURE },
   {
@@ -79,7 +88,7 @@ export const [
     success: getApplicationsSuccess,
     failure: getApplicationsFailure,
   },
-] = createPaginationRequestActions(SHARED_NAME_SINGLE)
+] = createPaginationRequestActions(SHARED_NAME)
 
 export const GET_APPS_RIGHTS_LIST_BASE = createGetRightsListActionType(SHARED_NAME)
 export const [
@@ -95,72 +104,19 @@ export const [
   },
 ] = createGetRightsListRequestActions(SHARED_NAME)
 
-export const GET_APP_API_KEY_BASE = createGetApiKeyActionType(SHARED_NAME_SINGLE)
-export const [
-  { request: GET_APP_API_KEY, success: GET_APP_API_KEY_SUCCESS, failure: GET_APP_API_KEY_FAILURE },
-  {
-    request: getApplicationApiKey,
-    success: getApplicationApiKeySuccess,
-    failure: getApplicationApiKeyFailure,
-  },
-] = createApiKeyRequestActions(SHARED_NAME_SINGLE)
+export const START_APP_EVENT_STREAM = createStartEventsStreamActionType(SHARED_NAME)
+export const START_APP_EVENT_STREAM_SUCCESS = createStartEventsStreamSuccessActionType(SHARED_NAME)
+export const START_APP_EVENT_STREAM_FAILURE = createStartEventsStreamFailureActionType(SHARED_NAME)
+export const PAUSE_APP_EVENT_STREAM = createPauseEventsStreamActionType(SHARED_NAME)
+export const RESUME_APP_EVENT_STREAM = createResumeEventsStreamActionType(SHARED_NAME)
+export const STOP_APP_EVENT_STREAM = createStopEventsStreamActionType(SHARED_NAME)
+export const CLEAR_APP_EVENTS = createClearEventsActionType(SHARED_NAME)
+export const GET_APP_EVENT_MESSAGE_SUCCESS = createGetEventMessageSuccessActionType(SHARED_NAME)
 
-export const GET_APP_API_KEYS_LIST_BASE = createGetApiKeysListActionType(SHARED_NAME_SINGLE)
-export const [
-  {
-    request: GET_APP_API_KEYS_LIST,
-    success: GET_APP_API_KEYS_LIST_SUCCESS,
-    failure: GET_APP_API_KEYS_LIST_FAILURE,
-  },
-  {
-    request: getApplicationApiKeysList,
-    success: getApplicationApiKeysListSuccess,
-    failure: getApplicationApiKeysListFailure,
-  },
-] = createApiKeysRequestActions(SHARED_NAME_SINGLE)
-
-export const GET_APP_COLLABORATOR_BASE = createGetCollaboratorActionType(SHARED_NAME_SINGLE)
-export const [
-  {
-    request: GET_APP_COLLABORATOR,
-    success: GET_APP_COLLABORATOR_SUCCESS,
-    failure: GET_APP_COLLABORATOR_FAILURE,
-  },
-  {
-    request: getApplicationCollaborator,
-    success: getApplicationCollaboratorSuccess,
-    failure: getApplicationCollaboratorFailure,
-  },
-] = createGetCollaboratorRequestActions(SHARED_NAME_SINGLE)
-
-export const GET_APP_COLLABORATORS_LIST_BASE = createGetCollaboratorsListActionType(
-  SHARED_NAME_SINGLE,
-)
-export const [
-  {
-    request: GET_APP_COLLABORATORS_LIST,
-    success: GET_APP_COLLABORATORS_LIST_SUCCESS,
-    failure: GET_APP_COLLABORATORS_LIST_FAILURE,
-  },
-  {
-    request: getApplicationCollaboratorsList,
-    success: getApplicationCollaboratorsListSuccess,
-    failure: getApplicationCollaboratorsListFailure,
-  },
-] = createGetCollaboratorsListRequestActions(SHARED_NAME_SINGLE)
-
-export const START_APP_EVENT_STREAM = createStartEventsStreamActionType(SHARED_NAME_SINGLE)
-export const START_APP_EVENT_STREAM_SUCCESS = createStartEventsStreamSuccessActionType(
-  SHARED_NAME_SINGLE,
-)
-export const START_APP_EVENT_STREAM_FAILURE = createStartEventsStreamFailureActionType(
-  SHARED_NAME_SINGLE,
-)
-export const STOP_APP_EVENT_STREAM = createStopEventsStreamActionType(SHARED_NAME_SINGLE)
-export const CLEAR_APP_EVENTS = createClearEventsActionType(SHARED_NAME_SINGLE)
-
-export const startApplicationEventsStream = startEventsStream(SHARED_NAME_SINGLE)
-export const startApplicationEventsStreamSuccess = startEventsStreamSuccess(SHARED_NAME_SINGLE)
-export const startApplicationEventsStreamFailure = startEventsStreamFailure(SHARED_NAME_SINGLE)
-export const stopApplicationEventsStream = stopEventsStream(SHARED_NAME_SINGLE)
-export const clearApplicationEventsStream = clearEvents(SHARED_NAME_SINGLE)
+export const startApplicationEventsStream = startEventsStream(SHARED_NAME)
+export const startApplicationEventsStreamSuccess = startEventsStreamSuccess(SHARED_NAME)
+export const startApplicationEventsStreamFailure = startEventsStreamFailure(SHARED_NAME)
+export const pauseApplicationEventsStream = pauseEventsStream(SHARED_NAME)
+export const resumeApplicationEventsStream = resumeEventsStream(SHARED_NAME)
+export const stopApplicationEventsStream = stopEventsStream(SHARED_NAME)
+export const clearApplicationEventsStream = clearEvents(SHARED_NAME)

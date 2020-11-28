@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/basicstation"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/basicstation"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestMarshalEUI(t *testing.T) {
@@ -134,6 +134,15 @@ func TestUnmarshalEUI(t *testing.T) {
 			Prefix: "muxs",
 			EUI64:  types.EUI64{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 			OK:     true,
+		},
+		{
+			Input: `12302426811387609088`,
+			EUI64: types.EUI64{0xaa, 0xbb, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00},
+			OK:    true,
+		},
+		{
+			Input: `-12302426811387609088`,
+			OK:    false,
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {

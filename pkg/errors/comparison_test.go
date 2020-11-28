@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestResembles(t *testing.T) {
@@ -54,4 +54,8 @@ func TestResembles(t *testing.T) {
 
 	a.So(errors.Resemble(defInvalidArgument, defPermissionDenied), should.BeFalse)
 
+	defWrapper := errors.Define("wrapper", "something went wrong")
+
+	a.So(errors.Resemble(defWrapper.WithCause(defPermissionDenied), defWrapper), should.BeTrue)
+	a.So(errors.Resemble(defWrapper.WithCause(defPermissionDenied), defWrapper.WithCause(defInvalidArgument)), should.BeTrue)
 }

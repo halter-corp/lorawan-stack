@@ -15,8 +15,11 @@
 package devicetemplates
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -25,11 +28,11 @@ import (
 	"strings"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gogoproto"
-	"go.thethings.network/lorawan-stack/pkg/provisioning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/gogoproto"
+	"go.thethings.network/lorawan-stack/v3/pkg/provisioning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
@@ -158,7 +161,7 @@ func (m *microchipATECC608AMAHTNT) Convert(ctx context.Context, r io.Reader, ch 
 		return errMicrochipData.WithCause(err)
 	}
 	if _, ok := delim.(json.Delim); !ok {
-		return errMicrochipData
+		return errMicrochipData.New()
 	}
 
 	for dec.More() {
@@ -184,7 +187,7 @@ func (m *microchipATECC608AMAHTNT) Convert(ctx context.Context, r io.Reader, ch 
 			return errMicrochipData.WithCause(err)
 		}
 		sn := s.Fields["uniqueId"].GetStringValue()
-		ch <- &ttnpb.EndDeviceTemplate{
+		tmpl := &ttnpb.EndDeviceTemplate{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					JoinEUI: &joinEUI,
@@ -207,11 +210,16 @@ func (m *microchipATECC608AMAHTNT) Convert(ctx context.Context, r io.Reader, ch 
 			},
 			MappingKey: sn,
 		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- tmpl:
+		}
 	}
 	return nil
 }
 
-// microchipATECC608TNGLORA is a Microchip ATECC608A-TNGLORA device provisioner.
+// microchipATECC608TNGLORA is a Microchip ATECC608A-TNGLORA-B and -C device provisioner.
 type microchipATECC608TNGLORA struct {
 	keys map[string]interface{}
 }
@@ -224,6 +232,12 @@ func (m *microchipATECC608TNGLORA) Format() *ttnpb.EndDeviceTemplateFormat {
 	}
 }
 
+var (
+	errMicrochipNoCertificate  = errors.DefineInvalidArgument("microchip_no_certificate", "no Microchip certificate found")
+	errMicrochipCertificateSAN = errors.DefineInvalidArgument("microchip_certificate_san", "invalid Microchip certificate Subject Alternate Name")
+	errMicrochipUnknownDevEUI  = errors.DefineInvalidArgument("microchip_unknown_dev_eui", "unknown Microchip DevEUI")
+)
+
 // Convert decodes the given manifest data.
 // The input data is an array of JWS (JSON Web Signatures).
 func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch chan<- *ttnpb.EndDeviceTemplate) error {
@@ -235,7 +249,7 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 		return errMicrochipData.WithCause(err)
 	}
 	if _, ok := delim.(json.Delim); !ok {
-		return errMicrochipData
+		return errMicrochipData.New()
 	}
 
 	for dec.More() {
@@ -253,7 +267,6 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 			return errMicrochipData.WithCause(err)
 		}
 		// publicKeySet.keys[0].x5c[0] contains the base64 certificate of the secure element.
-		// The second value in the CN is the hex encoded IEEE issued DevEUI.
 		data := struct {
 			PublicKeySet struct {
 				Keys []struct {
@@ -265,7 +278,7 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 			return errMicrochipData.WithCause(err)
 		}
 		if len(data.PublicKeySet.Keys) < 1 || len(data.PublicKeySet.Keys[0].X5C) < 1 {
-			return errMicrochipData
+			return errMicrochipData.WithCause(errMicrochipNoCertificate)
 		}
 		certBuf, err := base64.StdEncoding.DecodeString(data.PublicKeySet.Keys[0].X5C[0])
 		if err != nil {
@@ -275,13 +288,56 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 		if err != nil {
 			return errMicrochipData.WithCause(err)
 		}
+		// In the B-generation, the DevEUI is the second element of a three-part CN.
+		// In the C-generation, only the serial number is in the CN and the DevEUI is the SAN prepended with `eui64_`.
 		cnParts := strings.SplitN(cert.Subject.CommonName, " ", 3)
-		if len(cnParts) != 3 {
-			return errMicrochipData.WithCause(err)
-		}
 		var devEUI types.EUI64
-		if err := devEUI.UnmarshalText([]byte(cnParts[1])); err != nil {
-			return errMicrochipData.WithCause(err)
+		switch len(cnParts) {
+		case 1:
+			for _, ext := range cert.Extensions {
+				if !ext.Id.Equal(asn1.ObjectIdentifier{2, 5, 29, 17}) {
+					continue
+				}
+				// The extension is a DirectoryName with a serial number which contains the illegal ASN.1 PrintableString character `_`:
+				//  0  37: SEQUENCE {
+				// 	2  35:   [4] {
+				// 	4  33:     SEQUENCE {
+				// 	6  31:       SET {
+				// 	8  29:         SEQUENCE {
+				// 10   3:           OBJECT IDENTIFIER '2 5 4 5'
+				// 15  22:           PrintableString 'eui64_0004A310001AA90A'
+				//       :             Error: PrintableString contains illegal character(s).
+				//       :           }
+				//       :         }
+				//       :       }
+				//       :     }
+				//       :   }
+				// Therefore, this needs to get binary replaced by HYPHEN-MINUS before parsing the content.
+				// Note: do not remove the prefix here because the length of PrintableString needs to be preserved.
+				buf := bytes.ReplaceAll(ext.Value, []byte(`eui64_`), []byte(`eui64-`))
+				s := struct {
+					DirectoryName []pkix.RDNSequence `asn1:"tag:4"`
+				}{}
+				if rest, err := asn1.Unmarshal(buf, &s); err != nil {
+					return errMicrochipData.WithCause(errMicrochipCertificateSAN.WithCause(err))
+				} else if len(rest) != 0 {
+					return errMicrochipData.WithCause(errMicrochipCertificateSAN)
+				} else if len(s.DirectoryName) == 0 {
+					return errMicrochipData.WithCause(errMicrochipCertificateSAN)
+				}
+				var name pkix.Name
+				name.FillFromRDNSequence(&s.DirectoryName[0])
+				if err := devEUI.UnmarshalText([]byte(strings.TrimPrefix(name.SerialNumber, "eui64-"))); err != nil {
+					return errMicrochipData.WithCause(errMicrochipCertificateSAN.WithCause(err))
+				}
+			}
+		case 3:
+			if err := devEUI.UnmarshalText([]byte(cnParts[1])); err != nil {
+				return errMicrochipData.WithCause(err)
+			}
+		}
+		if devEUI.IsZero() {
+			return errMicrochipData.WithCause(errMicrochipUnknownDevEUI)
 		}
 		m := make(map[string]interface{})
 		if err := json.Unmarshal(buf, &m); err != nil {
@@ -292,7 +348,7 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 			return errMicrochipData.WithCause(err)
 		}
 		sn := s.Fields["uniqueId"].GetStringValue()
-		ch <- &ttnpb.EndDeviceTemplate{
+		tmpl := &ttnpb.EndDeviceTemplate{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					DeviceID: strings.ToLower(fmt.Sprintf("eui-%s", devEUI)),
@@ -318,6 +374,11 @@ func (m *microchipATECC608TNGLORA) Convert(ctx context.Context, r io.Reader, ch 
 				},
 			},
 			MappingKey: sn,
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- tmpl:
 		}
 	}
 	return nil

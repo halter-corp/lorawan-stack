@@ -19,41 +19,54 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/blacklist"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/blacklist"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateOrganization = events.Define(
 		"organization.create", "create organization",
-		ttnpb.RIGHT_ORGANIZATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_ORGANIZATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateOrganization = events.Define(
 		"organization.update", "update organization",
-		ttnpb.RIGHT_ORGANIZATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_ORGANIZATION_INFO),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteOrganization = events.Define(
 		"organization.delete", "delete organization",
-		ttnpb.RIGHT_ORGANIZATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_ORGANIZATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
-var errNestedOrganizations = errors.DefineInvalidArgument("nested_organizations", "organizations can not be nested")
+var (
+	errNestedOrganizations       = errors.DefineInvalidArgument("nested_organizations", "organizations can not be nested")
+	errAdminsCreateOrganizations = errors.DefinePermissionDenied("admins_create_organizations", "organizations may only be created by admins")
+)
 
 func (is *IdentityServer) createOrganization(ctx context.Context, req *ttnpb.CreateOrganizationRequest) (org *ttnpb.Organization, err error) {
 	if err = blacklist.Check(ctx, req.OrganizationID); err != nil {
 		return nil, err
 	}
 	if usrIDs := req.Collaborator.GetUserIDs(); usrIDs != nil {
+		if !is.IsAdmin(ctx) && !is.configFromContext(ctx).UserRights.CreateOrganizations {
+			return nil, errAdminsCreateOrganizations
+		}
 		if err = rights.RequireUser(ctx, *usrIDs, ttnpb.RIGHT_USER_ORGANIZATIONS_CREATE); err != nil {
 			return nil, err
 		}
 	} else if orgIDs := req.Collaborator.GetOrganizationIDs(); orgIDs != nil {
-		return nil, errNestedOrganizations
+		return nil, errNestedOrganizations.New()
 	}
 	if err := validateContactInfo(req.Organization.ContactInfo); err != nil {
 		return nil, err
@@ -83,7 +96,7 @@ func (is *IdentityServer) createOrganization(ctx context.Context, req *ttnpb.Cre
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtCreateOrganization(ctx, req.OrganizationIdentifiers, nil))
+	events.Publish(evtCreateOrganization.NewWithIdentifiersAndData(ctx, req.OrganizationIdentifiers, nil))
 	return org, nil
 }
 
@@ -138,8 +151,9 @@ func (is *IdentityServer) listOrganizations(ctx context.Context, req *ttnpb.List
 			return nil, err
 		}
 	} else if orgIDs := req.Collaborator.GetOrganizationIDs(); orgIDs != nil {
-		return nil, errNestedOrganizations
+		return nil, errNestedOrganizations.New()
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	paginateCtx := store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -166,16 +180,18 @@ func (is *IdentityServer) listOrganizations(ctx context.Context, req *ttnpb.List
 		if err != nil {
 			return err
 		}
-		for i, org := range orgs.Organizations {
-			if rights.RequireOrganization(ctx, org.OrganizationIdentifiers, ttnpb.RIGHT_ORGANIZATION_INFO) != nil {
-				orgs.Organizations[i] = org.PublicSafe()
-			}
-		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	for i, org := range orgs.Organizations {
+		if rights.RequireOrganization(ctx, org.OrganizationIdentifiers, ttnpb.RIGHT_ORGANIZATION_INFO) != nil {
+			orgs.Organizations[i] = org.PublicSafe()
+		}
+	}
+
 	return orgs, nil
 }
 
@@ -209,7 +225,7 @@ func (is *IdentityServer) updateOrganization(ctx context.Context, req *ttnpb.Upd
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateOrganization(ctx, req.OrganizationIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateOrganization.NewWithIdentifiersAndData(ctx, req.OrganizationIdentifiers, req.FieldMask.Paths))
 	return org, nil
 }
 
@@ -223,7 +239,7 @@ func (is *IdentityServer) deleteOrganization(ctx context.Context, ids *ttnpb.Org
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeleteOrganization(ctx, ids, nil))
+	events.Publish(evtDeleteOrganization.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
 }
 

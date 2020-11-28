@@ -19,6 +19,8 @@ import (
 	"fmt"
 	stdio "io"
 	"net"
+	"os"
+	"runtime/debug"
 
 	"github.com/TheThingsIndustries/mystique/pkg/auth"
 	mqttlog "github.com/TheThingsIndustries/mystique/pkg/log"
@@ -26,12 +28,13 @@ import (
 	"github.com/TheThingsIndustries/mystique/pkg/packet"
 	"github.com/TheThingsIndustries/mystique/pkg/session"
 	"github.com/TheThingsIndustries/mystique/pkg/topic"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/mqtt"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -44,33 +47,39 @@ type srv struct {
 	lis    mqttnet.Listener
 }
 
-// Start starts the MQTT frontend.
-func Start(ctx context.Context, server io.Server, listener net.Listener, format Format, protocol string) {
+var errMQTTFrontendRecovered = errors.DefineInternal("mqtt_frontend_recovered", "internal server error")
+
+// Serve serves the MQTT frontend.
+func Serve(ctx context.Context, server io.Server, listener net.Listener, format Format, protocol string) error {
 	ctx = log.NewContextWithField(ctx, "namespace", "gatewayserver/io/mqtt")
 	ctx = mqttlog.NewContext(ctx, mqtt.Logger(log.FromContext(ctx)))
 	s := &srv{ctx, server, format, mqttnet.NewListener(listener, protocol)}
-	go s.accept()
 	go func() {
 		<-ctx.Done()
 		s.lis.Close()
 	}()
+	return s.accept()
 }
 
-func (s *srv) accept() {
+func (s *srv) accept() error {
 	for {
 		mqttConn, err := s.lis.Accept()
 		if err != nil {
 			if s.ctx.Err() == nil {
 				log.FromContext(s.ctx).WithError(err).Warn("Accept failed")
 			}
-			return
+			return err
 		}
 
 		go func() {
 			ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", mqttConn.RemoteAddr().String()))
 			conn := &connection{server: s.server, mqtt: mqttConn, format: s.format}
 			if err := conn.setup(ctx); err != nil {
-				log.FromContext(ctx).WithError(err).Warn("Failed to setup connection")
+				switch err {
+				case stdio.EOF, stdio.ErrUnexpectedEOF:
+				default:
+					log.FromContext(ctx).WithError(err).Warn("Failed to setup connection")
+				}
 				mqttConn.Close()
 				return
 			}
@@ -89,42 +98,54 @@ type connection struct {
 func (*connection) Protocol() string            { return "mqtt" }
 func (*connection) SupportsDownlinkClaim() bool { return false }
 
-func (c *connection) setup(ctx context.Context) error {
+func (c *connection) setup(ctx context.Context) (err error) {
 	ctx = auth.NewContextWithInterface(ctx, c)
+	ctx, cancel := errorcontext.New(ctx)
+	defer func() {
+		retrievedErr := recoverMQTTFrontend(ctx)
+		if retrievedErr != nil {
+			err = retrievedErr
+		}
+	}()
 	c.session = session.New(ctx, c.mqtt, c.deliver)
 	if err := c.session.ReadConnect(); err != nil {
+		cancel(err)
 		return err
 	}
 	ctx = c.io.Context()
 
 	logger := log.FromContext(ctx)
-	errCh := make(chan error)
 	controlCh := make(chan packet.ControlPacket)
 
 	// Read control packets
 	go func() {
+		defer recoverMQTTFrontend(ctx)
 		for {
 			pkt, err := c.session.ReadPacket()
 			if err != nil {
 				if err != stdio.EOF {
 					logger.WithError(err).Warn("Error when reading packet")
 				}
-				errCh <- err
+				cancel(err)
 				return
 			}
 			if pkt != nil {
 				logger.Debugf("Schedule %s packet", packet.Name[pkt.PacketType()])
-				controlCh <- pkt
+				select {
+				case <-ctx.Done():
+					return
+				case controlCh <- pkt:
+				}
 			}
 		}
 	}()
 
 	// Publish downlinks
 	go func() {
+		defer recoverMQTTFrontend(ctx)
 		for {
 			select {
-			case <-c.io.Context().Done():
-				logger.WithError(c.io.Context().Err()).Debug("Done sending downlink")
+			case <-ctx.Done():
 				return
 			case down := <-c.io.Down():
 				buf, err := c.format.FromDownlink(down, c.io.Gateway().GatewayIdentifiers)
@@ -146,15 +167,13 @@ func (c *connection) setup(ctx context.Context) error {
 
 	// Write packets
 	go func() {
+		defer recoverMQTTFrontend(ctx)
 		for {
 			var err error
 			select {
-			case err = <-errCh:
-			case pkt, ok := <-controlCh:
-				if !ok {
-					controlCh = nil
-					continue
-				}
+			case <-ctx.Done():
+				return
+			case pkt := <-controlCh:
 				err = c.mqtt.Send(pkt)
 			case pkt, ok := <-c.session.PublishChan():
 				if !ok {
@@ -164,15 +183,19 @@ func (c *connection) setup(ctx context.Context) error {
 				err = c.mqtt.Send(pkt)
 			}
 			if err != nil {
-				if err != stdio.EOF {
-					logger.WithError(err).Error("Send failed, closing session")
-				} else {
-					logger.Info("Disconnected")
-				}
-				c.session.Close()
-				c.io.Disconnect(err)
+				cancel(err)
 				return
 			}
+		}
+	}()
+
+	// Close connection on context closure
+	go func() {
+		select {
+		case <-ctx.Done():
+			logger.WithError(ctx.Err()).Info("Disconnected")
+			c.session.Close()
+			c.mqtt.Close()
 		}
 	}()
 
@@ -239,7 +262,7 @@ func (c *connection) Subscribe(info *auth.Info, requestedTopic string, requested
 	access := info.Metadata.(topicAccess)
 	acceptedTopicParts := c.format.DownlinkTopic(access.gtwUID)
 	if !topic.MatchPath(acceptedTopicParts, topic.Split(requestedTopic)) {
-		return "", 0, errNotAuthorized
+		return "", 0, errNotAuthorized.New()
 	}
 	acceptedTopic = topic.Join(acceptedTopicParts)
 	acceptedQoS = requestedQoS
@@ -302,4 +325,20 @@ func (c *connection) deliver(pkt *packet.PublishPacket) {
 	default:
 		logger.Debug("Publish to invalid topic")
 	}
+}
+
+func recoverMQTTFrontend(ctx context.Context) error {
+	if p := recover(); p != nil {
+		fmt.Fprintln(os.Stderr, p)
+		os.Stderr.Write(debug.Stack())
+		var err error
+		if pErr, ok := p.(error); ok {
+			err = errMQTTFrontendRecovered.WithCause(pErr)
+		} else {
+			err = errMQTTFrontendRecovered.WithAttributes("panic", p)
+		}
+		log.FromContext(ctx).WithError(err).Error("MQTT frontend failed")
+		return err
+	}
+	return nil
 }

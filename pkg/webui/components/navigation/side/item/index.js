@@ -15,40 +15,80 @@
 import React, { Fragment } from 'react'
 import classnames from 'classnames'
 import bind from 'autobind-decorator'
-import PropTypes from '../../../../lib/prop-types'
+import { withRouter } from 'react-router-dom'
+
+import Icon from '@ttn-lw/components/icon'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import SideNavigationList from '../list'
 import NavigationLink from '../../link'
-import Message from '../../../../lib/components/message'
-import Icon from '../../../icon'
+import SideNavigationContext from '../context'
 
 import style from './item.styl'
 
-@bind
-class SideNavigationItem extends React.PureComponent {
-  onExpandCollapsableItem() {
-    this.props.onExpand(false)
+export class SideNavigationItem extends React.PureComponent {
+  static contextType = SideNavigationContext
+
+  static propTypes = {
+    children: PropTypes.node,
+    className: PropTypes.string,
+    depth: PropTypes.number,
+    /** A flag specifying whether the path of the linkable item should be matched exactly or not. */
+    exact: PropTypes.bool,
+    /** The name of the icon for the side navigation item. */
+    icon: PropTypes.string,
+    /** A flag specifying whether the side navigation item is active or not. */
+    isActive: PropTypes.bool,
+    location: PropTypes.location.isRequired,
+    /** The path of the linkable side navigation item. */
+    path: PropTypes.string,
+    /** The title of the side navigation item. */
+    title: PropTypes.message.isRequired,
   }
 
-  onExpandLinkItem() {
-    this.props.onExpand(true)
+  static defaultProps = {
+    className: undefined,
+    children: undefined,
+    exact: false,
+    icon: undefined,
+    isActive: false,
+    depth: 0,
+    path: undefined,
+  }
+
+  state = {
+    isExpanded: false,
+  }
+
+  handleExpandCollapsableItem() {
+    this.setState({ isExpanded: !this.state.isExpanded })
+  }
+
+  componentDidMount() {
+    // Make sure that the item corresponding to the currently open path is expanded
+    // on initial render, if applicable
+    const { location, children } = this.props
+    if (Boolean(children)) {
+      const paths = React.Children.toArray(children).reduce(
+        (paths, child) => [...paths, ...(Boolean(child) ? child.props.path : [])],
+        [],
+      )
+      for (const path of paths) {
+        if (location.pathname.startsWith(path)) {
+          this.setState({ isExpanded: true })
+          return
+        }
+      }
+    }
   }
 
   render() {
-    const {
-      className,
-      title,
-      depth,
-      icon = null,
-      path = null,
-      exact = true,
-      onExpand,
-      isCollapsable = false,
-      isMinimized,
-      isExpanded,
-      isActive,
-      items,
-    } = this.props
+    const { className, children, title, depth, icon, path, exact, isActive } = this.props
+    const { isExpanded } = this.state
+    const { isMinimized, onLeafItemClick } = this.context
 
     return (
       <li
@@ -56,26 +96,25 @@ class SideNavigationItem extends React.PureComponent {
           [style.itemMinimized]: isMinimized,
         })}
       >
-        {isCollapsable ? (
+        {Boolean(children) ? (
           <CollapsableItem
             title={title}
             icon={icon}
-            onExpand={onExpand}
-            onClick={this.onExpandCollapsableItem}
+            onClick={this.handleExpandCollapsableItem}
             depth={depth}
-            items={items}
             isActive={isActive}
             isExpanded={isExpanded}
             isMinimized={isMinimized}
+            children={children}
           />
         ) : (
           <LinkItem
+            onClick={onLeafItemClick}
             title={title}
             icon={icon}
             exact={exact}
             path={path}
             depth={depth}
-            onExpand={this.onExpandLinkItem}
           />
         )}
       </li>
@@ -84,15 +123,14 @@ class SideNavigationItem extends React.PureComponent {
 }
 
 const CollapsableItem = ({
+  children,
   onClick,
-  onExpand,
   isActive,
   isExpanded,
   isMinimized,
   title,
   icon,
   depth,
-  items,
 }) => (
   <Fragment>
     <button
@@ -112,52 +150,54 @@ const CollapsableItem = ({
         })}
       />
     </button>
-    <SideNavigationList
-      isMinimized={isMinimized}
-      depth={depth + 1}
-      items={items}
-      isExpanded={isExpanded}
-      onItemExpand={onExpand}
-    />
+    <SideNavigationList isMinimized={isMinimized} depth={depth + 1} isExpanded={isExpanded}>
+      {children}
+    </SideNavigationList>
   </Fragment>
 )
 
-const LinkItem = ({ title, icon, exact, path, onExpand }) => (
+CollapsableItem.propTypes = {
+  children: PropTypes.node,
+  depth: PropTypes.number.isRequired,
+  icon: PropTypes.string,
+  isActive: PropTypes.bool.isRequired,
+  isExpanded: PropTypes.bool.isRequired,
+  isMinimized: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+  title: PropTypes.message.isRequired,
+}
+
+CollapsableItem.defaultProps = {
+  children: undefined,
+  icon: undefined,
+  isMinimized: false,
+}
+
+const LinkItem = ({ onClick, title, icon, exact, path }) => (
   <NavigationLink
+    onClick={onClick}
     className={style.link}
     activeClassName={style.linkActive}
     exact={exact}
     path={path}
-    onClick={onExpand}
-    data-hook="side-nav-item-link"
   >
     {icon && <Icon icon={icon} className={style.icon} />}
     <Message content={title} className={style.message} />
   </NavigationLink>
 )
 
-SideNavigationItem.propTypes = {
-  /** The title of the side navigation item */
-  title: PropTypes.message.isRequired,
-  /** The name of the icon for the side navigation item */
+LinkItem.propTypes = {
+  exact: PropTypes.bool.isRequired,
   icon: PropTypes.string,
-  /** The path of the linkable side navigation item */
+  onClick: PropTypes.func,
   path: PropTypes.string,
-  /** A flag specifying whether the path of the linkable item should be matched exactly or not */
-  exact: PropTypes.bool,
-  /** A flag specifying whether the side navigation item is active or not */
-  isActive: PropTypes.bool.isRequired,
-  /** A flag specifying whether the side navigation item is minimized or not */
-  isMinimized: PropTypes.bool.isRequired,
-  /**
-   * A flag specifying whether the side navigation item is composed of multiple
-   * entries and is collapsable/expandable
-   */
-  isCollapsable: PropTypes.bool.isRequired,
-  /** A flag specifying whether the side navigation item is expanded */
-  isExpanded: PropTypes.bool.isRequired,
-  /** Function to be called when the item gets selected */
-  onExpand: PropTypes.func.isRequired,
+  title: PropTypes.message.isRequired,
 }
 
-export default SideNavigationItem
+LinkItem.defaultProps = {
+  icon: undefined,
+  path: undefined,
+  onClick: () => null,
+}
+
+export default withRouter(bind(SideNavigationItem))

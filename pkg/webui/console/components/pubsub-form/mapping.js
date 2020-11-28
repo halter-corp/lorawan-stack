@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { natsUrl as natsUrlRegexp } from '../../lib/regexp'
+import { merge } from 'lodash'
+
+import { natsUrl as natsUrlRegexp } from '@console/lib/regexp'
+
+import providers from './providers'
 
 const natsBlankValues = {
   username: '',
@@ -20,6 +24,7 @@ const natsBlankValues = {
   address: '',
   port: '',
   secure: false,
+  _use_credentials: true,
 }
 
 const mqttBlankValues = {
@@ -33,68 +38,83 @@ const mqttBlankValues = {
   tls_ca: '',
   tls_client_cert: '',
   tls_client_key: '',
+  _use_credentials: true,
 }
 
-const mapNatsServerUrlToFormValue = function(server_url) {
+export const mapNatsFormValues = nats => {
   try {
-    const res = server_url.match(natsUrlRegexp)
+    const res = nats.server_url.match(natsUrlRegexp)
     return {
       secure: res[2] === 'tls',
       username: res[5],
       password: res[7],
       address: res[8],
       port: res[10],
+      _use_credentials: Boolean(res[5] || res[7]),
     }
   } catch {
     return {}
   }
 }
 
+export const mapMqttFormValues = mqtt => {
+  return merge({}, mqttBlankValues, mqtt, {
+    _use_credentials: Boolean(mqtt.username || mqtt.password),
+  })
+}
+
 const mapPubsubMessageTypeToFormValue = messageType =>
   (messageType && { enabled: true, value: messageType.topic }) || { enabled: false, value: '' }
 
-export const mapPubsubToFormValues = function(pubsub) {
+export const mapPubsubToFormValues = pubsub => {
   const isNats = 'nats' in pubsub
   const isMqtt = 'mqtt' in pubsub
+  let provider = blankValues._provider
+  if (isNats) {
+    provider = providers.NATS
+  } else if (isMqtt) {
+    provider = providers.MQTT
+  }
   const result = {
     pub_sub_id: pubsub.ids.pub_sub_id,
     base_topic: pubsub.base_topic,
     format: pubsub.format,
-    _provider: isMqtt ? 'mqtt' : 'nats',
-    nats: isNats ? mapNatsServerUrlToFormValue(pubsub.nats.server_url) : natsBlankValues,
-    mqtt: isMqtt ? pubsub.mqtt : mqttBlankValues,
+    _provider: provider,
+    nats: isNats ? mapNatsFormValues(pubsub.nats) : natsBlankValues,
+    mqtt: isMqtt ? mapMqttFormValues(pubsub.mqtt) : mqttBlankValues,
     downlink_ack: mapPubsubMessageTypeToFormValue(pubsub.downlink_ack),
     downlink_failed: mapPubsubMessageTypeToFormValue(pubsub.downlink_failed),
     downlink_nack: mapPubsubMessageTypeToFormValue(pubsub.downlink_nack),
     downlink_push: mapPubsubMessageTypeToFormValue(pubsub.downlink_push),
     downlink_queued: mapPubsubMessageTypeToFormValue(pubsub.downlink_queued),
+    downlink_queue_invalidated: mapPubsubMessageTypeToFormValue(pubsub.downlink_queue_invalidated),
     downlink_replace: mapPubsubMessageTypeToFormValue(pubsub.downlink_replace),
     downlink_sent: mapPubsubMessageTypeToFormValue(pubsub.downlink_sent),
     join_accept: mapPubsubMessageTypeToFormValue(pubsub.join_accept),
     location_solved: mapPubsubMessageTypeToFormValue(pubsub.location_solved),
+    service_data: mapPubsubMessageTypeToFormValue(pubsub.service_data),
     uplink_message: mapPubsubMessageTypeToFormValue(pubsub.uplink_message),
-  }
-
-  if (!result.mqtt.tls_ca) {
-    result.mqtt.tls_ca = ''
-  }
-  if (!result.mqtt.tls_client_cert) {
-    result.mqtt.tls_client_cert = ''
-  }
-  if (!result.mqtt.tls_client_key) {
-    result.mqtt.tls_client_key = ''
   }
 
   return result
 }
 
-const mapNatsConfigFormValueToNatsServerUrl = ({ username, password, address, port, secure }) =>
-  `${secure ? 'tls' : 'nats'}://${username}:${password}@${address}:${port}`
+const mapNatsConfigFormValueToNatsServerUrl = ({
+  username,
+  password,
+  address,
+  port,
+  secure,
+  _use_credentials,
+}) =>
+  `${secure ? 'tls' : 'nats'}://${
+    _use_credentials ? `${username}:${password}@` : ''
+  }${address}:${port}`
 
 const mapMessageTypeFormValueToPubsubMessageType = formValue =>
   (formValue.enabled && { topic: formValue.value }) || null
 
-export const mapFormValuesToPubsub = function(values, appId) {
+export const mapFormValuesToPubsub = (values, appId) => {
   const result = {
     ids: {
       application_ids: {
@@ -109,21 +129,28 @@ export const mapFormValuesToPubsub = function(values, appId) {
     downlink_nack: mapMessageTypeFormValueToPubsubMessageType(values.downlink_nack),
     downlink_push: mapMessageTypeFormValueToPubsubMessageType(values.downlink_push),
     downlink_queued: mapMessageTypeFormValueToPubsubMessageType(values.downlink_queued),
+    downlink_queue_invalidated: mapMessageTypeFormValueToPubsubMessageType(
+      values.downlink_queue_invalidated,
+    ),
     downlink_replace: mapMessageTypeFormValueToPubsubMessageType(values.downlink_replace),
     downlink_sent: mapMessageTypeFormValueToPubsubMessageType(values.downlink_sent),
     join_accept: mapMessageTypeFormValueToPubsubMessageType(values.join_accept),
     location_solved: mapMessageTypeFormValueToPubsubMessageType(values.location_solved),
+    service_data: mapMessageTypeFormValueToPubsubMessageType(values.service_data),
     uplink_message: mapMessageTypeFormValueToPubsubMessageType(values.uplink_message),
   }
 
-  if (values._provider === 'nats') {
-    result.nats = {
-      server_url: mapNatsConfigFormValueToNatsServerUrl(values.nats),
-    }
-  } else if (values._provider === 'mqtt') {
-    result.mqtt = values.mqtt
+  switch (values._provider) {
+    case providers.NATS:
+      result.nats = {
+        server_url: mapNatsConfigFormValueToNatsServerUrl(values.nats),
+      }
+      break
+    case providers.MQTT:
+      result.mqtt = values.mqtt
+      delete result.mqtt._use_credentials
+      break
   }
-
   return result
 }
 
@@ -131,7 +158,7 @@ export const blankValues = {
   pub_sub_id: '',
   base_topic: '',
   format: '',
-  _provider: 'nats',
+  _provider: providers.NATS,
   nats: natsBlankValues,
   mqtt: mqttBlankValues,
   downlink_ack: { enabled: false, value: '' },
@@ -139,9 +166,11 @@ export const blankValues = {
   downlink_nack: { enabled: false, value: '' },
   downlink_push: { enabled: false, value: '' },
   downlink_queued: { enabled: false, value: '' },
+  downlink_queue_invalidated: { enabled: false, value: '' },
   downlink_replace: { enabled: false, value: '' },
   downlink_sent: { enabled: false, value: '' },
   join_accept: { enabled: false, value: '' },
   location_solved: { enabled: false, value: '' },
+  service_data: { enabled: false, value: '' },
   uplink_message: { enabled: false, value: '' },
 }

@@ -15,20 +15,21 @@
 import React from 'react'
 import classnames from 'classnames'
 
-import { Link } from 'react-router-dom'
-import Icon from '../../icon'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
+import Link from '@ttn-lw/components/link'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './breadcrumb.styl'
 
-const Breadcrumb = function({ className, path, content, icon = null, isLast = false }) {
+const Breadcrumb = function({ className, path, content, isLast }) {
   const isRawText = typeof content === 'string' || typeof content === 'number'
   let Component
   let componentProps
   if (!isLast) {
     Component = Link
-    componentProps = { className: classnames(className, style.link), to: path }
+    componentProps = { className: classnames(className, style.link), to: path, secondary: true }
   } else {
     Component = 'span'
     componentProps = { className: classnames(className, style.last) }
@@ -36,21 +37,24 @@ const Breadcrumb = function({ className, path, content, icon = null, isLast = fa
 
   return (
     <Component {...componentProps}>
-      {icon && <Icon className={style.icon} icon={icon} />}
       {isRawText ? <span>{content}</span> : <Message content={content} />}
     </Component>
   )
 }
 
 Breadcrumb.propTypes = {
-  /** The path for a breadcrumb */
-  path: PropTypes.string.isRequired,
-  /** The name of the icon to display within the breadcrumb */
-  icon: PropTypes.string,
-  /** The content of the breadcrumb */
+  className: PropTypes.string,
+  /** The content of the breadcrumb. */
   content: PropTypes.message.isRequired,
-  /** The flag for rendering last breadcrumb as plain text */
+  /** The flag for rendering last breadcrumb as plain text. */
   isLast: PropTypes.bool,
+  /** The path for a breadcrumb. */
+  path: PropTypes.string.isRequired,
+}
+
+Breadcrumb.defaultProps = {
+  className: undefined,
+  isLast: false,
 }
 
 export default Breadcrumb

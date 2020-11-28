@@ -16,31 +16,31 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { Switch, Route } from 'react-router'
 
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import ErrorView from '../../../lib/components/error-view'
-import PropTypes from '../../../lib/prop-types'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import SubViewError from '../error/sub-view'
-import OrganizationApiKeysList from '../organization-api-keys-list'
-import OrganizationApiKeyAdd from '../organization-api-key-add'
-import OrganizationApiKeyEdit from '../organization-api-key-edit'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import ErrorView from '@ttn-lw/lib/components/error-view'
 
-import { mayViewOrEditOrganizationApiKeys } from '../../lib/feature-checks'
-import { selectSelectedOrganizationId } from '../../store/selectors/organizations'
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import SubViewError from '@console/views/error/sub-view'
+import OrganizationApiKeysList from '@console/views/organization-api-keys-list'
+import OrganizationApiKeyAdd from '@console/views/organization-api-key-add'
+import OrganizationApiKeyEdit from '@console/views/organization-api-key-edit'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayViewOrEditOrganizationApiKeys } from '@console/lib/feature-checks'
+
+import { selectSelectedOrganizationId } from '@console/store/selectors/organizations'
 
 @connect(state => ({ orgId: selectSelectedOrganizationId(state) }))
 @withFeatureRequirement(mayViewOrEditOrganizationApiKeys, {
   redirect: ({ orgId }) => `/organizations/${orgId}`,
 })
 @withBreadcrumb('org.single.api-keys', ({ orgId }) => (
-  <Breadcrumb
-    path={`/organizations/${orgId}/api-keys`}
-    icon="api_keys"
-    content={sharedMessages.apiKeys}
-  />
+  <Breadcrumb path={`/organizations/${orgId}/api-keys`} content={sharedMessages.apiKeys} />
 ))
 class OrganizationApiKeys extends React.Component {
   static propTypes = {

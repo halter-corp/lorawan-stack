@@ -123,23 +123,26 @@ type ApplicationPubSub struct {
 	// Types that are valid to be assigned to Provider:
 	//	*ApplicationPubSub_NATS
 	//	*ApplicationPubSub_MQTT
+	//	*ApplicationPubSub_AWSIoT
 	Provider isApplicationPubSub_Provider `protobuf_oneof:"provider"`
 	// Base topic name to which the messages topic is appended.
 	BaseTopic string `protobuf:"bytes,6,opt,name=base_topic,json=baseTopic,proto3" json:"base_topic,omitempty"`
 	// The topic to which the Application Server subscribes for downlink queue push operations.
 	DownlinkPush *ApplicationPubSub_Message `protobuf:"bytes,7,opt,name=downlink_push,json=downlinkPush,proto3" json:"downlink_push,omitempty"`
 	// The topic to which the Application Server subscribes for downlink queue replace operations.
-	DownlinkReplace      *ApplicationPubSub_Message `protobuf:"bytes,8,opt,name=downlink_replace,json=downlinkReplace,proto3" json:"downlink_replace,omitempty"`
-	UplinkMessage        *ApplicationPubSub_Message `protobuf:"bytes,9,opt,name=uplink_message,json=uplinkMessage,proto3" json:"uplink_message,omitempty"`
-	JoinAccept           *ApplicationPubSub_Message `protobuf:"bytes,10,opt,name=join_accept,json=joinAccept,proto3" json:"join_accept,omitempty"`
-	DownlinkAck          *ApplicationPubSub_Message `protobuf:"bytes,11,opt,name=downlink_ack,json=downlinkAck,proto3" json:"downlink_ack,omitempty"`
-	DownlinkNack         *ApplicationPubSub_Message `protobuf:"bytes,12,opt,name=downlink_nack,json=downlinkNack,proto3" json:"downlink_nack,omitempty"`
-	DownlinkSent         *ApplicationPubSub_Message `protobuf:"bytes,13,opt,name=downlink_sent,json=downlinkSent,proto3" json:"downlink_sent,omitempty"`
-	DownlinkFailed       *ApplicationPubSub_Message `protobuf:"bytes,14,opt,name=downlink_failed,json=downlinkFailed,proto3" json:"downlink_failed,omitempty"`
-	DownlinkQueued       *ApplicationPubSub_Message `protobuf:"bytes,15,opt,name=downlink_queued,json=downlinkQueued,proto3" json:"downlink_queued,omitempty"`
-	LocationSolved       *ApplicationPubSub_Message `protobuf:"bytes,16,opt,name=location_solved,json=locationSolved,proto3" json:"location_solved,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
-	XXX_sizecache        int32                      `json:"-"`
+	DownlinkReplace          *ApplicationPubSub_Message `protobuf:"bytes,8,opt,name=downlink_replace,json=downlinkReplace,proto3" json:"downlink_replace,omitempty"`
+	UplinkMessage            *ApplicationPubSub_Message `protobuf:"bytes,9,opt,name=uplink_message,json=uplinkMessage,proto3" json:"uplink_message,omitempty"`
+	JoinAccept               *ApplicationPubSub_Message `protobuf:"bytes,10,opt,name=join_accept,json=joinAccept,proto3" json:"join_accept,omitempty"`
+	DownlinkAck              *ApplicationPubSub_Message `protobuf:"bytes,11,opt,name=downlink_ack,json=downlinkAck,proto3" json:"downlink_ack,omitempty"`
+	DownlinkNack             *ApplicationPubSub_Message `protobuf:"bytes,12,opt,name=downlink_nack,json=downlinkNack,proto3" json:"downlink_nack,omitempty"`
+	DownlinkSent             *ApplicationPubSub_Message `protobuf:"bytes,13,opt,name=downlink_sent,json=downlinkSent,proto3" json:"downlink_sent,omitempty"`
+	DownlinkFailed           *ApplicationPubSub_Message `protobuf:"bytes,14,opt,name=downlink_failed,json=downlinkFailed,proto3" json:"downlink_failed,omitempty"`
+	DownlinkQueued           *ApplicationPubSub_Message `protobuf:"bytes,15,opt,name=downlink_queued,json=downlinkQueued,proto3" json:"downlink_queued,omitempty"`
+	DownlinkQueueInvalidated *ApplicationPubSub_Message `protobuf:"bytes,19,opt,name=downlink_queue_invalidated,json=downlinkQueueInvalidated,proto3" json:"downlink_queue_invalidated,omitempty"`
+	LocationSolved           *ApplicationPubSub_Message `protobuf:"bytes,16,opt,name=location_solved,json=locationSolved,proto3" json:"location_solved,omitempty"`
+	ServiceData              *ApplicationPubSub_Message `protobuf:"bytes,18,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
+	XXX_NoUnkeyedLiteral     struct{}                   `json:"-"`
+	XXX_sizecache            int32                      `json:"-"`
 }
 
 func (m *ApplicationPubSub) Reset()      { *m = ApplicationPubSub{} }
@@ -187,9 +190,13 @@ type ApplicationPubSub_NATS struct {
 type ApplicationPubSub_MQTT struct {
 	MQTT *ApplicationPubSub_MQTTProvider `protobuf:"bytes,25,opt,name=mqtt,proto3,oneof" json:"mqtt,omitempty"`
 }
+type ApplicationPubSub_AWSIoT struct {
+	AWSIoT *ApplicationPubSub_AWSIoTProvider `protobuf:"bytes,101,opt,name=aws_iot,json=awsIot,proto3,oneof" json:"aws_iot,omitempty"`
+}
 
-func (*ApplicationPubSub_NATS) isApplicationPubSub_Provider() {}
-func (*ApplicationPubSub_MQTT) isApplicationPubSub_Provider() {}
+func (*ApplicationPubSub_NATS) isApplicationPubSub_Provider()   {}
+func (*ApplicationPubSub_MQTT) isApplicationPubSub_Provider()   {}
+func (*ApplicationPubSub_AWSIoT) isApplicationPubSub_Provider() {}
 
 func (m *ApplicationPubSub) GetProvider() isApplicationPubSub_Provider {
 	if m != nil {
@@ -229,6 +236,13 @@ func (m *ApplicationPubSub) GetNATS() *ApplicationPubSub_NATSProvider {
 func (m *ApplicationPubSub) GetMQTT() *ApplicationPubSub_MQTTProvider {
 	if x, ok := m.GetProvider().(*ApplicationPubSub_MQTT); ok {
 		return x.MQTT
+	}
+	return nil
+}
+
+func (m *ApplicationPubSub) GetAWSIoT() *ApplicationPubSub_AWSIoTProvider {
+	if x, ok := m.GetProvider().(*ApplicationPubSub_AWSIoT); ok {
+		return x.AWSIoT
 	}
 	return nil
 }
@@ -303,9 +317,23 @@ func (m *ApplicationPubSub) GetDownlinkQueued() *ApplicationPubSub_Message {
 	return nil
 }
 
+func (m *ApplicationPubSub) GetDownlinkQueueInvalidated() *ApplicationPubSub_Message {
+	if m != nil {
+		return m.DownlinkQueueInvalidated
+	}
+	return nil
+}
+
 func (m *ApplicationPubSub) GetLocationSolved() *ApplicationPubSub_Message {
 	if m != nil {
 		return m.LocationSolved
+	}
+	return nil
+}
+
+func (m *ApplicationPubSub) GetServiceData() *ApplicationPubSub_Message {
+	if m != nil {
+		return m.ServiceData
 	}
 	return nil
 }
@@ -315,6 +343,7 @@ func (*ApplicationPubSub) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
 		(*ApplicationPubSub_NATS)(nil),
 		(*ApplicationPubSub_MQTT)(nil),
+		(*ApplicationPubSub_AWSIoT)(nil),
 	}
 }
 
@@ -379,9 +408,11 @@ type ApplicationPubSub_MQTTProvider struct {
 	// The client certificate. PEM formatted.
 	TLSClientCert []byte `protobuf:"bytes,9,opt,name=tls_client_cert,json=tlsClientCert,proto3" json:"tls_client_cert,omitempty"`
 	// The client private key. PEM formatted.
-	TLSClientKey         []byte   `protobuf:"bytes,10,opt,name=tls_client_key,json=tlsClientKey,proto3" json:"tls_client_key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	TLSClientKey []byte `protobuf:"bytes,10,opt,name=tls_client_key,json=tlsClientKey,proto3" json:"tls_client_key,omitempty"`
+	// HTTP headers to use on MQTT-over-Websocket connections.
+	Headers              map[string]string `protobuf:"bytes,11,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
 func (m *ApplicationPubSub_MQTTProvider) Reset()      { *m = ApplicationPubSub_MQTTProvider{} }
@@ -486,6 +517,298 @@ func (m *ApplicationPubSub_MQTTProvider) GetTLSClientKey() []byte {
 	return nil
 }
 
+func (m *ApplicationPubSub_MQTTProvider) GetHeaders() map[string]string {
+	if m != nil {
+		return m.Headers
+	}
+	return nil
+}
+
+type ApplicationPubSub_AWSIoTProvider struct {
+	// The AWS region.
+	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
+	// If set, the integration will use an AWS access key.
+	AccessKey *ApplicationPubSub_AWSIoTProvider_AccessKey `protobuf:"bytes,2,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty"`
+	// If set, the integration will assume the given role during operation.
+	AssumeRole *ApplicationPubSub_AWSIoTProvider_AssumeRole `protobuf:"bytes,3,opt,name=assume_role,json=assumeRole,proto3" json:"assume_role,omitempty"`
+	// The endpoint address to connect to. If the endpoint address is left empty,
+	// the integration will try to discover it.
+	EndpointAddress string `protobuf:"bytes,4,opt,name=endpoint_address,json=endpointAddress,proto3" json:"endpoint_address,omitempty"`
+	// Types that are valid to be assigned to Deployment:
+	//	*ApplicationPubSub_AWSIoTProvider_Default
+	Deployment           isApplicationPubSub_AWSIoTProvider_Deployment `protobuf_oneof:"deployment"`
+	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
+	XXX_sizecache        int32                                         `json:"-"`
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) Reset()      { *m = ApplicationPubSub_AWSIoTProvider{} }
+func (*ApplicationPubSub_AWSIoTProvider) ProtoMessage() {}
+func (*ApplicationPubSub_AWSIoTProvider) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1dce56ec18597200, []int{1, 2}
+}
+func (m *ApplicationPubSub_AWSIoTProvider) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplicationPubSub_AWSIoTProvider) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplicationPubSub_AWSIoTProvider.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ApplicationPubSub_AWSIoTProvider) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider.Merge(m, src)
+}
+func (m *ApplicationPubSub_AWSIoTProvider) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplicationPubSub_AWSIoTProvider) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplicationPubSub_AWSIoTProvider proto.InternalMessageInfo
+
+type isApplicationPubSub_AWSIoTProvider_Deployment interface {
+	isApplicationPubSub_AWSIoTProvider_Deployment()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ApplicationPubSub_AWSIoTProvider_Default struct {
+	Default *ApplicationPubSub_AWSIoTProvider_DefaultIntegration `protobuf:"bytes,5,opt,name=default,proto3,oneof" json:"default,omitempty"`
+}
+
+func (*ApplicationPubSub_AWSIoTProvider_Default) isApplicationPubSub_AWSIoTProvider_Deployment() {}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetDeployment() isApplicationPubSub_AWSIoTProvider_Deployment {
+	if m != nil {
+		return m.Deployment
+	}
+	return nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetRegion() string {
+	if m != nil {
+		return m.Region
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetAccessKey() *ApplicationPubSub_AWSIoTProvider_AccessKey {
+	if m != nil {
+		return m.AccessKey
+	}
+	return nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetAssumeRole() *ApplicationPubSub_AWSIoTProvider_AssumeRole {
+	if m != nil {
+		return m.AssumeRole
+	}
+	return nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetEndpointAddress() string {
+	if m != nil {
+		return m.EndpointAddress
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) GetDefault() *ApplicationPubSub_AWSIoTProvider_DefaultIntegration {
+	if x, ok := m.GetDeployment().(*ApplicationPubSub_AWSIoTProvider_Default); ok {
+		return x.Default
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ApplicationPubSub_AWSIoTProvider) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*ApplicationPubSub_AWSIoTProvider_Default)(nil),
+	}
+}
+
+type ApplicationPubSub_AWSIoTProvider_AccessKey struct {
+	AccessKeyID          string   `protobuf:"bytes,1,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
+	SecretAccessKey      string   `protobuf:"bytes,2,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
+	SessionToken         string   `protobuf:"bytes,3,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) Reset() {
+	*m = ApplicationPubSub_AWSIoTProvider_AccessKey{}
+}
+func (*ApplicationPubSub_AWSIoTProvider_AccessKey) ProtoMessage() {}
+func (*ApplicationPubSub_AWSIoTProvider_AccessKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1dce56ec18597200, []int{1, 2, 0}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AccessKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AccessKey.Merge(m, src)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AccessKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AccessKey proto.InternalMessageInfo
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) GetAccessKeyID() string {
+	if m != nil {
+		return m.AccessKeyID
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) GetSecretAccessKey() string {
+	if m != nil {
+		return m.SecretAccessKey
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) GetSessionToken() string {
+	if m != nil {
+		return m.SessionToken
+	}
+	return ""
+}
+
+type ApplicationPubSub_AWSIoTProvider_AssumeRole struct {
+	ARN                  string         `protobuf:"bytes,1,opt,name=arn,proto3" json:"arn,omitempty"`
+	ExternalID           string         `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	SessionDuration      *time.Duration `protobuf:"bytes,3,opt,name=session_duration,json=sessionDuration,proto3,stdduration" json:"session_duration,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) Reset() {
+	*m = ApplicationPubSub_AWSIoTProvider_AssumeRole{}
+}
+func (*ApplicationPubSub_AWSIoTProvider_AssumeRole) ProtoMessage() {}
+func (*ApplicationPubSub_AWSIoTProvider_AssumeRole) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1dce56ec18597200, []int{1, 2, 1}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AssumeRole.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AssumeRole.Merge(m, src)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AssumeRole.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_AssumeRole proto.InternalMessageInfo
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) GetARN() string {
+	if m != nil {
+		return m.ARN
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) GetExternalID() string {
+	if m != nil {
+		return m.ExternalID
+	}
+	return ""
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) GetSessionDuration() *time.Duration {
+	if m != nil {
+		return m.SessionDuration
+	}
+	return nil
+}
+
+type ApplicationPubSub_AWSIoTProvider_DefaultIntegration struct {
+	// The stack name that is associated with the CloudFormation deployment of The Things Enterprise Stack integration.
+	StackName            string   `protobuf:"bytes,1,opt,name=stack_name,json=stackName,proto3" json:"stack_name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Reset() {
+	*m = ApplicationPubSub_AWSIoTProvider_DefaultIntegration{}
+}
+func (*ApplicationPubSub_AWSIoTProvider_DefaultIntegration) ProtoMessage() {}
+func (*ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1dce56ec18597200, []int{1, 2, 2}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_DefaultIntegration.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_DefaultIntegration.Merge(m, src)
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_DefaultIntegration.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplicationPubSub_AWSIoTProvider_DefaultIntegration proto.InternalMessageInfo
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) GetStackName() string {
+	if m != nil {
+		return m.StackName
+	}
+	return ""
+}
+
 type ApplicationPubSub_Message struct {
 	// The topic on which the Application Server publishes or receives the messages.
 	Topic                string   `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
@@ -496,7 +819,7 @@ type ApplicationPubSub_Message struct {
 func (m *ApplicationPubSub_Message) Reset()      { *m = ApplicationPubSub_Message{} }
 func (*ApplicationPubSub_Message) ProtoMessage() {}
 func (*ApplicationPubSub_Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1dce56ec18597200, []int{1, 2}
+	return fileDescriptor_1dce56ec18597200, []int{1, 3}
 }
 func (m *ApplicationPubSub_Message) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -772,6 +1095,16 @@ func init() {
 	golang_proto.RegisterType((*ApplicationPubSub_NATSProvider)(nil), "ttn.lorawan.v3.ApplicationPubSub.NATSProvider")
 	proto.RegisterType((*ApplicationPubSub_MQTTProvider)(nil), "ttn.lorawan.v3.ApplicationPubSub.MQTTProvider")
 	golang_proto.RegisterType((*ApplicationPubSub_MQTTProvider)(nil), "ttn.lorawan.v3.ApplicationPubSub.MQTTProvider")
+	proto.RegisterMapType((map[string]string)(nil), "ttn.lorawan.v3.ApplicationPubSub.MQTTProvider.HeadersEntry")
+	golang_proto.RegisterMapType((map[string]string)(nil), "ttn.lorawan.v3.ApplicationPubSub.MQTTProvider.HeadersEntry")
+	proto.RegisterType((*ApplicationPubSub_AWSIoTProvider)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider")
+	golang_proto.RegisterType((*ApplicationPubSub_AWSIoTProvider)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider")
+	proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_AccessKey)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.AccessKey")
+	golang_proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_AccessKey)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.AccessKey")
+	proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_AssumeRole)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.AssumeRole")
+	golang_proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_AssumeRole)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.AssumeRole")
+	proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_DefaultIntegration)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.DefaultIntegration")
+	golang_proto.RegisterType((*ApplicationPubSub_AWSIoTProvider_DefaultIntegration)(nil), "ttn.lorawan.v3.ApplicationPubSub.AWSIoTProvider.DefaultIntegration")
 	proto.RegisterType((*ApplicationPubSub_Message)(nil), "ttn.lorawan.v3.ApplicationPubSub.Message")
 	golang_proto.RegisterType((*ApplicationPubSub_Message)(nil), "ttn.lorawan.v3.ApplicationPubSub.Message")
 	proto.RegisterType((*ApplicationPubSubs)(nil), "ttn.lorawan.v3.ApplicationPubSubs")
@@ -796,109 +1129,151 @@ func init() {
 }
 
 var fileDescriptor_1dce56ec18597200 = []byte{
-	// 1622 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x98, 0x41, 0x6c, 0xdb, 0xd6,
-	0x19, 0xc7, 0xf9, 0x2c, 0x4b, 0x96, 0x9e, 0x65, 0x59, 0x79, 0xcb, 0x36, 0x56, 0x69, 0x29, 0x4f,
-	0x09, 0x3a, 0x37, 0x8d, 0xa8, 0x40, 0xd9, 0x8a, 0xd6, 0x1d, 0x90, 0x8a, 0x8e, 0x93, 0x76, 0x71,
-	0x1c, 0x9b, 0x52, 0x80, 0xad, 0x45, 0x47, 0x50, 0xe4, 0xb3, 0xcc, 0x8a, 0x22, 0x69, 0xbe, 0x47,
-	0x7b, 0x5e, 0x11, 0xa0, 0xd8, 0xc9, 0xd8, 0x61, 0x30, 0xb0, 0xc3, 0x76, 0xdb, 0xb0, 0xcb, 0x0a,
-	0xec, 0x12, 0xec, 0xd4, 0xdb, 0x0a, 0xec, 0x92, 0x63, 0x80, 0xed, 0xd0, 0x93, 0x56, 0x53, 0x3b,
-	0xf4, 0xb6, 0x1e, 0x03, 0x9f, 0x06, 0x3e, 0x92, 0x92, 0x6c, 0xb9, 0x96, 0xe5, 0x60, 0x3d, 0x99,
-	0xef, 0x7d, 0xdf, 0xf7, 0x7b, 0xff, 0xf7, 0xbd, 0x8f, 0x1f, 0x9f, 0x0c, 0x6f, 0x9a, 0xb6, 0xab,
-	0xee, 0xaa, 0x56, 0x99, 0x50, 0x55, 0x6b, 0x57, 0x54, 0xc7, 0xa8, 0xa8, 0x8e, 0x63, 0x1a, 0x9a,
-	0x4a, 0x0d, 0xdb, 0x22, 0xd8, 0xdd, 0xc1, 0xae, 0xe2, 0x78, 0x4d, 0xe2, 0x35, 0x45, 0xc7, 0xb5,
-	0xa9, 0x8d, 0x72, 0x94, 0x5a, 0x62, 0x14, 0x25, 0xee, 0xdc, 0x2a, 0xd4, 0x5a, 0x06, 0xdd, 0xf2,
-	0x9a, 0xa2, 0x66, 0x77, 0x2a, 0xd8, 0xda, 0xb1, 0xf7, 0x1c, 0xd7, 0xfe, 0xe5, 0x5e, 0x85, 0x39,
-	0x6b, 0xe5, 0x16, 0xb6, 0xca, 0x3b, 0xaa, 0x69, 0xe8, 0x2a, 0xc5, 0x95, 0x91, 0x87, 0x10, 0x59,
-	0x28, 0x0f, 0x21, 0x5a, 0x76, 0xcb, 0x0e, 0x83, 0x9b, 0xde, 0x26, 0x1b, 0xb1, 0x01, 0x7b, 0x8a,
-	0xdc, 0x5f, 0x6e, 0xd9, 0x76, 0xcb, 0xc4, 0xa1, 0x58, 0xcb, 0xb2, 0x69, 0xa8, 0x35, 0xb2, 0x5e,
-	0x89, 0xac, 0x7d, 0x06, 0xee, 0x38, 0x74, 0x2f, 0x32, 0x2e, 0x9c, 0x34, 0x6e, 0x1a, 0xd8, 0xd4,
-	0x95, 0x8e, 0x4a, 0xda, 0x91, 0x47, 0xf1, 0xa4, 0x07, 0x35, 0x3a, 0x98, 0x50, 0xb5, 0xe3, 0x44,
-	0x0e, 0x57, 0x47, 0x33, 0x66, 0xe8, 0xd8, 0xa2, 0xc6, 0xa6, 0x81, 0xdd, 0x48, 0x44, 0xe9, 0x5f,
-	0x00, 0xbe, 0x5c, 0x1b, 0xe4, 0x71, 0xdd, 0x6b, 0xd6, 0xbd, 0xe6, 0x7b, 0x03, 0x37, 0xa4, 0xc2,
-	0xf9, 0xa1, 0x3c, 0x2b, 0x86, 0x4e, 0x78, 0xb0, 0x00, 0x16, 0x67, 0xab, 0xaf, 0x8a, 0xc7, 0xf3,
-	0x2b, 0x0e, 0x61, 0x86, 0x00, 0x52, 0xfe, 0x48, 0x4a, 0xfe, 0x06, 0x4c, 0xe5, 0xc1, 0xd3, 0x6e,
-	0x91, 0x7b, 0xd6, 0x2d, 0x02, 0x39, 0xa7, 0x0e, 0x7b, 0x12, 0xb4, 0x01, 0xa1, 0xe3, 0x35, 0x15,
-	0xe2, 0x35, 0x15, 0x43, 0xe7, 0xa7, 0x16, 0xc0, 0x62, 0x46, 0xba, 0x75, 0x24, 0x5d, 0x73, 0x4b,
-	0xfc, 0xb5, 0xaa, 0xf0, 0x8b, 0x0f, 0xd4, 0xf2, 0xaf, 0x6e, 0x96, 0xdf, 0xfa, 0x70, 0xf1, 0xf6,
-	0xd2, 0x07, 0xe5, 0x0f, 0x6f, 0xc7, 0xc3, 0xd7, 0x3e, 0xae, 0xde, 0x78, 0x7c, 0xcd, 0xef, 0x16,
-	0xd3, 0x91, 0xe8, 0x3b, 0x72, 0xda, 0x89, 0xe4, 0x97, 0xfe, 0x96, 0x87, 0x97, 0x46, 0xb6, 0x85,
-	0xd6, 0x61, 0x62, 0xa0, 0xff, 0xc6, 0x19, 0xfa, 0x47, 0xd2, 0x70, 0xca, 0x2e, 0x02, 0x14, 0x5a,
-	0x86, 0x50, 0x73, 0xb1, 0x4a, 0xb1, 0xae, 0xa8, 0x94, 0x49, 0x9f, 0xad, 0x16, 0xc4, 0xf0, 0x64,
-	0xc4, 0xf8, 0x64, 0xc4, 0x46, 0x7c, 0x32, 0x52, 0x3a, 0x08, 0x3f, 0xf8, 0x77, 0x11, 0xc8, 0x99,
-	0x28, 0xae, 0x46, 0x03, 0x88, 0xe7, 0xe8, 0x31, 0x24, 0x31, 0x09, 0x24, 0x8a, 0xab, 0x51, 0x74,
-	0x1b, 0xa6, 0x36, 0x6d, 0xb7, 0xa3, 0x52, 0x7e, 0x9a, 0x25, 0xf0, 0x87, 0x61, 0x02, 0x2f, 0x8f,
-	0x4b, 0xa0, 0x1c, 0x85, 0xa1, 0x35, 0x38, 0x6d, 0xa9, 0x94, 0xf0, 0x97, 0xd8, 0xfa, 0xe2, 0xd8,
-	0xec, 0x88, 0x6b, 0xb5, 0x46, 0x7d, 0xdd, 0xb5, 0x77, 0x0c, 0x1d, 0xbb, 0x52, 0xda, 0xef, 0x16,
-	0xa7, 0x83, 0x99, 0x77, 0x39, 0x99, 0x71, 0x02, 0x5e, 0x67, 0x9b, 0x52, 0xfe, 0xa5, 0xf3, 0xf2,
-	0x1e, 0x6c, 0x34, 0x1a, 0xc7, 0x79, 0xc1, 0x4c, 0xc0, 0x0b, 0x38, 0xe8, 0x55, 0x08, 0x9b, 0x2a,
-	0xc1, 0x0a, 0xb5, 0x1d, 0x43, 0xe3, 0x53, 0x6c, 0x93, 0x33, 0x47, 0xd2, 0xb4, 0x3b, 0xc5, 0xeb,
-	0x72, 0x26, 0x30, 0x35, 0x02, 0x0b, 0x5a, 0x83, 0x73, 0xba, 0xbd, 0x6b, 0x99, 0x86, 0xd5, 0x56,
-	0x1c, 0x8f, 0x6c, 0xf1, 0x33, 0x4c, 0xc0, 0x6b, 0xe7, 0x10, 0x80, 0x09, 0x51, 0x5b, 0x58, 0xce,
-	0xc6, 0xf1, 0xeb, 0x1e, 0xd9, 0x42, 0x0d, 0x98, 0xef, 0xf3, 0x5c, 0xec, 0x98, 0xaa, 0x86, 0xf9,
-	0xf4, 0xa4, 0xc8, 0xf9, 0x18, 0x21, 0x87, 0x04, 0xb4, 0x0e, 0x73, 0x9e, 0xc3, 0x98, 0x9d, 0xd0,
-	0x85, 0xcf, 0x4c, 0xca, 0x9c, 0x0b, 0x01, 0xd1, 0x10, 0xfd, 0x14, 0xce, 0x7e, 0x64, 0x1b, 0x96,
-	0xa2, 0x6a, 0x1a, 0x76, 0x28, 0x0f, 0x27, 0xc5, 0xc1, 0x20, 0xba, 0xc6, 0x82, 0xd1, 0x2a, 0xec,
-	0xe7, 0x40, 0x51, 0xb5, 0x36, 0x3f, 0x3b, 0x29, 0x6c, 0x36, 0x0e, 0xaf, 0x69, 0xed, 0x63, 0x27,
-	0x62, 0x05, 0xb8, 0xec, 0x85, 0x4f, 0x64, 0x4d, 0x3d, 0xc1, 0x23, 0xd8, 0xa2, 0xfc, 0xdc, 0x85,
-	0x79, 0x75, 0x6c, 0x51, 0x24, 0xc3, 0xfe, 0xf1, 0x28, 0x9b, 0xaa, 0x61, 0x62, 0x9d, 0xcf, 0x4d,
-	0x4a, 0xcc, 0xc5, 0x84, 0xbb, 0x0c, 0x70, 0x8c, 0xb9, 0xed, 0x61, 0x0f, 0xeb, 0xfc, 0xfc, 0x85,
-	0x99, 0x1b, 0x0c, 0x10, 0x30, 0x4d, 0x3b, 0xea, 0xc3, 0xc4, 0x36, 0x77, 0xb0, 0xce, 0xe7, 0x27,
-	0x66, 0xc6, 0x84, 0x3a, 0x03, 0x14, 0xee, 0xc0, 0xec, 0xf0, 0x7b, 0x8c, 0x7e, 0x04, 0x61, 0xf4,
-	0x2d, 0xf5, 0x5c, 0x93, 0x75, 0xca, 0x8c, 0xf4, 0xdd, 0x23, 0x29, 0xe9, 0x26, 0xf6, 0x01, 0xf0,
-	0xbb, 0xc5, 0x4c, 0x9d, 0x59, 0x1f, 0xc9, 0xab, 0x72, 0x26, 0x74, 0x7c, 0xe4, 0x9a, 0x85, 0xfd,
-	0x24, 0xcc, 0x0e, 0xbf, 0xbe, 0x17, 0xc3, 0xa0, 0x9b, 0x30, 0xa3, 0x99, 0x06, 0xb6, 0xe8, 0xe0,
-	0x3b, 0xf0, 0x9d, 0xf0, 0x0d, 0xff, 0x7e, 0xd0, 0xe7, 0x97, 0x99, 0x2d, 0xe8, 0xf3, 0xa1, 0xd7,
-	0x7b, 0x3a, 0xba, 0x0a, 0xd3, 0x1e, 0xc1, 0xae, 0xa5, 0x76, 0x30, 0x6b, 0x9c, 0x43, 0x2d, 0xa1,
-	0x6f, 0x08, 0x9c, 0x1c, 0x95, 0x90, 0x5d, 0xdb, 0xd5, 0xa3, 0xe6, 0x38, 0x70, 0x8a, 0x0d, 0xc8,
-	0x80, 0x73, 0xc4, 0x6b, 0x12, 0xcd, 0x35, 0x9a, 0x58, 0xd9, 0xb6, 0x09, 0x9f, 0x5c, 0x00, 0x8b,
-	0xb9, 0x6a, 0x75, 0xb2, 0xbe, 0x25, 0x6e, 0xd8, 0x75, 0x29, 0xef, 0x77, 0x8b, 0xd9, 0x7a, 0x0c,
-	0xdb, 0xb0, 0xeb, 0x72, 0x96, 0x0c, 0x46, 0x04, 0x69, 0x70, 0xd6, 0xf1, 0x9a, 0xa6, 0x41, 0xb6,
-	0xd8, 0x42, 0xa9, 0x0b, 0x2f, 0x94, 0xf3, 0xbb, 0x45, 0xb8, 0x1e, 0xa2, 0x82, 0x65, 0xa0, 0x13,
-	0x3f, 0x13, 0x74, 0x15, 0xce, 0x78, 0x41, 0xb7, 0x34, 0x09, 0x6b, 0x80, 0x69, 0x09, 0xfa, 0xdd,
-	0x62, 0xea, 0x11, 0xc1, 0x8d, 0xd5, 0xba, 0x9c, 0xf2, 0x08, 0x6e, 0x98, 0x04, 0x2d, 0xc0, 0x14,
-	0x35, 0x89, 0xa2, 0xa9, 0xac, 0xa3, 0x65, 0xa5, 0x8c, 0xdf, 0x2d, 0x26, 0x1b, 0xab, 0xf5, 0xe5,
-	0x9a, 0x9c, 0xa4, 0x26, 0x59, 0x56, 0xd1, 0x5b, 0x70, 0x9e, 0x79, 0x84, 0xc7, 0xa2, 0x61, 0x97,
-	0xb2, 0x46, 0x95, 0x95, 0x2e, 0xf9, 0xdd, 0xe2, 0x5c, 0xe0, 0xca, 0x2c, 0xcb, 0xd8, 0xa5, 0xf2,
-	0x5c, 0x10, 0xd2, 0x1f, 0xa2, 0x37, 0x60, 0x6e, 0x28, 0xb4, 0x8d, 0xf7, 0x58, 0x4f, 0xca, 0x86,
-	0xe9, 0xe9, 0x47, 0xde, 0xc7, 0x7b, 0x72, 0xb6, 0x1f, 0x78, 0x1f, 0xef, 0x95, 0x7e, 0x02, 0x13,
-	0x1b, 0x76, 0x1d, 0xe5, 0x61, 0xb6, 0xd6, 0x50, 0x1e, 0x3c, 0xac, 0x37, 0x94, 0x87, 0x6b, 0xcb,
-	0x2b, 0x79, 0x0e, 0x5d, 0x82, 0x73, 0xb5, 0x86, 0xb2, 0xba, 0x52, 0x8b, 0xa7, 0x40, 0xe0, 0xb4,
-	0xf2, 0xb3, 0xda, 0x72, 0x63, 0xf5, 0xe7, 0xe1, 0xcc, 0x54, 0x61, 0x11, 0xce, 0xc4, 0x1d, 0xf1,
-	0x15, 0x98, 0x0c, 0x3f, 0x16, 0xe0, 0xf8, 0xa1, 0x87, 0xb3, 0xd2, 0x3c, 0x4c, 0x3b, 0x71, 0xbd,
-	0x26, 0x9e, 0x4b, 0xa0, 0xb4, 0x01, 0xd1, 0x48, 0xd2, 0x09, 0x7a, 0x1b, 0xce, 0x84, 0xd7, 0xca,
-	0xe0, 0xe2, 0x90, 0x58, 0x9c, 0xad, 0xfe, 0x60, 0xec, 0x49, 0xc9, 0x71, 0x44, 0xe9, 0x2f, 0x00,
-	0xf2, 0x23, 0xe6, 0xbb, 0xec, 0x83, 0x4b, 0xd0, 0x43, 0x38, 0x13, 0x7e, 0x7b, 0x63, 0xf2, 0x8f,
-	0xc7, 0x92, 0xa3, 0x50, 0x31, 0xfa, 0xbb, 0x62, 0x51, 0x77, 0x4f, 0x8e, 0x29, 0x85, 0x25, 0x98,
-	0x1d, 0x36, 0xa0, 0x3c, 0x4c, 0x04, 0x69, 0x67, 0xdb, 0x97, 0x83, 0x47, 0x74, 0x19, 0x26, 0x77,
-	0x54, 0xd3, 0xc3, 0xe1, 0xdb, 0x25, 0x87, 0x83, 0xa5, 0xa9, 0x37, 0x41, 0xe9, 0x09, 0x80, 0x57,
-	0xee, 0x61, 0x3a, 0xba, 0x17, 0xbc, 0xed, 0x61, 0x42, 0xff, 0x0f, 0x77, 0xa7, 0xdb, 0x10, 0x0e,
-	0x2e, 0xb5, 0xdf, 0x78, 0x77, 0xba, 0x1b, 0xb8, 0x3c, 0x50, 0x49, 0x5b, 0x9a, 0x0e, 0xc2, 0xe5,
-	0xcc, 0x66, 0x3c, 0x51, 0xfa, 0x07, 0x80, 0xaf, 0xac, 0x1a, 0x64, 0x54, 0x33, 0x89, 0x45, 0x7f,
-	0x0b, 0x97, 0xd7, 0x17, 0xde, 0xc5, 0x5f, 0x01, 0xbc, 0x52, 0x3f, 0x23, 0xf1, 0xf7, 0x61, 0x2a,
-	0xac, 0xa6, 0x48, 0xfa, 0xf8, 0xf2, 0x3b, 0x45, 0x75, 0x84, 0x78, 0x61, 0xb5, 0xd5, 0xbf, 0xa7,
-	0xe0, 0x4b, 0xa7, 0x48, 0x6d, 0x19, 0x24, 0x28, 0xb8, 0x8f, 0x20, 0xbc, 0x87, 0x69, 0x5c, 0xdf,
-	0xdf, 0x1b, 0x01, 0xaf, 0x04, 0xbf, 0x70, 0x0a, 0x8b, 0xe7, 0x2d, 0xf3, 0x52, 0xe1, 0xd7, 0xff,
-	0xfc, 0xcf, 0xef, 0xa6, 0x2e, 0x23, 0x54, 0x51, 0x49, 0x25, 0xdc, 0x42, 0x39, 0x2a, 0x76, 0xf4,
-	0x47, 0x00, 0x13, 0xf7, 0x30, 0x45, 0xaf, 0x9f, 0xa4, 0x9d, 0x51, 0xc5, 0x85, 0xf1, 0xc9, 0x2b,
-	0xbd, 0xcb, 0xd6, 0x94, 0xd0, 0x3b, 0x83, 0x35, 0x2b, 0x1f, 0x1b, 0x3a, 0x11, 0x4f, 0x54, 0xd2,
-	0x89, 0xf1, 0xe3, 0xd0, 0x69, 0xf0, 0x43, 0xe6, 0x31, 0xfa, 0x2d, 0x80, 0xd3, 0x41, 0x7d, 0xa2,
-	0xf2, 0xc9, 0x55, 0xcf, 0xac, 0xda, 0x42, 0x69, 0xac, 0x48, 0x52, 0xba, 0xc5, 0x54, 0x96, 0xd1,
-	0xeb, 0xc3, 0x2a, 0xc7, 0x28, 0x44, 0xff, 0x05, 0x30, 0x51, 0x3f, 0x2d, 0x65, 0xf5, 0x17, 0x4b,
-	0xd9, 0xef, 0x01, 0x53, 0x73, 0x00, 0x0a, 0x6b, 0xc3, 0x72, 0xa2, 0x5f, 0xe3, 0xe7, 0xca, 0xdd,
-	0x90, 0xef, 0x50, 0x0a, 0x97, 0xc0, 0xf5, 0xf7, 0xdf, 0x2e, 0xbd, 0x71, 0x31, 0xe8, 0x12, 0xb8,
-	0x8e, 0x0e, 0x00, 0x4c, 0xdd, 0xc1, 0x26, 0xa6, 0x18, 0x4d, 0xd4, 0xb3, 0x0a, 0xdf, 0x50, 0xbb,
-	0xa5, 0x77, 0xd8, 0x4e, 0x97, 0xae, 0xbf, 0x39, 0x41, 0xde, 0x99, 0xe8, 0x78, 0x4b, 0xd2, 0x9f,
-	0xc1, 0xd3, 0x43, 0x01, 0x3c, 0x3b, 0x14, 0xc0, 0x17, 0x87, 0x02, 0xf7, 0xe5, 0xa1, 0xc0, 0x7d,
-	0x75, 0x28, 0x70, 0x5f, 0x1f, 0x0a, 0xdc, 0xf3, 0x43, 0x01, 0x7c, 0xe2, 0x0b, 0x60, 0xdf, 0x17,
-	0xb8, 0x4f, 0x7d, 0x01, 0x3c, 0xf1, 0x05, 0xee, 0x33, 0x5f, 0xe0, 0x3e, 0xf7, 0x05, 0xee, 0xa9,
-	0x2f, 0x80, 0x67, 0xbe, 0x00, 0xbe, 0xf0, 0x05, 0xee, 0x4b, 0x5f, 0x00, 0x5f, 0xf9, 0x02, 0xf7,
-	0xb5, 0x2f, 0x80, 0xe7, 0xbe, 0xc0, 0x7d, 0xd2, 0x13, 0xb8, 0xfd, 0x9e, 0x00, 0x0e, 0x7a, 0x02,
-	0xf7, 0x87, 0x9e, 0x00, 0xfe, 0xd4, 0x13, 0xb8, 0x4f, 0x7b, 0x02, 0xf7, 0xa4, 0x27, 0x80, 0xcf,
-	0x7a, 0x02, 0xf8, 0xbc, 0x27, 0x80, 0xf7, 0x6f, 0xb4, 0x6c, 0x91, 0x6e, 0x61, 0xba, 0x65, 0x58,
-	0x2d, 0x22, 0x5a, 0x98, 0xee, 0xda, 0x6e, 0xbb, 0x72, 0xfc, 0x5f, 0x04, 0x4e, 0xbb, 0x55, 0xa1,
-	0xd4, 0x72, 0x9a, 0xcd, 0x14, 0xdb, 0xf6, 0xad, 0xff, 0x05, 0x00, 0x00, 0xff, 0xff, 0x84, 0x92,
-	0x8b, 0x2c, 0x76, 0x11, 0x00, 0x00,
+	// 2304 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x98, 0x4f, 0x6c, 0x1b, 0xc7,
+	0xd5, 0xc0, 0x39, 0xfa, 0x43, 0x89, 0x43, 0x4a, 0xa2, 0x27, 0xc9, 0x97, 0x0d, 0x13, 0x2f, 0xfd,
+	0x31, 0x46, 0x4a, 0xc9, 0x59, 0xd2, 0xa6, 0xd2, 0x20, 0xa1, 0x5b, 0xd8, 0x5c, 0x49, 0x8e, 0x95,
+	0x28, 0x8a, 0xb4, 0xa4, 0x91, 0xc6, 0x96, 0xbd, 0x18, 0x72, 0x47, 0xd4, 0x46, 0xcb, 0xdd, 0xf5,
+	0xce, 0xac, 0x14, 0x35, 0x31, 0x60, 0xe4, 0x94, 0xf6, 0x50, 0x18, 0xe8, 0xa1, 0x01, 0x72, 0x68,
+	0x81, 0xa2, 0x68, 0x80, 0x5e, 0x72, 0x6b, 0x6e, 0x0d, 0xd0, 0x8b, 0x8f, 0x01, 0xda, 0x43, 0x4e,
+	0x6a, 0x44, 0xf5, 0x90, 0x5b, 0x73, 0x6b, 0xa0, 0x02, 0x45, 0x31, 0xb3, 0xbb, 0x24, 0x25, 0x3a,
+	0x96, 0x29, 0xa3, 0x3d, 0xf1, 0xcd, 0xbe, 0xf7, 0x7e, 0xfb, 0xe6, 0xcd, 0xe3, 0xbc, 0x99, 0x85,
+	0xe7, 0x2d, 0xc7, 0xc3, 0xdb, 0xd8, 0x56, 0x28, 0xc3, 0x8d, 0xcd, 0x22, 0x76, 0xcd, 0x22, 0x76,
+	0x5d, 0xcb, 0x6c, 0x60, 0x66, 0x3a, 0x36, 0x25, 0xde, 0x16, 0xf1, 0x74, 0xd7, 0xaf, 0x53, 0xbf,
+	0x5e, 0x70, 0x3d, 0x87, 0x39, 0x68, 0x92, 0x31, 0xbb, 0x10, 0x7a, 0x15, 0xb6, 0x66, 0x33, 0x95,
+	0xa6, 0xc9, 0x36, 0xfc, 0x7a, 0xa1, 0xe1, 0xb4, 0x8a, 0xc4, 0xde, 0x72, 0x76, 0x5c, 0xcf, 0x79,
+	0x6f, 0xa7, 0x28, 0x8c, 0x1b, 0x4a, 0x93, 0xd8, 0xca, 0x16, 0xb6, 0x4c, 0x03, 0x33, 0x52, 0xec,
+	0x13, 0x02, 0x64, 0x46, 0xe9, 0x41, 0x34, 0x9d, 0xa6, 0x13, 0x38, 0xd7, 0xfd, 0x75, 0x31, 0x12,
+	0x03, 0x21, 0x85, 0xe6, 0xcf, 0x35, 0x1d, 0xa7, 0x69, 0x91, 0x20, 0x58, 0xdb, 0x76, 0x58, 0x10,
+	0x6b, 0xa8, 0x95, 0x43, 0x6d, 0x87, 0x61, 0xf8, 0x9e, 0x30, 0x08, 0xf5, 0xcf, 0x1e, 0xd5, 0x93,
+	0x96, 0xcb, 0x76, 0x42, 0xe5, 0x99, 0xa3, 0xca, 0x75, 0x93, 0x58, 0x86, 0xde, 0xc2, 0x74, 0x33,
+	0xb4, 0xc8, 0x1e, 0xb5, 0x60, 0x66, 0x8b, 0x50, 0x86, 0x5b, 0x6e, 0x68, 0xf0, 0x7c, 0x7f, 0x46,
+	0x4d, 0x83, 0xd8, 0xcc, 0x5c, 0x37, 0x89, 0x17, 0x06, 0x99, 0xfb, 0x2b, 0x80, 0xcf, 0x55, 0xba,
+	0x79, 0x5e, 0xf1, 0xeb, 0x55, 0xbf, 0xbe, 0xd8, 0x35, 0x43, 0x18, 0x4e, 0xf5, 0xac, 0x83, 0x6e,
+	0x1a, 0x54, 0x02, 0x67, 0x40, 0x3e, 0x59, 0x7a, 0xa1, 0x70, 0x38, 0xff, 0x85, 0x1e, 0x4c, 0x0f,
+	0x40, 0x4d, 0x1f, 0xa8, 0xa3, 0x3f, 0x07, 0x43, 0x69, 0x70, 0x7f, 0x37, 0x1b, 0xfb, 0x72, 0x37,
+	0x0b, 0xb4, 0x49, 0xdc, 0x6b, 0x49, 0xd1, 0x2a, 0x84, 0xae, 0x5f, 0xd7, 0xa9, 0x5f, 0xd7, 0x4d,
+	0x43, 0x1a, 0x3a, 0x03, 0xf2, 0x09, 0x75, 0xf6, 0x40, 0x3d, 0xeb, 0xe5, 0xa4, 0xb3, 0x25, 0xf9,
+	0xd6, 0x0d, 0xac, 0xfc, 0xf4, 0xbc, 0xf2, 0xea, 0xcd, 0xfc, 0xa5, 0xf2, 0x0d, 0xe5, 0xe6, 0xa5,
+	0x68, 0x38, 0xfd, 0x7e, 0xe9, 0xc5, 0x3b, 0x67, 0xdb, 0xbb, 0xd9, 0xf1, 0x30, 0xe8, 0x79, 0x6d,
+	0xdc, 0x0d, 0xc3, 0xcf, 0xed, 0x9d, 0x86, 0xa7, 0xfa, 0xa6, 0x85, 0x56, 0xe0, 0x70, 0x37, 0xfe,
+	0x17, 0x1f, 0x12, 0x7f, 0x5f, 0x1a, 0x1e, 0x30, 0x0b, 0x8e, 0x42, 0x73, 0x10, 0x36, 0x3c, 0x82,
+	0x19, 0x31, 0x74, 0xcc, 0x44, 0xe8, 0xc9, 0x52, 0xa6, 0x10, 0xac, 0x4c, 0x21, 0x5a, 0x99, 0x42,
+	0x2d, 0x5a, 0x19, 0x75, 0x9c, 0xbb, 0xdf, 0xfb, 0x5b, 0x16, 0x68, 0x89, 0xd0, 0xaf, 0xc2, 0x38,
+	0xc4, 0x77, 0x8d, 0x08, 0x32, 0x3c, 0x08, 0x24, 0xf4, 0xab, 0x30, 0x74, 0x09, 0xc6, 0xd7, 0x1d,
+	0xaf, 0x85, 0x99, 0x34, 0x22, 0x12, 0xf8, 0x83, 0x20, 0x81, 0x4f, 0x1e, 0x97, 0x40, 0x2d, 0x74,
+	0x43, 0xcb, 0x70, 0xc4, 0xc6, 0x8c, 0x4a, 0xa7, 0xc4, 0xfb, 0x0b, 0xc7, 0x66, 0xa7, 0xb0, 0x5c,
+	0xa9, 0x55, 0x57, 0x3c, 0x67, 0xcb, 0x34, 0x88, 0xa7, 0x8e, 0xb7, 0x77, 0xb3, 0x23, 0xfc, 0xc9,
+	0xd5, 0x98, 0x26, 0x38, 0x9c, 0xd7, 0xba, 0xcd, 0x98, 0xf4, 0xcc, 0xa3, 0xf2, 0xde, 0x5c, 0xad,
+	0xd5, 0x0e, 0xf3, 0xf8, 0x13, 0xce, 0xe3, 0x1c, 0xf4, 0x36, 0x1c, 0xc3, 0xdb, 0x54, 0x37, 0x1d,
+	0x26, 0x11, 0x81, 0x3c, 0x7f, 0x3c, 0xb2, 0xf2, 0x76, 0x75, 0xd1, 0xe9, 0x42, 0x61, 0x7b, 0x37,
+	0x1b, 0x0f, 0x9e, 0x5d, 0x8d, 0x69, 0x71, 0xbc, 0x4d, 0x17, 0x1d, 0x86, 0x5e, 0x80, 0xb0, 0x8e,
+	0x29, 0xd1, 0x99, 0xe3, 0x9a, 0x0d, 0x29, 0x2e, 0xb2, 0x37, 0x76, 0xa0, 0x8e, 0x78, 0x43, 0x92,
+	0xa1, 0x25, 0xb8, 0xaa, 0xc6, 0x35, 0x68, 0x19, 0x4e, 0x18, 0xce, 0xb6, 0x6d, 0x99, 0xf6, 0xa6,
+	0xee, 0xfa, 0x74, 0x43, 0x1a, 0x13, 0x61, 0x4c, 0x3f, 0xc2, 0xcc, 0x08, 0xa5, 0xb8, 0x49, 0xb4,
+	0x54, 0xe4, 0xbf, 0xe2, 0xd3, 0x0d, 0x54, 0x83, 0xe9, 0x0e, 0xcf, 0x23, 0xae, 0x85, 0x1b, 0x44,
+	0x1a, 0x1f, 0x14, 0x39, 0x15, 0x21, 0xb4, 0x80, 0x80, 0x56, 0xe0, 0xa4, 0xef, 0x0a, 0x66, 0x2b,
+	0x30, 0x91, 0x12, 0x83, 0x32, 0x27, 0x02, 0x40, 0x38, 0x44, 0xaf, 0xc3, 0xe4, 0xbb, 0x8e, 0x69,
+	0xeb, 0xb8, 0xd1, 0x20, 0x2e, 0x93, 0xe0, 0xa0, 0x38, 0xc8, 0xbd, 0x2b, 0xc2, 0x19, 0x2d, 0xc1,
+	0x4e, 0x0e, 0x74, 0xdc, 0xd8, 0x94, 0x92, 0x83, 0xc2, 0x92, 0x91, 0x7b, 0xa5, 0xb1, 0x79, 0x68,
+	0x45, 0x6c, 0x8e, 0x4b, 0x9d, 0x78, 0x45, 0x96, 0xf1, 0x11, 0x1e, 0x25, 0x36, 0x93, 0x26, 0x4e,
+	0xcc, 0xab, 0x12, 0x9b, 0x21, 0x0d, 0x76, 0x96, 0x47, 0x5f, 0xc7, 0xa6, 0x45, 0x0c, 0x69, 0x72,
+	0x50, 0xe2, 0x64, 0x44, 0xb8, 0x22, 0x00, 0x87, 0x98, 0xb7, 0x7d, 0xe2, 0x13, 0x43, 0x9a, 0x3a,
+	0x31, 0x73, 0x55, 0x00, 0x50, 0x13, 0x66, 0x0e, 0x33, 0x75, 0xd3, 0x8e, 0x3a, 0xa3, 0x21, 0x3d,
+	0x31, 0x28, 0x5e, 0x3a, 0x84, 0x5f, 0xec, 0xa2, 0x78, 0xf0, 0x96, 0x13, 0x76, 0x12, 0xea, 0x58,
+	0x5b, 0xc4, 0x90, 0xd2, 0x03, 0x07, 0x1f, 0x11, 0xaa, 0x02, 0xc0, 0x4b, 0x8a, 0x9f, 0x0e, 0xcc,
+	0x06, 0xd1, 0x0d, 0xcc, 0xb0, 0x84, 0x06, 0x2e, 0xa9, 0xd0, 0x7d, 0x1e, 0x33, 0x9c, 0x99, 0x87,
+	0xa9, 0xde, 0x7d, 0x0d, 0xbd, 0x04, 0x61, 0x78, 0xf6, 0xf0, 0x3d, 0x4b, 0x74, 0x8e, 0x84, 0xfa,
+	0xd4, 0x81, 0x3a, 0xea, 0x0d, 0x7f, 0x04, 0x40, 0x7b, 0x37, 0x9b, 0xa8, 0x0a, 0xed, 0x35, 0x6d,
+	0x49, 0x4b, 0x04, 0x86, 0xd7, 0x3c, 0x2b, 0xf3, 0x49, 0x1c, 0xa6, 0x7a, 0xb7, 0xb3, 0x93, 0x61,
+	0xd0, 0x79, 0x98, 0x68, 0x58, 0x26, 0xb1, 0x59, 0xb7, 0x2f, 0x3e, 0x11, 0x6c, 0x4c, 0x4f, 0xf3,
+	0xbe, 0x37, 0x27, 0x74, 0xbc, 0xef, 0x05, 0x56, 0x8b, 0x06, 0x7a, 0x1e, 0x8e, 0xfb, 0x94, 0x78,
+	0x36, 0x6e, 0x11, 0xd1, 0x48, 0x7a, 0x76, 0xb2, 0x8e, 0x82, 0x1b, 0xb9, 0x98, 0xd2, 0x6d, 0xc7,
+	0x33, 0xc2, 0x66, 0xd1, 0x35, 0x8a, 0x14, 0xc8, 0x84, 0x13, 0xd4, 0xaf, 0xd3, 0x86, 0x67, 0xd6,
+	0x89, 0x7e, 0xdb, 0xa1, 0xd2, 0xe8, 0x19, 0x90, 0x9f, 0x2c, 0x95, 0x06, 0xdb, 0xc7, 0x0b, 0xab,
+	0x4e, 0x55, 0x4d, 0xb7, 0x77, 0xb3, 0xa9, 0x6a, 0x04, 0x5b, 0x75, 0xaa, 0x5a, 0x8a, 0x76, 0x47,
+	0x14, 0x35, 0x60, 0xd2, 0xf5, 0xeb, 0x96, 0x49, 0x37, 0xc4, 0x8b, 0xe2, 0x27, 0x7e, 0xd1, 0x64,
+	0x7b, 0x37, 0x0b, 0x57, 0x02, 0x14, 0x7f, 0x0d, 0x74, 0x23, 0x99, 0xa2, 0xe7, 0xe1, 0x98, 0xcf,
+	0x37, 0x79, 0x8b, 0x8a, 0x7d, 0x7b, 0x3c, 0x68, 0x06, 0xd7, 0x28, 0xa9, 0x2d, 0x55, 0xb5, 0xb8,
+	0x4f, 0x49, 0xcd, 0xa2, 0xe8, 0x0c, 0x8c, 0x33, 0x8b, 0xea, 0x0d, 0x2c, 0x36, 0xe2, 0x94, 0x9a,
+	0x68, 0xef, 0x66, 0x47, 0x6b, 0x4b, 0xd5, 0xb9, 0x8a, 0x36, 0xca, 0x2c, 0x3a, 0x87, 0xd1, 0xab,
+	0x70, 0x4a, 0x58, 0x04, 0xcb, 0xd2, 0x20, 0x1e, 0x13, 0xfb, 0x6b, 0x4a, 0x3d, 0xd5, 0xde, 0xcd,
+	0x4e, 0x70, 0x53, 0xa1, 0x99, 0x23, 0x1e, 0xd3, 0x26, 0xb8, 0x4b, 0x67, 0x88, 0x5e, 0x86, 0x93,
+	0x3d, 0xae, 0x9b, 0x64, 0x47, 0x6c, 0xa5, 0xa9, 0x20, 0x3d, 0x1d, 0xcf, 0x37, 0xc8, 0x8e, 0x96,
+	0xea, 0x38, 0xbe, 0x41, 0x76, 0xd0, 0x35, 0x38, 0xb6, 0x41, 0xb0, 0x41, 0x3c, 0x2a, 0x25, 0xcf,
+	0x0c, 0xe7, 0x93, 0xa5, 0x8b, 0x03, 0xa6, 0xe6, 0x6a, 0xe0, 0xbd, 0x60, 0x33, 0x6f, 0x47, 0x8b,
+	0x58, 0x99, 0x32, 0x4c, 0xf5, 0x2a, 0x50, 0x1a, 0x0e, 0xf3, 0x98, 0x44, 0x6d, 0x6a, 0x5c, 0x44,
+	0x4f, 0xc2, 0xd1, 0x2d, 0x6c, 0xf9, 0x24, 0x28, 0x3d, 0x2d, 0x18, 0x94, 0x87, 0x5e, 0x01, 0xb9,
+	0x1f, 0xc1, 0xe1, 0x55, 0xa7, 0x8a, 0xd2, 0x30, 0x55, 0xa9, 0xe9, 0x6f, 0xbe, 0x55, 0xad, 0xe9,
+	0x6f, 0x2d, 0xcf, 0x2d, 0xa4, 0x63, 0xe8, 0x14, 0x9c, 0xa8, 0xd4, 0xf4, 0xa5, 0x85, 0x4a, 0xf4,
+	0x08, 0x70, 0xa3, 0x85, 0x9f, 0x54, 0xe6, 0x6a, 0x4b, 0xef, 0x04, 0x4f, 0x86, 0x32, 0x3f, 0x83,
+	0x70, 0xf2, 0x70, 0x67, 0x46, 0x9f, 0x0c, 0xc1, 0xb8, 0x47, 0x9a, 0xa6, 0x63, 0x87, 0x7f, 0x8e,
+	0x0f, 0x87, 0x0e, 0xd4, 0x7f, 0x03, 0xef, 0x5f, 0x40, 0x83, 0x78, 0x5d, 0xa1, 0x8e, 0xcf, 0x36,
+	0x94, 0x0b, 0x5a, 0x02, 0xbb, 0x0a, 0xc1, 0x94, 0x29, 0x17, 0xf8, 0x21, 0x52, 0xb1, 0x1d, 0x8f,
+	0x6d, 0x3c, 0x70, 0x5c, 0xd2, 0x20, 0x76, 0x3b, 0x6e, 0x93, 0x91, 0xdc, 0x63, 0xdb, 0x1d, 0x97,
+	0xb4, 0x54, 0x03, 0x2b, 0x0d, 0x62, 0x33, 0x0f, 0x5b, 0xca, 0x05, 0x2d, 0x45, 0xfc, 0x9e, 0x11,
+	0x24, 0x7e, 0xc0, 0x0d, 0xe5, 0x4e, 0x28, 0xc4, 0x57, 0xb6, 0x89, 0xc0, 0x75, 0xc4, 0x52, 0x57,
+	0x9c, 0xd5, 0x60, 0x8b, 0x74, 0x8d, 0x29, 0x8e, 0xe2, 0x4e, 0xf8, 0xb4, 0x4f, 0x2c, 0x09, 0x31,
+	0xa2, 0x45, 0x62, 0x49, 0x0b, 0x53, 0x82, 0xde, 0x81, 0x90, 0x37, 0x5f, 0x4a, 0x45, 0xd5, 0x04,
+	0xa7, 0xcc, 0xf2, 0xa0, 0xa7, 0x9f, 0x42, 0x45, 0x20, 0x78, 0x7d, 0x25, 0x70, 0x24, 0xa2, 0x35,
+	0x98, 0xc4, 0x94, 0xfa, 0x2d, 0xa2, 0x7b, 0x8e, 0x45, 0xc2, 0xc3, 0xe7, 0xc5, 0xc1, 0xd9, 0x82,
+	0xa1, 0x39, 0x16, 0xd1, 0x20, 0xee, 0xc8, 0xe8, 0xb7, 0x00, 0xa6, 0x89, 0x6d, 0xb8, 0x8e, 0x69,
+	0x33, 0x1d, 0x1b, 0x86, 0x47, 0x28, 0x0d, 0xb7, 0x9c, 0xf7, 0x0e, 0x54, 0xdf, 0xa3, 0xd2, 0x5d,
+	0x50, 0xb2, 0x6f, 0xe5, 0xf3, 0x79, 0x7e, 0x28, 0xad, 0x28, 0xd7, 0xf9, 0xb9, 0xf4, 0x83, 0x1e,
+	0xb9, 0x2b, 0xae, 0x29, 0x37, 0x67, 0x7a, 0x14, 0xd3, 0x6b, 0x85, 0xe9, 0x99, 0xfc, 0x8d, 0x8a,
+	0x72, 0x3d, 0x3c, 0xcd, 0x7e, 0xd0, 0x23, 0x77, 0x45, 0xe1, 0xd5, 0x55, 0x4c, 0x7f, 0x30, 0x7d,
+	0x56, 0x9b, 0x8a, 0x22, 0xaa, 0x04, 0x01, 0x21, 0x1d, 0x8e, 0x19, 0x64, 0x1d, 0xfb, 0x16, 0x13,
+	0x9b, 0x5c, 0xb2, 0x34, 0x37, 0xf0, 0xfc, 0xe7, 0x03, 0xff, 0x45, 0x9b, 0x91, 0x66, 0x70, 0xc9,
+	0xbb, 0x1a, 0xd3, 0x22, 0x6a, 0xe6, 0x8f, 0x00, 0x26, 0x3a, 0xd9, 0x47, 0x57, 0xe0, 0x44, 0x77,
+	0x35, 0xf9, 0xce, 0x1e, 0x54, 0x7c, 0xee, 0x40, 0x4d, 0x7b, 0x93, 0xe9, 0x34, 0x4f, 0xc9, 0xd8,
+	0xad, 0x1b, 0x6b, 0xdb, 0x37, 0x67, 0xf8, 0xed, 0x26, 0xd9, 0x71, 0x5c, 0x9c, 0xd7, 0x92, 0x9d,
+	0x85, 0x5b, 0x34, 0xd0, 0x2c, 0x3c, 0x45, 0x49, 0xc3, 0x23, 0x4c, 0x3f, 0x52, 0x1c, 0x9d, 0xfd,
+	0x3c, 0xaf, 0x4d, 0x05, 0x16, 0xdd, 0x97, 0x2b, 0x70, 0x82, 0x12, 0x4a, 0x79, 0x03, 0x66, 0xce,
+	0x26, 0xb1, 0xc3, 0x2e, 0x31, 0x2e, 0x7a, 0x91, 0x74, 0x77, 0x48, 0x4b, 0x85, 0xea, 0x1a, 0xd7,
+	0x66, 0xfe, 0x09, 0x20, 0xec, 0xae, 0x2d, 0xd2, 0xe0, 0x30, 0xf6, 0xa2, 0xbf, 0xe8, 0xe5, 0x03,
+	0xf5, 0x65, 0xef, 0xa5, 0x52, 0xe9, 0x16, 0xf6, 0xec, 0x32, 0xde, 0xa6, 0x65, 0x13, 0xb7, 0xca,
+	0xe5, 0x1b, 0x3c, 0xcf, 0xef, 0x5f, 0x28, 0xdd, 0x29, 0xf3, 0x82, 0x5a, 0x2b, 0x76, 0xb3, 0xaf,
+	0x9f, 0xfb, 0xf1, 0x8b, 0x85, 0xcb, 0xca, 0xcd, 0x73, 0x7c, 0x5a, 0xc3, 0x15, 0x6d, 0x59, 0xe3,
+	0x30, 0xb4, 0x08, 0x93, 0xe4, 0x3d, 0xc6, 0x5b, 0x93, 0xd5, 0x6d, 0x73, 0xf9, 0x03, 0xf5, 0x69,
+	0xef, 0x29, 0xe9, 0x7e, 0xa2, 0x94, 0xe6, 0xa9, 0x10, 0x9e, 0xe5, 0xb5, 0xa2, 0x12, 0xe4, 0x04,
+	0x2e, 0x84, 0x0e, 0x8b, 0xf3, 0x1a, 0x8c, 0x9c, 0x17, 0x0d, 0xf4, 0x3a, 0x4c, 0x47, 0x93, 0x8b,
+	0xee, 0xda, 0x61, 0x45, 0x3f, 0xd3, 0x77, 0x9d, 0x9a, 0x0f, 0x0d, 0xd4, 0x91, 0x8f, 0xf9, 0x4d,
+	0x6a, 0x2a, 0x74, 0x8c, 0x1e, 0x67, 0xde, 0x86, 0xa8, 0x7f, 0x51, 0x51, 0x05, 0x42, 0x71, 0x9b,
+	0xd6, 0x45, 0x87, 0xed, 0x2c, 0x5c, 0xd6, 0x3b, 0xcd, 0x97, 0x4d, 0xba, 0x15, 0xce, 0xf6, 0x48,
+	0x05, 0x9e, 0xd5, 0x12, 0xc2, 0x6b, 0x19, 0xb7, 0x88, 0x9a, 0x82, 0xd0, 0x20, 0xae, 0xe5, 0xec,
+	0xb4, 0x88, 0xcd, 0x32, 0x79, 0x38, 0x16, 0x9d, 0xb3, 0x4f, 0xc3, 0xd1, 0xe0, 0x0a, 0x02, 0x0e,
+	0xf7, 0xe4, 0xe0, 0xa9, 0x3a, 0x05, 0xc7, 0xdd, 0x68, 0xbb, 0x1c, 0xfe, 0x4e, 0x05, 0xb9, 0x55,
+	0x88, 0xfa, 0xea, 0x92, 0xa2, 0x8b, 0x70, 0x2c, 0xf8, 0x4a, 0xc2, 0xef, 0xb9, 0xbc, 0x5b, 0xfc,
+	0xff, 0xb1, 0xc5, 0xac, 0x45, 0x1e, 0xb9, 0xdf, 0x03, 0x28, 0xf5, 0xa9, 0xaf, 0x88, 0xfb, 0x21,
+	0x45, 0x6f, 0xc1, 0xb1, 0xe0, 0xaa, 0x18, 0x91, 0x7f, 0x78, 0x2c, 0x39, 0x74, 0x2d, 0x84, 0xbf,
+	0x61, 0x07, 0x0a, 0x29, 0xbc, 0x03, 0xf5, 0x2a, 0x06, 0xea, 0x40, 0x9f, 0x01, 0xf8, 0xec, 0x6b,
+	0x84, 0xf5, 0xcf, 0x85, 0xdc, 0xf6, 0x09, 0x65, 0xff, 0x85, 0xab, 0xfe, 0x25, 0x08, 0xbb, 0xdf,
+	0x60, 0xbe, 0xf7, 0xaa, 0x7f, 0x85, 0x9b, 0xbc, 0x89, 0xe9, 0xa6, 0x3a, 0xc2, 0xdd, 0xb5, 0xc4,
+	0x7a, 0xf4, 0x20, 0xf7, 0x67, 0x00, 0x4f, 0x2f, 0x99, 0xb4, 0x3f, 0x66, 0x1a, 0x05, 0xfd, 0x3f,
+	0xf8, 0xd6, 0xf2, 0xd8, 0xb3, 0xf8, 0x03, 0x80, 0xcf, 0x56, 0x1f, 0x92, 0xf8, 0x37, 0x60, 0x3c,
+	0xa8, 0xa6, 0x30, 0xf4, 0xe3, 0xcb, 0xef, 0x01, 0x51, 0x87, 0x88, 0xc7, 0x8e, 0xb6, 0xf4, 0xa7,
+	0x38, 0x7c, 0xe6, 0x01, 0xa1, 0x36, 0x4d, 0xca, 0x0b, 0xee, 0x5d, 0x08, 0x5f, 0x23, 0x2c, 0xaa,
+	0xef, 0xff, 0xeb, 0x03, 0x2f, 0xb4, 0x5c, 0xb6, 0x93, 0xc9, 0x3f, 0x6a, 0x99, 0xe7, 0x32, 0x1f,
+	0xfe, 0xe5, 0xef, 0xbf, 0x1c, 0x7a, 0x12, 0xa1, 0x22, 0xa6, 0xc5, 0x60, 0x0a, 0x4a, 0x58, 0xec,
+	0xe8, 0xd7, 0x00, 0x0e, 0xbf, 0x46, 0x18, 0x3a, 0x77, 0x94, 0xf6, 0x90, 0x2a, 0xce, 0x1c, 0x9f,
+	0xbc, 0xdc, 0x55, 0xf1, 0x4e, 0x15, 0x5d, 0xee, 0xbe, 0xb3, 0xf8, 0xbe, 0x69, 0xd0, 0xc2, 0x91,
+	0x4a, 0x3a, 0x32, 0xbe, 0x13, 0x18, 0x75, 0xbf, 0xbb, 0xdd, 0x41, 0xbf, 0x00, 0x70, 0x84, 0xd7,
+	0x27, 0x52, 0x8e, 0xbe, 0xf5, 0xa1, 0x55, 0x9b, 0xc9, 0x1d, 0x1b, 0x24, 0xcd, 0xcd, 0x8a, 0x28,
+	0x15, 0x74, 0xae, 0x37, 0xca, 0x63, 0x22, 0x44, 0xff, 0x00, 0x70, 0xb8, 0xfa, 0xa0, 0x94, 0x55,
+	0x1f, 0x2f, 0x65, 0xbf, 0x02, 0x22, 0x9a, 0x7b, 0x20, 0xb3, 0xdc, 0x1b, 0x4e, 0xf8, 0x71, 0xf9,
+	0x91, 0x72, 0xd7, 0x63, 0xdb, 0x93, 0xc2, 0x32, 0x98, 0xb9, 0x7e, 0x31, 0xf7, 0xf2, 0xc9, 0xa0,
+	0x65, 0x30, 0x83, 0xee, 0x01, 0x18, 0x9f, 0x27, 0x16, 0x61, 0x04, 0x0d, 0xb4, 0x67, 0x65, 0xbe,
+	0xa7, 0x76, 0x73, 0x97, 0xc5, 0x4c, 0xcb, 0x33, 0xaf, 0x0c, 0x90, 0x77, 0x11, 0x74, 0x34, 0x25,
+	0xf5, 0x77, 0xe0, 0xfe, 0x9e, 0x0c, 0xbe, 0xdc, 0x93, 0xc1, 0x57, 0x7b, 0x72, 0xec, 0xeb, 0x3d,
+	0x39, 0xf6, 0xcd, 0x9e, 0x1c, 0xfb, 0x76, 0x4f, 0x8e, 0x7d, 0xb7, 0x27, 0x83, 0xbb, 0x6d, 0x19,
+	0x7c, 0xd4, 0x96, 0x63, 0x9f, 0xb6, 0x65, 0xf0, 0x59, 0x5b, 0x8e, 0x7d, 0xde, 0x96, 0x63, 0x5f,
+	0xb4, 0xe5, 0xd8, 0xfd, 0xb6, 0x0c, 0xbe, 0x6c, 0xcb, 0xe0, 0xab, 0xb6, 0x1c, 0xfb, 0xba, 0x2d,
+	0x83, 0x6f, 0xda, 0x72, 0xec, 0xdb, 0xb6, 0x0c, 0xbe, 0x6b, 0xcb, 0xb1, 0xbb, 0xfb, 0x72, 0xec,
+	0xa3, 0x7d, 0x19, 0xdc, 0xdb, 0x97, 0x63, 0x1f, 0xef, 0xcb, 0xe0, 0x37, 0xfb, 0x72, 0xec, 0xd3,
+	0x7d, 0x39, 0xf6, 0xd9, 0xbe, 0x0c, 0x3e, 0xdf, 0x97, 0xc1, 0x17, 0xfb, 0x32, 0xb8, 0x5e, 0x6c,
+	0x3a, 0x05, 0xb6, 0x41, 0xd8, 0x86, 0x69, 0x37, 0x69, 0xc1, 0x26, 0x6c, 0xdb, 0xf1, 0x36, 0x8b,
+	0x87, 0xbf, 0x68, 0x6f, 0xcd, 0x16, 0xdd, 0xcd, 0x66, 0x91, 0x31, 0xdb, 0xad, 0xd7, 0xe3, 0x62,
+	0xe6, 0xb3, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x33, 0x31, 0x82, 0x4b, 0x48, 0x18, 0x00, 0x00,
 }
 
 func (x ApplicationPubSub_MQTTProvider_QoS) String() string {
@@ -1005,7 +1380,13 @@ func (this *ApplicationPubSub) Equal(that interface{}) bool {
 	if !this.DownlinkQueued.Equal(that1.DownlinkQueued) {
 		return false
 	}
+	if !this.DownlinkQueueInvalidated.Equal(that1.DownlinkQueueInvalidated) {
+		return false
+	}
 	if !this.LocationSolved.Equal(that1.LocationSolved) {
+		return false
+	}
+	if !this.ServiceData.Equal(that1.ServiceData) {
 		return false
 	}
 	return true
@@ -1054,6 +1435,30 @@ func (this *ApplicationPubSub_MQTT) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.MQTT.Equal(that1.MQTT) {
+		return false
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoT) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoT)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoT)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.AWSIoT.Equal(that1.AWSIoT) {
 		return false
 	}
 	return true
@@ -1129,6 +1534,170 @@ func (this *ApplicationPubSub_MQTTProvider) Equal(that interface{}) bool {
 		return false
 	}
 	if !bytes.Equal(this.TLSClientKey, that1.TLSClientKey) {
+		return false
+	}
+	if len(this.Headers) != len(that1.Headers) {
+		return false
+	}
+	for i := range this.Headers {
+		if this.Headers[i] != that1.Headers[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoTProvider) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoTProvider)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoTProvider)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Region != that1.Region {
+		return false
+	}
+	if !this.AccessKey.Equal(that1.AccessKey) {
+		return false
+	}
+	if !this.AssumeRole.Equal(that1.AssumeRole) {
+		return false
+	}
+	if this.EndpointAddress != that1.EndpointAddress {
+		return false
+	}
+	if that1.Deployment == nil {
+		if this.Deployment != nil {
+			return false
+		}
+	} else if this.Deployment == nil {
+		return false
+	} else if !this.Deployment.Equal(that1.Deployment) {
+		return false
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoTProvider_Default) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoTProvider_Default)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoTProvider_Default)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Default.Equal(that1.Default) {
+		return false
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoTProvider_AccessKey) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoTProvider_AccessKey)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoTProvider_AccessKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.AccessKeyID != that1.AccessKeyID {
+		return false
+	}
+	if this.SecretAccessKey != that1.SecretAccessKey {
+		return false
+	}
+	if this.SessionToken != that1.SessionToken {
+		return false
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoTProvider_AssumeRole) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoTProvider_AssumeRole)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoTProvider_AssumeRole)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ARN != that1.ARN {
+		return false
+	}
+	if this.ExternalID != that1.ExternalID {
+		return false
+	}
+	if this.SessionDuration != nil && that1.SessionDuration != nil {
+		if *this.SessionDuration != *that1.SessionDuration {
+			return false
+		}
+	} else if this.SessionDuration != nil {
+		return false
+	} else if that1.SessionDuration != nil {
+		return false
+	}
+	return true
+}
+func (this *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ApplicationPubSub_AWSIoTProvider_DefaultIntegration)
+	if !ok {
+		that2, ok := that.(ApplicationPubSub_AWSIoTProvider_DefaultIntegration)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.StackName != that1.StackName {
 		return false
 	}
 	return true
@@ -1590,6 +2159,34 @@ func (m *ApplicationPubSub) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			}
 		}
 	}
+	if m.DownlinkQueueInvalidated != nil {
+		{
+			size, err := m.DownlinkQueueInvalidated.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x9a
+	}
+	if m.ServiceData != nil {
+		{
+			size, err := m.ServiceData.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x92
+	}
 	if m.LocationSolved != nil {
 		{
 			size, err := m.LocationSolved.MarshalToSizedBuffer(dAtA[:i])
@@ -1726,20 +2323,20 @@ func (m *ApplicationPubSub) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	n12, err12 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.UpdatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt):])
-	if err12 != nil {
-		return 0, err12
+	n14, err14 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.UpdatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt):])
+	if err14 != nil {
+		return 0, err14
 	}
-	i -= n12
-	i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(n12))
+	i -= n14
+	i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(n14))
 	i--
 	dAtA[i] = 0x1a
-	n13, err13 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CreatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CreatedAt):])
-	if err13 != nil {
-		return 0, err13
+	n15, err15 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CreatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CreatedAt):])
+	if err15 != nil {
+		return 0, err15
 	}
-	i -= n13
-	i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(n13))
+	i -= n15
+	i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(n15))
 	i--
 	dAtA[i] = 0x12
 	{
@@ -1801,6 +2398,29 @@ func (m *ApplicationPubSub_MQTT) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	}
 	return len(dAtA) - i, nil
 }
+func (m *ApplicationPubSub_AWSIoT) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoT) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.AWSIoT != nil {
+		{
+			size, err := m.AWSIoT.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xaa
+	}
+	return len(dAtA) - i, nil
+}
 func (m *ApplicationPubSub_NATSProvider) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1851,6 +2471,25 @@ func (m *ApplicationPubSub_MQTTProvider) MarshalToSizedBuffer(dAtA []byte) (int,
 	_ = i
 	var l int
 	_ = l
+	if len(m.Headers) > 0 {
+		for k := range m.Headers {
+			v := m.Headers[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x5a
+		}
+	}
 	if len(m.TLSClientKey) > 0 {
 		i -= len(m.TLSClientKey)
 		copy(dAtA[i:], m.TLSClientKey)
@@ -1917,6 +2556,218 @@ func (m *ApplicationPubSub_MQTTProvider) MarshalToSizedBuffer(dAtA []byte) (int,
 		i -= len(m.ServerURL)
 		copy(dAtA[i:], m.ServerURL)
 		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.ServerURL)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Deployment != nil {
+		{
+			size := m.Deployment.Size()
+			i -= size
+			if _, err := m.Deployment.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if len(m.EndpointAddress) > 0 {
+		i -= len(m.EndpointAddress)
+		copy(dAtA[i:], m.EndpointAddress)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.EndpointAddress)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.AssumeRole != nil {
+		{
+			size, err := m.AssumeRole.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.AccessKey != nil {
+		{
+			size, err := m.AccessKey.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Region) > 0 {
+		i -= len(m.Region)
+		copy(dAtA[i:], m.Region)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.Region)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_Default) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_Default) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Default != nil {
+		{
+			size, err := m.Default.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SessionToken) > 0 {
+		i -= len(m.SessionToken)
+		copy(dAtA[i:], m.SessionToken)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.SessionToken)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SecretAccessKey) > 0 {
+		i -= len(m.SecretAccessKey)
+		copy(dAtA[i:], m.SecretAccessKey)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.SecretAccessKey)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AccessKeyID) > 0 {
+		i -= len(m.AccessKeyID)
+		copy(dAtA[i:], m.AccessKeyID)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.AccessKeyID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SessionDuration != nil {
+		n23, err23 := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.SessionDuration, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(*m.SessionDuration):])
+		if err23 != nil {
+			return 0, err23
+		}
+		i -= n23
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(n23))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ExternalID) > 0 {
+		i -= len(m.ExternalID)
+		copy(dAtA[i:], m.ExternalID)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.ExternalID)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ARN) > 0 {
+		i -= len(m.ARN)
+		copy(dAtA[i:], m.ARN)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.ARN)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.StackName) > 0 {
+		i -= len(m.StackName)
+		copy(dAtA[i:], m.StackName)
+		i = encodeVarintApplicationserverPubsub(dAtA, i, uint64(len(m.StackName)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2222,12 +3073,20 @@ func NewPopulatedApplicationPubSub(r randyApplicationserverPubsub, easy bool) *A
 	if r.Intn(5) != 0 {
 		this.LocationSolved = NewPopulatedApplicationPubSub_Message(r, easy)
 	}
-	oneofNumber_Provider := []int32{17, 25}[r.Intn(2)]
+	oneofNumber_Provider := []int32{17, 25, 101}[r.Intn(3)]
 	switch oneofNumber_Provider {
 	case 17:
 		this.Provider = NewPopulatedApplicationPubSub_NATS(r, easy)
 	case 25:
 		this.Provider = NewPopulatedApplicationPubSub_MQTT(r, easy)
+	case 101:
+		this.Provider = NewPopulatedApplicationPubSub_AWSIoT(r, easy)
+	}
+	if r.Intn(5) != 0 {
+		this.ServiceData = NewPopulatedApplicationPubSub_Message(r, easy)
+	}
+	if r.Intn(5) != 0 {
+		this.DownlinkQueueInvalidated = NewPopulatedApplicationPubSub_Message(r, easy)
 	}
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -2242,6 +3101,11 @@ func NewPopulatedApplicationPubSub_NATS(r randyApplicationserverPubsub, easy boo
 func NewPopulatedApplicationPubSub_MQTT(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_MQTT {
 	this := &ApplicationPubSub_MQTT{}
 	this.MQTT = NewPopulatedApplicationPubSub_MQTTProvider(r, easy)
+	return this
+}
+func NewPopulatedApplicationPubSub_AWSIoT(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoT {
+	this := &ApplicationPubSub_AWSIoT{}
+	this.AWSIoT = NewPopulatedApplicationPubSub_AWSIoTProvider(r, easy)
 	return this
 }
 func NewPopulatedApplicationPubSub_NATSProvider(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_NATSProvider {
@@ -2276,6 +3140,68 @@ func NewPopulatedApplicationPubSub_MQTTProvider(r randyApplicationserverPubsub, 
 	for i := 0; i < v7; i++ {
 		this.TLSClientKey[i] = byte(r.Intn(256))
 	}
+	if r.Intn(5) != 0 {
+		v8 := r.Intn(10)
+		this.Headers = make(map[string]string)
+		for i := 0; i < v8; i++ {
+			this.Headers[randStringApplicationserverPubsub(r)] = randStringApplicationserverPubsub(r)
+		}
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedApplicationPubSub_AWSIoTProvider(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoTProvider {
+	this := &ApplicationPubSub_AWSIoTProvider{}
+	this.Region = randStringApplicationserverPubsub(r)
+	if r.Intn(5) != 0 {
+		this.AccessKey = NewPopulatedApplicationPubSub_AWSIoTProvider_AccessKey(r, easy)
+	}
+	if r.Intn(5) != 0 {
+		this.AssumeRole = NewPopulatedApplicationPubSub_AWSIoTProvider_AssumeRole(r, easy)
+	}
+	this.EndpointAddress = randStringApplicationserverPubsub(r)
+	oneofNumber_Deployment := []int32{5}[r.Intn(1)]
+	switch oneofNumber_Deployment {
+	case 5:
+		this.Deployment = NewPopulatedApplicationPubSub_AWSIoTProvider_Default(r, easy)
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedApplicationPubSub_AWSIoTProvider_Default(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoTProvider_Default {
+	this := &ApplicationPubSub_AWSIoTProvider_Default{}
+	this.Default = NewPopulatedApplicationPubSub_AWSIoTProvider_DefaultIntegration(r, easy)
+	return this
+}
+func NewPopulatedApplicationPubSub_AWSIoTProvider_AccessKey(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoTProvider_AccessKey {
+	this := &ApplicationPubSub_AWSIoTProvider_AccessKey{}
+	this.AccessKeyID = randStringApplicationserverPubsub(r)
+	this.SecretAccessKey = randStringApplicationserverPubsub(r)
+	this.SessionToken = randStringApplicationserverPubsub(r)
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedApplicationPubSub_AWSIoTProvider_AssumeRole(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoTProvider_AssumeRole {
+	this := &ApplicationPubSub_AWSIoTProvider_AssumeRole{}
+	this.ARN = randStringApplicationserverPubsub(r)
+	this.ExternalID = randStringApplicationserverPubsub(r)
+	if r.Intn(5) != 0 {
+		this.SessionDuration = github_com_gogo_protobuf_types.NewPopulatedStdDuration(r, easy)
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedApplicationPubSub_AWSIoTProvider_DefaultIntegration(r randyApplicationserverPubsub, easy bool) *ApplicationPubSub_AWSIoTProvider_DefaultIntegration {
+	this := &ApplicationPubSub_AWSIoTProvider_DefaultIntegration{}
+	this.StackName = randStringApplicationserverPubsub(r)
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2292,9 +3218,9 @@ func NewPopulatedApplicationPubSub_Message(r randyApplicationserverPubsub, easy 
 func NewPopulatedApplicationPubSubs(r randyApplicationserverPubsub, easy bool) *ApplicationPubSubs {
 	this := &ApplicationPubSubs{}
 	if r.Intn(5) != 0 {
-		v8 := r.Intn(5)
-		this.Pubsubs = make([]*ApplicationPubSub, v8)
-		for i := 0; i < v8; i++ {
+		v9 := r.Intn(5)
+		this.Pubsubs = make([]*ApplicationPubSub, v9)
+		for i := 0; i < v9; i++ {
 			this.Pubsubs[i] = NewPopulatedApplicationPubSub(r, easy)
 		}
 	}
@@ -2306,9 +3232,9 @@ func NewPopulatedApplicationPubSubs(r randyApplicationserverPubsub, easy bool) *
 func NewPopulatedApplicationPubSubFormats(r randyApplicationserverPubsub, easy bool) *ApplicationPubSubFormats {
 	this := &ApplicationPubSubFormats{}
 	if r.Intn(5) != 0 {
-		v9 := r.Intn(10)
+		v10 := r.Intn(10)
 		this.Formats = make(map[string]string)
-		for i := 0; i < v9; i++ {
+		for i := 0; i < v10; i++ {
 			this.Formats[randStringApplicationserverPubsub(r)] = randStringApplicationserverPubsub(r)
 		}
 	}
@@ -2319,10 +3245,10 @@ func NewPopulatedApplicationPubSubFormats(r randyApplicationserverPubsub, easy b
 
 func NewPopulatedGetApplicationPubSubRequest(r randyApplicationserverPubsub, easy bool) *GetApplicationPubSubRequest {
 	this := &GetApplicationPubSubRequest{}
-	v10 := NewPopulatedApplicationPubSubIdentifiers(r, easy)
-	this.ApplicationPubSubIdentifiers = *v10
-	v11 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v11
+	v11 := NewPopulatedApplicationPubSubIdentifiers(r, easy)
+	this.ApplicationPubSubIdentifiers = *v11
+	v12 := types.NewPopulatedFieldMask(r, easy)
+	this.FieldMask = *v12
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2330,10 +3256,10 @@ func NewPopulatedGetApplicationPubSubRequest(r randyApplicationserverPubsub, eas
 
 func NewPopulatedListApplicationPubSubsRequest(r randyApplicationserverPubsub, easy bool) *ListApplicationPubSubsRequest {
 	this := &ListApplicationPubSubsRequest{}
-	v12 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v12
-	v13 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v13
+	v13 := NewPopulatedApplicationIdentifiers(r, easy)
+	this.ApplicationIdentifiers = *v13
+	v14 := types.NewPopulatedFieldMask(r, easy)
+	this.FieldMask = *v14
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2341,10 +3267,10 @@ func NewPopulatedListApplicationPubSubsRequest(r randyApplicationserverPubsub, e
 
 func NewPopulatedSetApplicationPubSubRequest(r randyApplicationserverPubsub, easy bool) *SetApplicationPubSubRequest {
 	this := &SetApplicationPubSubRequest{}
-	v14 := NewPopulatedApplicationPubSub(r, easy)
-	this.ApplicationPubSub = *v14
-	v15 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v15
+	v15 := NewPopulatedApplicationPubSub(r, easy)
+	this.ApplicationPubSub = *v15
+	v16 := types.NewPopulatedFieldMask(r, easy)
+	this.FieldMask = *v16
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2369,9 +3295,9 @@ func randUTF8RuneApplicationserverPubsub(r randyApplicationserverPubsub) rune {
 	return rune(ru + 61)
 }
 func randStringApplicationserverPubsub(r randyApplicationserverPubsub) string {
-	v16 := r.Intn(100)
-	tmps := make([]rune, v16)
-	for i := 0; i < v16; i++ {
+	v17 := r.Intn(100)
+	tmps := make([]rune, v17)
+	for i := 0; i < v17; i++ {
 		tmps[i] = randUTF8RuneApplicationserverPubsub(r)
 	}
 	return string(tmps)
@@ -2393,11 +3319,11 @@ func randFieldApplicationserverPubsub(dAtA []byte, r randyApplicationserverPubsu
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateApplicationserverPubsub(dAtA, uint64(key))
-		v17 := r.Int63()
+		v18 := r.Int63()
 		if r.Intn(2) == 0 {
-			v17 *= -1
+			v18 *= -1
 		}
-		dAtA = encodeVarintPopulateApplicationserverPubsub(dAtA, uint64(v17))
+		dAtA = encodeVarintPopulateApplicationserverPubsub(dAtA, uint64(v18))
 	case 1:
 		dAtA = encodeVarintPopulateApplicationserverPubsub(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -2500,6 +3426,14 @@ func (m *ApplicationPubSub) Size() (n int) {
 	if m.Provider != nil {
 		n += m.Provider.Size()
 	}
+	if m.ServiceData != nil {
+		l = m.ServiceData.Size()
+		n += 2 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if m.DownlinkQueueInvalidated != nil {
+		l = m.DownlinkQueueInvalidated.Size()
+		n += 2 + l + sovApplicationserverPubsub(uint64(l))
+	}
 	return n
 }
 
@@ -2523,6 +3457,18 @@ func (m *ApplicationPubSub_MQTT) Size() (n int) {
 	_ = l
 	if m.MQTT != nil {
 		l = m.MQTT.Size()
+		n += 2 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	return n
+}
+func (m *ApplicationPubSub_AWSIoT) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AWSIoT != nil {
+		l = m.AWSIoT.Size()
 		n += 2 + l + sovApplicationserverPubsub(uint64(l))
 	}
 	return n
@@ -2580,6 +3526,109 @@ func (m *ApplicationPubSub_MQTTProvider) Size() (n int) {
 		n += 1 + l + sovApplicationserverPubsub(uint64(l))
 	}
 	l = len(m.TLSClientKey)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if len(m.Headers) > 0 {
+		for k, v := range m.Headers {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovApplicationserverPubsub(uint64(len(k))) + 1 + len(v) + sovApplicationserverPubsub(uint64(len(v)))
+			n += mapEntrySize + 1 + sovApplicationserverPubsub(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Region)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if m.AccessKey != nil {
+		l = m.AccessKey.Size()
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if m.AssumeRole != nil {
+		l = m.AssumeRole.Size()
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	l = len(m.EndpointAddress)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if m.Deployment != nil {
+		n += m.Deployment.Size()
+	}
+	return n
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_Default) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Default != nil {
+		l = m.Default.Size()
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	return n
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AccessKeyID)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	l = len(m.SecretAccessKey)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	l = len(m.SessionToken)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	return n
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ARN)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	l = len(m.ExternalID)
+	if l > 0 {
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	if m.SessionDuration != nil {
+		l = github_com_gogo_protobuf_types.SizeOfStdDuration(*m.SessionDuration)
+		n += 1 + l + sovApplicationserverPubsub(uint64(l))
+	}
+	return n
+}
+
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.StackName)
 	if l > 0 {
 		n += 1 + l + sovApplicationserverPubsub(uint64(l))
 	}
@@ -2708,6 +3757,8 @@ func (this *ApplicationPubSub) String() string {
 		`DownlinkQueued:` + strings.Replace(fmt.Sprintf("%v", this.DownlinkQueued), "ApplicationPubSub_Message", "ApplicationPubSub_Message", 1) + `,`,
 		`LocationSolved:` + strings.Replace(fmt.Sprintf("%v", this.LocationSolved), "ApplicationPubSub_Message", "ApplicationPubSub_Message", 1) + `,`,
 		`Provider:` + fmt.Sprintf("%v", this.Provider) + `,`,
+		`ServiceData:` + strings.Replace(fmt.Sprintf("%v", this.ServiceData), "ApplicationPubSub_Message", "ApplicationPubSub_Message", 1) + `,`,
+		`DownlinkQueueInvalidated:` + strings.Replace(fmt.Sprintf("%v", this.DownlinkQueueInvalidated), "ApplicationPubSub_Message", "ApplicationPubSub_Message", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2732,6 +3783,16 @@ func (this *ApplicationPubSub_MQTT) String() string {
 	}, "")
 	return s
 }
+func (this *ApplicationPubSub_AWSIoT) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoT{`,
+		`AWSIoT:` + strings.Replace(fmt.Sprintf("%v", this.AWSIoT), "ApplicationPubSub_AWSIoTProvider", "ApplicationPubSub_AWSIoTProvider", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ApplicationPubSub_NATSProvider) String() string {
 	if this == nil {
 		return "nil"
@@ -2746,6 +3807,16 @@ func (this *ApplicationPubSub_MQTTProvider) String() string {
 	if this == nil {
 		return "nil"
 	}
+	keysForHeaders := make([]string, 0, len(this.Headers))
+	for k := range this.Headers {
+		keysForHeaders = append(keysForHeaders, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForHeaders)
+	mapStringForHeaders := "map[string]string{"
+	for _, k := range keysForHeaders {
+		mapStringForHeaders += fmt.Sprintf("%v: %v,", k, this.Headers[k])
+	}
+	mapStringForHeaders += "}"
 	s := strings.Join([]string{`&ApplicationPubSub_MQTTProvider{`,
 		`ServerURL:` + fmt.Sprintf("%v", this.ServerURL) + `,`,
 		`ClientID:` + fmt.Sprintf("%v", this.ClientID) + `,`,
@@ -2757,6 +3828,65 @@ func (this *ApplicationPubSub_MQTTProvider) String() string {
 		`TLSCA:` + fmt.Sprintf("%v", this.TLSCA) + `,`,
 		`TLSClientCert:` + fmt.Sprintf("%v", this.TLSClientCert) + `,`,
 		`TLSClientKey:` + fmt.Sprintf("%v", this.TLSClientKey) + `,`,
+		`Headers:` + mapStringForHeaders + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ApplicationPubSub_AWSIoTProvider) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoTProvider{`,
+		`Region:` + fmt.Sprintf("%v", this.Region) + `,`,
+		`AccessKey:` + strings.Replace(fmt.Sprintf("%v", this.AccessKey), "ApplicationPubSub_AWSIoTProvider_AccessKey", "ApplicationPubSub_AWSIoTProvider_AccessKey", 1) + `,`,
+		`AssumeRole:` + strings.Replace(fmt.Sprintf("%v", this.AssumeRole), "ApplicationPubSub_AWSIoTProvider_AssumeRole", "ApplicationPubSub_AWSIoTProvider_AssumeRole", 1) + `,`,
+		`EndpointAddress:` + fmt.Sprintf("%v", this.EndpointAddress) + `,`,
+		`Deployment:` + fmt.Sprintf("%v", this.Deployment) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ApplicationPubSub_AWSIoTProvider_Default) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoTProvider_Default{`,
+		`Default:` + strings.Replace(fmt.Sprintf("%v", this.Default), "ApplicationPubSub_AWSIoTProvider_DefaultIntegration", "ApplicationPubSub_AWSIoTProvider_DefaultIntegration", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ApplicationPubSub_AWSIoTProvider_AccessKey) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoTProvider_AccessKey{`,
+		`AccessKeyID:` + fmt.Sprintf("%v", this.AccessKeyID) + `,`,
+		`SecretAccessKey:` + fmt.Sprintf("%v", this.SecretAccessKey) + `,`,
+		`SessionToken:` + fmt.Sprintf("%v", this.SessionToken) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ApplicationPubSub_AWSIoTProvider_AssumeRole) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoTProvider_AssumeRole{`,
+		`ARN:` + fmt.Sprintf("%v", this.ARN) + `,`,
+		`ExternalID:` + fmt.Sprintf("%v", this.ExternalID) + `,`,
+		`SessionDuration:` + strings.Replace(fmt.Sprintf("%v", this.SessionDuration), "Duration", "types.Duration", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ApplicationPubSub_AWSIoTProvider_DefaultIntegration{`,
+		`StackName:` + fmt.Sprintf("%v", this.StackName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3552,6 +4682,78 @@ func (m *ApplicationPubSub) Unmarshal(dAtA []byte) error {
 			}
 			m.Provider = &ApplicationPubSub_NATS{v}
 			iNdEx = postIndex
+		case 18:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServiceData", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ServiceData == nil {
+				m.ServiceData = &ApplicationPubSub_Message{}
+			}
+			if err := m.ServiceData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 19:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DownlinkQueueInvalidated", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DownlinkQueueInvalidated == nil {
+				m.DownlinkQueueInvalidated = &ApplicationPubSub_Message{}
+			}
+			if err := m.DownlinkQueueInvalidated.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 25:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MQTT", wireType)
@@ -3586,6 +4788,41 @@ func (m *ApplicationPubSub) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Provider = &ApplicationPubSub_MQTT{v}
+			iNdEx = postIndex
+		case 101:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AWSIoT", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ApplicationPubSub_AWSIoTProvider{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Provider = &ApplicationPubSub_AWSIoT{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4012,6 +5249,744 @@ func (m *ApplicationPubSub_MQTTProvider) Unmarshal(dAtA []byte) error {
 			if m.TLSClientKey == nil {
 				m.TLSClientKey = []byte{}
 			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Headers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Headers == nil {
+				m.Headers = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowApplicationserverPubsub
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowApplicationserverPubsub
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthApplicationserverPubsub
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthApplicationserverPubsub
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowApplicationserverPubsub
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthApplicationserverPubsub
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthApplicationserverPubsub
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipApplicationserverPubsub(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthApplicationserverPubsub
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Headers[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApplicationserverPubsub(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplicationPubSub_AWSIoTProvider) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApplicationserverPubsub
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AWSIoTProvider: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AWSIoTProvider: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Region = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccessKey", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AccessKey == nil {
+				m.AccessKey = &ApplicationPubSub_AWSIoTProvider_AccessKey{}
+			}
+			if err := m.AccessKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AssumeRole", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AssumeRole == nil {
+				m.AssumeRole = &ApplicationPubSub_AWSIoTProvider_AssumeRole{}
+			}
+			if err := m.AssumeRole.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndpointAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EndpointAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Default", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ApplicationPubSub_AWSIoTProvider_DefaultIntegration{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Deployment = &ApplicationPubSub_AWSIoTProvider_Default{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApplicationserverPubsub(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AccessKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApplicationserverPubsub
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccessKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccessKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccessKeyID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccessKeyID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecretAccessKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SecretAccessKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionToken", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SessionToken = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApplicationserverPubsub(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplicationPubSub_AWSIoTProvider_AssumeRole) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApplicationserverPubsub
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AssumeRole: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AssumeRole: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ARN", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ARN = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExternalID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExternalID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SessionDuration == nil {
+				m.SessionDuration = new(time.Duration)
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(m.SessionDuration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApplicationserverPubsub(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplicationPubSub_AWSIoTProvider_DefaultIntegration) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApplicationserverPubsub
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DefaultIntegration: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DefaultIntegration: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StackName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApplicationserverPubsub
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthApplicationserverPubsub
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StackName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

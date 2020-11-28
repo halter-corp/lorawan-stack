@@ -18,11 +18,11 @@ import (
 	"context"
 	"sync"
 
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 type server struct {
@@ -32,12 +32,14 @@ type server struct {
 	subscriptionsCh chan *io.Subscription
 	downlinkQueueMu sync.RWMutex
 	downlinkQueue   map[string][]*ttnpb.ApplicationDownlink
+	subscribeError  error
 }
 
 // Server represents a mock io.Server.
 type Server interface {
 	io.Server
 
+	SetSubscribeError(error)
 	Subscriptions() <-chan *io.Subscription
 }
 
@@ -57,8 +59,8 @@ func (s *server) FillContext(ctx context.Context) context.Context {
 }
 
 func (s *server) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
-	s.subscriptionsMu.Lock()
-	defer s.subscriptionsMu.Unlock()
+	s.subscriptionsMu.RLock()
+	defer s.subscriptionsMu.RUnlock()
 	for _, sub := range s.subscriptions[unique.ID(ctx, up.ApplicationIdentifiers)] {
 		if err := sub.SendUp(ctx, up); err != nil {
 			return err
@@ -69,6 +71,12 @@ func (s *server) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
 
 // Subscribe implements io.Server.
 func (s *server) Subscribe(ctx context.Context, protocol string, ids ttnpb.ApplicationIdentifiers) (*io.Subscription, error) {
+	s.subscriptionsMu.RLock()
+	err := s.subscribeError
+	s.subscriptionsMu.RUnlock()
+	if err != nil {
+		return nil, err
+	}
 	if err := rights.RequireApplication(ctx, ids, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
 		return nil, err
 	}
@@ -103,9 +111,14 @@ func (s *server) DownlinkQueueReplace(ctx context.Context, ids ttnpb.EndDeviceId
 // DownlinkQueueList implements io.Server.
 func (s *server) DownlinkQueueList(ctx context.Context, ids ttnpb.EndDeviceIdentifiers) ([]*ttnpb.ApplicationDownlink, error) {
 	s.downlinkQueueMu.RLock()
-	queue := s.downlinkQueue[unique.ID(ctx, ids)]
-	s.downlinkQueueMu.RUnlock()
-	return queue, nil
+	defer s.downlinkQueueMu.RUnlock()
+	return s.downlinkQueue[unique.ID(ctx, ids)], nil
+}
+
+func (s *server) SetSubscribeError(err error) {
+	s.subscriptionsMu.Lock()
+	defer s.subscriptionsMu.Unlock()
+	s.subscribeError = err
 }
 
 func (s *server) Subscriptions() <-chan *io.Subscription {

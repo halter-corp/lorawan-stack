@@ -18,6 +18,7 @@ import { storiesOf } from '@storybook/react'
 import { withInfo } from '@storybook/addon-info'
 
 import CheckboxGroup from './group'
+
 import Checkbox from '.'
 
 const info = {
@@ -27,7 +28,6 @@ const info = {
   propTables: [Checkbox],
 }
 
-@bind
 class IndeterminateCheckboxExample extends React.Component {
   state = {
     allChecked: false,
@@ -35,6 +35,7 @@ class IndeterminateCheckboxExample extends React.Component {
     indeterminate: false,
   }
 
+  @bind
   onChange(event) {
     const { checked } = event.target
 
@@ -53,6 +54,7 @@ class IndeterminateCheckboxExample extends React.Component {
     }
   }
 
+  @bind
   onGroupChange(value) {
     const cbs = Object.keys(value)
     const totalCheckboxes = cbs.length

@@ -15,30 +15,47 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { Switch, Route } from 'react-router'
+import { Col, Row, Container } from 'react-grid-system'
 
-import sharedMessages from '../../../lib/shared-messages'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import EntityTitleSection from '../../components/entity-title-section'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import Tabs from '../../../components/tabs'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import withRequest from '../../../lib/components/with-request'
-import withEnv from '../../../lib/components/env'
-import NotFoundRoute from '../../../lib/components/not-found-route'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import Tabs from '@ttn-lw/components/tabs'
 
-import DeviceOverview from '../device-overview'
-import DeviceData from '../device-data'
-import DeviceGeneralSettings from '../device-general-settings'
-import DeviceLocation from '../device-location'
-import DevicePayloadFormatters from '../device-payload-formatters'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import withRequest from '@ttn-lw/lib/components/with-request'
+import withEnv from '@ttn-lw/lib/components/env'
+import NotFoundRoute from '@ttn-lw/lib/components/not-found-route'
 
-import { getDevice, stopDeviceEventsStream } from '../../store/actions/device'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import DeviceTitleSection from '@console/containers/device-title-section'
+
+import DeviceData from '@console/views/device-data'
+import DeviceGeneralSettings from '@console/views/device-general-settings'
+import DeviceMessaging from '@console/views/device-messaging'
+import DeviceLocation from '@console/views/device-location'
+import DevicePayloadFormatters from '@console/views/device-payload-formatters'
+import DeviceClaimAuthenticationCode from '@console/views/device-claim-authentication-code'
+import DeviceOverview from '@console/views/device-overview'
+
+import getHostnameFromUrl from '@ttn-lw/lib/host-from-url'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import { selectJsConfig, selectAsConfig } from '@ttn-lw/lib/selectors/env'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import {
+  mayReadApplicationDeviceKeys,
+  mayScheduleDownlinks,
+  maySendUplink,
+  checkFromState,
+} from '@console/lib/feature-checks'
+
+import { getDevice, stopDeviceEventsStream } from '@console/store/actions/devices'
+
 import {
   selectSelectedDevice,
   selectDeviceFetching,
-  selectGetDeviceError,
-} from '../../store/selectors/device'
+  selectDeviceError,
+} from '@console/store/selectors/devices'
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 import style from './device.styl'
 
@@ -52,8 +69,11 @@ import style from './device.styl'
       devId,
       appId,
       device,
+      mayReadKeys: checkFromState(mayReadApplicationDeviceKeys, state),
+      mayScheduleDownlinks: checkFromState(mayScheduleDownlinks, state),
+      maySendUplink: checkFromState(maySendUplink, state),
       fetching: selectDeviceFetching(state),
-      error: selectGetDeviceError(state),
+      error: selectDeviceError(state),
     }
   },
   dispatch => ({
@@ -63,31 +83,43 @@ import style from './device.styl'
   }),
 )
 @withRequest(
-  ({ appId, devId, getDevice }) =>
-    getDevice(
-      appId,
-      devId,
-      [
-        'name',
-        'description',
-        'session',
-        'version_ids',
-        'root_keys',
-        'frequency_plan_id',
-        'mac_settings.resets_f_cnt',
-        'resets_join_nonces',
-        'supports_class_c',
-        'supports_join',
-        'lorawan_version',
-        'lorawan_phy_version',
-        'network_server_address',
-        'application_server_address',
-        'join_server_address',
-        'locations',
-        'formatters',
-      ],
-      { ignoreNotFound: true },
-    ),
+  ({ appId, devId, getDevice, mayReadKeys }) => {
+    const selector = [
+      'name',
+      'description',
+      'version_ids',
+      'frequency_plan_id',
+      'mac_settings.resets_f_cnt',
+      'mac_settings.supports_32_bit_f_cnt',
+      'resets_join_nonces',
+      'supports_class_c',
+      'supports_join',
+      'lorawan_version',
+      'lorawan_phy_version',
+      'network_server_address',
+      'application_server_address',
+      'join_server_address',
+      'locations',
+      'formatters',
+      'multicast',
+      'net_id',
+      'application_server_id',
+      'application_server_kek_label',
+      'network_server_kek_label',
+      'claim_authentication_code',
+      'recent_uplinks',
+      'recent_downlinks',
+      'attributes',
+      'skip_payload_crypto',
+    ]
+
+    if (mayReadKeys) {
+      selector.push('session')
+      selector.push('root_keys')
+    }
+
+    return getDevice(appId, devId, selector, { ignoreNotFound: true })
+  },
   ({ fetching, device }) => fetching || !Boolean(device),
 )
 @withBreadcrumb('device.single', function(props) {
@@ -96,49 +128,96 @@ import style from './device.styl'
     appId,
     device: { name },
   } = props
-  return (
-    <Breadcrumb
-      path={`/applications/${appId}/devices/${devId}`}
-      icon="device"
-      content={name || devId}
-    />
-  )
+  return <Breadcrumb path={`/applications/${appId}/devices/${devId}`} content={name || devId} />
 })
 @withEnv
 export default class Device extends React.Component {
-  componentWillUnmount() {
-    const { devIds, stopStream } = this.props
+  static propTypes = {
+    appId: PropTypes.string.isRequired,
+    devId: PropTypes.string.isRequired,
+    device: PropTypes.device.isRequired,
+    env: PropTypes.env,
+    location: PropTypes.location.isRequired,
+    mayScheduleDownlinks: PropTypes.bool.isRequired,
+    maySendUplink: PropTypes.bool.isRequired,
+    stopStream: PropTypes.func.isRequired,
+  }
 
-    stopStream(devIds)
+  static defaultProps = {
+    env: undefined,
+  }
+
+  componentWillUnmount() {
+    const { device, stopStream } = this.props
+
+    stopStream(device.ids)
   }
 
   render() {
     const {
       location: { pathname },
-      match: {
-        params: { appId },
-      },
+      appId,
       devId,
-      device: { name, description },
+      device,
       env: { siteName },
+      mayScheduleDownlinks,
+      maySendUplink,
     } = this.props
+    const {
+      name,
+      join_server_address,
+      supports_join,
+      root_keys,
+      application_server_address,
+    } = device
+
+    const jsConfig = selectJsConfig()
+    const hasJs =
+      jsConfig.enabled &&
+      join_server_address === getHostnameFromUrl(jsConfig.base_url) &&
+      supports_join &&
+      Boolean(root_keys)
+
+    const asConfig = selectAsConfig()
+    const hasAs =
+      asConfig.enabled && application_server_address === getHostnameFromUrl(asConfig.base_url)
+    const hideMessaging = !hasAs || !(mayScheduleDownlinks || maySendUplink)
+    const hidePayloadFormatters = !hasAs
+    const hideClaiming = !hasJs
 
     const basePath = `/applications/${appId}/devices/${devId}`
 
-    // Prevent default redirect to uplink when tab is already open
+    // Prevent default redirect to uplink when tab is already open.
     const payloadFormattersLink = pathname.startsWith(`${basePath}/payload-formatters`)
       ? pathname
       : `${basePath}/payload-formatters`
+    const messagingLink = pathname.startsWith(`${basePath}/messaging`)
+      ? pathname
+      : `${basePath}/messaging`
 
     const tabs = [
       { title: sharedMessages.overview, name: 'overview', link: basePath },
-      { title: sharedMessages.data, name: 'data', link: `${basePath}/data` },
+      { title: sharedMessages.liveData, name: 'data', link: `${basePath}/data` },
+      {
+        title: sharedMessages.messaging,
+        name: 'messaging',
+        exact: false,
+        link: messagingLink,
+        hidden: hideMessaging,
+      },
       { title: sharedMessages.location, name: 'location', link: `${basePath}/location` },
       {
         title: sharedMessages.payloadFormatters,
         name: 'develop',
         link: payloadFormattersLink,
         exact: false,
+        hidden: hidePayloadFormatters,
+      },
+      {
+        title: sharedMessages.claiming,
+        name: 'claim-auth-code',
+        link: `${basePath}/claim-auth-code`,
+        hidden: hideClaiming,
       },
       {
         title: sharedMessages.generalSettings,
@@ -150,16 +229,29 @@ export default class Device extends React.Component {
     return (
       <React.Fragment>
         <IntlHelmet titleTemplate={`%s - ${name || devId} - ${siteName}`} />
-        <EntityTitleSection.Device deviceId={devId} deviceName={name} description={description}>
-          <Tabs className={style.tabs} narrow tabs={tabs} />
-        </EntityTitleSection.Device>
-        <hr className={style.rule} />
+        <div className={style.titleSection}>
+          <Container>
+            <Row>
+              <Col sm={12}>
+                <DeviceTitleSection appId={appId} devId={devId}>
+                  <Tabs className={style.tabs} narrow tabs={tabs} />
+                </DeviceTitleSection>
+              </Col>
+            </Row>
+          </Container>
+        </div>
         <Switch>
           <Route exact path={basePath} component={DeviceOverview} />
           <Route exact path={`${basePath}/data`} component={DeviceData} />
+          {!hideMessaging && <Route path={`${basePath}/messaging`} component={DeviceMessaging} />}
           <Route exact path={`${basePath}/location`} component={DeviceLocation} />
           <Route exact path={`${basePath}/general-settings`} component={DeviceGeneralSettings} />
-          <Route path={`${basePath}/payload-formatters`} component={DevicePayloadFormatters} />
+          {!hidePayloadFormatters && (
+            <Route path={`${basePath}/payload-formatters`} component={DevicePayloadFormatters} />
+          )}
+          {!hideClaiming && (
+            <Route path={`${basePath}/claim-auth-code`} component={DeviceClaimAuthenticationCode} />
+          )}
           <NotFoundRoute />
         </Switch>
       </React.Fragment>

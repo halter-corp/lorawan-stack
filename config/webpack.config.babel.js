@@ -14,9 +14,10 @@
 
 /* eslint-env node */
 
+import fs from 'fs'
+
 import path from 'path'
 import webpack from 'webpack'
-
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import AddAssetHtmlPlugin from 'add-asset-html-webpack-plugin'
@@ -24,7 +25,6 @@ import CleanWebpackPlugin from 'clean-webpack-plugin'
 import ShellPlugin from 'webpack-shell-plugin'
 import CopyWebpackPlugin from 'copy-webpack-plugin'
 import HashOutput from 'webpack-plugin-hash-output'
-
 import nib from 'nib'
 
 import pjson from '../package.json'
@@ -36,17 +36,18 @@ const {
   CACHE_DIR = '.cache',
   PUBLIC_DIR = 'public',
   NODE_ENV = 'production',
-  MAGE = './mage',
+  MAGE = 'tools/bin/mage',
   SUPPORT_LOCALES = 'en',
   DEFAULT_LOCALE = 'en',
 } = process.env
 
-const DEV_SERVER_BUILD = Boolean(
-  process.env.DEV_SERVER_BUILD && process.env.DEV_SERVER_BUILD === 'true',
-)
-const WEBPACK_DISABLE_HMR = Boolean(
-  process.env.WEBPACK_DISABLE_HMR && process.env.WEBPACK_DISABLE_HMR === 'true',
-)
+const WEBPACK_IS_DEV_SERVER_BUILD = process.env.WEBPACK_IS_DEV_SERVER_BUILD === 'true'
+const WEBPACK_DEV_SERVER_DISABLE_HMR = process.env.WEBPACK_DEV_SERVER_DISABLE_HMR === 'true'
+const WEBPACK_DEV_SERVER_USE_TLS = process.env.WEBPACK_DEV_SERVER_USE_TLS === 'true'
+const TTN_LW_TLS_CERTIFICATE = process.env.TTN_LW_TLS_CERTIFICATE || './cert.pem'
+const TTN_LW_TLS_KEY = process.env.TTN_LW_TLS_KEY || './key.pem'
+const TTN_LW_TLS_ROOT_CA = process.env.TTN_LW_TLS_ROOT_CA || './cert.pem'
+
 const ASSETS_ROOT = '/assets'
 
 const context = path.resolve(CONTEXT)
@@ -58,7 +59,7 @@ const modules = [path.resolve(context, 'node_modules')]
 
 const r = SUPPORT_LOCALES.split(',').map(l => new RegExp(l.trim()))
 
-// Export the style config for usage in the storybook config
+// Export the style config for usage in the storybook config.
 export const styleConfig = {
   test: /\.(styl|css)$/,
   include,
@@ -104,6 +105,12 @@ export default {
   },
   resolve: {
     alias: env({
+      all: {
+        '@ttn-lw': path.resolve(context, 'pkg/webui'),
+        '@console': path.resolve(context, 'pkg/webui/console'),
+        '@oauth': path.resolve(context, 'pkg/webui/oauth'),
+        '@assets': path.resolve(context, 'pkg/webui/assets'),
+      },
       development: {
         'react-dom': '@hot-loader/react-dom',
         'ttn-lw': path.resolve(context, 'sdk/js/src'),
@@ -113,17 +120,27 @@ export default {
   devServer: {
     port: 8080,
     inline: true,
-    hot: !WEBPACK_DISABLE_HMR,
+    hot: !WEBPACK_DEV_SERVER_DISABLE_HMR,
     stats: 'minimal',
     publicPath: `${ASSETS_ROOT}/`,
     proxy: [
       {
         context: ['/console', '/oauth', '/api'],
-        target: 'http://localhost:1885',
+        target: WEBPACK_DEV_SERVER_USE_TLS ? 'https://localhost:8885' : 'http://localhost:1885',
         changeOrigin: true,
+        secure: false,
       },
     ],
     historyApiFallback: true,
+    ...(WEBPACK_DEV_SERVER_USE_TLS
+      ? {
+          https: {
+            cert: fs.readFileSync(TTN_LW_TLS_CERTIFICATE),
+            key: fs.readFileSync(TTN_LW_TLS_KEY),
+            ca: fs.readFileSync(TTN_LW_TLS_ROOT_CA),
+          },
+        }
+      : {}),
   },
   entry: {
     console: ['./config/root.js', './pkg/webui/console.js'],
@@ -201,9 +218,9 @@ export default {
       }),
       new HtmlWebpackPlugin({
         inject: false,
-        filename: `${src}/manifest.go`,
+        filename: `manifest.yaml`,
         showErrors: false,
-        template: path.resolve('config', 'manifest-template.txt'),
+        template: path.resolve('config', 'manifest-template.yaml'),
       }),
       new MiniCssExtractPlugin({
         filename: env({
@@ -214,7 +231,7 @@ export default {
       new CleanWebpackPlugin(path.resolve(CONTEXT, PUBLIC_DIR), {
         root: context,
         verbose: false,
-        dry: DEV_SERVER_BUILD,
+        dry: WEBPACK_IS_DEV_SERVER_BUILD,
         exclude: env({
           production: [],
           development: ['libs.bundle.js', 'libs.bundle.js.map'],
@@ -222,6 +239,12 @@ export default {
       }),
       // Copy static assets to output directory
       new CopyWebpackPlugin([`${src}/assets/static`]),
+    ],
+    production: [
+      new webpack.SourceMapDevToolPlugin({
+        filename: '[file].map',
+        exclude: /^(?!(console|oauth).*$).*/,
+      }),
     ],
     development: [
       new webpack.HotModuleReplacementPlugin(),
@@ -257,8 +280,8 @@ function filterLocales(context, request, callback) {
   callback()
 }
 
-// env selects and merges the environments for the passed object based on NODE_ENV, which
-// can have the all, development and production keys.
+// Env selects and merges the environments for the passed object based on
+// `NODE_ENV`, which can have the all, development and production keys.
 function env(obj = {}) {
   if (!obj) {
     return obj

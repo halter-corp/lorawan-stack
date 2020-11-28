@@ -17,17 +17,20 @@ package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
+	stdlog "log"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v7"
 	"github.com/gogo/protobuf/proto"
-	"go.thethings.network/lorawan-stack/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 )
 
 const (
@@ -35,9 +38,7 @@ const (
 	separator = ':'
 )
 
-var (
-	encoding = base64.RawStdEncoding
-)
+var encoding = base64.RawStdEncoding
 
 // WatchCmdable is transactional redis.Cmdable.
 type WatchCmdable interface {
@@ -49,8 +50,9 @@ type WatchCmdable interface {
 func MarshalProto(pb proto.Message) (string, error) {
 	b, err := proto.Marshal(pb)
 	if err != nil {
-		return "", err
+		return "", errEncode.WithCause(err)
 	}
+	protosMarshaled.Inc()
 	return encoding.EncodeToString(b), nil
 }
 
@@ -58,9 +60,13 @@ func MarshalProto(pb proto.Message) (string, error) {
 func UnmarshalProto(s string, pb proto.Message) error {
 	b, err := encoding.DecodeString(s)
 	if err != nil {
-		return err
+		return errDecode.WithCause(err)
 	}
-	return proto.Unmarshal(b, pb)
+	if err = proto.Unmarshal(b, pb); err != nil {
+		return errDecode.WithCause(err)
+	}
+	protosUnmarshaled.Inc()
+	return nil
 }
 
 // Key constructs the full key for entity identified by ks by joining ks using the default separator.
@@ -76,33 +82,107 @@ type Client struct {
 
 // Config represents Redis configuration.
 type Config struct {
-	config.Redis
-	Namespace []string
+	Address       string         `name:"address" description:"Address of the Redis server"`
+	Password      string         `name:"password" description:"Password of the Redis server"`
+	Database      int            `name:"database" description:"Redis database to use"`
+	RootNamespace []string       `name:"namespace" description:"Namespace for Redis keys"`
+	PoolSize      int            `name:"pool-size" description:"The maximum number of database connections"`
+	Failover      FailoverConfig `name:"failover" description:"Redis failover configuration"`
+	TLS           struct {
+		Require          bool `name:"require" description:"Require TLS"`
+		tlsconfig.Client `name:",squash"`
+	} `name:"tls"`
+	namespace []string
+}
+
+func (c Config) WithNamespace(namespace ...string) *Config {
+	deriv := c
+	deriv.namespace = namespace
+	return &deriv
+}
+
+// IsZero returns whether the Redis configuration is empty.
+func (c Config) IsZero() bool {
+	if c.Failover.Enable {
+		return c.Failover.MasterName == "" && len(c.Failover.Addresses) == 0
+	}
+	return c.Address == ""
+}
+
+// FailoverConfig represents Redis failover configuration.
+type FailoverConfig struct {
+	Enable     bool     `name:"enable" description:"Enable failover using Redis Sentinel"`
+	Addresses  []string `name:"addresses" description:"Redis Sentinel server addresses"`
+	MasterName string   `name:"master-name" description:"Redis Sentinel master name"`
+}
+
+func (c Config) makeDialer() func(ctx context.Context, network, addr string) (net.Conn, error) {
+	var (
+		tlsConfig    *tls.Config
+		tlsConfigErr error
+	)
+	if c.TLS.Require {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		tlsConfigErr = c.TLS.Client.ApplyTo(tlsConfig)
+	}
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		var timeout time.Duration
+		deadline, ok := ctx.Deadline()
+		if ok {
+			timeout = time.Until(deadline)
+		}
+		var (
+			conn net.Conn
+			err  error
+		)
+		dialer := &net.Dialer{Timeout: timeout}
+		if c.TLS.Require {
+			if tlsConfigErr != nil {
+				return nil, tlsConfigErr
+			}
+			conn, err = tls.DialWithDialer(dialer, network, addr, tlsConfig)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			conn, err = dialer.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &observableConn{addr: addr, Conn: conn}, nil
+	}
 }
 
 // newRedisClient returns a Redis client, which connects using correct client type.
-func newRedisClient(conf config.Redis) *redis.Client {
+func newRedisClient(conf *Config) *redis.Client {
 	if conf.Failover.Enable {
-		redis.SetLogger(log.New(ioutil.Discard, "", 0))
+		redis.SetLogger(stdlog.New(ioutil.Discard, "", 0))
 		return redis.NewFailoverClient(&redis.FailoverOptions{
+			Dialer:        conf.makeDialer(),
 			MasterName:    conf.Failover.MasterName,
 			SentinelAddrs: conf.Failover.Addresses,
 			Password:      conf.Password,
 			DB:            conf.Database,
+			PoolSize:      conf.PoolSize,
 		})
 	}
 	return redis.NewClient(&redis.Options{
+		Dialer:   conf.makeDialer(),
 		Addr:     conf.Address,
 		Password: conf.Password,
 		DB:       conf.Database,
+		PoolSize: conf.PoolSize,
 	})
 }
 
 // New returns a new initialized Redis store.
 func New(conf *Config) *Client {
 	return &Client{
-		namespace: Key(append(conf.Redis.Namespace, conf.Namespace...)...),
-		Client:    newRedisClient(conf.Redis),
+		namespace: Key(append(conf.RootNamespace, conf.namespace...)...),
+		Client:    newRedisClient(conf),
 	}
 }
 
@@ -162,12 +242,12 @@ func FindProto(r WatchCmdable, k string, keyCmd func(string) (string, error)) *P
 	return &ProtoCmd{result: result}
 }
 
-type findProtosCmd struct {
+type stringSliceCmd struct {
 	result func() ([]string, error)
 }
 
 // ProtosCmd is a command, which can unmarshal its result into multiple protocol buffers.
-type ProtosCmd findProtosCmd
+type ProtosCmd stringSliceCmd
 
 // Range ranges over command result and unmarshals it into a protocol buffer.
 // f must return a new empty proto.Message of the type expected to be present in the command.
@@ -200,7 +280,7 @@ func (cmd ProtosCmd) Range(f func() (proto.Message, func() (bool, error))) error
 }
 
 // ProtosWithKeysCmd is a command, which can unmarshal its result into multiple protocol buffers given a key.
-type ProtosWithKeysCmd findProtosCmd
+type ProtosWithKeysCmd stringSliceCmd
 
 // Range ranges over command result and unmarshals it into a protocol buffer.
 // f must return a new empty proto.Message of the type expected to be present in the command given the key.
@@ -215,6 +295,10 @@ func (cmd ProtosWithKeysCmd) Range(f func(string) (proto.Message, func() (bool, 
 		panic(fmt.Sprintf("odd slice length: %d", len(ss)))
 	}
 	for i := 0; i < len(ss); i += 2 {
+		if ss[i+1] == "" {
+			continue
+		}
+
 		pb, cb := f(ss[i])
 		if pb == nil && cb == nil {
 			continue
@@ -253,7 +337,7 @@ func FindProtosWithOffsetAndCount(offset, count int64) FindProtosOption {
 	}
 }
 
-func findProtos(r redis.Cmdable, k string, keyCmd func(string) string, opts ...FindProtosOption) findProtosCmd {
+func findProtos(r redis.Cmdable, k string, keyCmd func(string) string, opts ...FindProtosOption) stringSliceCmd {
 	s := &redis.Sort{
 		Get: []string{keyCmd("*")},
 		By:  "nosort", // see https://redis.io/commands/sort#skip-sorting-the-elements
@@ -261,7 +345,7 @@ func findProtos(r redis.Cmdable, k string, keyCmd func(string) string, opts ...F
 	for _, opt := range opts {
 		opt(redisSort{s})
 	}
-	return findProtosCmd{
+	return stringSliceCmd{
 		result: r.Sort(k, s).Result,
 	}
 }
@@ -274,6 +358,13 @@ func FindProtos(r redis.Cmdable, k string, keyCmd func(string) string, opts ...F
 // FindProtosWithKeys gets protos stored under keys in k including the keys.
 func FindProtosWithKeys(r redis.Cmdable, k string, keyCmd func(string) string, opts ...FindProtosOption) ProtosWithKeysCmd {
 	return ProtosWithKeysCmd(findProtos(r, k, keyCmd, append([]FindProtosOption{func(s redisSort) { s.Get = append([]string{"#"}, s.Get...) }}, opts...)...))
+}
+
+// ListProtos gets list of protos stored under key k.
+func ListProtos(ctx context.Context, r redis.Cmdable, k string) ProtosCmd {
+	return ProtosCmd{
+		result: r.LRange(k, 0, -1).Result,
+	}
 }
 
 const (
@@ -297,6 +388,7 @@ func WaitingTaskKey(k string) string {
 	return Key(k, "waiting")
 }
 
+// IsConsumerGroupExistsErr returns true if error represents the redis BUSYGROUP error.
 func IsConsumerGroupExistsErr(err error) bool {
 	return err != nil && err.Error() == "BUSYGROUP Consumer Group name already exists"
 }
@@ -371,8 +463,8 @@ func DispatchTasks(r WatchCmdable, group, id string, maxLen int64, deadline time
 	if err != redis.Nil {
 		_, err := r.Pipelined(func(p redis.Pipeliner) error {
 			for i, ret := range rets {
-				toAdd := make([]redis.Z, 0, len(ret.Messages))
-				toAddNX := make([]redis.Z, 0, len(ret.Messages))
+				toAdd := make([]*redis.Z, 0, len(ret.Messages))
+				toAddNX := make([]*redis.Z, 0, len(ret.Messages))
 				toAck := make([]string, 0, len(ret.Messages))
 				for _, msg := range ret.Messages {
 					var score float64
@@ -415,12 +507,12 @@ func DispatchTasks(r WatchCmdable, group, id string, maxLen int64, deadline time
 					}
 
 					if replace {
-						toAdd = append(toAdd, redis.Z{
+						toAdd = append(toAdd, &redis.Z{
 							Member: member,
 							Score:  score,
 						})
 					} else {
-						toAddNX = append(toAddNX, redis.Z{
+						toAddNX = append(toAddNX, &redis.Z{
 							Member: member,
 							Score:  score,
 						})
@@ -444,7 +536,7 @@ func DispatchTasks(r WatchCmdable, group, id string, maxLen int64, deadline time
 	var min time.Time
 	for _, k := range ks {
 		if err := r.Watch(func(tx *redis.Tx) error {
-			zs, err := tx.ZRangeByScoreWithScores(WaitingTaskKey(k), redis.ZRangeBy{
+			zs, err := tx.ZRangeByScoreWithScores(WaitingTaskKey(k), &redis.ZRangeBy{
 				Min: "-inf",
 				Max: fmt.Sprintf("%d", time.Now().UnixNano()),
 			}).Result()
@@ -453,7 +545,7 @@ func DispatchTasks(r WatchCmdable, group, id string, maxLen int64, deadline time
 			}
 
 			var minCmd *redis.ZSliceCmd
-			_, err = tx.Pipelined(func(p redis.Pipeliner) error {
+			_, err = tx.TxPipelined(func(p redis.Pipeliner) error {
 				toDel := make([]interface{}, 0, len(zs))
 				for _, z := range zs {
 					toDel = append(toDel, z.Member)
@@ -571,6 +663,21 @@ func (q *TaskQueue) Run(ctx context.Context) error {
 	if err := q.Init(); err != nil {
 		return err
 	}
+	defer func() {
+		_, err := q.Redis.Pipelined(func(p redis.Pipeliner) error {
+			p.XGroupDelConsumer(InputTaskKey(q.Key), q.Group, q.ID)
+			p.XGroupDelConsumer(ReadyTaskKey(q.Key), q.Group, q.ID)
+			return nil
+		})
+		if err != nil {
+			log.FromContext(ctx).WithError(err).WithFields(log.Fields(
+				"consumer", q.ID,
+				"group", q.Group,
+				"input_stream", InputTaskKey(q.Key),
+				"ready_stream", ReadyTaskKey(q.Key),
+			)).Error("Failed to delete task queue Redis consumer")
+		}
+	}()
 
 	var hasDeadline bool
 	dl, ok := ctx.Deadline()
@@ -616,4 +723,193 @@ func (q *TaskQueue) Pop(ctx context.Context, f func(string, time.Time) error) er
 	return PopTask(q.Redis, q.Group, q.ID, timeout, func(_ string, payload string, startAt time.Time) error {
 		return f(payload, startAt)
 	}, q.Key)
+}
+
+// Scripter is redis.scripter.
+type Scripter interface {
+	Eval(script string, keys []string, args ...interface{}) *redis.Cmd
+	EvalSha(sha1 string, keys []string, args ...interface{}) *redis.Cmd
+	ScriptExists(hashes ...string) *redis.BoolSliceCmd
+	ScriptLoad(script string) *redis.StringCmd
+}
+
+var deduplicateProtosScript = redis.NewScript(`local exp = ARGV[1]
+local ok = redis.call('set', KEYS[1], '', 'px', exp, 'nx')
+if #ARGV > 1 then
+	table.remove(ARGV, 1)
+	redis.call('rpush', KEYS[2], unpack(ARGV))
+	redis.call('pexpire', KEYS[2], exp)
+end
+if ok then
+	return 1
+else
+	return 0
+end`)
+
+// LockKey returns the key lock for k is stored under.
+func LockKey(k string) string {
+	return Key(k, "lock")
+}
+
+// ListKey returns the key list for k is stored under.
+func ListKey(k string) string {
+	return Key(k, "list")
+}
+
+func milliseconds(d time.Duration) int64 {
+	ms := d.Milliseconds()
+	if ms == 0 && d > 0 {
+		return 1
+	}
+	return ms
+}
+
+// DeduplicateProtos deduplicates protos using key k. It stores a lock at LockKey(k) and the list of collected protos at ListKey(k).
+func DeduplicateProtos(ctx context.Context, r Scripter, k string, window time.Duration, msgs ...proto.Message) (bool, error) {
+	args := make([]interface{}, 0, 1+len(msgs))
+	args = append(args, milliseconds(window))
+	for _, msg := range msgs {
+		s, err := MarshalProto(msg)
+		if err != nil {
+			return false, err
+		}
+		args = append(args, s)
+	}
+	res, err := deduplicateProtosScript.Run(r, []string{LockKey(k), ListKey(k)}, args...).Int64()
+	if err != nil {
+		return false, ConvertError(err)
+	}
+	return res == 1, nil
+}
+
+// NOTE: Time stops in lua scripts and expired keys stay available.
+
+// lockMutexScript attempts to acquire mutex lock.
+// It returns 0 if lock is acquired or active locks TTL otherwise.
+var lockMutexScript = redis.NewScript(`local pttl = redis.call('pttl', KEYS[1])
+if pttl > 0 then
+	return pttl
+else
+	redis.call('del', KEYS[2])
+	redis.call('set', KEYS[1], ARGV[1], 'px', ARGV[2])
+	return 0
+end`)
+
+// takeMutexLockScript attempts to take over the lock from previous caller.
+// It returns 1 if lock is acquired and 0 otherwise
+var takeMutexLockScript = redis.NewScript(`if redis.call('get', KEYS[1]) == ARGV[1] then
+	redis.call('del', KEYS[2])
+	redis.call('set', KEYS[1], ARGV[3], 'px', ARGV[2])
+	return 1
+else
+	return 0
+end`)
+
+// unlockMutexLockScript unlocks the mutex lock.
+var unlockMutexScript = redis.NewScript(`if redis.call('get', KEYS[1]) == ARGV[1] then
+	redis.call('lpush', KEYS[2], ARGV[1])
+	redis.call('pexpire', KEYS[1], ARGV[2])
+	redis.call('pexpire', KEYS[2], ARGV[2])
+end
+return redis.status_reply('OK')`)
+
+// LockMutex locks the value stored at k with a mutex with identifier id.
+// It stores the lock at LockKey(k) and list at ListKey(k).
+func LockMutex(ctx context.Context, r redis.Cmdable, k, id string, expiration time.Duration) error {
+	var hasDeadline bool
+	dl, ok := ctx.Deadline()
+	if ok {
+		hasDeadline = !dl.IsZero()
+	}
+
+	lockKey := LockKey(k)
+	listKey := ListKey(k)
+	expMS := milliseconds(expiration)
+	for {
+		ttlMS, err := lockMutexScript.Run(r, []string{lockKey, listKey}, id, expMS).Int64()
+		if err != nil {
+			return ConvertError(err)
+		}
+		if ttlMS < 0 {
+			panic(fmt.Errorf("negative TTL returned: %d ms", ttlMS))
+		}
+		if ttlMS == 0 {
+			return nil
+		}
+
+		timeout := time.Duration(ttlMS) * time.Millisecond
+		if hasDeadline {
+			until := time.Until(dl)
+			if until < timeout {
+				timeout = until
+			}
+		}
+		if timeout < time.Second {
+			// Necessary until https://github.com/go-redis/redis/issues/1363 is resolved.
+			log.FromContext(ctx).WithField("timeout", timeout).Debug("Truncating BLPop timeout to 1 second")
+			timeout = time.Second
+		}
+		popRes, err := r.BLPop(timeout, listKey).Result()
+		if err != nil && err != redis.Nil {
+			return ConvertError(err)
+		}
+		select {
+		case <-ctx.Done():
+			if err == redis.Nil {
+				return ctx.Err()
+			}
+			// Pass the lock to next caller.
+			if err := unlockMutexScript.Run(r, []string{lockKey, listKey}, popRes[1], expMS).Err(); err != nil {
+				log.FromContext(ctx).WithError(ConvertError(err)).Error("Failed to pass mutex to next caller")
+			}
+			return ctx.Err()
+		default:
+		}
+		if err == redis.Nil {
+			continue
+		}
+
+		// Attempt to take over the lock from previous caller.
+		v, err := takeMutexLockScript.Run(r, []string{lockKey, listKey}, popRes[1], expMS, id).Int64()
+		if err != nil {
+			return ConvertError(err)
+		}
+		if v == 1 {
+			return nil
+		}
+	}
+}
+
+// UnlockMutex unlocks the key k with identifier id.
+func UnlockMutex(r Scripter, k, id string, expiration time.Duration) error {
+	return ConvertError(unlockMutexScript.Run(r, []string{LockKey(k), ListKey(k)}, id, milliseconds(expiration)).Err())
+}
+
+// InitMutex initializes the mutex scripts at r.
+// InitMutex must be called before mutex functionality is used in a transaction or pipeline.
+func InitMutex(r Scripter) error {
+	if err := lockMutexScript.Load(r).Err(); err != nil {
+		return ConvertError(err)
+	}
+	if err := takeMutexLockScript.Load(r).Err(); err != nil {
+		return ConvertError(err)
+	}
+	if err := unlockMutexScript.Load(r).Err(); err != nil {
+		return ConvertError(err)
+	}
+	return nil
+}
+
+// LockedWatch locks the key k with a mutex, watches key k and executes f in a transaction.
+// k is unlocked after f returns.
+func LockedWatch(ctx context.Context, r WatchCmdable, k, id string, expiration time.Duration, f func(*redis.Tx) error) error {
+	if err := LockMutex(ctx, r, k, id, expiration); err != nil {
+		return err
+	}
+	defer func() {
+		if err := UnlockMutex(r, k, id, expiration); err != nil {
+			log.FromContext(ctx).WithField("key", k).WithError(err).Error("Failed to unlock mutex")
+		}
+	}()
+	return ConvertError(r.Watch(f, k))
 }

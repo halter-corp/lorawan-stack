@@ -17,55 +17,15 @@ import { connect } from 'react-redux'
 import {
   selectSelectedApplication,
   selectSelectedApplicationId,
-  selectApplicationCollaboratorsTotalCount,
-  selectApplicationCollaboratorsFetching,
-  selectApplicationApiKeysTotalCount,
-  selectApplicationApiKeysFetching,
-  selectSelectedApplicationDevicesTotalCount,
-  selectApplicationLinkIndicator,
-  selectSelectedApplicationDevicesFetching,
-  selectApplicationLinkFetching,
-} from '../../store/selectors/applications'
-import {
-  getApplicationCollaboratorsList,
-  getApplicationApiKeysList,
-} from '../../store/actions/applications'
-import { getApplicationLink } from '../../store/actions/link'
+} from '@console/store/selectors/applications'
 
-const mapStateToProps = (state, props) => {
+const mapStateToProps = state => {
   const appId = selectSelectedApplicationId(state)
-  const collaboratorsTotalCount = selectApplicationCollaboratorsTotalCount(state, { id: appId })
-  const apiKeysTotalCount = selectApplicationApiKeysTotalCount(state, { id: appId })
-  const devicesTotalCount = selectSelectedApplicationDevicesTotalCount(state)
 
   return {
     appId,
     application: selectSelectedApplication(state),
-    collaboratorsTotalCount,
-    apiKeysTotalCount,
-    devicesTotalCount,
-    link: selectApplicationLinkIndicator(state),
-    statusBarFetching:
-      collaboratorsTotalCount === undefined ||
-      apiKeysTotalCount === undefined ||
-      devicesTotalCount === undefined ||
-      selectApplicationLinkFetching(state) ||
-      selectSelectedApplicationDevicesFetching(state) ||
-      selectApplicationApiKeysFetching(state) ||
-      selectApplicationCollaboratorsFetching(state),
   }
 }
 
-const mapDispatchToProps = dispatch => ({
-  loadData(appId) {
-    dispatch(getApplicationCollaboratorsList(appId))
-    dispatch(getApplicationApiKeysList(appId))
-    dispatch(getApplicationLink(appId))
-  },
-})
-
-export default ApplicationOverview =>
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(ApplicationOverview)
+export default ApplicationOverview => connect(mapStateToProps)(ApplicationOverview)

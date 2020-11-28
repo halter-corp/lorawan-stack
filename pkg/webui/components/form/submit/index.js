@@ -14,13 +14,15 @@
 
 import React from 'react'
 
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import FormContext from '../context'
-import PropTypes from '../../../lib/prop-types'
 
 class FormSubmit extends React.Component {
   static contextType = FormContext
+
   static propTypes = {
-    component: PropTypes.oneOfType([PropTypes.func, PropTypes.string]).isRequired,
+    component: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
   }
 
   static defaultProps = {

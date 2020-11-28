@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	. "go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	. "go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -37,8 +37,6 @@ func TestRequestMetadata(t *testing.T) {
 		ServiceType:    "component",
 		ServiceVersion: "1.2.3-dev",
 		NetAddress:     "localhost",
-		Limit:          12,
-		Page:           34,
 		Host:           "hostfoo",
 		URI:            "fooURI",
 	}

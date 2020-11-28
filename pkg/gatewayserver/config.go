@@ -15,9 +15,12 @@
 package gatewayserver
 
 import (
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/udp"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"time"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/ws"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // UDPConfig defines the UDP configuration of the Gateway Server.
@@ -26,17 +29,21 @@ type UDPConfig struct {
 	Listeners  map[string]string `name:"listeners" description:"Listen addresses with (optional) fallback frequency plan ID for non-registered gateways"`
 }
 
-// BasicStationConfig defines the Basic Station configuration of the Gateway Server.
+// BasicStationConfig defines the LoRa Basics Station configuration of the Gateway Server.
 type BasicStationConfig struct {
+	ws.Config               `name:",squash"`
 	FallbackFrequencyPlanID string `name:"fallback-frequency-plan-id" description:"Fallback frequency plan ID for non-registered gateways"`
 	Listen                  string `name:"listen" description:"Address for the Basic Station frontend to listen on"`
 	ListenTLS               string `name:"listen-tls" description:"Address for the Basic Station frontend to listen on (with TLS)"`
-	UseTrafficTLSAddress    bool   `name:"use-traffic-tls-address" description:"Use WSS for the traffic address regardless of the TLS setting"`
 }
 
 // Config represents the Gateway Server configuration.
 type Config struct {
-	RequireRegisteredGateways bool `name:"require-registered-gateways" description:"Require the gateways to be registered in the Identity Server"`
+	RequireRegisteredGateways         bool          `name:"require-registered-gateways" description:"Require the gateways to be registered in the Identity Server"`
+	UpdateGatewayLocationDebounceTime time.Duration `name:"update-gateway-location-debounce-time" description:"Debounce time for gateway location updates from status messages"`
+
+	Stats                             GatewayConnectionStatsRegistry `name:"-"`
+	UpdateConnectionStatsDebounceTime time.Duration                  `name:"update-connection-stats-debounce-time" description:"Time before repeated refresh of the gateway connection stats"`
 
 	Forward map[string][]string `name:"forward" description:"Forward the DevAddr prefixes to the specified hosts"`
 

@@ -17,11 +17,15 @@ import bind from 'autobind-decorator'
 import classnames from 'classnames'
 import { getIn } from 'formik'
 
-import from from '../../../lib/from'
-import Icon from '../../icon'
-import Message from '../../../lib/components/message'
+import Icon from '@ttn-lw/components/icon'
+import Link from '@ttn-lw/components/link'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import from from '@ttn-lw/lib/from'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import FormContext from '../context'
-import PropTypes from '../../../lib/prop-types'
 
 import style from './field.styl'
 
@@ -51,9 +55,9 @@ const isValueEmpty = function(value) {
   return false
 }
 
-@bind
 class FormField extends React.Component {
   static contextType = FormContext
+
   static propTypes = {
     className: PropTypes.string,
     component: PropTypes.oneOfType([
@@ -63,18 +67,31 @@ class FormField extends React.Component {
         render: PropTypes.func.isRequired,
       }),
     ]).isRequired,
+    decode: PropTypes.func,
     description: PropTypes.message,
+    disabled: PropTypes.bool,
+    encode: PropTypes.func,
+    glossaryId: PropTypes.string,
+    glossaryTerm: PropTypes.message,
     name: PropTypes.string.isRequired,
     onChange: PropTypes.func,
+    readOnly: PropTypes.bool,
     required: PropTypes.bool,
     title: PropTypes.message.isRequired,
     warning: PropTypes.message,
   }
 
   static defaultProps = {
+    className: undefined,
+    disabled: false,
+    encode: value => value,
+    decode: value => value,
     onChange: () => null,
     warning: '',
     description: '',
+    glossaryTerm: '',
+    glossaryId: '',
+    readOnly: false,
     required: false,
   }
 
@@ -104,22 +121,31 @@ class FormField extends React.Component {
     return newValue
   }
 
-  handleChange(value, enforceValidation = false) {
-    const { name, onChange } = this.props
+  @bind
+  async handleChange(value, enforceValidation = false) {
+    const { name, onChange, encode } = this.props
     const { setFieldValue, setFieldTouched } = this.context
 
-    // check if the value is react's synthetic event
-    const newValue = this.extractValue(value)
+    // Check if the value is react's synthetic event.
+    const isSyntheticEvent = typeof value === 'object' && 'target' in value
+    const newValue = encode(this.extractValue(value))
 
-    setFieldValue(name, newValue)
+    // TODO: Remove `await` and event persist when https://github.com/jaredpalmer/formik/issues/2457
+    // is resolved.
+    if (typeof value !== 'undefined' && typeof value.persist === 'function') {
+      value.persist()
+    }
+
+    await setFieldValue(name, newValue)
 
     if (enforceValidation) {
       setFieldTouched(name)
     }
 
-    onChange(value)
+    onChange(isSyntheticEvent ? value : encode(value))
   }
 
+  @bind
   handleBlur(event) {
     const { name } = this.props
     const { validateOnBlur, setFieldTouched } = this.context
@@ -133,6 +159,7 @@ class FormField extends React.Component {
   render() {
     const {
       className,
+      decode,
       name,
       title,
       warning,
@@ -140,33 +167,44 @@ class FormField extends React.Component {
       disabled,
       required,
       readOnly,
+      glossaryTerm,
+      glossaryId,
       component: Component,
     } = this.props
     const { horizontal, disabled: formDisabled } = this.context
 
-    const fieldValue = getIn(this.context.values, name)
+    const fieldValue = decode(getIn(this.context.values, name))
     const fieldError = getIn(this.context.errors, name)
-    const fieldTouched = getIn(this.context.touched, name)
+    const fieldTouched = getIn(this.context.touched, name) || false
     const fieldDisabled = disabled || formDisabled
 
     const hasError = Boolean(fieldError)
     const hasWarning = Boolean(warning)
     const hasDescription = Boolean(description)
+    const hasGlossaryTerm = Boolean(glossaryId)
 
     const showError = fieldTouched && hasError
     const showWarning = !hasError && hasWarning
     const showDescription = !showError && !showWarning && hasDescription
 
+    const describedBy = showError
+      ? `${name}-field-error`
+      : showWarning
+      ? `${name}-field-warning`
+      : showDescription
+      ? `${name}-field-description`
+      : undefined
+
     const fieldMessage = showError ? (
       <div className={style.messages}>
-        <Err error={fieldError} />
+        <Err content={fieldError} title={title} error id={describedBy} />
       </div>
     ) : showWarning ? (
       <div className={style.messages}>
-        <Err warning={warning} />
+        <Err content={warning} title={title} warning id={describedBy} />
       </div>
     ) : showDescription ? (
-      <Message className={style.description} content={description} />
+      <Message className={style.description} content={description} id={describedBy} />
     ) : null
 
     const fieldComponentProps = {
@@ -174,6 +212,7 @@ class FormField extends React.Component {
       error: showError,
       warning: showWarning,
       name,
+      id: name,
       horizontal,
       disabled: fieldDisabled,
       onChange: this.handleChange,
@@ -194,12 +233,29 @@ class FormField extends React.Component {
 
     return (
       <div className={cls} data-needs-focus={showError}>
-        <label className={style.label}>
-          <Message content={title} className={style.title} />
-          <span className={style.reqicon}>&middot;</span>
-        </label>
+        <div className={style.label}>
+          <div className={style.labelContainer}>
+            <Message
+              component="label"
+              content={title}
+              className={style.title}
+              htmlFor={fieldComponentProps.id}
+            />
+            {hasGlossaryTerm && (
+              <Link.GlossaryLink
+                hideTerm
+                secondary
+                term={glossaryTerm || title}
+                glossaryId={glossaryId}
+                className={style.glossaryLink}
+              />
+            )}
+          </div>
+        </div>
         <div className={style.componentArea}>
           <Component
+            aria-invalid={showError}
+            aria-describedby={describedBy}
             {...fieldComponentProps}
             {...getPassThroughProps(this.props, FormField.propTypes)}
           />
@@ -210,14 +266,9 @@ class FormField extends React.Component {
   }
 }
 
-const Err = function(props) {
-  const { error, warning, name, className } = props
-
-  const content = error || warning || ''
-  const contentValues = content.values || {}
-
+const Err = ({ content, error, warning, title, className, id }) => {
   const icon = error ? 'error' : 'warning'
-
+  const contentValues = content.values || {}
   const classname = classnames(style.message, className, {
     [style.show]: content && content !== '',
     [style.hide]: !content || content === '',
@@ -225,18 +276,38 @@ const Err = function(props) {
     [style.warn]: warning,
   })
 
+  if (title) {
+    contentValues.field = <Message content={title} className={style.name} key={title.id || title} />
+  }
+
   return (
-    <div className={classname}>
+    <div className={classname} id={id}>
       <Icon icon={icon} className={style.icon} />
-      <Message
-        content={content.format || content.error_description || content.message || content}
-        values={{
-          ...contentValues,
-          name: <Message content={name} className={style.name} />,
-        }}
-      />
+      <Message content={content.message || content} values={contentValues} />
     </div>
   )
+}
+
+Err.propTypes = {
+  className: PropTypes.string,
+  content: PropTypes.oneOfType([
+    PropTypes.error,
+    PropTypes.shape({
+      message: PropTypes.error.isRequired,
+      values: PropTypes.shape({}).isRequired,
+    }),
+  ]).isRequired,
+  error: PropTypes.bool,
+  id: PropTypes.string.isRequired,
+  title: PropTypes.message,
+  warning: PropTypes.bool,
+}
+
+Err.defaultProps = {
+  className: undefined,
+  title: undefined,
+  warning: false,
+  error: false,
 }
 
 export default FormField

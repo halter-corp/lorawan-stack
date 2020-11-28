@@ -17,15 +17,16 @@ package store
 import (
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // UserSession is the session of a logged in user.
 type UserSession struct {
 	Model
 
-	User   *User
-	UserID string `gorm:"type:UUID;index:user_session_user_index;not null"`
+	User          *User
+	UserID        string `gorm:"type:UUID;index:user_session_user_index;not null"`
+	SessionSecret string `gorm:"type:VARCHAR"`
 
 	ExpiresAt *time.Time
 }
@@ -36,9 +37,13 @@ func init() {
 
 func (sess UserSession) toPB(pb *ttnpb.UserSession) {
 	pb.SessionID = sess.ID
+	pb.SessionSecret = sess.SessionSecret
 	pb.CreatedAt = cleanTime(sess.CreatedAt)
 	pb.UpdatedAt = cleanTime(sess.UpdatedAt)
 	pb.ExpiresAt = cleanTimePtr(sess.ExpiresAt)
+	if sess.User != nil {
+		pb.UserID = sess.User.Account.UID
+	}
 }
 
 func (sess *UserSession) fromPB(pb *ttnpb.UserSession) []string {

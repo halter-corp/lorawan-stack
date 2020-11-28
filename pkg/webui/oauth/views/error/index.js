@@ -15,25 +15,24 @@
 import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 
-import Button from '../../../components/button'
-import Message from '../../../lib/components/message'
-import ErrorMessage from '../../../lib/components/error-message'
-import { withEnv } from '../../../lib/components/env'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import sharedMessages from '../../../lib/shared-messages'
-import errorMessages from '../../../lib/errors/error-messages'
+import Link from '@ttn-lw/components/button'
 
+import Message from '@ttn-lw/lib/components/message'
+import ErrorMessage from '@ttn-lw/lib/components/error-message'
+import { withEnv } from '@ttn-lw/lib/components/env'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import errorMessages from '@ttn-lw/lib/errors/error-messages'
 import {
   httpStatusCode,
   isUnknown as isUnknownError,
   isNotFoundError,
-} from '../../../lib/errors/utils'
-
-import statusCodeMessages from '../../../lib/errors/status-code-messages'
+} from '@ttn-lw/lib/errors/utils'
+import statusCodeMessages from '@ttn-lw/lib/errors/status-code-messages'
 
 import style from './full-view.styl'
-
-const reload = () => location.reload()
 
 const FullViewError = function({ error, env }) {
   const isUnknown = isUnknownError(error)
@@ -52,7 +51,7 @@ const FullViewError = function({ error, env }) {
   }
 
   return (
-    <div className={style.fullViewError}>
+    <div className={style.fullViewError} data-test-id="full-error-view">
       <Container>
         <Row>
           <Col sm={12} md={6}>
@@ -63,20 +62,21 @@ const FullViewError = function({ error, env }) {
               content={errorTitleMessage}
             />
             <ErrorMessage className={style.fullViewErrorSub} content={errorMessageMessage} />
-            {isNotFoundError(error) ? (
-              <Button.AnchorLink
-                icon="keyboard_arrow_left"
-                message={sharedMessages.takeMeBack}
-                href={env.appRoot}
-              />
-            ) : (
-              <Button icon="refresh" message={sharedMessages.refreshPage} onClick={reload} />
+            {isNotFoundError(error) && (
+              <Link.Anchor icon="keyboard_arrow_left" href={env.appRoot} primary>
+                <Message content={sharedMessages.backToOverview} />
+              </Link.Anchor>
             )}
           </Col>
         </Row>
       </Container>
     </div>
   )
+}
+
+FullViewError.propTypes = {
+  env: PropTypes.env.isRequired,
+  error: PropTypes.error.isRequired,
 }
 
 export default withEnv(FullViewError)

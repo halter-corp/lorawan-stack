@@ -20,14 +20,14 @@ import (
 	"strings"
 	"sync"
 
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
 type server struct {
@@ -85,11 +85,7 @@ func (s *server) Connect(ctx context.Context, frontend io.Frontend, ids ttnpb.Ga
 			FrequencyPlanID:    test.EUFrequencyPlanID,
 		}
 	}
-	fp, err := s.GetFrequencyPlan(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := io.NewConnection(ctx, frontend, gtw, fp, true)
+	conn, err := io.NewConnection(ctx, frontend, gtw, s.FrequencyPlans, true, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,15 +98,21 @@ func (s *server) Connect(ctx context.Context, frontend io.Frontend, ids ttnpb.Ga
 	return conn, nil
 }
 
-// GetFrequencyPlan implements io.Server.
-func (s *server) GetFrequencyPlan(ctx context.Context, ids ttnpb.GatewayIdentifiers) (*frequencyplans.FrequencyPlan, error) {
+// GetFrequencyPlans implements io.Server.
+func (s *server) GetFrequencyPlans(ctx context.Context, ids ttnpb.GatewayIdentifiers) (map[string]*frequencyplans.FrequencyPlan, error) {
 	var fpID string
 	if gtw, ok := s.gateways[unique.ID(ctx, ids)]; ok {
 		fpID = gtw.FrequencyPlanID
 	} else {
 		fpID = test.EUFrequencyPlanID
 	}
-	return s.store.GetByID(fpID)
+	fp, err := s.store.GetByID(fpID)
+	if err != nil {
+		return nil, err
+	}
+	fps := make(map[string]*frequencyplans.FrequencyPlan)
+	fps[fpID] = fp
+	return fps, nil
 }
 
 // ClaimDownlink implements io.Server.
@@ -132,6 +134,9 @@ func (s *server) HasDownlinkClaim(ctx context.Context, ids ttnpb.GatewayIdentifi
 
 func (s *server) RegisterGateway(ctx context.Context, ids ttnpb.GatewayIdentifiers, gateway *ttnpb.Gateway) {
 	uid := unique.ID(ctx, ids)
+	if len(gateway.FrequencyPlanIDs) > 0 {
+		gateway.FrequencyPlanID = gateway.FrequencyPlanIDs[0]
+	}
 	s.gateways[uid] = gateway
 }
 

@@ -20,17 +20,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errorcontext"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcclient"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/discover"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/discover"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -44,41 +44,33 @@ func (as *ApplicationServer) linkAll(ctx context.Context) error {
 	)
 }
 
-var linkBackoff = []time.Duration{100 * time.Millisecond, 1 * time.Second, 10 * time.Second}
-
 func (as *ApplicationServer) startLinkTask(ctx context.Context, ids ttnpb.ApplicationIdentifiers) {
 	ctx = log.NewContextWithField(ctx, "application_uid", unique.ID(ctx, ids))
-	as.StartTask(ctx, "link", func(ctx context.Context) error {
-		target, err := as.linkRegistry.Get(ctx, ids, []string{
-			"network_server_address",
-			"api_key",
-			"default_formatters",
-		})
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				log.FromContext(ctx).WithError(err).Error("Failed to get link")
+	as.StartTask(&component.TaskConfig{
+		Context: ctx,
+		ID:      "link",
+		Func: func(ctx context.Context) error {
+			target, err := as.linkRegistry.Get(ctx, ids, []string{
+				"network_server_address",
+				"api_key",
+				"default_formatters",
+				"skip_payload_crypto",
+			})
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			} else if err != nil {
+				log.FromContext(ctx).WithError(err).Warn("Link not found")
+				return nil
 			}
-			return nil
-		}
 
-		err = as.link(ctx, ids, target)
-		switch {
-		case errors.IsFailedPrecondition(err),
-			errors.IsUnauthenticated(err),
-			errors.IsPermissionDenied(err),
-			errors.IsInvalidArgument(err):
-			log.FromContext(ctx).WithError(err).Warn("Failed to link")
-			return nil
-		case errors.IsCanceled(err),
-			errors.IsAlreadyExists(err):
-			return nil
-		default:
-			return err
-		}
-	}, component.TaskRestartOnFailure, 0.1, linkBackoff...)
+			return as.link(ctx, ids, target)
+		},
+		Restart: component.TaskRestartOnFailure,
+		Backoff: io.DialTaskBackoffConfig,
+	})
 }
 
-type upstreamTrafficHandler func(context.Context, *ttnpb.ApplicationUp, *link) error
+type upstreamTrafficHandler func(context.Context, *ttnpb.ApplicationUp, *link) (pass bool, err error)
 
 type link struct {
 	// Align for sync/atomic.
@@ -108,21 +100,32 @@ type link struct {
 
 const linkBufferSize = 10
 
-var (
-	errAlreadyLinked  = errors.DefineAlreadyExists("already_linked", "already linked to `{application_uid}`")
-	errNSPeerNotFound = errors.DefineNotFound("network_server_not_found", "Network Server not found for `{application_uid}`")
-)
+var errNSPeerNotFound = errors.DefineNotFound("network_server_not_found", "Network Server not found for `{application_uid}`")
 
 func (as *ApplicationServer) connectLink(ctx context.Context, link *link) error {
 	var allowInsecure bool
 	if link.NetworkServerAddress != "" {
 		allowInsecure = as.AllowInsecureForCredentials()
-		tlsConfig, err := as.GetTLSClientConfig(ctx)
-		if err != nil {
-			return err
+		var (
+			dialOpt   grpc.DialOption
+			target    string
+			targetErr error
+		)
+		if link.TLS {
+			tlsConfig, err := as.GetTLSClientConfig(ctx)
+			if err != nil {
+				return err
+			}
+			dialOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
+			target, targetErr = discover.Address(ttnpb.ClusterRole_NETWORK_SERVER, link.NetworkServerAddress)
+		} else {
+			dialOpt = grpc.WithInsecure()
+			target, targetErr = discover.DefaultPort(link.NetworkServerAddress, discover.DefaultPorts[false])
 		}
-		ctx = discover.WithTLSFallback(ctx, link.TLS)
-		conn, err := discover.DialContext(ctx, link.NetworkServerAddress, credentials.NewTLS(tlsConfig), rpcclient.DefaultDialOptions(ctx)...)
+		if targetErr != nil {
+			return targetErr
+		}
+		conn, err := grpc.DialContext(ctx, target, append(rpcclient.DefaultDialOptions(ctx), dialOpt)...)
 		if err != nil {
 			return err
 		}
@@ -179,13 +182,13 @@ func (as *ApplicationServer) link(ctx context.Context, ids ttnpb.ApplicationIden
 	}
 	if _, loaded := as.links.LoadOrStore(uid, l); loaded {
 		log.FromContext(ctx).Warn("Link already started")
-		return errAlreadyLinked.WithAttributes("application_uid", uid)
+		return nil
 	}
 	go func() {
 		<-ctx.Done()
 		as.linkErrors.Store(uid, ctx.Err())
 		as.links.Delete(uid)
-		if err := ctx.Err(); err != nil && !errors.IsCanceled(err) {
+		if err := ctx.Err(); err != nil {
 			log.FromContext(ctx).WithError(err).Warn("Link failed")
 			registerLinkFail(ctx, l, err)
 		}
@@ -207,19 +210,32 @@ func (as *ApplicationServer) link(ctx context.Context, ids ttnpb.ApplicationIden
 	registerLinkStart(ctx, l)
 	go func() {
 		<-ctx.Done()
-		if err := ctx.Err(); errors.IsCanceled(err) {
-			logger.Info("Unlinked")
-			registerLinkStop(ctx, l)
-		}
+		logger.WithError(ctx.Err()).Info("Unlinked")
+		registerLinkStop(ctx, l)
 	}()
 
 	go l.run()
 	for _, sub := range as.defaultSubscribers {
 		sub := sub
-		l.subscribeCh <- sub
+		select {
+		case <-l.ctx.Done():
+			return
+		case l.subscribeCh <- sub:
+		}
 		go func() {
-			<-sub.Context().Done()
-			l.unsubscribeCh <- sub
+			select {
+			case <-l.ctx.Done():
+				// Default subscriptions should not be canceled on link failures,
+				// and they should skip the subscribe channel since it will get
+				// closed.
+				return
+			case <-sub.Context().Done():
+			}
+			select {
+			case <-l.ctx.Done():
+				return
+			case l.unsubscribeCh <- sub:
+			}
 		}()
 	}
 	for {
@@ -253,7 +269,11 @@ func (as *ApplicationServer) cancelLink(ctx context.Context, ids ttnpb.Applicati
 		l := val.(*link)
 		log.FromContext(ctx).WithField("application_uid", uid).Debug("Unlink")
 		l.cancel(context.Canceled)
-		<-l.closed
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-l.closed:
+		}
 	} else {
 		as.linkErrors.Delete(uid)
 	}
@@ -265,17 +285,39 @@ func (as *ApplicationServer) getLink(ctx context.Context, ids ttnpb.ApplicationI
 	val, ok := as.links.Load(uid)
 	if !ok {
 		if val, ok := as.linkErrors.Load(uid); ok {
-			if err := val.(error); !errors.IsCanceled(err) {
+			err := val.(error)
+			if err != nil && !errors.IsCanceled(err) {
 				return nil, errLinkFailed.WithCause(err)
 			}
 		}
 		return nil, errNotLinked.WithAttributes("application_uid", uid)
 	}
-	return val.(*link), nil
+	link := val.(*link)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-link.connReady:
+		return link, nil
+	}
+}
+
+func (l *link) observeSubscribe(correlationID string, sub *io.Subscription) {
+	registerSubscribe(events.ContextWithCorrelationID(l.ctx, correlationID), sub)
+	log.FromContext(sub.Context()).Debug("Subscribed")
+}
+
+func (l *link) observeUnsubscribe(correlationID string, sub *io.Subscription) {
+	registerUnsubscribe(events.ContextWithCorrelationID(l.ctx, correlationID), sub)
+	log.FromContext(sub.Context()).Debug("Unsubscribed")
 }
 
 func (l *link) run() {
 	subscribers := make(map[*io.Subscription]string)
+	defer func() {
+		for sub, correlationID := range subscribers {
+			l.observeUnsubscribe(correlationID, sub)
+		}
+	}()
 	for {
 		select {
 		case <-l.ctx.Done():
@@ -283,13 +325,11 @@ func (l *link) run() {
 		case sub := <-l.subscribeCh:
 			correlationID := fmt.Sprintf("as:subscriber:%s", events.NewCorrelationID())
 			subscribers[sub] = correlationID
-			registerSubscribe(events.ContextWithCorrelationID(l.ctx, correlationID), sub)
-			log.FromContext(sub.Context()).Debug("Subscribed")
+			l.observeSubscribe(correlationID, sub)
 		case sub := <-l.unsubscribeCh:
 			if correlationID, ok := subscribers[sub]; ok {
 				delete(subscribers, sub)
-				registerUnsubscribe(events.ContextWithCorrelationID(l.ctx, correlationID), sub)
-				log.FromContext(sub.Context()).Debug("Unsubscribed")
+				l.observeUnsubscribe(correlationID, sub)
 			}
 		case up := <-l.upCh:
 			for sub := range subscribers {
@@ -307,7 +347,6 @@ func (as *ApplicationServer) SendUp(ctx context.Context, up *ttnpb.ApplicationUp
 	if err != nil {
 		return err
 	}
-	<-link.connReady
 	return link.sendUp(ctx, up, func() error { return nil })
 }
 
@@ -319,16 +358,11 @@ func (l *link) sendUp(ctx context.Context, up *ttnpb.ApplicationUp, ack func() e
 	now := time.Now().UTC()
 	up.ReceivedAt = &now
 
-	handleUpErr := l.handleUp(ctx, up, l)
+	pass, handleUpErr := l.handleUp(ctx, up, l)
 	if err := ack(); err != nil {
 		return err
 	}
-
-	switch p := up.Up.(type) {
-	case *ttnpb.ApplicationUp_JoinAccept:
-		p.JoinAccept.AppSKey = nil
-		p.JoinAccept.InvalidatedDownlinks = nil
-	case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
+	if !pass {
 		return nil
 	}
 
@@ -337,10 +371,14 @@ func (l *link) sendUp(ctx context.Context, up *ttnpb.ApplicationUp, ack func() e
 		registerDropUp(ctx, up, handleUpErr)
 		return nil
 	}
-
-	l.upCh <- &io.ContextualApplicationUp{
+	ctxUp := &io.ContextualApplicationUp{
 		Context:       ctx,
 		ApplicationUp: up,
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case l.upCh <- ctxUp:
 	}
 	registerForwardUp(ctx, up)
 	return nil

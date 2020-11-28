@@ -17,39 +17,30 @@ package oauthclient
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
 	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"golang.org/x/oauth2"
 )
-
-// Config is the configuration for the OAuth client.
-type Config struct {
-	AuthorizeURL string `name:"authorize-url" description:"The OAuth Authorize URL"`
-	TokenURL     string `name:"token-url" description:"The OAuth Token Exchange URL"`
-	RootURL      string `name:"-"`
-
-	ClientID     string `name:"client-id" description:"The OAuth client ID"`
-	ClientSecret string `name:"client-secret" description:"The OAuth client secret" json:"-"`
-
-	StateCookieName string `name:"-"`
-	AuthCookieName  string `name:"-"`
-}
 
 // OAuthClient is the OAuth client component.
 type OAuthClient struct {
 	component *component.Component
 	rootURL   string
 	config    Config
+	oauth     OAuth2ConfigProvider
+	nextKey   string
+	callback  Callback
 }
 
 var errNoOAuthConfig = errors.DefineInvalidArgument("no_oauth_config", "no OAuth configuration found for the OAuth client")
 
 func (c Config) isZero() bool {
-	return c.AuthorizeURL == "" || c.TokenURL == "" || c.ClientID == "" || c.ClientSecret == ""
+	return (c.AuthorizeURL == "" || c.TokenURL == "" || c.ClientID == "" || c.ClientSecret == "") && !c.customProvider
 }
 
 func (oc *OAuthClient) getMountPath() string {
@@ -64,17 +55,35 @@ func (oc *OAuthClient) getMountPath() string {
 	return path
 }
 
-// New returns a new OAuth client instance.
-func New(c *component.Component, config Config) (*OAuthClient, error) {
-	if config.isZero() {
-		return nil, errNoOAuthConfig
+func (oc *OAuthClient) withTLSClientConfig(ctx context.Context) (context.Context, error) {
+	config, err := oc.component.GetTLSClientConfig(ctx)
+	if err != nil {
+		return nil, err
 	}
+	return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: config,
+		},
+	}), nil
+}
 
+// New returns a new OAuth client instance.
+func New(c *component.Component, config Config, opts ...Option) (*OAuthClient, error) {
 	oc := &OAuthClient{
 		component: c,
 		config:    config,
+		nextKey:   "next",
+	}
+	oc.callback = oc.defaultCallback
+	oc.oauth = oc.defaultOAuth
+
+	for _, opt := range opts {
+		opt(oc)
 	}
 
+	if oc.config.isZero() {
+		return nil, errNoOAuthConfig.New()
+	}
 	return oc, nil
 }
 
@@ -89,7 +98,7 @@ func (oc *OAuthClient) configFromContext(ctx context.Context) *Config {
 	return &oc.config
 }
 
-func (oc *OAuthClient) oauth(c echo.Context) *oauth2.Config {
+func (oc *OAuthClient) defaultOAuth(c echo.Context) *oauth2.Config {
 	config := oc.configFromContext(c.Request().Context())
 
 	authorizeURL := config.AuthorizeURL

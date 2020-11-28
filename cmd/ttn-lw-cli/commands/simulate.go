@@ -23,16 +23,16 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/band"
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	"go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/band"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 type simulateMetadataParams struct {
@@ -83,15 +83,19 @@ func (m *simulateMetadataParams) setDefaults() error {
 		}
 	}
 	if m.Bandwidth == 0 || m.SpreadingFactor == 0 {
-		drIdx := int(m.DataRateIndex)
-		if drIdx < int(phy.UplinkChannels[0].MinDataRate) || drIdx > int(phy.UplinkChannels[0].MaxDataRate) {
-			drIdx = int(phy.UplinkChannels[0].MaxDataRate)
+		drIdx := ttnpb.DataRateIndex(m.DataRateIndex)
+		if drIdx < phy.UplinkChannels[0].MinDataRate || drIdx > phy.UplinkChannels[0].MaxDataRate {
+			drIdx = phy.UplinkChannels[0].MaxDataRate
 		}
-		dr := phy.DataRates[drIdx].Rate.GetLoRa()
-		m.SpreadingFactor, m.Bandwidth = dr.SpreadingFactor, dr.Bandwidth
+		dr, ok := phy.DataRates[drIdx]
+		if !ok {
+			return errInvalidDataRateIndex
+		}
+		lora := dr.Rate.GetLoRa()
+		m.SpreadingFactor, m.Bandwidth = lora.SpreadingFactor, lora.Bandwidth
 	} else if m.DataRateIndex == 0 {
 		for i, dr := range phy.DataRates {
-			if dr.Rate.GetLoRa().SpreadingFactor == m.SpreadingFactor && dr.Rate.GetLoRa().Bandwidth == m.Bandwidth {
+			if lora := dr.Rate.GetLoRa(); lora != nil && lora.SpreadingFactor == m.SpreadingFactor && lora.Bandwidth == m.Bandwidth {
 				m.DataRateIndex = uint32(i)
 				break
 			}
@@ -124,6 +128,7 @@ type simulateDataUplinkParams struct {
 	ConfFCnt    uint32          `protobuf:"varint,13,opt,name=conf_f_cnt,json=confFCnt,proto3" json:"conf_f_cnt,omitempty"`
 	TxDRIdx     uint32          `protobuf:"varint,14,opt,name=tx_dr_idx,json=txDRIdx,proto3" json:"tx_dr_idx,omitempty"`
 	TxChIdx     uint32          `protobuf:"varint,15,opt,name=tx_ch_idx,json=txChIdx,proto3" json:"tx_ch_idx,omitempty"`
+	FOpts       []byte          `protobuf:"bytes,16,opt,name=f_opts,json=fOpts,proto3" json:"f_opts,omitempty"`
 }
 
 var (
@@ -136,6 +141,12 @@ func simulateDownlinkFlags() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
 	flagSet.Duration("timeout", 20*time.Second, "how long to wait for downlinks")
 	flagSet.Int("downlinks", 1, "how many downlinks to expect")
+	return flagSet
+}
+
+func simulateDataDownlinkFlags() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.Uint32("n_f_cnt_down", 0, "NFCntDown value for FOpts decryption of LoRaWAN 1.1+ frames")
 	return flagSet
 }
 
@@ -173,6 +184,7 @@ func simulate(cmd *cobra.Command, forUp func(*ttnpb.UplinkMessage) error, forDow
 				Time:               uplinkParams.Time,
 				Timestamp:          uplinkParams.Timestamp,
 				RSSI:               uplinkParams.RSSI,
+				ChannelRSSI:        uplinkParams.RSSI,
 				SNR:                uplinkParams.SNR,
 			},
 		},
@@ -180,6 +192,13 @@ func simulate(cmd *cobra.Command, forUp func(*ttnpb.UplinkMessage) error, forDow
 
 	if err = forUp(upMsg); err != nil {
 		return err
+	}
+
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		if err = io.Write(os.Stdout, config.OutputFormat, upMsg); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	gs, err := api.Dial(ctx, config.GatewayServerGRPCAddress)
@@ -235,160 +254,163 @@ func simulate(cmd *cobra.Command, forUp func(*ttnpb.UplinkMessage) error, forDow
 	return ctx.Err()
 }
 
-func processDownlink(dev *ttnpb.EndDevice) func(lastUpMsg *ttnpb.UplinkMessage, downMsg *ttnpb.DownlinkMessage) error {
-	return func(lastUpMsg *ttnpb.UplinkMessage, downMsg *ttnpb.DownlinkMessage) (err error) {
-		phy, err := band.GetByID(dev.FrequencyPlanID)
-		if err != nil {
-			return err
-		}
-		phy, err = phy.Version(dev.LoRaWANPHYVersion)
-		if err != nil {
-			return err
-		}
-
-		downMsg.Payload = &ttnpb.Message{}
-		if err = lorawan.UnmarshalMessage(downMsg.RawPayload, downMsg.Payload); err != nil {
-			return err
-		}
-		switch downMsg.Payload.MType {
-		case ttnpb.MType_JOIN_ACCEPT:
-			joinAcceptPayload := downMsg.Payload.GetJoinAcceptPayload()
-
-			var devEUI, joinEUI types.EUI64
-			var devNonce types.DevNonce
-			if joinReq := lastUpMsg.GetPayload().GetJoinRequestPayload(); joinReq != nil {
-				devEUI, joinEUI = joinReq.DevEUI, joinReq.JoinEUI
-				devNonce = joinReq.DevNonce
-			} else if rejoinReq := lastUpMsg.GetPayload().GetRejoinRequestPayload(); rejoinReq != nil {
-				devEUI, joinEUI = rejoinReq.DevEUI, rejoinReq.JoinEUI
-				devNonce = types.DevNonce{byte(rejoinReq.RejoinCnt), byte(rejoinReq.RejoinCnt >> 8)}
-			}
-
-			var key types.AES128Key
-			if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
-				key = *dev.GetRootKeys().GetNwkKey().Key
-			} else {
-				key = *dev.GetRootKeys().GetAppKey().Key
-			}
-
-			payload, err := crypto.DecryptJoinAccept(key, joinAcceptPayload.GetEncrypted())
-			if err != nil {
-				return err
-			}
-
-			joinAcceptBytes := payload[:len(payload)-4]
-			downMsg.Payload.MIC = payload[len(payload)-4:]
-
-			if err = lorawan.UnmarshalJoinAcceptPayload(joinAcceptBytes, joinAcceptPayload); err != nil {
-				return err
-			}
-
-			var expectedMIC [4]byte
-			if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
-				jsIntKey := crypto.DeriveJSIntKey(key, devEUI)
-				// TODO: Support RejoinRequest (https://github.com/TheThingsNetwork/lorawan-stack/issues/536)
-				expectedMIC, err = crypto.ComputeJoinAcceptMIC(
-					jsIntKey,
-					0xFF,
-					*dev.JoinEUI,
-					lastUpMsg.Payload.GetJoinRequestPayload().DevNonce,
-					append([]byte{downMsg.RawPayload[0]}, joinAcceptBytes...),
-				)
-			} else {
-				expectedMIC, err = crypto.ComputeLegacyJoinAcceptMIC(
-					key,
-					append([]byte{downMsg.RawPayload[0]}, joinAcceptBytes...),
-				)
-			}
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(downMsg.Payload.MIC, expectedMIC[:]) {
-				logger.Warnf("Expected MIC %x but got %x", expectedMIC, downMsg.Payload.MIC)
-			}
-
-			dev.DevAddr, dev.Session.DevAddr = &joinAcceptPayload.DevAddr, joinAcceptPayload.DevAddr
-
-			if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
-				var appKey types.AES128Key
-				appKey = *dev.GetRootKeys().GetAppKey().Key
-				appSKey := crypto.DeriveAppSKey(appKey, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
-				dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
-				logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
-
-				var nwkKey types.AES128Key
-				nwkKey = *dev.GetRootKeys().GetNwkKey().Key
-				fNwkSIntKey := crypto.DeriveFNwkSIntKey(nwkKey, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
-				dev.Session.SessionKeys.FNwkSIntKey = &ttnpb.KeyEnvelope{Key: &fNwkSIntKey}
-				logger.Infof("Derived FNwkSIntKey %X (%s)", fNwkSIntKey[:], base64.StdEncoding.EncodeToString(fNwkSIntKey[:]))
-				sNwkSIntKey := crypto.DeriveSNwkSIntKey(nwkKey, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
-				dev.Session.SessionKeys.SNwkSIntKey = &ttnpb.KeyEnvelope{Key: &sNwkSIntKey}
-				logger.Infof("Derived SNwkSIntKey %X (%s)", sNwkSIntKey[:], base64.StdEncoding.EncodeToString(sNwkSIntKey[:]))
-				nwkSEncKey := crypto.DeriveNwkSEncKey(nwkKey, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
-				dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSEncKey}
-				logger.Infof("Derived NwkSEncKey %X (%s)", nwkSEncKey[:], base64.StdEncoding.EncodeToString(nwkSEncKey[:]))
-			} else {
-				appSKey := crypto.DeriveLegacyAppSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
-				dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
-				logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
-				nwkSKey := crypto.DeriveLegacyNwkSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
-				dev.Session.SessionKeys.FNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
-				dev.Session.SessionKeys.SNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
-				dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
-				logger.Infof("Derived NwkSKey %X (%s)", nwkSKey[:], base64.StdEncoding.EncodeToString(nwkSKey[:]))
-			}
-		case ttnpb.MType_UNCONFIRMED_DOWN, ttnpb.MType_CONFIRMED_DOWN:
-			macPayload := downMsg.Payload.GetMACPayload()
-
-			var expectedMIC [4]byte
-			if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) < 0 {
-				var key types.AES128Key
-				key = *dev.Session.SessionKeys.GetFNwkSIntKey().Key
-				expectedMIC, err = crypto.ComputeLegacyDownlinkMIC(key, macPayload.DevAddr, macPayload.FCnt, downMsg.RawPayload[:len(downMsg.RawPayload)-4])
-			} else {
-				var key types.AES128Key
-				key = *dev.Session.SessionKeys.GetSNwkSIntKey().Key
-				expectedMIC, err = crypto.ComputeDownlinkMIC(key, macPayload.DevAddr, lastUpMsg.GetPayload().GetMACPayload().FCnt, macPayload.FCnt, downMsg.RawPayload[:len(downMsg.RawPayload)-4])
-			}
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(downMsg.Payload.MIC, expectedMIC[:]) {
-				logger.Warnf("Expected MIC %x but got %x", expectedMIC, downMsg.Payload.MIC)
-			}
-
-			var key types.AES128Key
-			if macPayload.FPort == 0 {
-				key = *dev.Session.SessionKeys.GetNwkSEncKey().Key
-			} else {
-				key = *dev.Session.SessionKeys.GetAppSKey().Key
-			}
-
-			macPayload.FRMPayload, err = crypto.DecryptDownlink(key, macPayload.DevAddr, macPayload.FCnt, macPayload.FRMPayload)
-			if err != nil {
-				return err
-			}
-
-			mac := macPayload.FOpts
-			if macPayload.FPort == 0 {
-				mac = macPayload.FRMPayload
-			}
-			var cmds []*ttnpb.MACCommand
-			for r := bytes.NewReader(mac); r.Len() > 0; {
-				cmd := &ttnpb.MACCommand{}
-				if err := lorawan.DefaultMACCommands.ReadDownlink(phy, r, cmd); err != nil {
-					logger.WithFields(log.Fields(
-						"bytes_left", r.Len(),
-						"mac_count", len(cmds),
-					)).WithError(err).Warn("Failed to unmarshal MAC command")
-					break
-				}
-				logger.WithField("cid", cmd.CID).WithField("payload", cmd.GetPayload()).Info("Read MAC command")
-				cmds = append(cmds, cmd)
-			}
-		}
-		return nil
+func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *ttnpb.DownlinkMessage) error {
+	phy, err := band.GetByID(dev.FrequencyPlanID)
+	if err != nil {
+		return err
 	}
+	phy, err = phy.Version(dev.LoRaWANPHYVersion)
+	if err != nil {
+		return err
+	}
+
+	downMsg.Payload = &ttnpb.Message{}
+	if err = lorawan.UnmarshalMessage(downMsg.RawPayload, downMsg.Payload); err != nil {
+		return err
+	}
+	switch downMsg.Payload.MType {
+	case ttnpb.MType_JOIN_ACCEPT:
+		joinAcceptPayload := downMsg.Payload.GetJoinAcceptPayload()
+
+		var devEUI, joinEUI types.EUI64
+		var devNonce types.DevNonce
+		if joinReq := lastUpMsg.GetJoinRequestPayload(); joinReq != nil {
+			devEUI, joinEUI = joinReq.DevEUI, joinReq.JoinEUI
+			devNonce = joinReq.DevNonce
+		} else if rejoinReq := lastUpMsg.GetRejoinRequestPayload(); rejoinReq != nil {
+			devEUI, joinEUI = rejoinReq.DevEUI, rejoinReq.JoinEUI
+			devNonce = types.DevNonce{byte(rejoinReq.RejoinCnt), byte(rejoinReq.RejoinCnt >> 8)}
+		}
+
+		var key types.AES128Key
+		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
+			key = *dev.GetRootKeys().GetNwkKey().Key
+		} else {
+			key = *dev.GetRootKeys().GetAppKey().Key
+		}
+
+		payload, err := crypto.DecryptJoinAccept(key, joinAcceptPayload.GetEncrypted())
+		if err != nil {
+			return err
+		}
+
+		joinAcceptBytes := payload[:len(payload)-4]
+		downMsg.Payload.MIC = payload[len(payload)-4:]
+
+		if err = lorawan.UnmarshalJoinAcceptPayload(joinAcceptBytes, joinAcceptPayload); err != nil {
+			return err
+		}
+
+		var expectedMIC [4]byte
+		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
+			jsIntKey := crypto.DeriveJSIntKey(key, devEUI)
+			// TODO: Support RejoinRequest (https://github.com/TheThingsNetwork/lorawan-stack/issues/536)
+			expectedMIC, err = crypto.ComputeJoinAcceptMIC(
+				jsIntKey,
+				0xFF,
+				*dev.JoinEUI,
+				lastUpMsg.GetJoinRequestPayload().DevNonce,
+				append([]byte{downMsg.RawPayload[0]}, joinAcceptBytes...),
+			)
+		} else {
+			expectedMIC, err = crypto.ComputeLegacyJoinAcceptMIC(
+				key,
+				append([]byte{downMsg.RawPayload[0]}, joinAcceptBytes...),
+			)
+		}
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(downMsg.Payload.MIC, expectedMIC[:]) {
+			logger.Warnf("Expected MIC %x but got %x", expectedMIC, downMsg.Payload.MIC)
+		}
+
+		dev.DevAddr, dev.Session.DevAddr = &joinAcceptPayload.DevAddr, joinAcceptPayload.DevAddr
+
+		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
+			appSKey := crypto.DeriveAppSKey(*dev.GetRootKeys().GetAppKey().Key, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
+			dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
+			logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
+
+			fNwkSIntKey := crypto.DeriveFNwkSIntKey(*dev.GetRootKeys().GetNwkKey().Key, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
+			dev.Session.SessionKeys.FNwkSIntKey = &ttnpb.KeyEnvelope{Key: &fNwkSIntKey}
+			logger.Infof("Derived FNwkSIntKey %X (%s)", fNwkSIntKey[:], base64.StdEncoding.EncodeToString(fNwkSIntKey[:]))
+
+			sNwkSIntKey := crypto.DeriveSNwkSIntKey(*dev.GetRootKeys().GetNwkKey().Key, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
+			dev.Session.SessionKeys.SNwkSIntKey = &ttnpb.KeyEnvelope{Key: &sNwkSIntKey}
+			logger.Infof("Derived SNwkSIntKey %X (%s)", sNwkSIntKey[:], base64.StdEncoding.EncodeToString(sNwkSIntKey[:]))
+
+			nwkSEncKey := crypto.DeriveNwkSEncKey(*dev.GetRootKeys().GetNwkKey().Key, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
+			dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSEncKey}
+			logger.Infof("Derived NwkSEncKey %X (%s)", nwkSEncKey[:], base64.StdEncoding.EncodeToString(nwkSEncKey[:]))
+		} else {
+			appSKey := crypto.DeriveLegacyAppSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
+			dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
+			logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
+
+			nwkSKey := crypto.DeriveLegacyNwkSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
+			dev.Session.SessionKeys.FNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
+			dev.Session.SessionKeys.SNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
+			dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
+			logger.Infof("Derived NwkSKey %X (%s)", nwkSKey[:], base64.StdEncoding.EncodeToString(nwkSKey[:]))
+		}
+	case ttnpb.MType_UNCONFIRMED_DOWN, ttnpb.MType_CONFIRMED_DOWN:
+		macPayload := downMsg.Payload.GetMACPayload()
+
+		var expectedMIC [4]byte
+		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) < 0 {
+			expectedMIC, err = crypto.ComputeLegacyDownlinkMIC(*dev.Session.SessionKeys.GetFNwkSIntKey().Key, macPayload.DevAddr, macPayload.FCnt, downMsg.RawPayload[:len(downMsg.RawPayload)-4])
+		} else {
+			var confFCnt uint32
+			if lastUpMsg.GetMType() == ttnpb.MType_CONFIRMED_UP {
+				confFCnt = lastUpMsg.GetMACPayload().FCnt
+			}
+			expectedMIC, err = crypto.ComputeDownlinkMIC(*dev.Session.SessionKeys.GetSNwkSIntKey().Key, macPayload.DevAddr, confFCnt, macPayload.FCnt, downMsg.RawPayload[:len(downMsg.RawPayload)-4])
+		}
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(downMsg.Payload.MIC, expectedMIC[:]) {
+			logger.Warnf("Expected MIC %x but got %x", expectedMIC, downMsg.Payload.MIC)
+		}
+
+		var payloadKey types.AES128Key
+		if macPayload.FPort == 0 {
+			payloadKey = *dev.Session.SessionKeys.GetNwkSEncKey().Key
+		} else {
+			payloadKey = *dev.Session.SessionKeys.GetAppSKey().Key
+			if len(macPayload.FOpts) > 0 && dev.LoRaWANVersion.EncryptFOpts() {
+				fOpts, err := crypto.DecryptDownlink(*dev.Session.SessionKeys.GetNwkSEncKey().Key, macPayload.DevAddr, dev.Session.LastNFCntDown, macPayload.FOpts, true)
+				if err != nil {
+					return err
+				}
+				macPayload.FOpts = fOpts
+			}
+		}
+		macPayload.FRMPayload, err = crypto.DecryptDownlink(payloadKey, macPayload.DevAddr, macPayload.FCnt, macPayload.FRMPayload, false)
+		if err != nil {
+			return err
+		}
+
+		cmdBuf := macPayload.FOpts
+		if macPayload.FPort == 0 && len(macPayload.FRMPayload) > 0 {
+			cmdBuf = macPayload.FRMPayload
+		}
+		var cmds []*ttnpb.MACCommand
+		for r := bytes.NewReader(cmdBuf); r.Len() > 0; {
+			cmd := &ttnpb.MACCommand{}
+			if err := lorawan.DefaultMACCommands.ReadDownlink(phy, r, cmd); err != nil {
+				logger.WithFields(log.Fields(
+					"bytes_left", r.Len(),
+					"mac_count", len(cmds),
+				)).WithError(err).Warn("Failed to unmarshal MAC command")
+				break
+			}
+			logger.WithField("cid", cmd.CID).WithField("payload", cmd.GetPayload()).Info("Read MAC command")
+			cmds = append(cmds, cmd)
+		}
+	}
+	return nil
 }
 
 var (
@@ -420,28 +442,10 @@ var (
 				return errInvalidPHYVerson
 			}
 
-			processDownlink := processDownlink(&ttnpb.EndDevice{
-				LoRaWANVersion:    uplinkParams.LoRaWANVersion,
-				LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
-				FrequencyPlanID:   uplinkParams.BandID,
-				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					JoinEUI: &joinParams.JoinEUI,
-					DevEUI:  &joinParams.DevEUI,
-				},
-				RootKeys: &ttnpb.RootKeys{
-					NwkKey: &ttnpb.KeyEnvelope{Key: &joinParams.NwkKey},
-					AppKey: &ttnpb.KeyEnvelope{Key: &joinParams.AppKey},
-				},
-				Session: &ttnpb.Session{},
-			})
-
-			var joinRequest *ttnpb.UplinkMessage
-
+			var joinRequest *ttnpb.Message
 			return simulate(cmd,
 				func(upMsg *ttnpb.UplinkMessage) error {
-					joinRequest = upMsg
-
-					upMsg.Payload = &ttnpb.Message{
+					joinRequest = &ttnpb.Message{
 						MHDR: ttnpb.MHDR{
 							MType: ttnpb.MType_JOIN_REQUEST,
 							Major: ttnpb.Major_LORAWAN_R1,
@@ -455,7 +459,7 @@ var (
 						},
 					}
 
-					buf, err := lorawan.MarshalMessage(*upMsg.Payload)
+					buf, err := lorawan.MarshalMessage(*joinRequest)
 					if err != nil {
 						return err
 					}
@@ -469,13 +473,25 @@ var (
 					if err != nil {
 						return err
 					}
-					upMsg.Payload.MIC = mic[:]
-					upMsg.RawPayload = append(buf, upMsg.Payload.MIC...)
-
+					joinRequest.MIC = mic[:]
+					upMsg.RawPayload = append(buf, joinRequest.MIC...)
 					return nil
 				},
 				func(downMsg *ttnpb.DownlinkMessage) error {
-					if err := processDownlink(joinRequest, downMsg); err != nil {
+					if err := processDownlink(&ttnpb.EndDevice{
+						LoRaWANVersion:    uplinkParams.LoRaWANVersion,
+						LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
+						FrequencyPlanID:   uplinkParams.BandID,
+						EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+							JoinEUI: &joinParams.JoinEUI,
+							DevEUI:  &joinParams.DevEUI,
+						},
+						RootKeys: &ttnpb.RootKeys{
+							NwkKey: &ttnpb.KeyEnvelope{Key: &joinParams.NwkKey},
+							AppKey: &ttnpb.KeyEnvelope{Key: &joinParams.AppKey},
+						},
+						Session: &ttnpb.Session{},
+					}, joinRequest, downMsg); err != nil {
 						return err
 					}
 					// Here we can update a persistent end-device.
@@ -484,6 +500,7 @@ var (
 			)
 		},
 	}
+
 	simulateDataUplinkCommand = &cobra.Command{
 		Use:   "uplink",
 		Short: "Simulate a data uplink (EXPERIMENTAL)",
@@ -506,69 +523,72 @@ var (
 				return errInvalidPHYVerson
 			}
 
-			processDownlink := processDownlink(&ttnpb.EndDevice{
-				LoRaWANVersion:    uplinkParams.LoRaWANVersion,
-				LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
-				FrequencyPlanID:   uplinkParams.BandID,
-				Session: &ttnpb.Session{
-					SessionKeys: ttnpb.SessionKeys{
-						FNwkSIntKey: &ttnpb.KeyEnvelope{Key: &dataUplinkParams.FNwkSIntKey},
-						SNwkSIntKey: &ttnpb.KeyEnvelope{Key: &dataUplinkParams.SNwkSIntKey},
-						NwkSEncKey:  &ttnpb.KeyEnvelope{Key: &dataUplinkParams.NwkSEncKey},
-						AppSKey:     &ttnpb.KeyEnvelope{Key: &dataUplinkParams.AppSKey},
-					},
-				},
-			})
-
-			var dataUplink *ttnpb.UplinkMessage
-
+			var dataUplink *ttnpb.Message
 			return simulate(cmd,
 				func(upMsg *ttnpb.UplinkMessage) error {
-					dataUplink = upMsg
-
-					macPayload := &ttnpb.MACPayload{
-						FHDR: ttnpb.FHDR{
-							DevAddr: dataUplinkParams.DevAddr,
-							FCtrl: ttnpb.FCtrl{
-								ADR:       dataUplinkParams.ADR,
-								ADRAckReq: dataUplinkParams.ADRAckReq,
-								Ack:       dataUplinkParams.Ack,
-							},
-							FCnt: dataUplinkParams.FCnt,
-						},
-						FPort: dataUplinkParams.FPort,
+					fOpts := dataUplinkParams.FOpts
+					if len(fOpts) > 0 && uplinkParams.LoRaWANVersion.EncryptFOpts() {
+						buf, err := crypto.EncryptUplink(
+							dataUplinkParams.NwkSEncKey,
+							dataUplinkParams.DevAddr,
+							dataUplinkParams.FCnt,
+							fOpts,
+							true,
+						)
+						if err != nil {
+							return err
+						}
+						fOpts = buf
 					}
 
-					key := dataUplinkParams.AppSKey
+					var key types.AES128Key
 					if dataUplinkParams.FPort == 0 {
 						key = dataUplinkParams.NwkSEncKey
+					} else {
+						key = dataUplinkParams.AppSKey
 					}
-					buf, err := crypto.EncryptUplink(
+					frmPayload, err := crypto.EncryptUplink(
 						key,
 						dataUplinkParams.DevAddr,
 						dataUplinkParams.FCnt,
 						dataUplinkParams.FRMPayload,
+						false,
 					)
 					if err != nil {
 						return err
 					}
-					macPayload.FRMPayload = buf
 
-					upMsg.Payload = &ttnpb.Message{
+					mType := ttnpb.MType_UNCONFIRMED_UP
+					if dataUplinkParams.Confirmed {
+						mType = ttnpb.MType_CONFIRMED_UP
+					}
+					dataUplink = &ttnpb.Message{
 						MHDR: ttnpb.MHDR{
-							MType: ttnpb.MType_UNCONFIRMED_UP,
+							MType: mType,
 							Major: ttnpb.Major_LORAWAN_R1,
 						},
-						Payload: &ttnpb.Message_MACPayload{MACPayload: macPayload},
+						Payload: &ttnpb.Message_MACPayload{
+							MACPayload: &ttnpb.MACPayload{
+								FHDR: ttnpb.FHDR{
+									DevAddr: dataUplinkParams.DevAddr,
+									FCtrl: ttnpb.FCtrl{
+										ADR:       dataUplinkParams.ADR,
+										ADRAckReq: dataUplinkParams.ADRAckReq,
+										Ack:       dataUplinkParams.Ack,
+									},
+									FCnt:  dataUplinkParams.FCnt,
+									FOpts: fOpts,
+								},
+								FPort:      dataUplinkParams.FPort,
+								FRMPayload: frmPayload,
+							},
+						},
 					}
-					if dataUplinkParams.Confirmed {
-						upMsg.Payload.MType = ttnpb.MType_CONFIRMED_UP
-					}
-					buf, err = lorawan.MarshalMessage(*upMsg.Payload)
+
+					buf, err := lorawan.MarshalMessage(*dataUplink)
 					if err != nil {
 						return err
 					}
-
 					var mic [4]byte
 					if uplinkParams.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
 						mic, err = crypto.ComputeUplinkMIC(
@@ -589,13 +609,26 @@ var (
 							buf,
 						)
 					}
-					upMsg.Payload.MIC = mic[:]
-					upMsg.RawPayload = append(buf, upMsg.Payload.MIC...)
-
+					dataUplink.MIC = mic[:]
+					upMsg.RawPayload = append(buf, dataUplink.MIC...)
 					return nil
 				},
 				func(downMsg *ttnpb.DownlinkMessage) error {
-					if err := processDownlink(dataUplink, downMsg); err != nil {
+					lastNFCntDown, _ := cmd.Flags().GetUint32("n_f_cnt_down")
+					if err := processDownlink(&ttnpb.EndDevice{
+						LoRaWANVersion:    uplinkParams.LoRaWANVersion,
+						LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
+						FrequencyPlanID:   uplinkParams.BandID,
+						Session: &ttnpb.Session{
+							LastNFCntDown: lastNFCntDown,
+							SessionKeys: ttnpb.SessionKeys{
+								FNwkSIntKey: &ttnpb.KeyEnvelope{Key: &dataUplinkParams.FNwkSIntKey},
+								SNwkSIntKey: &ttnpb.KeyEnvelope{Key: &dataUplinkParams.SNwkSIntKey},
+								NwkSEncKey:  &ttnpb.KeyEnvelope{Key: &dataUplinkParams.NwkSEncKey},
+								AppSKey:     &ttnpb.KeyEnvelope{Key: &dataUplinkParams.AppSKey},
+							},
+						},
+					}, dataUplink, downMsg); err != nil {
 						return err
 					}
 					// Here we can update a persistent end-device.
@@ -618,9 +651,11 @@ func init() {
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateUplinkFlags)
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDownlinkFlags())
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDataUplinkFlags)
+	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDataDownlinkFlags())
 
 	simulateCommand.AddCommand(simulateDataUplinkCommand)
 
 	simulateCommand.PersistentFlags().String("gateway-api-key", "", "API key used for linking the gateway (optional when using user authentication)")
+	simulateCommand.PersistentFlags().Bool("dry-run", false, "print the message instead of sending it")
 	Root.AddCommand(simulateCommand)
 }

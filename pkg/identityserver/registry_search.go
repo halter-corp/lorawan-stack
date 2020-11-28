@@ -18,10 +18,10 @@ import (
 	"context"
 
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 type registrySearch struct {
@@ -42,7 +42,7 @@ func (rs *registrySearch) memberForSearch(ctx context.Context) (*ttnpb.Organizat
 	if member != nil {
 		return member, nil
 	}
-	return nil, errSearchForbidden
+	return nil, errSearchForbidden.New()
 }
 
 func (rs *registrySearch) SearchApplications(ctx context.Context, req *ttnpb.SearchEntitiesRequest) (*ttnpb.Applications, error) {
@@ -51,6 +51,7 @@ func (rs *registrySearch) SearchApplications(ctx context.Context, req *ttnpb.Sea
 		return nil, err
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -74,6 +75,7 @@ func (rs *registrySearch) SearchApplications(ctx context.Context, req *ttnpb.Sea
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEntities).
 		res.Applications, err = store.GetApplicationStore(db).FindApplications(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err
@@ -92,6 +94,7 @@ func (rs *registrySearch) SearchClients(ctx context.Context, req *ttnpb.SearchEn
 		return nil, err
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.ClientFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -115,6 +118,7 @@ func (rs *registrySearch) SearchClients(ctx context.Context, req *ttnpb.SearchEn
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEntities).
 		res.Clients, err = store.GetClientStore(db).FindClients(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err
@@ -132,7 +136,14 @@ func (rs *registrySearch) SearchGateways(ctx context.Context, req *ttnpb.SearchE
 	if err != nil {
 		return nil, err
 	}
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.GatewayFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	// Backwards compatibility for frequency_plan_id field.
+	if ttnpb.HasAnyField(req.FieldMask.Paths, "frequency_plan_id") {
+		if !ttnpb.HasAnyField(req.FieldMask.Paths, "frequency_plan_ids") {
+			req.FieldMask.Paths = append(req.FieldMask.Paths, "frequency_plan_ids")
+		}
+	}
+	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.GatewayFieldPathsNested, req.FieldMask.Paths, getPaths, []string{"frequency_plan_id"})
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -156,6 +167,7 @@ func (rs *registrySearch) SearchGateways(ctx context.Context, req *ttnpb.SearchE
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEntities).
 		res.Gateways, err = store.GetGatewayStore(db).FindGateways(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err
@@ -164,6 +176,12 @@ func (rs *registrySearch) SearchGateways(ctx context.Context, req *ttnpb.SearchE
 	})
 	if err != nil {
 		return nil, err
+	}
+	for _, gtw := range res.Gateways {
+		// Backwards compatibility for frequency_plan_id field.
+		if len(gtw.FrequencyPlanIDs) > 0 {
+			gtw.FrequencyPlanID = gtw.FrequencyPlanIDs[0]
+		}
 	}
 	return res, nil
 }
@@ -174,6 +192,7 @@ func (rs *registrySearch) SearchOrganizations(ctx context.Context, req *ttnpb.Se
 		return nil, err
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.OrganizationFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -197,6 +216,7 @@ func (rs *registrySearch) SearchOrganizations(ctx context.Context, req *ttnpb.Se
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEntities).
 		res.Organizations, err = store.GetOrganizationStore(db).FindOrganizations(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err
@@ -215,9 +235,10 @@ func (rs *registrySearch) SearchUsers(ctx context.Context, req *ttnpb.SearchEnti
 		return nil, err
 	}
 	if member != nil {
-		return nil, errSearchForbidden
+		return nil, errSearchForbidden.New()
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.UserFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -241,6 +262,7 @@ func (rs *registrySearch) SearchUsers(ctx context.Context, req *ttnpb.SearchEnti
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEntities).
 		res.Users, err = store.GetUserStore(db).FindUsers(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err
@@ -259,6 +281,7 @@ func (rs *registrySearch) SearchEndDevices(ctx context.Context, req *ttnpb.Searc
 		return nil, err
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -275,6 +298,7 @@ func (rs *registrySearch) SearchEndDevices(ctx context.Context, req *ttnpb.Searc
 		if len(ids) == 0 {
 			return nil
 		}
+		ctx = store.WithPagination(ctx, 0, 0, nil) // Reset pagination (already done in FindEndDevices).
 		res.EndDevices, err = store.GetEndDeviceStore(db).FindEndDevices(ctx, ids, &req.FieldMask)
 		if err != nil {
 			return err

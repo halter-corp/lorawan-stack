@@ -15,13 +15,12 @@
 package scheduling
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // DutyCycleWindow is the window in which duty-cycle is enforced.
@@ -60,7 +59,7 @@ type SubBand struct {
 }
 
 // NewSubBand returns a new SubBand considering the given duty-cycle, clock and optionally duty-cycle ceilings.
-func NewSubBand(ctx context.Context, params SubBandParameters, clock Clock, ceilings DutyCycleCeilings) *SubBand {
+func NewSubBand(params SubBandParameters, clock Clock, ceilings DutyCycleCeilings) *SubBand {
 	if ceilings == nil {
 		ceilings = DefaultDutyCycleCeilings
 	}
@@ -72,32 +71,21 @@ func NewSubBand(ctx context.Context, params SubBandParameters, clock Clock, ceil
 	if sb.DutyCycle == 0 {
 		sb.DutyCycle = 1
 	}
-	go sb.gc(ctx)
 	return sb
 }
 
-func (sb *SubBand) gc(ctx context.Context) error {
-	ticker := time.NewTicker(DutyCycleWindow / 2)
-	for {
-		select {
-		case <-ctx.Done():
-			ticker.Stop()
-			return ctx.Err()
-		case <-ticker.C:
-			from := sb.clock.FromServerTime(time.Now()) - ConcentratorTime(DutyCycleWindow)
-			sb.mu.Lock()
-			expired := 0
-			for _, em := range sb.emissions {
-				if em.Ends() < from {
-					expired++
-				} else {
-					break
-				}
-			}
-			sb.emissions = sb.emissions[expired:]
-			sb.mu.Unlock()
+func (sb *SubBand) gc(to ConcentratorTime) {
+	sb.mu.Lock()
+	expired := 0
+	for _, em := range sb.emissions {
+		if em.Ends() < to {
+			expired++
+		} else {
+			break
 		}
 	}
+	sb.emissions = sb.emissions[expired:]
+	sb.mu.Unlock()
 }
 
 // Comprises returns whether the given frequency falls in the sub-band.
@@ -117,7 +105,10 @@ func (sb *SubBand) sum(from, to ConcentratorTime) time.Duration {
 
 // DutyCycleUtilization returns the utilization as a fraction of the available duty-cycle.
 func (sb *SubBand) DutyCycleUtilization() float32 {
-	now := sb.clock.FromServerTime(time.Now())
+	now, ok := sb.clock.FromServerTime(time.Now())
+	if !ok {
+		return 0
+	}
 	sb.mu.RLock()
 	val := sb.sum(now-ConcentratorTime(DutyCycleWindow), now)
 	sb.mu.RUnlock()
@@ -204,4 +195,15 @@ func (sb *SubBand) ScheduleAnytime(d time.Duration, next func() ConcentratorTime
 	}
 	sb.emissions = sb.emissions.Insert(em)
 	return em, nil
+}
+
+// HasOverlap checks if the two sub bands have an overlap.
+func (sb *SubBand) HasOverlap(subBand *SubBand) bool {
+	return subBand.MaxFrequency > sb.MinFrequency && subBand.MinFrequency < sb.MaxFrequency ||
+		subBand.MinFrequency < sb.MaxFrequency && subBand.MaxFrequency > sb.MaxFrequency
+}
+
+// IsIdentical checks if the two sub bands are identical.
+func (sb *SubBand) IsIdentical(subBand *SubBand) bool {
+	return sb.MinFrequency == subBand.MinFrequency && sb.MaxFrequency == subBand.MaxFrequency
 }

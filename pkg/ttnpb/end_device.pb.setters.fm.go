@@ -7,11 +7,11 @@ import (
 	time "time"
 
 	types "github.com/gogo/protobuf/types"
-	go_thethings_network_lorawan_stack_pkg_types "go.thethings.network/lorawan-stack/pkg/types"
+	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 func (dst *Session) SetFields(src *Session, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "dev_addr":
 			if len(subs) > 0 {
@@ -20,7 +20,7 @@ func (dst *Session) SetFields(src *Session, paths ...string) error {
 			if src != nil {
 				dst.DevAddr = src.DevAddr
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.DevAddr
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.DevAddr
 				dst.DevAddr = zero
 			}
 		case "keys":
@@ -91,6 +91,15 @@ func (dst *Session) SetFields(src *Session, paths ...string) error {
 				var zero time.Time
 				dst.StartedAt = zero
 			}
+		case "queued_application_downlinks":
+			if len(subs) > 0 {
+				return fmt.Errorf("'queued_application_downlinks' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.QueuedApplicationDownlinks = src.QueuedApplicationDownlinks
+			} else {
+				dst.QueuedApplicationDownlinks = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -100,7 +109,7 @@ func (dst *Session) SetFields(src *Session, paths ...string) error {
 }
 
 func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "max_eirp":
 			if len(subs) > 0 {
@@ -339,6 +348,31 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 					dst.ADRAckDelayExponent = nil
 				}
 			}
+		case "ping_slot_data_rate_index_value":
+			if len(subs) > 0 {
+				var newDst, newSrc *DataRateIndexValue
+				if (src == nil || src.PingSlotDataRateIndexValue == nil) && dst.PingSlotDataRateIndexValue == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.PingSlotDataRateIndexValue
+				}
+				if dst.PingSlotDataRateIndexValue != nil {
+					newDst = dst.PingSlotDataRateIndexValue
+				} else {
+					newDst = &DataRateIndexValue{}
+					dst.PingSlotDataRateIndexValue = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.PingSlotDataRateIndexValue = src.PingSlotDataRateIndexValue
+				} else {
+					dst.PingSlotDataRateIndexValue = nil
+				}
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -348,7 +382,7 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 }
 
 func (dst *EndDeviceBrand) SetFields(src *EndDeviceBrand, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "id":
 			if len(subs) > 0 {
@@ -398,7 +432,7 @@ func (dst *EndDeviceBrand) SetFields(src *EndDeviceBrand, paths ...string) error
 }
 
 func (dst *EndDeviceModel) SetFields(src *EndDeviceModel, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "brand_id":
 			if len(subs) > 0 {
@@ -439,7 +473,7 @@ func (dst *EndDeviceModel) SetFields(src *EndDeviceModel, paths ...string) error
 }
 
 func (dst *EndDeviceVersionIdentifiers) SetFields(src *EndDeviceVersionIdentifiers, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "brand_id":
 			if len(subs) > 0 {
@@ -490,7 +524,7 @@ func (dst *EndDeviceVersionIdentifiers) SetFields(src *EndDeviceVersionIdentifie
 }
 
 func (dst *EndDeviceVersion) SetFields(src *EndDeviceVersion, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -661,7 +695,7 @@ func (dst *EndDeviceVersion) SetFields(src *EndDeviceVersion, paths ...string) e
 }
 
 func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "class_b_timeout":
 			if len(subs) > 0 {
@@ -730,6 +764,15 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 				dst.PingSlotFrequency = src.PingSlotFrequency
 			} else {
 				dst.PingSlotFrequency = nil
+			}
+		case "beacon_frequency":
+			if len(subs) > 0 {
+				return fmt.Errorf("'beacon_frequency' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.BeaconFrequency = src.BeaconFrequency
+			} else {
+				dst.BeaconFrequency = nil
 			}
 		case "class_c_timeout":
 			if len(subs) > 0 {
@@ -1039,6 +1082,49 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 					dst.DesiredADRAckDelayExponent = nil
 				}
 			}
+		case "desired_ping_slot_data_rate_index":
+			if len(subs) > 0 {
+				var newDst, newSrc *DataRateIndexValue
+				if (src == nil || src.DesiredPingSlotDataRateIndex == nil) && dst.DesiredPingSlotDataRateIndex == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredPingSlotDataRateIndex
+				}
+				if dst.DesiredPingSlotDataRateIndex != nil {
+					newDst = dst.DesiredPingSlotDataRateIndex
+				} else {
+					newDst = &DataRateIndexValue{}
+					dst.DesiredPingSlotDataRateIndex = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DesiredPingSlotDataRateIndex = src.DesiredPingSlotDataRateIndex
+				} else {
+					dst.DesiredPingSlotDataRateIndex = nil
+				}
+			}
+		case "desired_ping_slot_frequency":
+			if len(subs) > 0 {
+				return fmt.Errorf("'desired_ping_slot_frequency' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DesiredPingSlotFrequency = src.DesiredPingSlotFrequency
+			} else {
+				dst.DesiredPingSlotFrequency = nil
+			}
+		case "desired_beacon_frequency":
+			if len(subs) > 0 {
+				return fmt.Errorf("'desired_beacon_frequency' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DesiredBeaconFrequency = src.DesiredBeaconFrequency
+			} else {
+				dst.DesiredBeaconFrequency = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -1048,7 +1134,7 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 }
 
 func (dst *MACState) SetFields(src *MACState, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "current_parameters":
 			if len(subs) > 0 {
@@ -1127,13 +1213,28 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 			}
 		case "ping_slot_periodicity":
 			if len(subs) > 0 {
-				return fmt.Errorf("'ping_slot_periodicity' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.PingSlotPeriodicity = src.PingSlotPeriodicity
+				var newDst, newSrc *PingSlotPeriodValue
+				if (src == nil || src.PingSlotPeriodicity == nil) && dst.PingSlotPeriodicity == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.PingSlotPeriodicity
+				}
+				if dst.PingSlotPeriodicity != nil {
+					newDst = dst.PingSlotPeriodicity
+				} else {
+					newDst = &PingSlotPeriodValue{}
+					dst.PingSlotPeriodicity = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				var zero PingSlotPeriod
-				dst.PingSlotPeriodicity = zero
+				if src != nil {
+					dst.PingSlotPeriodicity = src.PingSlotPeriodicity
+				} else {
+					dst.PingSlotPeriodicity = nil
+				}
 			}
 		case "pending_application_downlink":
 			if len(subs) > 0 {
@@ -1256,6 +1357,60 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 			} else {
 				dst.RecentDownlinks = nil
 			}
+		case "last_network_initiated_downlink_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'last_network_initiated_downlink_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.LastNetworkInitiatedDownlinkAt = src.LastNetworkInitiatedDownlinkAt
+			} else {
+				dst.LastNetworkInitiatedDownlinkAt = nil
+			}
+		case "rejected_adr_data_rate_indexes":
+			if len(subs) > 0 {
+				return fmt.Errorf("'rejected_adr_data_rate_indexes' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RejectedADRDataRateIndexes = src.RejectedADRDataRateIndexes
+			} else {
+				dst.RejectedADRDataRateIndexes = nil
+			}
+		case "rejected_adr_tx_power_indexes":
+			if len(subs) > 0 {
+				return fmt.Errorf("'rejected_adr_tx_power_indexes' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RejectedADRTxPowerIndexes = src.RejectedADRTxPowerIndexes
+			} else {
+				dst.RejectedADRTxPowerIndexes = nil
+			}
+		case "rejected_frequencies":
+			if len(subs) > 0 {
+				return fmt.Errorf("'rejected_frequencies' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RejectedFrequencies = src.RejectedFrequencies
+			} else {
+				dst.RejectedFrequencies = nil
+			}
+		case "last_downlink_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'last_downlink_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.LastDownlinkAt = src.LastDownlinkAt
+			} else {
+				dst.LastDownlinkAt = nil
+			}
+		case "rejected_data_rate_ranges":
+			if len(subs) > 0 {
+				return fmt.Errorf("'rejected_data_rate_ranges' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RejectedDataRateRanges = src.RejectedDataRateRanges
+			} else {
+				dst.RejectedDataRateRanges = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -1265,7 +1420,7 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 }
 
 func (dst *EndDeviceAuthenticationCode) SetFields(src *EndDeviceAuthenticationCode, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "value":
 			if len(subs) > 0 {
@@ -1304,7 +1459,7 @@ func (dst *EndDeviceAuthenticationCode) SetFields(src *EndDeviceAuthenticationCo
 }
 
 func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -1953,6 +2108,25 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 					dst.ClaimAuthenticationCode = nil
 				}
 			}
+		case "skip_payload_crypto":
+			if len(subs) > 0 {
+				return fmt.Errorf("'skip_payload_crypto' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SkipPayloadCrypto = src.SkipPayloadCrypto
+			} else {
+				var zero bool
+				dst.SkipPayloadCrypto = zero
+			}
+		case "skip_payload_crypto_override":
+			if len(subs) > 0 {
+				return fmt.Errorf("'skip_payload_crypto_override' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SkipPayloadCryptoOverride = src.SkipPayloadCryptoOverride
+			} else {
+				dst.SkipPayloadCryptoOverride = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -1962,7 +2136,7 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 }
 
 func (dst *EndDevices) SetFields(src *EndDevices, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_devices":
 			if len(subs) > 0 {
@@ -1982,7 +2156,7 @@ func (dst *EndDevices) SetFields(src *EndDevices, paths ...string) error {
 }
 
 func (dst *CreateEndDeviceRequest) SetFields(src *CreateEndDeviceRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device":
 			if len(subs) > 0 {
@@ -2011,7 +2185,7 @@ func (dst *CreateEndDeviceRequest) SetFields(src *CreateEndDeviceRequest, paths 
 }
 
 func (dst *UpdateEndDeviceRequest) SetFields(src *UpdateEndDeviceRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device":
 			if len(subs) > 0 {
@@ -2050,7 +2224,7 @@ func (dst *UpdateEndDeviceRequest) SetFields(src *UpdateEndDeviceRequest, paths 
 }
 
 func (dst *GetEndDeviceRequest) SetFields(src *GetEndDeviceRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device_ids":
 			if len(subs) > 0 {
@@ -2089,7 +2263,7 @@ func (dst *GetEndDeviceRequest) SetFields(src *GetEndDeviceRequest, paths ...str
 }
 
 func (dst *GetEndDeviceIdentifiersForEUIsRequest) SetFields(src *GetEndDeviceIdentifiersForEUIsRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {
@@ -2098,7 +2272,7 @@ func (dst *GetEndDeviceIdentifiersForEUIsRequest) SetFields(src *GetEndDeviceIde
 			if src != nil {
 				dst.JoinEUI = src.JoinEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.JoinEUI = zero
 			}
 		case "dev_eui":
@@ -2108,7 +2282,7 @@ func (dst *GetEndDeviceIdentifiersForEUIsRequest) SetFields(src *GetEndDeviceIde
 			if src != nil {
 				dst.DevEUI = src.DevEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.DevEUI = zero
 			}
 
@@ -2120,7 +2294,7 @@ func (dst *GetEndDeviceIdentifiersForEUIsRequest) SetFields(src *GetEndDeviceIde
 }
 
 func (dst *ListEndDevicesRequest) SetFields(src *ListEndDevicesRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -2189,7 +2363,7 @@ func (dst *ListEndDevicesRequest) SetFields(src *ListEndDevicesRequest, paths ..
 }
 
 func (dst *SetEndDeviceRequest) SetFields(src *SetEndDeviceRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device":
 			if len(subs) > 0 {
@@ -2228,7 +2402,7 @@ func (dst *SetEndDeviceRequest) SetFields(src *SetEndDeviceRequest, paths ...str
 }
 
 func (dst *EndDeviceTemplate) SetFields(src *EndDeviceTemplate, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device":
 			if len(subs) > 0 {
@@ -2277,7 +2451,7 @@ func (dst *EndDeviceTemplate) SetFields(src *EndDeviceTemplate, paths ...string)
 }
 
 func (dst *EndDeviceTemplateFormat) SetFields(src *EndDeviceTemplateFormat, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "name":
 			if len(subs) > 0 {
@@ -2317,7 +2491,7 @@ func (dst *EndDeviceTemplateFormat) SetFields(src *EndDeviceTemplateFormat, path
 }
 
 func (dst *EndDeviceTemplateFormats) SetFields(src *EndDeviceTemplateFormats, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "formats":
 			if len(subs) > 0 {
@@ -2337,7 +2511,7 @@ func (dst *EndDeviceTemplateFormats) SetFields(src *EndDeviceTemplateFormats, pa
 }
 
 func (dst *ConvertEndDeviceTemplateRequest) SetFields(src *ConvertEndDeviceTemplateRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "format_id":
 			if len(subs) > 0 {
@@ -2367,7 +2541,7 @@ func (dst *ConvertEndDeviceTemplateRequest) SetFields(src *ConvertEndDeviceTempl
 }
 
 func (dst *MACParameters_Channel) SetFields(src *MACParameters_Channel, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "uplink_frequency":
 			if len(subs) > 0 {
@@ -2428,7 +2602,7 @@ func (dst *MACParameters_Channel) SetFields(src *MACParameters_Channel, paths ..
 }
 
 func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "payload":
 			if len(subs) > 0 {
@@ -2474,6 +2648,66 @@ func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...str
 					var zero SessionKeys
 					dst.Keys = zero
 				}
+			}
+		case "correlation_ids":
+			if len(subs) > 0 {
+				return fmt.Errorf("'correlation_ids' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.CorrelationIDs = src.CorrelationIDs
+			} else {
+				dst.CorrelationIDs = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *MACState_DataRateRange) SetFields(src *MACState_DataRateRange, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "min_data_rate_index":
+			if len(subs) > 0 {
+				return fmt.Errorf("'min_data_rate_index' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.MinDataRateIndex = src.MinDataRateIndex
+			} else {
+				var zero DataRateIndex
+				dst.MinDataRateIndex = zero
+			}
+		case "max_data_rate_index":
+			if len(subs) > 0 {
+				return fmt.Errorf("'max_data_rate_index' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.MaxDataRateIndex = src.MaxDataRateIndex
+			} else {
+				var zero DataRateIndex
+				dst.MaxDataRateIndex = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *MACState_DataRateRanges) SetFields(src *MACState_DataRateRanges, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "ranges":
+			if len(subs) > 0 {
+				return fmt.Errorf("'ranges' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Ranges = src.Ranges
+			} else {
+				dst.Ranges = nil
 			}
 
 		default:

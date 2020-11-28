@@ -33,22 +33,23 @@ import (
 	nats_test_server "github.com/nats-io/nats-server/v2/test"
 	nats_client "github.com/nats-io/nats.go"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver"
-	iopubsubredis "go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/redis"
-	iowebredis "go.thethings.network/lorawan-stack/pkg/applicationserver/io/web/redis"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/redis"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver"
+	iopubsubredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/redis"
+	iowebredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -91,8 +92,43 @@ func TestApplicationServer(t *testing.T) {
 			FirmwareVersion: "1.1",
 		},
 		Formatters: &ttnpb.MessagePayloadFormatters{
-			UpFormatter:   ttnpb.PayloadFormatter_FORMATTER_REPOSITORY,
-			DownFormatter: ttnpb.PayloadFormatter_FORMATTER_REPOSITORY,
+			UpFormatter: ttnpb.PayloadFormatter_FORMATTER_JAVASCRIPT,
+			UpFormatterParameter: `function decodeUplink(input) {
+				var sum = 0;
+				for (i = 0; i < input.bytes.length; i++) {
+					sum += input.bytes[i];
+				}
+				return {
+					data: {
+						sum: sum
+					}
+				};
+			}
+			`,
+			DownFormatter: ttnpb.PayloadFormatter_FORMATTER_JAVASCRIPT,
+			DownFormatterParameter: `function encodeDownlink(input) {
+				var bytes = [];
+				for (i = 0; i < input.data.sum; i++) {
+					bytes[i] = 1;
+				}
+				return {
+					bytes: bytes,
+					fPort: input.fPort
+				};
+			}
+
+			function decodeDownlink(input) {
+				var sum = 0;
+				for (i = 0; i < input.bytes.length; i++) {
+					sum += input.bytes[i];
+				}
+				return {
+					data: {
+						sum: sum
+					}
+				}
+			}
+			`,
 		},
 	}
 
@@ -104,44 +140,6 @@ func TestApplicationServer(t *testing.T) {
 		JoinEUI:                eui64Ptr(types.EUI64{0x24, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
 		DevEUI:                 eui64Ptr(types.EUI64{0x24, 0x24, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
 	}
-
-	deviceRepositoryData := map[string][]byte{
-		"brands.yml": []byte(`version: '3'
-brands:
-thethingsproducts:
-  name: The Things Products
-  url: https://www.thethingsnetwork.org`),
-		"thethingsproducts/devices.yml": []byte(`version: '3'
-devices:
-  thethingsnode:
-    name: The Things Node`),
-		"thethingsproducts/thethingsnode/versions.yml": []byte(`version: '3'
-hardware_versions:
-  '1.0':
-    - firmware_version: 1.1
-      payload_format:
-        up:
-          type: javascript
-          parameter: decoder.js
-        down:
-          type: javascript
-          parameter: encoder.js`),
-		"thethingsproducts/thethingsnode/1.0/decoder.js": []byte(`function Decoder(payload, f_port) {
-	var sum = 0;
-	for (i = 0; i < payload.length; i++) {
-		sum += payload[i];
-	}
-	return {
-		sum: sum
-	};
-}`),
-		"thethingsproducts/thethingsnode/1.0/encoder.js": []byte(`function Encoder(payload, f_port) {
-	var res = [];
-	for (i = 0; i < payload.sum; i++) {
-		res[i] = 1;
-	}
-	return res;
-}`)}
 
 	ctx := test.Context()
 	is, isAddr := startMockIS(ctx)
@@ -250,14 +248,10 @@ hardware_versions:
 			HTTP: config.HTTP{
 				Listen: ":8099",
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 				JoinServer:     jsAddr,
 				NetworkServer:  nsAddr,
-			},
-			DeviceRepository: config.DeviceRepositoryConfig{
-				ConfigSource: "static",
-				Static:       deviceRepositoryData,
 			},
 			KeyVault: config.KeyVault{
 				Provider: "static",
@@ -282,6 +276,9 @@ hardware_versions:
 		},
 		PubSub: applicationserver.PubSubConfig{
 			Registry: pubsubRegistry,
+		},
+		EndDeviceFetcher: applicationserver.EndDeviceFetcherConfig{
+			Fetcher: &noopEndDeviceFetcher{},
 		},
 	}
 	as, err := applicationserver.New(c, config)
@@ -476,8 +473,14 @@ hardware_versions:
 						DownlinkQueued: &ttnpb.ApplicationPubSub_Message{
 							Topic: "up.downlink.queued",
 						},
+						DownlinkQueueInvalidated: &ttnpb.ApplicationPubSub_Message{
+							Topic: "up.downlink.invalidated",
+						},
 						LocationSolved: &ttnpb.ApplicationPubSub_Message{
 							Topic: "up.location.solved",
+						},
+						ServiceData: &ttnpb.ApplicationPubSub_Message{
+							Topic: "up.service.data",
 						},
 					},
 					FieldMask: pbtypes.FieldMask{
@@ -487,11 +490,13 @@ hardware_versions:
 							"downlink_failed",
 							"downlink_nack",
 							"downlink_queued",
+							"downlink_queue_invalidated",
 							"downlink_sent",
 							"downlink_push",
 							"downlink_replace",
 							"format",
 							"provider",
+							"service_data",
 							"join_accept",
 							"location_solved",
 							"uplink_message",
@@ -556,7 +561,7 @@ hardware_versions:
 					return ctx.Err()
 				}
 			},
-			SkipCheckDownErr: true, // There is no direct error response in PubSub.
+			SkipCheckDownErr: true, // There is no direct error response in pub/sub.
 		},
 		{
 			Protocol: "pubsub/mqtt",
@@ -612,8 +617,14 @@ hardware_versions:
 						DownlinkQueued: &ttnpb.ApplicationPubSub_Message{
 							Topic: "up/downlink/queued",
 						},
+						DownlinkQueueInvalidated: &ttnpb.ApplicationPubSub_Message{
+							Topic: "up/downlink/invalidated",
+						},
 						LocationSolved: &ttnpb.ApplicationPubSub_Message{
 							Topic: "up/location/solved",
+						},
+						ServiceData: &ttnpb.ApplicationPubSub_Message{
+							Topic: "up/service/data",
 						},
 					},
 					FieldMask: pbtypes.FieldMask{
@@ -623,11 +634,13 @@ hardware_versions:
 							"downlink_failed",
 							"downlink_nack",
 							"downlink_queued",
+							"downlink_queue_invalidated",
 							"downlink_sent",
 							"downlink_push",
 							"downlink_replace",
 							"format",
 							"provider",
+							"service_data",
 							"join_accept",
 							"location_solved",
 							"uplink_message",
@@ -694,7 +707,7 @@ hardware_versions:
 					return ctx.Err()
 				}
 			},
-			SkipCheckDownErr: true, // There is no direct error response in PubSub.
+			SkipCheckDownErr: true, // There is no direct error response in pub/sub.
 		},
 		{
 			Protocol: "webhooks",
@@ -736,12 +749,14 @@ hardware_versions:
 						DownlinkSent:                  &ttnpb.ApplicationWebhook_Message{Path: ""},
 						DownlinkFailed:                &ttnpb.ApplicationWebhook_Message{Path: ""},
 						LocationSolved:                &ttnpb.ApplicationWebhook_Message{Path: ""},
+						ServiceData:                   &ttnpb.ApplicationWebhook_Message{Path: ""},
 					},
 					FieldMask: pbtypes.FieldMask{
 						Paths: []string{
 							"base_url",
 							"format",
 							"uplink_message",
+							"service_data",
 							"join_accept",
 							"downlink_ack",
 							"downlink_nack",
@@ -816,7 +831,7 @@ hardware_versions:
 				},
 			} {
 				t.Run(ctc.Name, func(t *testing.T) {
-					ctx, cancel := context.WithDeadline(ctx, time.Now().Add(2*Timeout))
+					ctx, cancel := context.WithDeadline(ctx, time.Now().Add(8*Timeout))
 					chs := &connChannels{
 						up:          make(chan *ttnpb.ApplicationUp, 1),
 						downPush:    make(chan *ttnpb.DownlinkQueueRequest),
@@ -851,7 +866,7 @@ hardware_versions:
 				defer wg.Done()
 				err := ptc.Connect(ctx, t, registeredApplicationID, registeredApplicationKey, chs)
 				if !errors.IsCanceled(err) {
-					t.Fatalf("Expected context canceled, but have %v", err)
+					t.Errorf("Expected context canceled, but have %v", err)
 				}
 			}()
 			// Wait for connection to establish.
@@ -1056,7 +1071,7 @@ hardware_versions:
 										KEKLabel:     "test",
 									},
 								},
-								LastAFCntDown: 2,
+								LastAFCntDown: 0,
 								StartedAt:     dev.Session.StartedAt,
 							})
 							a.So(dev.PendingSession, should.Resemble, &ttnpb.Session{
@@ -1068,21 +1083,39 @@ hardware_versions:
 										KEKLabel:     "test",
 									},
 								},
-								LastAFCntDown: 0,
+								LastAFCntDown: 2,
 								StartedAt:     dev.PendingSession.StartedAt,
 							})
 							a.So(queue, should.Resemble, []*ttnpb.ApplicationDownlink{
 								{
 									SessionKeyID: []byte{0x22},
 									FPort:        11,
-									FCnt:         1,
+									FCnt:         11,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4,
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x22},
 									FPort:        22,
-									FCnt:         2,
+									FCnt:         22,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8,
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1151,12 +1184,42 @@ hardware_versions:
 										FPort:        42,
 										FCnt:         42,
 										FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+										DecodedPayload: &pbtypes.Struct{
+											Fields: map[string]*pbtypes.Value{
+												"sum": {
+													Kind: &pbtypes.Value_NumberValue{
+														NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+													},
+												},
+											},
+										},
 									},
 								},
 								CorrelationIDs: up.CorrelationIDs,
 								ReceivedAt:     up.ReceivedAt,
 							})
 						},
+					},
+					{
+						Name: "RegisteredDevice/DownlinkMessage/QueueInvalidated",
+						IDs:  registeredDevice.EndDeviceIdentifiers,
+						Message: &ttnpb.ApplicationUp{
+							EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x33, 0x33, 0x33, 0x33}),
+							Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+								DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+									Downlinks: []*ttnpb.ApplicationDownlink{
+										{
+											SessionKeyID: []byte{0x33},
+											FPort:        42,
+											FCnt:         42,
+											FRMPayload:   []byte{0x50, 0xd, 0x40, 0xd5},
+										},
+									},
+									LastFCntDown: 42,
+								},
+							},
+						},
+						ExpectTimeout: true, // Payload encryption is carried out by AS; this message is not sent upstream.
 					},
 					{
 						Name: "RegisteredDevice/DownlinkMessage/Sent",
@@ -1169,6 +1232,15 @@ hardware_versions:
 									FPort:        42,
 									FCnt:         42,
 									FRMPayload:   []byte{0x50, 0xd, 0x40, 0xd5},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 370,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -1182,6 +1254,15 @@ hardware_versions:
 										FPort:        42,
 										FCnt:         42,
 										FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+										DecodedPayload: &pbtypes.Struct{
+											Fields: map[string]*pbtypes.Value{
+												"sum": {
+													Kind: &pbtypes.Value_NumberValue{
+														NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+													},
+												},
+											},
+										},
 									},
 								},
 								CorrelationIDs: up.CorrelationIDs,
@@ -1219,6 +1300,15 @@ hardware_versions:
 											FPort:        42,
 											FCnt:         42,
 											FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+											DecodedPayload: &pbtypes.Struct{
+												Fields: map[string]*pbtypes.Value{
+													"sum": {
+														Kind: &pbtypes.Value_NumberValue{
+															NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+														},
+													},
+												},
+											},
 										},
 										Error: ttnpb.ErrorDetails{
 											Name: "test",
@@ -1254,6 +1344,15 @@ hardware_versions:
 										FPort:        42,
 										FCnt:         42,
 										FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+										DecodedPayload: &pbtypes.Struct{
+											Fields: map[string]*pbtypes.Value{
+												"sum": {
+													Kind: &pbtypes.Value_NumberValue{
+														NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+													},
+												},
+											},
+										},
 									},
 								},
 								CorrelationIDs: up.CorrelationIDs,
@@ -1293,6 +1392,15 @@ hardware_versions:
 										FPort:        11,
 										FCnt:         1,
 										FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+										DecodedPayload: &pbtypes.Struct{
+											Fields: map[string]*pbtypes.Value{
+												"sum": {
+													Kind: &pbtypes.Value_NumberValue{
+														NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+													},
+												},
+											},
+										},
 									},
 								},
 								CorrelationIDs: up.CorrelationIDs,
@@ -1307,12 +1415,30 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         2,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x33},
 									FPort:        22,
 									FCnt:         3,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1331,6 +1457,20 @@ hardware_versions:
 										KEKLabel:     "test",
 									},
 									PendingSession: true,
+									InvalidatedDownlinks: []*ttnpb.ApplicationDownlink{
+										{
+											SessionKeyID: []byte{0x33},
+											FPort:        11,
+											FCnt:         2,
+											FRMPayload:   []byte{0x91, 0xfd, 0x90, 0xf6},
+										},
+										{
+											SessionKeyID: []byte{0x33},
+											FPort:        22,
+											FCnt:         3,
+											FRMPayload:   []byte{0x2f, 0x3f, 0x31, 0x2c},
+										},
+									},
 								},
 							},
 						},
@@ -1371,7 +1511,7 @@ hardware_versions:
 										KEKLabel:     "test",
 									},
 								},
-								LastAFCntDown: 0,
+								LastAFCntDown: 2,
 								StartedAt:     dev.PendingSession.StartedAt,
 							})
 							a.So(queue, should.Resemble, []*ttnpb.ApplicationDownlink{
@@ -1380,12 +1520,30 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         2,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x33},
 									FPort:        22,
 									FCnt:         3,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1450,12 +1608,30 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         1,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x44},
 									FPort:        22,
 									FCnt:         2,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1494,14 +1670,51 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         43,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x44},
 									FPort:        22,
 									FCnt:         44,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
+						},
+					},
+					{
+						Name: "RegisteredDevice/DownlinkQueueInvalidated/KnownSession/NoDownlinks",
+						IDs:  registeredDevice.EndDeviceIdentifiers,
+						Message: &ttnpb.ApplicationUp{
+							EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x44, 0x44, 0x44, 0x44}),
+							Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+								DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+									Downlinks:    nil,
+									LastFCntDown: 46,
+								},
+							},
+						},
+						ResetQueue: make([]*ttnpb.ApplicationDownlink, 0),
+						AssertDevice: func(t *testing.T, dev *ttnpb.EndDevice, queue []*ttnpb.ApplicationDownlink) {
+							a := assertions.New(t)
+							a.So(dev.Session.LastAFCntDown, should.Equal, 46)
+							a.So(queue, should.Resemble, []*ttnpb.ApplicationDownlink(nil))
 						},
 					},
 					{
@@ -1544,12 +1757,30 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         85,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x44},
 									FPort:        22,
 									FCnt:         86,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1614,12 +1845,30 @@ hardware_versions:
 									FPort:        11,
 									FCnt:         1,
 									FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 4, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 								{
 									SessionKeyID: []byte{0x55},
 									FPort:        22,
 									FCnt:         2,
 									FRMPayload:   []byte{0x2, 0x2, 0x2, 0x2},
+									DecodedPayload: &pbtypes.Struct{
+										Fields: map[string]*pbtypes.Value{
+											"sum": {
+												Kind: &pbtypes.Value_NumberValue{
+													NumberValue: 8, // Payload formatter sums the bytes in FRMPayload.
+												},
+											},
+										},
+									},
 								},
 							})
 						},
@@ -1802,24 +2051,51 @@ hardware_versions:
 					if a.So(err, should.BeNil) && a.So(res, should.HaveLength, 3) {
 						a.So(res, should.Resemble, []*ttnpb.ApplicationDownlink{
 							{
-								SessionKeyID:   []byte{0x11},
-								FPort:          11,
-								FCnt:           1,
-								FRMPayload:     []byte{0x1, 0x1, 0x1},
+								SessionKeyID: []byte{0x11},
+								FPort:        11,
+								FCnt:         1,
+								FRMPayload:   []byte{0x1, 0x1, 0x1},
+								DecodedPayload: &pbtypes.Struct{
+									Fields: map[string]*pbtypes.Value{
+										"sum": {
+											Kind: &pbtypes.Value_NumberValue{
+												NumberValue: 3,
+											},
+										},
+									},
+								},
 								CorrelationIDs: res[0].CorrelationIDs,
 							},
 							{
-								SessionKeyID:   []byte{0x11},
-								FPort:          22,
-								FCnt:           2,
-								FRMPayload:     []byte{0x2, 0x2, 0x2},
+								SessionKeyID: []byte{0x11},
+								FPort:        22,
+								FCnt:         2,
+								FRMPayload:   []byte{0x2, 0x2, 0x2},
+								DecodedPayload: &pbtypes.Struct{
+									Fields: map[string]*pbtypes.Value{
+										"sum": {
+											Kind: &pbtypes.Value_NumberValue{
+												NumberValue: 6,
+											},
+										},
+									},
+								},
 								CorrelationIDs: res[1].CorrelationIDs,
 							},
 							{
-								SessionKeyID:   []byte{0x11},
-								FPort:          33,
-								FCnt:           3,
-								FRMPayload:     []byte{0x1, 0x1, 0x1, 0x1, 0x1, 0x1},
+								SessionKeyID: []byte{0x11},
+								FPort:        33,
+								FCnt:         3,
+								FRMPayload:   []byte{0x1, 0x1, 0x1, 0x1, 0x1, 0x1},
+								DecodedPayload: &pbtypes.Struct{
+									Fields: map[string]*pbtypes.Value{
+										"sum": {
+											Kind: &pbtypes.Value_NumberValue{
+												NumberValue: 6,
+											},
+										},
+									},
+								},
 								CorrelationIDs: res[2].CorrelationIDs,
 							},
 						})
@@ -1861,17 +2137,35 @@ hardware_versions:
 					if a.So(err, should.BeNil) && a.So(res, should.HaveLength, 2) {
 						a.So(res, should.Resemble, []*ttnpb.ApplicationDownlink{
 							{
-								SessionKeyID:   []byte{0x11},
-								FPort:          11,
-								FCnt:           4,
-								FRMPayload:     []byte{0x1, 0x1, 0x1},
+								SessionKeyID: []byte{0x11},
+								FPort:        11,
+								FCnt:         4,
+								FRMPayload:   []byte{0x1, 0x1, 0x1},
+								DecodedPayload: &pbtypes.Struct{
+									Fields: map[string]*pbtypes.Value{
+										"sum": {
+											Kind: &pbtypes.Value_NumberValue{
+												NumberValue: 3,
+											},
+										},
+									},
+								},
 								CorrelationIDs: res[0].CorrelationIDs,
 							},
 							{
-								SessionKeyID:   []byte{0x11},
-								FPort:          22,
-								FCnt:           5,
-								FRMPayload:     []byte{0x2, 0x2, 0x2},
+								SessionKeyID: []byte{0x11},
+								FPort:        22,
+								FCnt:         5,
+								FRMPayload:   []byte{0x2, 0x2, 0x2},
+								DecodedPayload: &pbtypes.Struct{
+									Fields: map[string]*pbtypes.Value{
+										"sum": {
+											Kind: &pbtypes.Value_NumberValue{
+												NumberValue: 6,
+											},
+										},
+									},
+								},
 								CorrelationIDs: res[1].CorrelationIDs,
 							},
 						})
@@ -1881,6 +2175,470 @@ hardware_versions:
 
 			cancel()
 			wg.Wait()
+		})
+	}
+}
+
+func TestSkipPayloadCrypto(t *testing.T) {
+	a := assertions.New(t)
+
+	// This application will be added to the Entity Registry and to the link registry of the Application Server so that it
+	// links automatically on start to the Network Server.
+	registeredApplicationID := ttnpb.ApplicationIdentifiers{ApplicationID: "foo-app"}
+	registeredApplicationKey := "secret"
+
+	// This device gets registered in the device registry of the Application Server.
+	registeredDevice := &ttnpb.EndDevice{
+		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+			ApplicationIdentifiers: registeredApplicationID,
+			DeviceID:               "foo-device",
+			JoinEUI:                eui64Ptr(types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
+			DevEUI:                 eui64Ptr(types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
+		},
+	}
+
+	ctx := test.Context()
+	is, isAddr := startMockIS(ctx)
+	js, jsAddr := startMockJS(ctx)
+	ns, nsAddr := startMockNS(ctx, func(md rpcmetadata.MD) bool {
+		return md.AuthType == "Bearer" && md.AuthValue == registeredApplicationKey
+	})
+
+	// Register the application in the Entity Registry.
+	is.add(ctx, registeredApplicationID, registeredApplicationKey)
+
+	// Register some sessions in the Join Server. Sometimes the keys are sent by the Network Server as part of the
+	// join-accept, and sometimes they are not sent by the Network Server so the Application Server gets them from the
+	// Join Server.
+	js.add(ctx, *registeredDevice.DevEUI, []byte{0x11}, ttnpb.KeyEnvelope{
+		// AppSKey is []byte{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}.
+		EncryptedKey: []byte{0xa8, 0x11, 0x8f, 0x80, 0x2e, 0xbf, 0x8, 0xdc, 0x62, 0x37, 0xc3, 0x4, 0x63, 0xa2, 0xfa, 0xcb, 0xf8, 0x87, 0xaa, 0x31, 0x90, 0x23, 0x85, 0xc1},
+		KEKLabel:     "test",
+	})
+	js.add(ctx, *registeredDevice.DevEUI, []byte{0x22}, ttnpb.KeyEnvelope{
+		// AppSKey is []byte{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22}
+		EncryptedKey: []byte{0x39, 0x11, 0x40, 0x98, 0xa1, 0x5d, 0x6f, 0x92, 0xd7, 0xf0, 0x13, 0x21, 0x5b, 0x5b, 0x41, 0xa8, 0x98, 0x2d, 0xac, 0x59, 0x34, 0x76, 0x36, 0x18},
+		KEKLabel:     "test",
+	})
+	js.add(ctx, *registeredDevice.DevEUI, []byte{0x33}, ttnpb.KeyEnvelope{
+		// AppSKey is []byte{0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33}
+		EncryptedKey: []byte{0x5, 0x81, 0xe1, 0x15, 0x8a, 0xc3, 0x13, 0x68, 0x5e, 0x8d, 0x15, 0xc0, 0x11, 0x92, 0x14, 0x49, 0x9f, 0xa0, 0xc6, 0xf1, 0xdb, 0x95, 0xff, 0xbd},
+		KEKLabel:     "test",
+	})
+	js.add(ctx, *registeredDevice.DevEUI, []byte{0x44}, ttnpb.KeyEnvelope{
+		// AppSKey is []byte{0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44}
+		EncryptedKey: []byte{0x30, 0xcf, 0x47, 0x91, 0x11, 0x64, 0x53, 0x3f, 0xc3, 0xd5, 0xd8, 0x56, 0x5b, 0x71, 0xcb, 0xe7, 0x6d, 0x14, 0x2b, 0x2c, 0xf2, 0xc2, 0xd7, 0x7b},
+		KEKLabel:     "test",
+	})
+	js.add(ctx, *registeredDevice.DevEUI, []byte{0x55}, ttnpb.KeyEnvelope{
+		// AppSKey is []byte{0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}
+		EncryptedKey: []byte{0x56, 0x15, 0xaa, 0x22, 0xb7, 0x5f, 0xc, 0x24, 0x79, 0x6, 0x84, 0x68, 0x89, 0x0, 0xa6, 0x16, 0x4a, 0x9c, 0xef, 0xdb, 0xbf, 0x61, 0x6f, 0x0},
+		KEKLabel:     "test",
+	})
+
+	devsRedisClient, devsFlush := test.NewRedis(t, "applicationserver_test", "devices")
+	defer devsFlush()
+	defer devsRedisClient.Close()
+	deviceRegistry := &redis.DeviceRegistry{Redis: devsRedisClient}
+
+	linksRedisClient, linksFlush := test.NewRedis(t, "applicationserver_test", "links")
+	defer linksFlush()
+	defer linksRedisClient.Close()
+	linkRegistry := &redis.LinkRegistry{Redis: linksRedisClient}
+	_, err := linkRegistry.Set(ctx, registeredApplicationID, nil, func(_ *ttnpb.ApplicationLink) (*ttnpb.ApplicationLink, []string, error) {
+		return &ttnpb.ApplicationLink{
+			APIKey:            registeredApplicationKey,
+			SkipPayloadCrypto: &pbtypes.BoolValue{Value: true},
+		}, []string{"api_key", "skip_payload_crypto"}, nil
+	})
+	if err != nil {
+		t.Fatalf("Failed to set link in registry: %s", err)
+	}
+
+	c := componenttest.NewComponent(t, &component.Config{
+		ServiceBase: config.ServiceBase{
+			GRPC: config.GRPC{
+				Listen:                      ":0",
+				AllowInsecureForCredentials: true,
+			},
+			Cluster: cluster.Config{
+				IdentityServer: isAddr,
+				JoinServer:     jsAddr,
+				NetworkServer:  nsAddr,
+			},
+			KeyVault: config.KeyVault{
+				Provider: "static",
+				Static: map[string][]byte{
+					"known": {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
+				},
+			},
+		},
+	})
+	config := &applicationserver.Config{
+		LinkMode: "all",
+		Devices:  deviceRegistry,
+		Links:    linkRegistry,
+		EndDeviceFetcher: applicationserver.EndDeviceFetcherConfig{
+			Fetcher: &noopEndDeviceFetcher{},
+		},
+	}
+	as, err := applicationserver.New(c, config)
+	if !a.So(err, should.BeNil) {
+		t.FailNow()
+	}
+
+	roles := as.Roles()
+	a.So(len(roles), should.Equal, 1)
+	a.So(roles[0], should.Equal, ttnpb.ClusterRole_APPLICATION_SERVER)
+
+	componenttest.StartComponent(t, c)
+	defer c.Close()
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_NETWORK_SERVER)
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_JOIN_SERVER)
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
+
+	// Delay for the AS-NS link to establish.
+	time.Sleep(Timeout)
+
+	chs := &connChannels{
+		up:          make(chan *ttnpb.ApplicationUp, 1),
+		downPush:    make(chan *ttnpb.DownlinkQueueRequest),
+		downReplace: make(chan *ttnpb.DownlinkQueueRequest),
+		downErr:     make(chan error, 1),
+	}
+	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
+		AuthType:      "Bearer",
+		AuthValue:     registeredApplicationKey,
+		AllowInsecure: true,
+	})
+	client := ttnpb.NewAppAsClient(as.LoopbackConn())
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stream, err := client.Subscribe(ctx, &registeredApplicationID, creds)
+	if err != nil {
+		t.Fatalf("Failed to subscribe: %v", err)
+	}
+	// Read upstream.
+	go func() {
+		for {
+			msg, err := stream.Recv()
+			if err != nil {
+				return
+			}
+			chs.up <- msg
+		}
+	}()
+	// Write downstream.
+	go func() {
+		for {
+			var err error
+			select {
+			case <-ctx.Done():
+				return
+			case req := <-chs.downPush:
+				_, err = client.DownlinkQueuePush(ctx, req, creds)
+			case req := <-chs.downReplace:
+				_, err = client.DownlinkQueueReplace(ctx, req, creds)
+			}
+			chs.downErr <- err
+		}
+	}()
+
+	for _, override := range []*pbtypes.BoolValue{
+		nil,
+		{Value: true},
+		{Value: false},
+	} {
+		hasOverride := map[bool]string{true: "Overrides", false: "NoOverride"}[override != nil]
+		kekLabel := map[bool]string{true: "unknown", false: "known"}[override.GetValue()]
+
+		t.Run(fmt.Sprintf("%v/%v", hasOverride, override.GetValue()), func(t *testing.T) {
+			t.Run("Uplink", func(t *testing.T) {
+				ns.reset()
+				devsFlush()
+				deviceRegistry.Set(ctx, registeredDevice.EndDeviceIdentifiers, nil, func(_ *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
+					dev := *registeredDevice
+					dev.SkipPayloadCryptoOverride = override
+					return &dev, []string{
+						"ids",
+						"formatters",
+						"skip_payload_crypto_override",
+					}, nil
+				})
+
+				for _, step := range []struct {
+					Name         string
+					Message      *ttnpb.ApplicationUp
+					AssertUp     func(t *testing.T, up *ttnpb.ApplicationUp)
+					AssertDevice func(t *testing.T, dev *ttnpb.EndDevice)
+				}{
+					{
+						Name: "JoinAccept",
+						Message: &ttnpb.ApplicationUp{
+							EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+							Up: &ttnpb.ApplicationUp_JoinAccept{
+								JoinAccept: &ttnpb.ApplicationJoinAccept{
+									SessionKeyID: []byte{0x22},
+									AppSKey: &ttnpb.KeyEnvelope{
+										// AppSKey is []byte{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22}
+										EncryptedKey: []byte{0x39, 0x11, 0x40, 0x98, 0xa1, 0x5d, 0x6f, 0x92, 0xd7, 0xf0, 0x13, 0x21, 0x5b, 0x5b, 0x41, 0xa8, 0x98, 0x2d, 0xac, 0x59, 0x34, 0x76, 0x36, 0x18},
+										KEKLabel:     kekLabel,
+									},
+								},
+							},
+						},
+						AssertUp: func(t *testing.T, up *ttnpb.ApplicationUp) {
+							a := assertions.New(t)
+							if override.GetValue() {
+								a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+									EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+									Up: &ttnpb.ApplicationUp_JoinAccept{
+										JoinAccept: &ttnpb.ApplicationJoinAccept{
+											SessionKeyID: []byte{0x22},
+											AppSKey: &ttnpb.KeyEnvelope{
+												// AppSKey is []byte{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22}
+												EncryptedKey: []byte{0x39, 0x11, 0x40, 0x98, 0xa1, 0x5d, 0x6f, 0x92, 0xd7, 0xf0, 0x13, 0x21, 0x5b, 0x5b, 0x41, 0xa8, 0x98, 0x2d, 0xac, 0x59, 0x34, 0x76, 0x36, 0x18},
+												KEKLabel:     kekLabel,
+											},
+										},
+									},
+									CorrelationIDs: up.CorrelationIDs,
+									ReceivedAt:     up.ReceivedAt,
+								})
+							} else {
+								a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+									EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+									Up: &ttnpb.ApplicationUp_JoinAccept{
+										JoinAccept: &ttnpb.ApplicationJoinAccept{
+											SessionKeyID: []byte{0x22},
+										},
+									},
+									CorrelationIDs: up.CorrelationIDs,
+									ReceivedAt:     up.ReceivedAt,
+								})
+							}
+						},
+						AssertDevice: func(t *testing.T, dev *ttnpb.EndDevice) {
+							a := assertions.New(t)
+							a.So(dev.Session, should.BeNil)
+							a.So(dev.PendingSession, should.Resemble, &ttnpb.Session{
+								DevAddr: types.DevAddr{0x22, 0x22, 0x22, 0x22},
+								SessionKeys: ttnpb.SessionKeys{
+									SessionKeyID: []byte{0x22},
+									AppSKey: &ttnpb.KeyEnvelope{
+										EncryptedKey: []byte{0x39, 0x11, 0x40, 0x98, 0xa1, 0x5d, 0x6f, 0x92, 0xd7, 0xf0, 0x13, 0x21, 0x5b, 0x5b, 0x41, 0xa8, 0x98, 0x2d, 0xac, 0x59, 0x34, 0x76, 0x36, 0x18},
+										KEKLabel:     kekLabel,
+									},
+								},
+								LastAFCntDown: 0,
+								StartedAt:     dev.PendingSession.StartedAt,
+							})
+						},
+					},
+					{
+						Name: "UplinkMessage/PendingSession",
+						Message: &ttnpb.ApplicationUp{
+							EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+							Up: &ttnpb.ApplicationUp_UplinkMessage{
+								UplinkMessage: &ttnpb.ApplicationUplink{
+									SessionKeyID: []byte{0x22},
+									FPort:        22,
+									FCnt:         22,
+									FRMPayload:   []byte{0x01},
+								},
+							},
+						},
+						AssertUp: func(t *testing.T, up *ttnpb.ApplicationUp) {
+							a := assertions.New(t)
+							if override.GetValue() {
+								a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+									EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+									Up: &ttnpb.ApplicationUp_UplinkMessage{
+										UplinkMessage: &ttnpb.ApplicationUplink{
+											SessionKeyID: []byte{0x22},
+											FPort:        22,
+											FCnt:         22,
+											FRMPayload:   []byte{0x01},
+											AppSKey: &ttnpb.KeyEnvelope{
+												EncryptedKey: []byte{0x39, 0x11, 0x40, 0x98, 0xa1, 0x5d, 0x6f, 0x92, 0xd7, 0xf0, 0x13, 0x21, 0x5b, 0x5b, 0x41, 0xa8, 0x98, 0x2d, 0xac, 0x59, 0x34, 0x76, 0x36, 0x18},
+												KEKLabel:     kekLabel,
+											},
+										},
+									},
+									CorrelationIDs: up.CorrelationIDs,
+									ReceivedAt:     up.ReceivedAt,
+								})
+							} else {
+								a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+									EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+									Up: &ttnpb.ApplicationUp_UplinkMessage{
+										UplinkMessage: &ttnpb.ApplicationUplink{
+											SessionKeyID: []byte{0x22},
+											FPort:        22,
+											FCnt:         22,
+											FRMPayload:   []byte{0xc1},
+										},
+									},
+									CorrelationIDs: up.CorrelationIDs,
+									ReceivedAt:     up.ReceivedAt,
+								})
+							}
+						},
+					},
+					{
+						Name: "DownlinkQueueInvalidation",
+						Message: &ttnpb.ApplicationUp{
+							EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+							Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+								DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+									Downlinks: []*ttnpb.ApplicationDownlink{
+										{
+											SessionKeyID: []byte{0x22},
+											FPort:        22,
+											FCnt:         22,
+											FRMPayload:   []byte{0x01},
+										},
+									},
+								},
+							},
+						},
+						AssertUp: func(t *testing.T, up *ttnpb.ApplicationUp) {
+							a := assertions.New(t)
+							if override.GetValue() {
+								a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+									EndDeviceIdentifiers: withDevAddr(registeredDevice.EndDeviceIdentifiers, types.DevAddr{0x22, 0x22, 0x22, 0x22}),
+									Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+										DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+											Downlinks: []*ttnpb.ApplicationDownlink{
+												{
+													SessionKeyID: []byte{0x22},
+													FPort:        22,
+													FCnt:         22,
+													FRMPayload:   []byte{0x01},
+												},
+											},
+										},
+									},
+									CorrelationIDs: up.CorrelationIDs,
+									ReceivedAt:     up.ReceivedAt,
+								})
+							} else {
+								a.So(up, should.BeNil)
+							}
+						},
+					},
+				} {
+					stepok := t.Run(step.Name, func(t *testing.T) {
+						ns.upCh <- step.Message
+						select {
+						case msg := <-chs.up:
+							if step.AssertUp != nil {
+								step.AssertUp(t, msg)
+							} else {
+								t.Fatalf("Expected no upstream message but got %v", msg)
+							}
+						case <-time.After(Timeout):
+							if step.AssertUp != nil {
+								step.AssertUp(t, nil)
+							} else {
+								t.Fatal("Expected upstream timeout")
+							}
+						}
+						if step.AssertDevice != nil {
+							dev, err := deviceRegistry.Get(ctx, step.Message.EndDeviceIdentifiers, []string{"session", "pending_session"})
+							if !a.So(err, should.BeNil) {
+								t.FailNow()
+							}
+							step.AssertDevice(t, dev)
+						}
+					})
+					if !stepok {
+						t.FailNow()
+					}
+				}
+			})
+
+			t.Run("Downlink", func(t *testing.T) {
+				ns.reset()
+				devsFlush()
+				deviceRegistry.Set(ctx, registeredDevice.EndDeviceIdentifiers, nil, func(_ *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
+					dev := *registeredDevice
+					dev.Session = &ttnpb.Session{
+						DevAddr: types.DevAddr{0x42, 0xff, 0xff, 0xff},
+						SessionKeys: ttnpb.SessionKeys{
+							SessionKeyID: []byte{0x11},
+							AppSKey: &ttnpb.KeyEnvelope{
+								EncryptedKey: []byte{0x1f, 0xa6, 0x8b, 0xa, 0x81, 0x12, 0xb4, 0x47, 0xae, 0xf3, 0x4b, 0xd8, 0xfb, 0x5a, 0x7b, 0x82, 0x9d, 0x3e, 0x86, 0x23, 0x71, 0xd2, 0xcf, 0xe5},
+								KEKLabel:     kekLabel,
+							},
+						},
+					}
+					dev.SkipPayloadCryptoOverride = override
+					return &dev, []string{
+						"ids",
+						"session",
+						"skip_payload_crypto_override",
+					}, nil
+				})
+				t.Run("Push", func(t *testing.T) {
+					a := assertions.New(t)
+					for _, items := range [][]*ttnpb.ApplicationDownlink{
+						{
+							{
+								FPort:      11,
+								FCnt:       1,
+								FRMPayload: []byte{0x1, 0x1, 0x1},
+							},
+							{
+								FPort:      22,
+								FCnt:       2,
+								FRMPayload: []byte{0x2, 0x2, 0x2},
+							},
+						},
+					} {
+						chs.downPush <- &ttnpb.DownlinkQueueRequest{
+							EndDeviceIdentifiers: registeredDevice.EndDeviceIdentifiers,
+							Downlinks:            items,
+						}
+						time.Sleep(Timeout)
+						select {
+						case err := <-chs.downErr:
+							if !a.So(err, should.BeNil) {
+								t.FailNow()
+							}
+						default:
+							t.Fatal("Expected downlink error")
+						}
+						for i := 0; i < len(items); i++ {
+							select {
+							case up := <-chs.up:
+								a.So(up.Up, should.HaveSameTypeAs, &ttnpb.ApplicationUp_DownlinkQueued{})
+							default:
+								t.Fatalf("Expected upstream event")
+							}
+						}
+					}
+					res, err := as.DownlinkQueueList(ctx, registeredDevice.EndDeviceIdentifiers)
+					if a.So(err, should.BeNil) && a.So(res, should.HaveLength, 2) {
+						a.So(res, should.Resemble, []*ttnpb.ApplicationDownlink{
+							{
+								SessionKeyID:   []byte{0x11},
+								FPort:          11,
+								FCnt:           1,
+								FRMPayload:     []byte{0x1, 0x1, 0x1},
+								CorrelationIDs: res[0].CorrelationIDs,
+							},
+							{
+								SessionKeyID:   []byte{0x11},
+								FPort:          22,
+								FCnt:           2,
+								FRMPayload:     []byte{0x2, 0x2, 0x2},
+								CorrelationIDs: res[1].CorrelationIDs,
+							},
+						})
+					}
+				})
+			})
 		})
 	}
 }

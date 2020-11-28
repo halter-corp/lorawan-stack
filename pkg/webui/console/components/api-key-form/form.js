@@ -15,15 +15,16 @@
 import React from 'react'
 import bind from 'autobind-decorator'
 
-import Form from '../../../components/form'
-import PropTypes from '../../../lib/prop-types'
+import Form from '@ttn-lw/components/form'
 
-@bind
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 class ApiKeyForm extends React.Component {
   state = {
     error: '',
   }
 
+  @bind
   async handleSubmit(values, { resetForm }) {
     const { onSubmit, onSubmitSuccess, onSubmitFailure } = this.props
 
@@ -32,10 +33,10 @@ class ApiKeyForm extends React.Component {
     try {
       const result = await onSubmit(values)
 
-      resetForm(values)
+      resetForm({ values })
       await onSubmitSuccess(result)
     } catch (error) {
-      resetForm(values)
+      resetForm({ values })
 
       await this.setState({ error })
       await onSubmitFailure(error)
@@ -62,23 +63,19 @@ class ApiKeyForm extends React.Component {
 }
 
 ApiKeyForm.propTypes = {
-  rights: PropTypes.arrayOf(PropTypes.string),
+  children: PropTypes.node,
+  formError: PropTypes.error,
+  initialValues: PropTypes.shape({}),
   onSubmit: PropTypes.func.isRequired,
-  onSubmitSuccess: PropTypes.func,
-  onSubmitFailure: PropTypes.func,
-  validationSchema: PropTypes.object.isRequired,
-  horizontal: PropTypes.bool,
-  initialValues: PropTypes.object,
-  formError: PropTypes.object,
+  onSubmitFailure: PropTypes.func.isRequired,
+  onSubmitSuccess: PropTypes.func.isRequired,
+  validationSchema: PropTypes.shape({}).isRequired,
 }
 
 ApiKeyForm.defaultProps = {
-  rights: [],
-  horizontal: true,
+  children: undefined,
   initialValues: {},
   formError: null,
-  onSubmitSuccess: () => null,
-  onSubmitFailure: () => null,
 }
 
 export default ApiKeyForm

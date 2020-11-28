@@ -14,18 +14,19 @@
 
 import React from 'react'
 import classnames from 'classnames'
-import PropTypes from '../../../lib/prop-types'
 
-import Message from '../../../lib/components/message'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './cell.styl'
 
 const Cell = function({
   className,
   component: Component,
-  centered = false,
-  small = false,
-  colSpan = 1,
+  centered,
+  small,
+  colSpan,
   width,
   children,
   ...rest
@@ -45,16 +46,27 @@ const Cell = function({
 }
 
 Cell.propTypes = {
-  /** The width of the cell in percentages */
-  width: PropTypes.number,
-  /** The html name of the wrapping component */
-  component: PropTypes.string.isRequired,
-  /** The number of columns that the cell should occupy */
-  colSpan: PropTypes.number,
-  /** A flag indicating whether the data in the cell should be centered */
+  /** A flag indicating whether the data in the cell should be centered. */
   centered: PropTypes.bool,
-  /** A flag indicating whether the row take less height */
+  children: PropTypes.node,
+  className: PropTypes.string,
+  /** The number of columns that the cell should occupy. */
+  colSpan: PropTypes.number,
+  /** The html name of the wrapping component. */
+  component: PropTypes.string.isRequired,
+  /** A flag indicating whether the row take less height. */
   small: PropTypes.bool,
+  /** The width of the cell in percentages. */
+  width: PropTypes.number,
+}
+
+Cell.defaultProps = {
+  centered: false,
+  children: undefined,
+  className: undefined,
+  colSpan: 1,
+  small: false,
+  width: undefined,
 }
 
 const HeadCell = ({ className, content, children, ...rest }) => (
@@ -65,8 +77,16 @@ const HeadCell = ({ className, content, children, ...rest }) => (
 )
 
 HeadCell.propTypes = {
-  /** The title of the head cell */
+  children: PropTypes.node,
+  className: PropTypes.string,
+  /** The title of the head cell. */
   content: PropTypes.message,
+}
+
+HeadCell.defaultProps = {
+  children: undefined,
+  className: undefined,
+  content: undefined,
 }
 
 const DataCell = ({ className, children, ...rest }) => (
@@ -74,5 +94,15 @@ const DataCell = ({ className, children, ...rest }) => (
     {children}
   </Cell>
 )
+
+DataCell.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+}
+
+DataCell.defaultProps = {
+  children: undefined,
+  className: undefined,
+}
 
 export { Cell, HeadCell, DataCell }

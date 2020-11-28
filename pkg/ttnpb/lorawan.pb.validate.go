@@ -64,10 +64,10 @@ func (m *Message) ValidateFields(paths ...string) error {
 
 		case "mic":
 
-			if len(m.GetMIC()) != 4 {
+			if l := len(m.GetMIC()); l < 0 || l > 4 {
 				return MessageValidationError{
 					field:  "mic",
-					reason: "value length must be 4 bytes",
+					reason: "value length must be between 0 and 4 bytes, inclusive",
 				}
 			}
 
@@ -362,6 +362,8 @@ func (m *MACPayload) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "full_f_cnt":
+			// no validation rules for FullFCnt
 		default:
 			return MACPayloadValidationError{
 				field:  name,
@@ -1672,6 +1674,20 @@ func (m *UplinkToken) ValidateFields(paths ...string) error {
 
 		case "timestamp":
 			// no validation rules for Timestamp
+		case "server_time":
+
+			if v, ok := interface{}(&m.ServerTime).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UplinkTokenValidationError{
+						field:  "server_time",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "concentrator_time":
+			// no validation rules for ConcentratorTime
 		default:
 			return UplinkTokenValidationError{
 				field:  name,
@@ -1937,6 +1953,15 @@ func (m *TxRequest) ValidateFields(paths ...string) error {
 						reason: "embedded message failed validation",
 						cause:  err,
 					}
+				}
+			}
+
+		case "frequency_plan_id":
+
+			if utf8.RuneCountInString(m.GetFrequencyPlanID()) > 64 {
+				return TxRequestValidationError{
+					field:  "frequency_plan_id",
+					reason: "value length must be at most 64 runes",
 				}
 			}
 
@@ -4166,10 +4191,10 @@ func (m *MACCommand_NewChannelReq) ValidateFields(paths ...string) error {
 
 		case "frequency":
 
-			if m.GetFrequency() < 100000 {
+			if val := m.GetFrequency(); val > 0 && val < 100000 {
 				return MACCommand_NewChannelReqValidationError{
 					field:  "frequency",
-					reason: "value must be greater than or equal to 100000",
+					reason: "value must be outside range (0, 100000)",
 				}
 			}
 
@@ -5488,10 +5513,10 @@ func (m *MACCommand_PingSlotChannelReq) ValidateFields(paths ...string) error {
 		switch name {
 		case "frequency":
 
-			if m.GetFrequency() < 100000 {
+			if val := m.GetFrequency(); val > 0 && val < 100000 {
 				return MACCommand_PingSlotChannelReqValidationError{
 					field:  "frequency",
-					reason: "value must be greater than or equal to 100000",
+					reason: "value must be outside range (0, 100000)",
 				}
 			}
 
@@ -5774,10 +5799,10 @@ func (m *MACCommand_BeaconFreqReq) ValidateFields(paths ...string) error {
 		switch name {
 		case "frequency":
 
-			if m.GetFrequency() < 100000 {
+			if val := m.GetFrequency(); val > 0 && val < 100000 {
 				return MACCommand_BeaconFreqReqValidationError{
 					field:  "frequency",
-					reason: "value must be greater than or equal to 100000",
+					reason: "value must be outside range (0, 100000)",
 				}
 			}
 

@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	. "go.thethings.network/lorawan-stack/pkg/crypto/cryptoservices"
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoutil"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	. "go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoservices"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -251,6 +251,13 @@ func TestCryptoServices(t *testing.T) {
 						NwkSEncKey:  types.AES128Key{0x31, 0x87, 0x9c, 0xf0, 0x93, 0xc2, 0x41, 0x11, 0xe3, 0x99, 0x5, 0xc7, 0x72, 0x76, 0xbf, 0xd8},
 					},
 					{
+						Version:     ttnpb.MAC_V1_0_3,
+						JoinNonce:   types.JoinNonce{0x1, 0x2, 0x3},
+						DevNonce:    types.DevNonce{0x1, 0x2},
+						NetID:       types.NetID{0x1, 0x2, 0x3},
+						FNwkSIntKey: types.AES128Key{0x77, 0x51, 0x9b, 0x3, 0x2d, 0x33, 0x6, 0x44, 0xe7, 0x6c, 0xe4, 0xd9, 0x4e, 0x93, 0x3c, 0xc5},
+					},
+					{
 						Version:     ttnpb.MAC_V1_0_2,
 						JoinNonce:   types.JoinNonce{0x1, 0x2, 0x3},
 						DevNonce:    types.DevNonce{0x1, 0x2},
@@ -313,6 +320,13 @@ func TestCryptoServices(t *testing.T) {
 						JoinNonce: types.JoinNonce{0x1, 0x2, 0x3},
 						DevNonce:  types.DevNonce{0x1, 0x2},
 						AppSKey:   types.AES128Key{0x4, 0x30, 0x89, 0x5c, 0x7b, 0xa7, 0xb1, 0x51, 0xcf, 0x97, 0x36, 0x84, 0xf6, 0x22, 0xff, 0xc1},
+					},
+					{
+						Version:   ttnpb.MAC_V1_0_3,
+						JoinNonce: types.JoinNonce{0x1, 0x2, 0x3},
+						DevNonce:  types.DevNonce{0x1, 0x2},
+						NetID:     types.NetID{0x1, 0x2, 0x3},
+						AppSKey:   types.AES128Key{0xeb, 0x55, 0x14, 0xa2, 0x16, 0x6, 0xd8, 0x3d, 0x49, 0xec, 0x12, 0x73, 0x1, 0xf0, 0x7a, 0x91},
 					},
 					{
 						Version:   ttnpb.MAC_V1_0_2,
@@ -423,20 +437,23 @@ func (s *mockNetworkRPCServer) DeriveNwkSKeys(ctx context.Context, req *ttnpb.De
 	if err != nil {
 		return nil, err
 	}
-	res := &ttnpb.NwkSKeysResponse{}
-	res.FNwkSIntKey, err = cryptoutil.WrapAES128Key(ctx, nwkSKeys.FNwkSIntKey, "", s.KeyVault)
+	fNwkSIntKeyEnvelope, err := cryptoutil.WrapAES128Key(ctx, nwkSKeys.FNwkSIntKey, "", s.KeyVault)
 	if err != nil {
 		return nil, err
 	}
-	res.SNwkSIntKey, err = cryptoutil.WrapAES128Key(ctx, nwkSKeys.SNwkSIntKey, "", s.KeyVault)
+	sNwkSIntKeyEnvelope, err := cryptoutil.WrapAES128Key(ctx, nwkSKeys.SNwkSIntKey, "", s.KeyVault)
 	if err != nil {
 		return nil, err
 	}
-	res.NwkSEncKey, err = cryptoutil.WrapAES128Key(ctx, nwkSKeys.NwkSEncKey, "", s.KeyVault)
+	nwkSEncKeyEnvelope, err := cryptoutil.WrapAES128Key(ctx, nwkSKeys.NwkSEncKey, "", s.KeyVault)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return &ttnpb.NwkSKeysResponse{
+		FNwkSIntKey: *fNwkSIntKeyEnvelope,
+		SNwkSIntKey: *sNwkSIntKeyEnvelope,
+		NwkSEncKey:  *nwkSEncKeyEnvelope,
+	}, nil
 }
 
 func (s *mockNetworkRPCServer) GetNwkKey(ctx context.Context, req *ttnpb.GetRootKeysRequest) (*ttnpb.KeyEnvelope, error) {
@@ -447,11 +464,7 @@ func (s *mockNetworkRPCServer) GetNwkKey(ctx context.Context, req *ttnpb.GetRoot
 	if err != nil {
 		return nil, err
 	}
-	env, err := cryptoutil.WrapAES128Key(ctx, *nwkKey, "", s.KeyVault)
-	if err != nil {
-		return nil, err
-	}
-	return &env, nil
+	return cryptoutil.WrapAES128Key(ctx, *nwkKey, "", s.KeyVault)
 }
 
 type mockApplicationRPCServer struct {
@@ -467,12 +480,13 @@ func (s *mockApplicationRPCServer) DeriveAppSKey(ctx context.Context, req *ttnpb
 	if err != nil {
 		return nil, err
 	}
-	res := &ttnpb.AppSKeyResponse{}
-	res.AppSKey, err = cryptoutil.WrapAES128Key(ctx, appSKey, "", s.KeyVault)
+	appSKeyEnvelope, err := cryptoutil.WrapAES128Key(ctx, appSKey, "", s.KeyVault)
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return &ttnpb.AppSKeyResponse{
+		AppSKey: *appSKeyEnvelope,
+	}, nil
 }
 
 func (s *mockApplicationRPCServer) GetAppKey(ctx context.Context, req *ttnpb.GetRootKeysRequest) (*ttnpb.KeyEnvelope, error) {
@@ -483,9 +497,5 @@ func (s *mockApplicationRPCServer) GetAppKey(ctx context.Context, req *ttnpb.Get
 	if err != nil {
 		return nil, err
 	}
-	env, err := cryptoutil.WrapAES128Key(ctx, *appKey, "", s.KeyVault)
-	if err != nil {
-		return nil, err
-	}
-	return &env, nil
+	return cryptoutil.WrapAES128Key(ctx, *appKey, "", s.KeyVault)
 }

@@ -26,8 +26,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // DeprecateFlag deprecates a CLI flag.
@@ -56,11 +56,28 @@ var (
 	toUnderscore = strings.NewReplacer("-", "_")
 )
 
+// NormalizePaths converts arguments to field mask paths, replacing '-' with '_'
+func NormalizePaths(paths []string) []string {
+	normalized := make([]string, len(paths))
+	for i, path := range paths {
+		normalized[i] = toUnderscore.Replace(path)
+	}
+	return normalized
+}
+
 func NormalizeFlags(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	return pflag.NormalizedName(toDash.Replace(name))
 }
 
 func SelectFieldMask(cmdFlags *pflag.FlagSet, fieldMaskFlags ...*pflag.FlagSet) (paths []string) {
+	if all, _ := cmdFlags.GetBool("all"); all {
+		for _, fieldMaskFlags := range fieldMaskFlags {
+			fieldMaskFlags.VisitAll(func(flag *pflag.Flag) {
+				paths = append(paths, toUnderscore.Replace(flag.Name))
+			})
+		}
+		return
+	}
 	cmdFlags.Visit(func(flag *pflag.Flag) {
 		flagName := toUnderscore.Replace(flag.Name)
 		for _, fieldMaskFlags := range fieldMaskFlags {
@@ -96,6 +113,19 @@ func FieldMaskFlags(v interface{}, prefix ...string) *pflag.FlagSet {
 	return fieldMaskFlags(prefix, t, true)
 }
 
+func isStopType(t reflect.Type, maskOnly bool) bool {
+	switch t.PkgPath() {
+	case "github.com/gogo/protobuf/types":
+		switch t.Name() {
+		case
+			// Struct is a standalone type and should not be parsed further for field mask purposes.
+			"Struct":
+			return true
+		}
+	}
+	return false
+}
+
 func isAtomicType(t reflect.Type, maskOnly bool) bool {
 	switch t.PkgPath() {
 	case "time":
@@ -117,7 +147,7 @@ func isAtomicType(t reflect.Type, maskOnly bool) bool {
 			"UInt64Value":
 			return true
 		}
-	case "go.thethings.network/lorawan-stack/pkg/ttnpb":
+	case "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
 		switch t.Name() {
 		case
 			"ADRAckDelayExponentValue",
@@ -144,27 +174,23 @@ func isSelectableField(name string) bool {
 
 func isSettableField(name string) bool {
 	switch name {
-	case "attributes", "contact_info", "password_updated_at", "temporary_password_created_at",
-		"temporary_password_expires_at", "antennas", "profile_picture":
+	case "attributes", "contact_info", "password_updated_at", "temporary_password_created_at", "antennas", "profile_picture":
 		return false
 	}
 	return true
 }
 
 func enumValues(t reflect.Type) []string {
-	if t.PkgPath() == "go.thethings.network/lorawan-stack/pkg/ttnpb" {
+	if t.PkgPath() == "go.thethings.network/lorawan-stack/v3/pkg/ttnpb" {
 		valueMap := make(map[string]int32)
 		implementsStringer := t.Implements(reflect.TypeOf((*fmt.Stringer)(nil)).Elem())
 		for s, v := range proto.EnumValueMap(fmt.Sprintf("ttn.lorawan.v3.%s", t.Name())) {
+			valueMap[s] = v
 			if implementsStringer {
 				// If the enum implements Stringer, then the String might be different than the official name.
 				rv := reflect.New(t).Elem()
 				rv.SetInt(int64(v))
-				s := rv.Interface().(fmt.Stringer).String()
-				valueMap[s] = v
-			} else {
-				// Otherwise we use the official name.
-				valueMap[s] = v
+				valueMap[rv.Interface().(fmt.Stringer).String()] = v
 			}
 		}
 		values := make([]string, 0, len(valueMap))
@@ -236,7 +262,7 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 			return
 		}
 
-	case "go.thethings.network/lorawan-stack/pkg/ttnpb":
+	case "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
 		switch typeName := t.Name(); typeName {
 		case
 			"ADRAckDelayExponentValue",
@@ -250,6 +276,7 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 			for value := range proto.EnumValueMap(enumType) {
 				values = append(values, value)
 			}
+			sort.Strings(values)
 			fs.String(name, "", strings.Join(values, "|"))
 			return
 
@@ -293,9 +320,16 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 	case reflect.Slice:
 		el := t.Elem()
 		switch el.PkgPath() {
-		case "go.thethings.network/lorawan-stack/pkg/ttnpb":
+		case "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
 			switch el.Name() {
 			case "GatewayAntennaIdentifiers":
+				fs.StringSlice(name, nil, "")
+				return
+			}
+
+		case "go.thethings.network/lorawan-stack/v3/pkg/types":
+			switch el.Name() {
+			case "DevAddrPrefix":
 				fs.StringSlice(name, nil, "")
 				return
 			}
@@ -368,6 +402,9 @@ func fieldMaskFlags(prefix []string, t reflect.Type, maskOnly bool) *pflag.FlagS
 			continue
 		}
 		if !maskOnly && !isSettableField(name) {
+			continue
+		}
+		if isStopType(t, maskOnly) {
 			continue
 		}
 		addField(flagSet, name, fieldType, maskOnly)
@@ -443,7 +480,9 @@ func SetFields(dst interface{}, flags *pflag.FlagSet, prefix ...string) error {
 	return nil
 }
 
-var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+var (
+	textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+)
 
 func setField(rv reflect.Value, path []string, v reflect.Value) error {
 	rt := rv.Type()
@@ -517,7 +556,7 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 						}
 						field.Set(reflect.ValueOf(types.BytesValue{Value: buf}))
 					}
-				case ft.PkgPath() == "go.thethings.network/lorawan-stack/pkg/ttnpb":
+				case ft.PkgPath() == "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
 					switch typeName := ft.Name(); typeName {
 					case "DataRateIndexValue":
 						if enumValue, ok := proto.EnumValueMap(unwrapLoRaWANEnumType(typeName))[v.String()]; ok {
@@ -616,7 +655,7 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 						for i := 0; i < v.Len(); i++ {
 							slice.Index(i).Set(v.Index(i).Convert(ft.Elem()))
 						}
-					case ft.Elem().PkgPath() == "go.thethings.network/lorawan-stack/pkg/ttnpb" &&
+					case ft.Elem().PkgPath() == "go.thethings.network/lorawan-stack/v3/pkg/ttnpb" &&
 						ft.Elem().Name() == "GatewayAntennaIdentifiers" && vt.Elem().Kind() == reflect.String:
 						for i := 0; i < v.Len(); i++ {
 							slice.Index(i).Set(reflect.ValueOf(ttnpb.GatewayAntennaIdentifiers{
@@ -649,4 +688,18 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 		}
 	}
 	return fmt.Errorf("unknown field")
+}
+
+// SelectAllFlagSet returns a flagset with the --all flag
+func SelectAllFlagSet(what string) *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.Bool("all", false, fmt.Sprintf("select all %s fields", what))
+	return flagSet
+}
+
+// UnsetFlagSet returns a flagset with the --unset flag
+func UnsetFlagSet() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.StringSlice("unset", []string{}, "list of fields to unset")
+	return flagSet
 }

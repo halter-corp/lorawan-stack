@@ -18,8 +18,13 @@ package gatewayserver
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	stdlog "log"
+	"math"
 	"net"
 	"net/http"
+	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,28 +32,30 @@ import (
 
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/basicstationlns"
-	iogrpc "go.thethings.network/lorawan-stack/pkg/gatewayserver/io/grpc"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/mqtt"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/udp"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/upstream"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/upstream/ns"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/hooks"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	iogrpc "go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/grpc"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/ws"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/ws/lbslns"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream/ns"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream/packetbroker"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc"
 )
 
@@ -68,14 +75,26 @@ type GatewayServer struct {
 
 	upstreamHandlers map[string]upstream.Handler
 
-	connections sync.Map
+	connections sync.Map // string to connectionEntry
+
+	statsRegistry                     GatewayConnectionStatsRegistry
+	updateConnectionStatsDebounceTime time.Duration
 }
 
 func (gs *GatewayServer) getRegistry(ctx context.Context, ids *ttnpb.GatewayIdentifiers) (ttnpb.GatewayRegistryClient, error) {
 	if gs.registry != nil {
 		return gs.registry, nil
 	}
-	cc, err := gs.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, ids)
+	var (
+		cc  *grpc.ClientConn
+		err error
+	)
+	if ids != nil {
+		cc, err = gs.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, ids)
+	} else {
+		// Don't pass a (*ttnpb.GatewayIdentifiers)(nil) to GetPeerConn.
+		cc, err = gs.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, nil)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +122,9 @@ var (
 		"failed to start frontend listener `{protocol}` on address `{address}`",
 	)
 	errNotConnected        = errors.DefineNotFound("not_connected", "gateway `{gateway_uid}` not connected")
-	errSetupUpstream       = errors.DefineFailedPrecondition("upstream", "failed to setup upstream `{hostname}`")
+	errSetupUpstream       = errors.DefineFailedPrecondition("upstream", "failed to setup upstream `{name}`")
 	errUpstreamType        = errors.DefineUnimplemented("upstream_type_not_implemented", "upstream `{name}` not implemented")
-	errInvalidUpstreamName = errors.DefineInvalidArgument("invalid_upstream_name", "upstream `{name}`is invalid")
+	errInvalidUpstreamName = errors.DefineInvalidArgument("invalid_upstream_name", "upstream `{name}` is invalid")
 )
 
 // New returns new *GatewayServer.
@@ -119,50 +138,86 @@ func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServe
 	}
 
 	gs = &GatewayServer{
-		Component:                 c,
-		ctx:                       log.NewContextWithField(c.Context(), "namespace", "gatewayserver"),
-		config:                    conf,
-		requireRegisteredGateways: conf.RequireRegisteredGateways,
-		forward:                   forward,
-		upstreamHandlers:          make(map[string]upstream.Handler),
+		Component:                         c,
+		ctx:                               log.NewContextWithField(c.Context(), "namespace", "gatewayserver"),
+		config:                            conf,
+		requireRegisteredGateways:         conf.RequireRegisteredGateways,
+		forward:                           forward,
+		upstreamHandlers:                  make(map[string]upstream.Handler),
+		statsRegistry:                     conf.Stats,
+		updateConnectionStatsDebounceTime: conf.UpdateConnectionStatsDebounceTime,
 	}
 	for _, opt := range opts {
 		opt(gs)
 	}
 
-	ctx, cancel := context.WithCancel(gs.Context())
-	defer func() {
-		if err != nil {
-			cancel()
+	// Setup forwarding table.
+	for name, prefix := range gs.forward {
+		if len(prefix) == 0 {
+			continue
 		}
-	}()
-
-	for addr, fallbackFrequencyPlanID := range conf.UDP.Listeners {
-		var conn *net.UDPConn
-		conn, err = gs.ListenUDP(addr)
-		if err != nil {
-			return nil, errListenFrontend.WithCause(err).WithAttributes(
-				"protocol", "udp",
-				"address", addr,
-			)
+		if name == "" {
+			name = "cluster"
 		}
-		lisCtx := ctx
-		if fallbackFrequencyPlanID != "" {
-			lisCtx = frequencyplans.WithFallbackID(ctx, fallbackFrequencyPlanID)
+		var handler upstream.Handler
+		switch name {
+		case "cluster":
+			handler = ns.NewHandler(gs.Context(), c, prefix)
+		case "packetbroker":
+			handler = packetbroker.NewHandler(gs.Context(), c, prefix)
+		default:
+			return nil, errInvalidUpstreamName.WithAttributes("name", name)
 		}
-		udp.Start(lisCtx, gs, conn, conf.UDP.Config)
+		if err := handler.Setup(gs.Context()); err != nil {
+			return nil, errSetupUpstream.WithCause(err).WithAttributes("name", name)
+		}
+		gs.upstreamHandlers[name] = handler
 	}
 
+	// Register gRPC services.
+	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsGs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("gatewayserver"))
+	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsGs", cluster.HookName, c.ClusterAuthUnaryHook())
+	c.RegisterGRPC(gs)
+
+	// Start UDP listeners.
+	for addr, fallbackFrequencyPlanID := range conf.UDP.Listeners {
+		addr := addr
+		fallbackFrequencyPlanID := fallbackFrequencyPlanID
+		gs.RegisterTask(&component.TaskConfig{
+			Context: gs.Context(),
+			ID:      fmt.Sprintf("serve_udp/%s", addr),
+			Func: func(ctx context.Context) error {
+				var conn *net.UDPConn
+				conn, err = gs.ListenUDP(addr)
+				if err != nil {
+					return errListenFrontend.WithCause(err).WithAttributes(
+						"protocol", "udp",
+						"address", addr,
+					)
+				}
+				defer conn.Close()
+				lisCtx := ctx
+				if fallbackFrequencyPlanID != "" {
+					lisCtx = frequencyplans.WithFallbackID(ctx, fallbackFrequencyPlanID)
+				}
+				return udp.Serve(lisCtx, gs, conn, conf.UDP.Config)
+			},
+			Restart: component.TaskRestartOnFailure,
+			Backoff: component.DefaultTaskBackoffConfig,
+		})
+	}
+
+	// Start MQTT listeners.
 	for _, version := range []struct {
 		Format mqtt.Format
 		Config config.MQTT
 	}{
 		{
-			Format: mqtt.Protobuf,
+			Format: mqtt.NewProtobuf(gs.ctx),
 			Config: conf.MQTT,
 		},
 		{
-			Format: mqtt.ProtobufV2,
+			Format: mqtt.NewProtobufV2(gs.ctx),
 			Config: conf.MQTTV2,
 		},
 	} {
@@ -170,82 +225,115 @@ func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServe
 			component.NewTCPEndpoint(version.Config.Listen, "MQTT"),
 			component.NewTLSEndpoint(version.Config.ListenTLS, "MQTT"),
 		} {
+			version := version
+			endpoint := endpoint
 			if endpoint.Address() == "" {
 				continue
 			}
-			l, err := gs.ListenTCP(endpoint.Address())
-			var lis net.Listener
-			if err == nil {
-				lis, err = endpoint.Listen(l)
-			}
-			if err != nil {
-				return nil, errListenFrontend.WithCause(err).WithAttributes(
-					"address", endpoint.Address(),
-					"protocol", endpoint.Protocol(),
-				)
-			}
-			mqtt.Start(ctx, gs, lis, version.Format, endpoint.Protocol())
+			gs.RegisterTask(&component.TaskConfig{
+				Context: gs.Context(),
+				ID:      fmt.Sprintf("serve_mqtt/%s", endpoint.Address()),
+				Func: func(ctx context.Context) error {
+					l, err := gs.ListenTCP(endpoint.Address())
+					if err != nil {
+						return errListenFrontend.WithCause(err).WithAttributes(
+							"address", endpoint.Address(),
+							"protocol", endpoint.Protocol(),
+						)
+					}
+					lis, err := endpoint.Listen(l)
+					if err != nil {
+						return errListenFrontend.WithCause(err).WithAttributes(
+							"address", endpoint.Address(),
+							"protocol", endpoint.Protocol(),
+						)
+					}
+					defer lis.Close()
+					return mqtt.Serve(ctx, gs, lis, version.Format, endpoint.Protocol())
+				},
+				Restart: component.TaskRestartOnFailure,
+				Backoff: component.DefaultTaskBackoffConfig,
+			})
 		}
 	}
 
-	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsGs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("gatewayserver"))
-	bsCtx := ctx
-	if conf.BasicStation.FallbackFrequencyPlanID != "" {
-		bsCtx = frequencyplans.WithFallbackID(ctx, conf.BasicStation.FallbackFrequencyPlanID)
+	// Start Web Socket listeners.
+	type listenerConfig struct {
+		fallbackFreqPlanID string
+		listen             string
+		listenTLS          string
+		frontend           ws.Config
 	}
-
-	bsWebServer := basicstationlns.New(bsCtx, gs, conf.BasicStation.UseTrafficTLSAddress)
-	for _, endpoint := range []component.Endpoint{
-		component.NewTCPEndpoint(conf.BasicStation.Listen, "Basic Station"),
-		component.NewTLSEndpoint(conf.BasicStation.ListenTLS, "Basic Station", component.WithNextProtos("h2", "http/1.1")),
+	for _, version := range []struct {
+		Name           string
+		Formatter      ws.Formatter
+		listenerConfig listenerConfig
+	}{
+		{
+			Name:      "basicstation",
+			Formatter: lbslns.NewFormatter(),
+			listenerConfig: listenerConfig{
+				fallbackFreqPlanID: conf.BasicStation.FallbackFrequencyPlanID,
+				listen:             conf.BasicStation.Listen,
+				listenTLS:          conf.BasicStation.ListenTLS,
+				frontend: ws.Config{
+					UseTrafficTLSAddress: conf.BasicStation.UseTrafficTLSAddress,
+					WSPingInterval:       conf.BasicStation.WSPingInterval,
+					AllowUnauthenticated: conf.BasicStation.AllowUnauthenticated,
+				},
+			},
+		},
 	} {
-		if endpoint.Address() == "" {
-			continue
+		ctx := gs.Context()
+		if version.listenerConfig.fallbackFreqPlanID != "" {
+			ctx = frequencyplans.WithFallbackID(ctx, version.listenerConfig.fallbackFreqPlanID)
 		}
-		l, err := gs.ListenTCP(endpoint.Address())
-		var lis net.Listener
-		if err == nil {
-			lis, err = endpoint.Listen(l)
-		}
-		if err != nil {
-			return nil, errListenFrontend.WithCause(err).WithAttributes(
-				"address", endpoint.Address(),
-				"protocol", endpoint.Protocol(),
-			)
-		}
-		go func() error {
-			return http.Serve(lis, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bsWebServer.ServeHTTP(w, r)
-			}))
-		}()
-	}
-
-	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsGs", cluster.HookName, c.ClusterAuthUnaryHook())
-
-	for name, prefix := range gs.forward {
-		if name == "" {
-			gs.upstreamHandlers["cluster"] = ns.NewHandler(ctx, "cluster", c, prefix)
-		} else {
-			str := strings.SplitN(name, ":", 2)
-			if len(str) != 2 {
-				return nil, errInvalidUpstreamName.WithAttributes("name", name)
+		webServer := ws.New(ctx, gs, version.Formatter, version.listenerConfig.frontend)
+		for _, endpoint := range []component.Endpoint{
+			component.NewTCPEndpoint(version.listenerConfig.listen, version.Name),
+			component.NewTLSEndpoint(version.listenerConfig.listenTLS, version.Name, component.WithNextProtos("h2", "http/1.1")),
+		} {
+			endpoint := endpoint
+			if endpoint.Address() == "" {
+				continue
 			}
-			switch str[0] {
-			case "ttn.lorawan.v3.GsNs":
-				gs.upstreamHandlers[str[1]] = ns.NewHandler(ctx, str[1], c, prefix)
-			default:
-				return nil, errUpstreamType.WithAttributes("name", name)
-			}
+			gs.RegisterTask(&component.TaskConfig{
+				Context: gs.Context(),
+				ID:      fmt.Sprintf("serve_%s/%s", version.Name, endpoint.Address()),
+				Func: func(ctx context.Context) error {
+					l, err := gs.ListenTCP(endpoint.Address())
+					if err != nil {
+						return errListenFrontend.WithCause(err).WithAttributes(
+							"address", endpoint.Address(),
+							"protocol", endpoint.Protocol(),
+						)
+					}
+					lis, err := endpoint.Listen(l)
+					if err != nil {
+						return errListenFrontend.WithCause(err).WithAttributes(
+							"address", endpoint.Address(),
+							"protocol", endpoint.Protocol(),
+						)
+					}
+					defer lis.Close()
+
+					srv := http.Server{
+						Handler:           webServer,
+						ReadTimeout:       120 * time.Second,
+						ReadHeaderTimeout: 5 * time.Second,
+						ErrorLog:          stdlog.New(ioutil.Discard, "", 0),
+					}
+					go func() {
+						<-ctx.Done()
+						srv.Close()
+					}()
+					return srv.Serve(lis)
+				},
+				Restart: component.TaskRestartOnFailure,
+				Backoff: component.DefaultTaskBackoffConfig,
+			})
 		}
 	}
-
-	for _, handler := range gs.upstreamHandlers {
-		if err := handler.Setup(); err != nil {
-			return nil, errSetupUpstream.WithCause(err).WithAttributes("hostname", handler.GetHostName())
-		}
-	}
-
-	c.RegisterGRPC(gs)
 	return gs, nil
 }
 
@@ -297,7 +385,7 @@ var (
 func (gs *GatewayServer) FillGatewayContext(ctx context.Context, ids ttnpb.GatewayIdentifiers) (context.Context, ttnpb.GatewayIdentifiers, error) {
 	ctx = gs.FillContext(ctx)
 	if ids.IsZero() {
-		return nil, ttnpb.GatewayIdentifiers{}, errEmptyIdentifiers
+		return nil, ttnpb.GatewayIdentifiers{}, errEmptyIdentifiers.New()
 	}
 	if ids.GatewayID == "" {
 		registry, err := gs.getRegistry(ctx, nil)
@@ -332,6 +420,14 @@ var (
 	)
 )
 
+var errNewConnection = errors.DefineAborted("new_connection", "new connection from same gateway")
+
+type connectionEntry struct {
+	*io.Connection
+	upstreamDone chan struct{}
+	tasksDone    *sync.WaitGroup
+}
+
 // Connect connects a gateway by its identifiers to the Gateway Server, and returns a io.Connection for traffic and
 // control.
 func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids ttnpb.GatewayIdentifiers) (*io.Connection, error) {
@@ -344,6 +440,7 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 		"protocol", frontend.Protocol(),
 		"gateway_uid", uid,
 	))
+	ctx = log.NewContext(ctx, logger)
 	ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:conn:%s", events.NewCorrelationID()))
 
 	var err error
@@ -362,10 +459,15 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 		GatewayIdentifiers: ids,
 		FieldMask: pbtypes.FieldMask{
 			Paths: []string{
-				"frequency_plan_id",
-				"schedule_downlink_late",
-				"enforce_duty_cycle",
+				"antennas",
 				"downlink_path_constraint",
+				"enforce_duty_cycle",
+				"frequency_plan_id",
+				"frequency_plan_ids",
+				"location_public",
+				"schedule_anytime_delay",
+				"schedule_downlink_late",
+				"update_location_from_status",
 			},
 		},
 	}, callOpt)
@@ -379,51 +481,85 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 		}
 		logger.Warn("Connect unregistered gateway")
 		gtw = &ttnpb.Gateway{
-			GatewayIdentifiers:     ids,
-			FrequencyPlanID:        fpID,
-			EnforceDutyCycle:       true,
-			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
+			GatewayIdentifiers:       ids,
+			FrequencyPlanID:          fpID,
+			FrequencyPlanIDs:         []string{fpID},
+			EnforceDutyCycle:         true,
+			DownlinkPathConstraint:   ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
+			Antennas:                 []ttnpb.GatewayAntenna{},
+			LocationPublic:           false,
+			UpdateLocationFromStatus: false,
 		}
 	} else if err != nil {
 		return nil, err
 	}
-	fp, err := gs.FrequencyPlans.GetByID(gtw.FrequencyPlanID)
-	if err != nil {
-		return nil, err
-	}
 
-	conn, err := io.NewConnection(ctx, frontend, gtw, fp, gtw.EnforceDutyCycle)
+	ids = gtw.GatewayIdentifiers
+
+	conn, err := io.NewConnection(ctx, frontend, gtw, gs.FrequencyPlans, gtw.EnforceDutyCycle, gtw.ScheduleAnytimeDelay)
 	if err != nil {
 		return nil, err
 	}
-	gs.connections.Store(uid, conn)
-	registerGatewayConnect(ctx, ids)
+	wg := &sync.WaitGroup{}
+	// The tasks will always start once the entry is stored.
+	// As such, we must ensure any new connection waits for
+	// all of the upstream tasks to finish.
+	wg.Add(len(gs.upstreamHandlers))
+	connEntry := connectionEntry{
+		Connection:   conn,
+		upstreamDone: make(chan struct{}),
+		tasksDone:    wg,
+	}
+	for existing, exists := gs.connections.LoadOrStore(uid, connEntry); exists; existing, exists = gs.connections.LoadOrStore(uid, connEntry) {
+		existingConnEntry := existing.(connectionEntry)
+		logger.Warn("Disconnect existing connection")
+		existingConnEntry.Disconnect(errNewConnection)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-existingConnEntry.upstreamDone:
+		}
+		existingConnEntry.tasksDone.Wait()
+	}
+	registerGatewayConnect(ctx, ids, frontend.Protocol())
 	logger.Info("Connected")
-	go gs.handleUpstream(conn)
+	go gs.handleUpstream(connEntry)
+	if gs.statsRegistry != nil {
+		go gs.updateConnStats(connEntry)
+	}
+	if gtw.UpdateLocationFromStatus {
+		go gs.handleLocationUpdates(connEntry)
+	}
 
-	for _, handler := range gs.upstreamHandlers {
-		go func(handler upstream.Handler) {
-			logger := log.FromContext(ctx).WithField("handler", handler.GetHostName())
-			if err := handler.ConnectGateway(conn.Context(), ids, conn); err != nil {
-				logger.WithError(err).Warn("Failed to connect gateway on upstream")
-			}
-		}(handler)
+	for name, handler := range gs.upstreamHandlers {
+		handler := handler
+		gs.StartTask(&component.TaskConfig{
+			Context: conn.Context(),
+			ID:      fmt.Sprintf("%s_connect_gateway_%s", name, ids.GatewayID),
+			Func: func(ctx context.Context) error {
+				return handler.ConnectGateway(ctx, ids, conn)
+			},
+			Done:    wg.Done,
+			Restart: component.TaskRestartOnFailure,
+			Backoff: component.DialTaskBackoffConfig,
+		})
 	}
 	return conn, nil
 }
 
 // GetConnection returns the *io.Connection for the given gateway. If not found, this method returns nil, false.
 func (gs *GatewayServer) GetConnection(ctx context.Context, ids ttnpb.GatewayIdentifiers) (*io.Connection, bool) {
-	conn, loaded := gs.connections.Load(unique.ID(ctx, ids))
+	entry, loaded := gs.connections.Load(unique.ID(ctx, ids))
 	if !loaded {
 		return nil, false
 	}
-	return conn.(*io.Connection), true
+	return entry.(connectionEntry).Connection, true
 }
 
 var (
 	errNoNetworkServer = errors.DefineNotFound("no_network_server", "no Network Server found to handle message")
 	errHostHandle      = errors.Define("host_handle", "host `{host}` failed to handle message")
+	errNoRoute         = errors.DefineAborted("no_route", "no route for `{host}`")
 )
 
 var (
@@ -431,38 +567,38 @@ var (
 	maxUpstreamHandlers = int32(1 << 5)
 	// upstreamHandlerIdleTimeout is the duration after which an idle upstream handler stops to save resources.
 	upstreamHandlerIdleTimeout = (1 << 7) * time.Millisecond
-	// upstreamHandlerBusyTimeout is the duration after traffic gets dropped if all upstream handlers are busy.
-	upstreamHandlerBusyTimeout = (1 << 6) * time.Millisecond
 )
 
 type upstreamHost struct {
-	name     string
-	handler  func(ids *ttnpb.EndDeviceIdentifiers) upstream.Handler
-	callOpts []grpc.CallOption
-	handlers int32
-	handleWg sync.WaitGroup
-	handleCh chan upstreamItem
+	name          string
+	handler       upstream.Handler
+	handlers      int32
+	handleWg      sync.WaitGroup
+	handleCh      chan upstreamItem
+	correlationID string
 }
 
 type upstreamItem struct {
-	ctx  context.Context
-	val  interface{}
-	host *upstreamHost
+	ctx context.Context
+	val interface{}
 }
 
-func (gs *GatewayServer) handleUpstream(conn *io.Connection) {
-	ctx := conn.Context()
-	logger := log.FromContext(ctx)
+func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
+	var (
+		ctx      = conn.Context()
+		gtw      = conn.Gateway()
+		protocol = conn.Frontend().Protocol()
+		logger   = log.FromContext(ctx)
+	)
 	defer func() {
-		ids := conn.Gateway().GatewayIdentifiers
-		gs.connections.Delete(unique.ID(ctx, ids))
-		registerGatewayDisconnect(ctx, ids)
+		gs.connections.Delete(unique.ID(ctx, gtw.GatewayIdentifiers))
+		registerGatewayDisconnect(ctx, gtw.GatewayIdentifiers, protocol)
 		logger.Info("Disconnected")
+		close(conn.upstreamDone)
 	}()
 
-	handleFn := func(host *upstreamHost) {
-		defer host.handleWg.Done()
-		defer atomic.AddInt32(&host.handlers, -1)
+	handleFn := func(ctx context.Context, host *upstreamHost) {
+		defer recoverHandler(ctx)
 		for {
 			select {
 			case <-ctx.Done():
@@ -471,12 +607,19 @@ func (gs *GatewayServer) handleUpstream(conn *io.Connection) {
 				return
 			case item := <-host.handleCh:
 				ctx := item.ctx
+				ctx = events.ContextWithCorrelationID(ctx, host.correlationID)
 				switch msg := item.val.(type) {
-				case *ttnpb.UplinkMessage:
-					registerReceiveUplink(ctx, conn.Gateway(), msg, host.name)
+				case *ttnpb.GatewayUplinkMessage:
+					up := *msg.UplinkMessage
+					msg = &ttnpb.GatewayUplinkMessage{
+						BandID:        msg.BandID,
+						UplinkMessage: &up,
+					}
+					msg.CorrelationIDs = append(make([]string, 0, len(msg.CorrelationIDs)+1), msg.CorrelationIDs...)
+					msg.CorrelationIDs = append(msg.CorrelationIDs, host.correlationID)
 					drop := func(ids ttnpb.EndDeviceIdentifiers, err error) {
 						logger := logger.WithError(err)
-						if ids.JoinEUI != nil && !ids.JoinEUI.IsZero() {
+						if ids.JoinEUI != nil {
 							logger = logger.WithField("join_eui", *ids.JoinEUI)
 						}
 						if ids.DevEUI != nil && !ids.DevEUI.IsZero() {
@@ -486,30 +629,39 @@ func (gs *GatewayServer) handleUpstream(conn *io.Connection) {
 							logger = logger.WithField("dev_addr", *ids.DevAddr)
 						}
 						logger.Debug("Drop message")
-						registerDropUplink(ctx, conn.Gateway(), msg, host.name, err)
+						registerDropUplink(ctx, gtw, msg.UplinkMessage, host.name, err)
 					}
-					ids, err := lorawan.GetUplinkMessageIdentifiers(msg)
+					ids, err := lorawan.GetUplinkMessageIdentifiers(msg.RawPayload)
 					if err != nil {
 						drop(ttnpb.EndDeviceIdentifiers{}, err)
 						break
 					}
-					handler := item.host.handler(&ids)
-					if handler == nil {
-						break
-					}
-					if err := handler.HandleUplink(ctx, conn.Gateway().GatewayIdentifiers, ids, msg); err != nil {
-						drop(ids, errHostHandle.WithCause(err).WithAttributes("host", item.host.name))
-						break
-					}
-					registerForwardUplink(ctx, conn.Gateway(), msg, item.host.name)
-				case *ttnpb.GatewayStatus:
-					registerReceiveStatus(ctx, conn.Gateway(), msg)
-					for _, handler := range gs.upstreamHandlers {
-						if err := handler.HandleStatus(ctx, conn.Gateway().GatewayIdentifiers, msg); err != nil {
-							registerForwardStatus(ctx, conn.Gateway(), msg, item.host.name)
-						} else {
-							registerDropStatus(ctx, conn.Gateway(), msg, item.host.name, err)
+					var pass bool
+					switch {
+					case ids.DevAddr != nil:
+						for _, prefix := range host.handler.GetDevAddrPrefixes() {
+							if ids.DevAddr.HasPrefix(prefix) {
+								pass = true
+								break
+							}
 						}
+					default:
+						pass = true
+					}
+					if !pass {
+						drop(ids, errNoRoute.WithAttributes("host", host.name))
+						break
+					}
+					if err := host.handler.HandleUplink(ctx, gtw.GatewayIdentifiers, ids, msg); err != nil {
+						drop(ids, errHostHandle.WithCause(err).WithAttributes("host", host.name))
+						break
+					}
+					registerForwardUplink(ctx, gtw, msg.UplinkMessage, host.name)
+				case *ttnpb.GatewayStatus:
+					if err := host.handler.HandleStatus(ctx, gtw.GatewayIdentifiers, msg); err != nil {
+						registerDropStatus(ctx, gtw, msg, host.name, err)
+					} else {
+						registerForwardStatus(ctx, gtw, msg, host.name)
 					}
 				}
 			}
@@ -517,87 +669,200 @@ func (gs *GatewayServer) handleUpstream(conn *io.Connection) {
 	}
 
 	hosts := make([]*upstreamHost, 0, len(gs.upstreamHandlers))
-	for _, handler := range gs.upstreamHandlers {
-		passDevAddr := func(prefixes []types.DevAddrPrefix, devAddr types.DevAddr) bool {
-			for _, prefix := range prefixes {
-				if devAddr.HasPrefix(prefix) {
-					return true
-				}
-			}
-			return false
+	for name, handler := range gs.upstreamHandlers {
+		host := &upstreamHost{
+			name:          name,
+			handler:       handler,
+			handleCh:      make(chan upstreamItem),
+			correlationID: fmt.Sprintf("gs:up:host:%s", events.NewCorrelationID()),
 		}
-		hosts = append(hosts, &upstreamHost{
-			name: handler.GetHostName(),
-			handler: func(ids *ttnpb.EndDeviceIdentifiers) upstream.Handler {
-				if ids != nil && ids.DevAddr != nil && !passDevAddr(handler.GetDevAddrPrefixes(), *ids.DevAddr) {
-					return nil
-				}
-				return handler
-			},
-			handleCh: make(chan upstreamItem),
-		})
-	}
-
-	for _, host := range hosts {
+		hosts = append(hosts, host)
 		defer host.handleWg.Wait()
 	}
 
 	for {
-		ctx := ctx
-		var val interface{}
+		var (
+			ctx = ctx
+			val interface{}
+		)
 		select {
 		case <-ctx.Done():
 			return
 		case msg := <-conn.Up():
 			ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:uplink:%s", events.NewCorrelationID()))
 			msg.CorrelationIDs = append(msg.CorrelationIDs, events.CorrelationIDsFromContext(ctx)...)
+			if msg.Payload == nil {
+				pld := &ttnpb.Message{}
+				if err := lorawan.UnmarshalMessage(msg.RawPayload, pld); err != nil {
+					log.FromContext(ctx).WithError(err).Debug("Failed to decode message payload")
+				} else {
+					msg.Payload = pld
+				}
+			}
 			val = msg
+			registerReceiveUplink(ctx, gtw, msg.UplinkMessage, protocol)
 		case msg := <-conn.Status():
 			ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:status:%s", events.NewCorrelationID()))
 			val = msg
+			registerReceiveStatus(ctx, gtw, msg, protocol)
 		case msg := <-conn.TxAck():
 			ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:tx_ack:%s", events.NewCorrelationID()))
 			msg.CorrelationIDs = append(msg.CorrelationIDs, events.CorrelationIDsFromContext(ctx)...)
 			if msg.Result == ttnpb.TxAcknowledgment_SUCCESS {
-				registerSuccessDownlink(ctx, conn.Gateway())
+				registerSuccessDownlink(ctx, gtw, protocol)
 			} else {
-				registerFailDownlink(ctx, conn.Gateway(), msg)
+				registerFailDownlink(ctx, gtw, msg, protocol)
 			}
 			// TODO: Send Tx acknowledgement upstream (https://github.com/TheThingsNetwork/lorawan-stack/issues/76)
 			continue
 		}
+		item := upstreamItem{ctx, val}
 		for _, host := range hosts {
-			item := upstreamItem{
-				ctx:  ctx,
-				val:  val,
-				host: host,
-			}
+			host := host
 			select {
+			case <-ctx.Done():
+				return
 			case host.handleCh <- item:
 			default:
 				if atomic.LoadInt32(&host.handlers) < maxUpstreamHandlers {
 					atomic.AddInt32(&host.handlers, 1)
 					host.handleWg.Add(1)
-					go handleFn(host)
+					registerUpstreamHandlerStart(ctx, host.name)
+					go func() {
+						defer host.handleWg.Done()
+						defer atomic.AddInt32(&host.handlers, -1)
+						defer registerUpstreamHandlerStop(ctx, host.name)
+						handleFn(ctx, host)
+					}()
+					go func() {
+						select {
+						case <-ctx.Done():
+							return
+						case host.handleCh <- item:
+						}
+					}()
+					continue
 				}
-				select {
-				case host.handleCh <- item:
-				case <-time.After(upstreamHandlerBusyTimeout):
-					logger.WithField("host", host).Warn("Upstream handlers busy, drop message")
-					switch msg := val.(type) {
-					case *ttnpb.UplinkMessage:
-						registerFailUplink(ctx, conn.Gateway(), msg, host.name)
-					case *ttnpb.GatewayStatus:
-						registerFailStatus(ctx, conn.Gateway(), msg, host.name)
-					}
+				logger.WithField("name", host.name).Warn("Upstream handler busy, fail message")
+				switch msg := val.(type) {
+				case *ttnpb.UplinkMessage:
+					registerFailUplink(ctx, gtw, msg, host.name)
+				case *ttnpb.GatewayStatus:
+					registerFailStatus(ctx, gtw, msg, host.name)
 				}
 			}
 		}
 	}
 }
 
-// GetFrequencyPlan gets the specified frequency plan by the gateway identifiers.
-func (gs *GatewayServer) GetFrequencyPlan(ctx context.Context, ids ttnpb.GatewayIdentifiers) (*frequencyplans.FrequencyPlan, error) {
+func (gs *GatewayServer) updateConnStats(conn connectionEntry) {
+	ctx := conn.Context()
+	logger := log.FromContext(ctx)
+
+	// Initial dummy update, so that gateway appears connected
+	if err := gs.statsRegistry.Set(
+		ctx,
+		conn.Connection.Gateway().GatewayIdentifiers,
+		&ttnpb.GatewayConnectionStats{
+			ConnectedAt: func(t time.Time) *time.Time { return &t }(conn.Connection.ConnectTime()),
+			Protocol:    conn.Connection.Frontend().Protocol(),
+		}); err != nil {
+		logger.WithError(err).Error("Failed to initialize connection stats")
+	}
+
+	defer func() {
+		logger.Debug("Delete connection stats")
+		if err := gs.statsRegistry.Set(gs.FromRequestContext(ctx), conn.Gateway().GatewayIdentifiers, nil); err != nil {
+			logger.WithError(err).Error("Failed to clear connection stats")
+		}
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-conn.StatsChanged():
+		}
+		if err := gs.statsRegistry.Set(ctx, conn.Gateway().GatewayIdentifiers, conn.Stats()); err != nil {
+			logger.WithError(err).Error("Failed to update connection stats")
+		}
+		timeout := time.After(gs.updateConnectionStatsDebounceTime)
+		select {
+		case <-ctx.Done():
+			return
+		case <-timeout:
+		}
+	}
+}
+
+const (
+	allowedLocationDelta = 0.00001
+)
+
+func sameLocation(a, b ttnpb.Location) bool {
+	return a.Altitude == b.Altitude && a.Accuracy == b.Accuracy &&
+		math.Abs(a.Latitude-b.Latitude) <= allowedLocationDelta &&
+		math.Abs(a.Longitude-b.Longitude) <= allowedLocationDelta
+}
+
+func (gs *GatewayServer) handleLocationUpdates(conn connectionEntry) {
+	ctx := conn.Context()
+
+	var err error
+	var callOpt grpc.CallOption
+	callOpt, err = rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials())
+	if err != nil {
+		return
+	}
+	registry, err := gs.getRegistry(ctx, &conn.Gateway().GatewayIdentifiers)
+	if err != nil {
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-conn.LocationChanged():
+			status, _, ok := conn.StatusStats()
+			// TODO: Handle multiple antenna locations (https://github.com/TheThingsNetwork/lorawan-stack/issues/2006).
+			if ok && len(status.AntennaLocations) > 0 {
+				if len(conn.Gateway().Antennas) == 0 {
+					// Add an antenna if none are present
+					conn.Gateway().Antennas = []ttnpb.GatewayAntenna{{}}
+				}
+				if sameLocation(conn.Gateway().Antennas[0].Location, *status.AntennaLocations[0]) {
+					break
+				}
+				status.AntennaLocations[0].Source = ttnpb.SOURCE_GPS
+				conn.Gateway().Antennas[0].Location = *status.AntennaLocations[0]
+				_, err := registry.Update(ctx, &ttnpb.UpdateGatewayRequest{
+					Gateway: ttnpb.Gateway{
+						GatewayIdentifiers: conn.Gateway().GatewayIdentifiers,
+						Antennas:           conn.Gateway().Antennas,
+					},
+					FieldMask: pbtypes.FieldMask{
+						Paths: []string{
+							"antennas",
+						},
+					},
+				}, callOpt)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Warn("Failed to update antenna location")
+				}
+			}
+
+			timeout := time.After(gs.config.UpdateGatewayLocationDebounceTime)
+			select {
+			case <-ctx.Done():
+				return
+			case <-timeout:
+			}
+		}
+	}
+}
+
+// GetFrequencyPlans gets the frequency plans by the gateway identifiers.
+func (gs *GatewayServer) GetFrequencyPlans(ctx context.Context, ids ttnpb.GatewayIdentifiers) (map[string]*frequencyplans.FrequencyPlan, error) {
 	var err error
 	var callOpt grpc.CallOption
 	callOpt, err = rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials())
@@ -612,21 +877,30 @@ func (gs *GatewayServer) GetFrequencyPlan(ctx context.Context, ids ttnpb.Gateway
 	}
 	gtw, err := registry.Get(ctx, &ttnpb.GetGatewayRequest{
 		GatewayIdentifiers: ids,
-		FieldMask:          pbtypes.FieldMask{Paths: []string{"frequency_plan_id"}},
+		FieldMask:          pbtypes.FieldMask{Paths: []string{"frequency_plan_ids"}},
 	}, callOpt)
-	var fpID string
+	var fpIDs []string
 	if err == nil {
-		fpID = gtw.FrequencyPlanID
+		fpIDs = gtw.FrequencyPlanIDs
 	} else if errors.IsNotFound(err) {
-		var ok bool
-		fpID, ok = frequencyplans.FallbackIDFromContext(ctx)
+		fpID, ok := frequencyplans.FallbackIDFromContext(ctx)
 		if !ok {
 			return nil, err
 		}
+		fpIDs = append(fpIDs, fpID)
 	} else {
 		return nil, err
 	}
-	return gs.FrequencyPlans.GetByID(fpID)
+
+	fps := make(map[string]*frequencyplans.FrequencyPlan, len(fpIDs))
+	for _, fpID := range fpIDs {
+		fp, err := gs.FrequencyPlans.GetByID(fpID)
+		if err != nil {
+			return nil, err
+		}
+		fps[fpID] = fp
+	}
+	return fps, nil
 }
 
 // ClaimDownlink claims the downlink path for the given gateway.
@@ -656,4 +930,22 @@ func (gs *GatewayServer) GetMQTTConfig(ctx context.Context) (*config.MQTT, error
 		return nil, err
 	}
 	return &config.MQTT, nil
+}
+
+var errHandlerRecovered = errors.DefineInternal("handler_recovered", "internal server error")
+
+func recoverHandler(ctx context.Context) error {
+	if p := recover(); p != nil {
+		fmt.Fprintln(os.Stderr, p)
+		os.Stderr.Write(debug.Stack())
+		var err error
+		if pErr, ok := p.(error); ok {
+			err = errHandlerRecovered.WithCause(pErr)
+		} else {
+			err = errHandlerRecovered.WithAttributes("panic", p)
+		}
+		log.FromContext(ctx).WithError(err).Error("Handler failed")
+		return err
+	}
+	return nil
 }

@@ -25,12 +25,13 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/interop"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
+	"go.thethings.network/lorawan-stack/v3/pkg/interop"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 type mockInterop struct {
@@ -84,10 +85,14 @@ func TestInteropTLS(t *testing.T) {
 
 	config := &component.Config{
 		ServiceBase: config.ServiceBase{
-			TLS: config.TLS{
-				RootCA:      "testdata/serverca.pem",
-				Certificate: "testdata/servercert.pem",
-				Key:         "testdata/serverkey.pem",
+			TLS: tlsconfig.Config{
+				ServerAuth: tlsconfig.ServerAuth{
+					Certificate: "testdata/servercert.pem",
+					Key:         "testdata/serverkey.pem",
+				},
+				Client: tlsconfig.Client{
+					RootCA: "testdata/serverca.pem",
+				},
 			},
 			Interop: config.InteropServer{
 				ListenTLS: ":9188",
@@ -110,17 +115,19 @@ func TestInteropTLS(t *testing.T) {
 	certContent, err := ioutil.ReadFile("testdata/serverca.pem")
 	a.So(err, should.BeNil)
 	certPool.AppendCertsFromPEM(certContent)
-	client := http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs: certPool,
-			GetClientCertificate: func(info *tls.CertificateRequestInfo) (*tls.Certificate, error) {
-				cert, err := tls.LoadX509KeyPair("testdata/clientcert.pem", "testdata/clientkey.pem")
-				if err != nil {
-					return nil, err
-				}
-				return &cert, nil
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: certPool,
+				GetClientCertificate: func(info *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+					cert, err := tls.LoadX509KeyPair("testdata/clientcert.pem", "testdata/clientkey.pem")
+					if err != nil {
+						return nil, err
+					}
+					return &cert, nil
+				},
 			},
-		}},
+		},
 	}
 
 	// Correct SenderID.

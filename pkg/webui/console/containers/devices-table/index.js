@@ -16,24 +16,37 @@ import React from 'react'
 import { connect } from 'react-redux'
 import bind from 'autobind-decorator'
 
-import sharedMessages from '../../../lib/shared-messages'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
-import FetchTable from '../fetch-table'
-import DateTime from '../../../lib/components/date-time'
-import Button from '../../../components/button'
-import withRequest from '../../../lib/components/with-request'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import Button from '@ttn-lw/components/button'
+import SafeInspector from '@ttn-lw/components/safe-inspector'
 
-import { getDevicesList } from '../../../console/store/actions/devices'
-import { getDeviceTemplateFormats } from '../../store/actions/device-template-formats'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
-import { selectDeviceTemplateFormats } from '../../store/selectors/device-template-formats'
+import Message from '@ttn-lw/lib/components/message'
+import DateTime from '@ttn-lw/lib/components/date-time'
+import withRequest from '@ttn-lw/lib/components/with-request'
+
+import FetchTable from '@console/containers/fetch-table'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import {
   checkFromState,
   mayCreateOrEditApplicationDevices,
   mayViewApplicationDevices,
-} from '../../lib/feature-checks'
+} from '@console/lib/feature-checks'
+
+import { getDeviceTemplateFormats } from '@console/store/actions/device-template-formats'
+import { getDevicesList } from '@console/store/actions/devices'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
+import { selectDeviceTemplateFormats } from '@console/store/selectors/device-template-formats'
+import {
+  selectDevices,
+  selectDevicesTotalCount,
+  selectDevicesFetching,
+  selectDevicesError,
+} from '@console/store/selectors/devices'
 
 import style from './devices-table.styl'
 
@@ -41,14 +54,41 @@ const headers = [
   {
     name: 'ids.device_id',
     displayName: sharedMessages.id,
+    sortable: true,
+    sortKey: 'device_id',
   },
   {
     name: 'name',
     displayName: sharedMessages.name,
+    sortable: true,
+  },
+  {
+    name: 'ids.dev_eui',
+    displayName: sharedMessages.devEUI,
+    sortable: false,
+    render: devEUI =>
+      !Boolean(devEUI) ? (
+        <Message className={style.none} content={sharedMessages.none} firstToLower />
+      ) : (
+        <SafeInspector data={devEUI} noTransform noCopyPopup small hideable={false} />
+      ),
+  },
+  {
+    name: 'ids.join_eui',
+    displayName: sharedMessages.joinEUI,
+    sortable: false,
+    render: joinEUI =>
+      !Boolean(joinEUI) ? (
+        <Message className={style.none} content={sharedMessages.none} lowercase />
+      ) : (
+        <SafeInspector data={joinEUI} noTransform noCopyPopup small hideable={false} />
+      ),
   },
   {
     name: 'created_at',
     displayName: sharedMessages.created,
+    sortable: true,
+    width: 12,
     render(datetime) {
       return <DateTime.Relative value={datetime} />
     },
@@ -67,7 +107,6 @@ const headers = [
 )
 @withFeatureRequirement(mayViewApplicationDevices)
 @withRequest(({ getDeviceTemplateFormats }) => getDeviceTemplateFormats())
-@bind
 class DevicesTable extends React.Component {
   static propTypes = {
     appId: PropTypes.string.isRequired,
@@ -88,26 +127,28 @@ class DevicesTable extends React.Component {
     this.getDevicesList = filters => getDevicesList(props.appId, filters, ['name'])
   }
 
+  @bind
   baseDataSelector(state) {
     const { mayCreateDevices } = this.props
     return {
-      ...state.devices,
+      devices: selectDevices(state),
+      totalCount: selectDevicesTotalCount(state),
+      fetching: selectDevicesFetching(state),
+      error: selectDevicesError(state),
       mayAdd: mayCreateDevices,
     }
   }
 
   get importButton() {
-    const { deviceTemplateFormats, mayCreateDevices, appId } = this.props
-    const canBulkCreate = Object.keys(deviceTemplateFormats).length !== 0
+    const { mayCreateDevices, appId } = this.props
 
     return (
       mayCreateDevices && (
         <Button.Link
-          className={style.importDevices}
           message={sharedMessages.importDevices}
           icon="import_devices"
           to={`/applications/${appId}/devices/import`}
-          disabled={!canBulkCreate}
+          secondary
         />
       )
     )
@@ -123,9 +164,9 @@ class DevicesTable extends React.Component {
         actionItems={this.importButton}
         tableTitle={<Message content={sharedMessages.devices} />}
         getItemsAction={this.getDevicesList}
-        searchItemsAction={this.getDevicesList}
         itemPathPrefix={devicePathPrefix}
         baseDataSelector={this.baseDataSelector}
+        searchable
         {...this.props}
       />
     )

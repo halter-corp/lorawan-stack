@@ -15,14 +15,20 @@
 import React, { Component } from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 
-import WebhooksTable from '../../containers/webhooks-table'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import sharedMessages from '../../../lib/shared-messages'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
-import PAGE_SIZES from '../../constants/page-sizes'
+import WebhooksTable from '@console/containers/webhooks-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 export default class ApplicationWebhooksList extends Component {
+  static propTypes = {
+    match: PropTypes.match.isRequired,
+  }
+
   render() {
     const { appId } = this.props.match.params
 

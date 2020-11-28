@@ -20,9 +20,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 func createApplicationAPIKey(ctx context.Context, ids ttnpb.ApplicationIdentifiers, name string, rights ...ttnpb.Right) (*ttnpb.APIKey, error) {
@@ -91,8 +91,9 @@ var (
 		},
 	}
 	applicationCollaboratorsSet = &cobra.Command{
-		Use:   "set",
-		Short: "Set an application collaborator",
+		Use:     "set",
+		Aliases: []string{"update"},
+		Short:   "Set properties of an application collaborator",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), nil)
 			if appID == nil {
@@ -127,7 +128,7 @@ var (
 	}
 	applicationCollaboratorsDelete = &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{"remove"},
+		Aliases: []string{"del", "remove", "rm"},
 		Short:   "Delete an application collaborator",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), nil)
@@ -190,7 +191,7 @@ var (
 	}
 	applicationAPIKeysCreate = &cobra.Command{
 		Use:     "create [application-id]",
-		Aliases: []string{"add", "generate"},
+		Aliases: []string{"add", "register", "generate"},
 		Short:   "Create an application API key",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), args)
@@ -218,9 +219,9 @@ var (
 		},
 	}
 	applicationAPIKeysUpdate = &cobra.Command{
-		Use:     "update [application-id] [api-key-id]",
-		Aliases: []string{"set"},
-		Short:   "Update an application API key",
+		Use:     "set [application-id] [api-key-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of an application API key",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), firstArgs(1, args...))
 			if appID == nil {
@@ -258,7 +259,7 @@ var (
 	}
 	applicationAPIKeysDelete = &cobra.Command{
 		Use:     "delete [application-id] [api-key-id]",
-		Aliases: []string{"remove"},
+		Aliases: []string{"del", "remove", "rm"},
 		Short:   "Delete an application API key",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), firstArgs(1, args...))

@@ -17,8 +17,8 @@ package interop
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,13 +29,14 @@ import (
 	"strings"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/fetch"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"github.com/oklog/ulid/v2"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/fetch"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -89,7 +90,7 @@ func (p *JoinServerProtocol) UnmarshalYAML(unmarshal func(interface{}) error) er
 		*p = LoRaWANJoinServerProtocol1_0
 		return nil
 	default:
-		return errUnknownProtocol
+		return errUnknownProtocol.New()
 	}
 }
 
@@ -134,7 +135,7 @@ func newHTTPRequest(url string, pld interface{}, headers map[string]string) (*ht
 	return req, nil
 }
 
-// JoinServerFQDN constructs Join Server FQDN using specified eui under domain
+// JoinServerFQDN constructs Join Server FQDN using specified EUI under domain
 // according to LoRaWAN Backend Interfaces specification.
 // If domain is empty, LoRaAllianceJoinEUIDomain is used.
 func JoinServerFQDN(eui types.EUI64, domain string) string {
@@ -236,11 +237,17 @@ func (cl joinServerHTTPClient) GetAppSKey(ctx context.Context, asID string, req 
 	}, nil
 }
 
+var (
+	errGenerateSessionKeyID = errors.Define("generate_session_key_id", "failed to generate session key ID")
+
+	generatedSessionKeyIDPrefix = []byte("ttn-lw-interop-generated:")
+)
+
 // HandleJoinRequest performs Join request according to LoRaWAN Backend Interfaces specification.
 func (cl joinServerHTTPClient) HandleJoinRequest(ctx context.Context, netID types.NetID, req *ttnpb.JoinRequest) (*ttnpb.JoinResponse, error) {
 	pld := req.Payload.GetJoinRequestPayload()
 	if pld == nil {
-		return nil, ErrMalformedMessage
+		return nil, ErrMalformedMessage.New()
 	}
 
 	dlSettings, err := lorawan.MarshalDLSettings(req.DownlinkSettings)
@@ -285,10 +292,22 @@ func (cl joinServerHTTPClient) HandleJoinRequest(ctx context.Context, netID type
 	if req.SelectedMACVersion.Compare(ttnpb.MAC_V1_1) <= 0 {
 		fNwkSIntKey = interopAns.NwkSKey
 	}
+
+	sessionKeyID := []byte(interopAns.SessionKeyID)
+	if len(sessionKeyID) == 0 {
+		log.FromContext(ctx).Debug("Interop join-accept does not contain session key ID, generate random ID")
+		id, err := ulid.New(ulid.Timestamp(time.Now()), rand.Reader)
+		if err != nil {
+			return nil, errGenerateSessionKeyID.New()
+		}
+		sessionKeyID = make([]byte, 0, len(generatedSessionKeyIDPrefix)+len(id))
+		sessionKeyID = append(sessionKeyID, generatedSessionKeyIDPrefix...)
+		sessionKeyID = append(sessionKeyID, id[:]...)
+	}
 	return &ttnpb.JoinResponse{
 		RawPayload: interopAns.PHYPayload,
 		SessionKeys: ttnpb.SessionKeys{
-			SessionKeyID: []byte(interopAns.SessionKeyID),
+			SessionKeyID: sessionKeyID,
 			FNwkSIntKey:  (*ttnpb.KeyEnvelope)(fNwkSIntKey),
 			SNwkSIntKey:  (*ttnpb.KeyEnvelope)(interopAns.SNwkSIntKey),
 			NwkSEncKey:   (*ttnpb.KeyEnvelope)(interopAns.NwkSEncKey),
@@ -298,11 +317,17 @@ func (cl joinServerHTTPClient) HandleJoinRequest(ctx context.Context, netID type
 	}, nil
 }
 
+// GeneratedSessionKeyID returns whether the session key ID is generated locally and not by the Join Server.
+func GeneratedSessionKeyID(id []byte) bool {
+	return bytes.HasPrefix(id, generatedSessionKeyIDPrefix)
+}
+
 func makeJoinServerHTTPRequestFunc(scheme, dns, fqdn string, port uint32, rpcPaths jsRPCPaths, headers map[string]string) func(types.EUI64, func(jsRPCPaths) string, interface{}) (*http.Request, error) {
 	if port == 0 {
 		port = defaultHTTPSPort
 	}
 	return func(joinEUI types.EUI64, pathFunc func(jsRPCPaths) string, pld interface{}) (*http.Request, error) {
+		fqdn := fqdn // Create a new reference to fqdn to avoid mutating the variable in the outside scope.
 		if fqdn == "" {
 			fqdn = JoinServerFQDN(joinEUI, dns)
 		}
@@ -328,54 +353,6 @@ var errUnknownProtocol = errors.DefineInvalidArgument("unknown_protocol", "unkno
 
 var errUnknownConfig = errors.DefineNotFound("unknown_config", "configuration is unknown")
 
-type tlsConfig struct {
-	RootCA      string `yaml:"root-ca"`
-	Certificate string `yaml:"certificate"`
-	Key         string `yaml:"key"`
-}
-
-func (conf tlsConfig) IsZero() bool {
-	return conf == (tlsConfig{})
-}
-
-func (conf tlsConfig) TLSConfig(fetcher fetch.Interface) (*tls.Config, error) {
-	var rootCAs *x509.CertPool
-	if conf.RootCA != "" {
-		caPEM, err := fetcher.File(conf.RootCA)
-		if err != nil {
-			return nil, err
-		}
-		rootCAs = x509.NewCertPool()
-		rootCAs.AppendCertsFromPEM(caPEM)
-	}
-
-	var getCert func(*tls.CertificateRequestInfo) (*tls.Certificate, error)
-	if conf.Certificate != "" || conf.Key != "" {
-		getCert = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-			certPEM, err := fetcher.File(conf.Certificate)
-			if err != nil {
-				return nil, err
-			}
-			keyPEM, err := fetcher.File(conf.Key)
-			if err != nil {
-				return nil, err
-			}
-			cert, err := tls.X509KeyPair(certPEM, keyPEM)
-			if err != nil {
-				return nil, err
-			}
-			return &cert, nil
-		}
-	}
-	return &tls.Config{
-		RootCAs:              rootCAs,
-		GetClientCertificate: getCert,
-	}, nil
-}
-
-// InteropClientConfigurationName represents the filename of interop client configuration.
-const InteropClientConfigurationName = "config.yml"
-
 // NewClient return new interop client.
 // fallbackTLS is optional.
 func NewClient(ctx context.Context, conf config.InteropClient) (*Client, error) {
@@ -392,7 +369,7 @@ func NewClient(ctx context.Context, conf config.InteropClient) (*Client, error) 
 		return nil, err
 	}
 	if fetcher == nil {
-		return nil, errUnknownConfig
+		return nil, errUnknownConfig.New()
 	}
 	confFileBytes, err := fetcher.File(InteropClientConfigurationName)
 	if err != nil {
@@ -461,7 +438,7 @@ func NewClient(ctx context.Context, conf config.InteropClient) (*Client, error) 
 				Protocol:       yamlJSConf.Protocol,
 			}
 		default:
-			return nil, errUnknownProtocol
+			return nil, errUnknownProtocol.New()
 		}
 		for _, pre := range jsConf.JoinEUIs {
 			jss = append(jss, prefixJoinServerClient{
@@ -496,7 +473,7 @@ func (cl Client) joinServer(joinEUI types.EUI64) (joinServerClient, bool) {
 func (cl Client) GetAppSKey(ctx context.Context, asID string, req *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error) {
 	js, ok := cl.joinServer(req.JoinEUI)
 	if !ok {
-		return nil, errNotRegistered
+		return nil, errNotRegistered.New()
 	}
 	return js.GetAppSKey(ctx, asID, req)
 }
@@ -505,11 +482,11 @@ func (cl Client) GetAppSKey(ctx context.Context, asID string, req *ttnpb.Session
 func (cl Client) HandleJoinRequest(ctx context.Context, netID types.NetID, req *ttnpb.JoinRequest) (*ttnpb.JoinResponse, error) {
 	pld := req.Payload.GetJoinRequestPayload()
 	if pld == nil {
-		return nil, ErrMalformedMessage
+		return nil, ErrMalformedMessage.New()
 	}
 	js, ok := cl.joinServer(pld.JoinEUI)
 	if !ok {
-		return nil, errNotRegistered
+		return nil, errNotRegistered.New()
 	}
 	return js.HandleJoinRequest(ctx, netID, req)
 }

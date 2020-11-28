@@ -18,33 +18,40 @@ import { connect } from 'react-redux'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 
-import PageTitle from '../../../components/page-title'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import ErrorView from '../../../lib/components/error-view'
-import SubViewError from '../error/sub-view'
-import Message from '../../../lib/components/message'
-import DataSheet from '../../../components/data-sheet'
-import Button from '../../../components/button'
-import api from '../../api'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import api from '@console/api'
 
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
-import { mayViewMqttConnectionInfo } from '../../lib/feature-checks'
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import DataSheet from '@ttn-lw/components/data-sheet'
+import Button from '@ttn-lw/components/button'
+import Link from '@ttn-lw/components/link'
+
+import Message from '@ttn-lw/lib/components/message'
+import ErrorView from '@ttn-lw/lib/components/error-view'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import SubViewError from '@console/views/error/sub-view'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { mayViewMqttConnectionInfo } from '@console/lib/feature-checks'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 import style from './application-integrations-mqtt.styl'
 
 const m = defineMessages({
-  publicAddress: 'Public Address',
-  publicTlsAddress: 'Public TLS Address',
-  generateApiKey: 'Generate new API Key',
-  viewApiKeys: 'View API Keys',
+  publicAddress: 'Public address',
+  publicTlsAddress: 'Public TLS address',
+  generateApiKey: 'Generate new API key',
+  goToApiKeys: 'Go to API keys',
   mqttInfoText:
-    'The Application Server exposes an MQTT server to work with streaming events. In order to use the MQTT server you need to create a new API Key, which will function as connection password. You can also use an existing API Key, as long as it has the necessary rights granted. Use the connection information below to connect.',
-  connectionCredentials: 'Connection Credentials',
-  mqttIntegrations: 'MQTT Integrations',
+    'The Application Server exposes an MQTT server to work with streaming events. In order to use the MQTT server you need to create a new API key, which will function as connection password. You can also use an existing API key, as long as it has the necessary rights granted. Use the connection information below to connect.',
+  connectionCredentials: 'Connection credentials',
+  mqttIntegrations: 'MQTT integrations',
 })
 
 @connect(state => ({
@@ -57,11 +64,7 @@ const m = defineMessages({
   const { appId } = props
 
   return (
-    <Breadcrumb
-      path={`/applications/${appId}/integrations/mqtt`}
-      icon="extension"
-      content={sharedMessages.mqtt}
-    />
+    <Breadcrumb path={`/applications/${appId}/integrations/mqtt`} content={sharedMessages.mqtt} />
   )
 })
 export default class ApplicationMqtt extends React.Component {
@@ -150,8 +153,14 @@ export default class ApplicationMqtt extends React.Component {
         key: sharedMessages.password,
         value: (
           <React.Fragment>
-            <Button message={m.generateApiKey} onClick={this.handleGeneratePasswordClick} />
-            <Button.Link to={`/applications/${appId}/api-keys`} message={m.viewApiKeys} secondary />
+            <Button
+              className={style.generateApiKeyButton}
+              message={m.generateApiKey}
+              onClick={this.handleGeneratePasswordClick}
+            />
+            <Link to={`/applications/${appId}/api-keys`} secondary>
+              <Message content={m.goToApiKeys} />
+            </Link>
           </React.Fragment>
         ),
       })

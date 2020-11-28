@@ -15,7 +15,9 @@
 import React from 'react'
 import DOM from 'react-dom'
 
-import Modal from '../'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import Modal from '..'
 
 /**
  * PortalledModal is a wrapper around the modal component that renders it into
@@ -24,19 +26,21 @@ import Modal from '../'
  * top of the DOM hierarchy, regardless of its position in the component
  * hierarchy.
  *
- * @returns {Object} - The modal rendered into a portal.
+ * @returns {object} - The modal rendered into a portal.
  */
-const PortalledModal = function({ dispatch, modal, visible, ...rest }) {
-  if (!modal) {
-    return null
-  }
+const PortalledModal = ({ visible, ...modalProps }) =>
+  DOM.createPortal(visible && <Modal {...modalProps} />, document.getElementById('modal-container'))
 
-  const props = { ...rest, ...modal }
+PortalledModal.Modal = Modal
 
-  return DOM.createPortal(
-    visible && <Modal {...props} />,
-    document.getElementById('modal-container'),
-  )
+PortalledModal.propTypes = {
+  ...Modal.propTypes,
+  visible: PropTypes.bool,
+}
+
+PortalledModal.defaultProps = {
+  ...Modal.defaultProps,
+  visible: false,
 }
 
 export default PortalledModal

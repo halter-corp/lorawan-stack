@@ -17,10 +17,10 @@ package io
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errorcontext"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 const bufferSize = 32
@@ -93,15 +93,16 @@ var errBufferFull = errors.DefineResourceExhausted("buffer_full", "buffer is ful
 // SendUp sends an upstream message.
 // This method returns immediately, returning nil if the message is buffered, or with an error when the buffer is full.
 func (s *Subscription) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
+	ctxUp := &ContextualApplicationUp{
+		Context:       ctx,
+		ApplicationUp: up,
+	}
 	select {
 	case <-s.ctx.Done():
 		return s.ctx.Err()
-	case s.upCh <- &ContextualApplicationUp{
-		Context:       ctx,
-		ApplicationUp: up,
-	}:
+	case s.upCh <- ctxUp:
 	default:
-		return errBufferFull
+		return errBufferFull.New()
 	}
 	return nil
 }
@@ -117,6 +118,7 @@ func CleanDownlinks(items []*ttnpb.ApplicationDownlink) []*ttnpb.ApplicationDown
 	for _, item := range items {
 		res = append(res, &ttnpb.ApplicationDownlink{
 			FPort:          item.FPort,
+			FCnt:           item.FCnt, // FCnt must be set when skipping application payload crypto.
 			FRMPayload:     item.FRMPayload,
 			DecodedPayload: item.DecodedPayload,
 			ClassBC:        item.ClassBC,

@@ -17,25 +17,25 @@ package web
 import (
 	"bytes"
 	"context"
-	stdio "io"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path"
 	"strings"
 	"sync"
 
-	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	web_errors "go.thethings.network/lorawan-stack/pkg/errors/web"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/version"
-	ttnweb "go.thethings.network/lorawan-stack/pkg/web"
+	stdio "io"
+
+	"github.com/gorilla/mux"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/version"
+	ttnweb "go.thethings.network/lorawan-stack/v3/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/webhandlers"
+	"go.thethings.network/lorawan-stack/v3/pkg/webmiddleware"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/grpc/metadata"
 )
 
 var userAgent = "ttn-lw-application-server/" + version.TTN
@@ -108,7 +108,7 @@ func (s *QueuedSink) Run(ctx context.Context) error {
 					return
 				case req := <-s.Queue:
 					if err := s.Target.Process(req); err != nil {
-						log.FromContext(ctx).WithError(err).Warn("Failed to process message")
+						log.FromContext(req.Context()).WithError(err).Warn("Failed to process message")
 					}
 				}
 			}
@@ -128,7 +128,7 @@ func (s *QueuedSink) Process(req *http.Request) error {
 	case s.Queue <- req:
 		return nil
 	default:
-		return errQueueFull
+		return errQueueFull.New()
 	}
 }
 
@@ -142,20 +142,22 @@ type Webhooks interface {
 }
 
 type webhooks struct {
-	ctx      context.Context
-	server   io.Server
-	registry WebhookRegistry
-	target   Sink
+	ctx       context.Context
+	server    io.Server
+	registry  WebhookRegistry
+	target    Sink
+	downlinks DownlinksConfig
 }
 
 // NewWebhooks returns a new Webhooks.
-func NewWebhooks(ctx context.Context, server io.Server, registry WebhookRegistry, target Sink) Webhooks {
+func NewWebhooks(ctx context.Context, server io.Server, registry WebhookRegistry, target Sink, downlinks DownlinksConfig) Webhooks {
 	ctx = log.NewContextWithField(ctx, "namespace", "applicationserver/io/web")
 	return &webhooks{
-		ctx:      ctx,
-		server:   server,
-		registry: registry,
-		target:   target,
+		ctx:       ctx,
+		server:    server,
+		registry:  registry,
+		target:    target,
+		downlinks: downlinks,
 	}
 }
 
@@ -163,102 +165,39 @@ func (w *webhooks) Registry() WebhookRegistry { return w.registry }
 
 // RegisterRoutes registers the webhooks to the web server to handle downlink requests.
 func (w *webhooks) RegisterRoutes(server *ttnweb.Server) {
-	middleware := []echo.MiddlewareFunc{
-		w.handleError(),
-		w.validateAndFillIDs(),
+	router := server.Prefix(ttnpb.HTTPAPIPrefix + "/as/applications/{application_id}/webhooks/{webhook_id}/devices/{device_id}/down").Subrouter()
+	router.Use(
+		mux.MiddlewareFunc(webmiddleware.Namespace("applicationserver/io/web")),
+		mux.MiddlewareFunc(webmiddleware.Metadata("Authorization")),
+		w.validateAndFillIDs,
 		w.requireApplicationRights(ttnpb.RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE),
-	}
-	group := server.Group(ttnpb.HTTPAPIPrefix+"/as/applications/:application_id/webhooks/:webhook_id/devices/:device_id/down", middleware...)
-	group.POST("/push", func(c echo.Context) error {
-		return w.handleDown(c, io.Server.DownlinkQueuePush)
-	})
-	group.POST("/replace", func(c echo.Context) error {
-		return w.handleDown(c, io.Server.DownlinkQueueReplace)
-	})
-}
+	)
 
-var errHTTP = errors.Define("http", "HTTP error: {message}")
-
-func (w *webhooks) handleError() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			err := next(c)
-			if err == nil || c.Response().Committed {
-				return err
-			}
-			log.FromContext(w.ctx).WithError(err).Debug("HTTP request failed")
-			statusCode, err := web_errors.ProcessError(err)
-			if strings.Contains(c.Request().Header.Get(echo.HeaderAccept), "application/json") {
-				return c.JSON(statusCode, err)
-			}
-			return c.String(statusCode, err.Error())
-		}
-	}
+	router.Handle("/push", w.handleDown(io.Server.DownlinkQueuePush)).Methods(http.MethodPost)
+	router.Handle("/replace", w.handleDown(io.Server.DownlinkQueueReplace)).Methods(http.MethodPost)
 }
 
 const (
-	applicationIDKey = "application_id"
-	deviceIDKey      = "device_id"
-	webhookIDKey     = "webhook_id"
+	downlinkKeyHeader     = "X-Downlink-Apikey"
+	downlinkPushHeader    = "X-Downlink-Push"
+	downlinkReplaceHeader = "X-Downlink-Replace"
+
+	downlinkOperationURLFormat = "%s/as/applications/%s/webhooks/%s/devices/%s/down/%s"
 )
 
-func (w *webhooks) validateAndFillIDs() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			appID := ttnpb.ApplicationIdentifiers{
-				ApplicationID: c.Param(applicationIDKey),
-			}
-			if err := appID.ValidateContext(w.ctx); err != nil {
-				return err
-			}
-			c.Set(applicationIDKey, appID)
-
-			devID := ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID,
-				DeviceID:               c.Param(deviceIDKey),
-			}
-			if err := devID.ValidateContext(w.ctx); err != nil {
-				return err
-			}
-			c.Set(deviceIDKey, devID)
-
-			hookID := ttnpb.ApplicationWebhookIdentifiers{
-				ApplicationIdentifiers: appID,
-				WebhookID:              c.Param(webhookIDKey),
-			}
-			if err := hookID.ValidateFields(); err != nil {
-				return err
-			}
-			c.Set(webhookIDKey, hookID)
-
-			return next(c)
-		}
+func (w *webhooks) createDownlinkURL(ctx context.Context, webhookID ttnpb.ApplicationWebhookIdentifiers, devID ttnpb.EndDeviceIdentifiers, op string) string {
+	downlinks := w.downlinks
+	baseURL := downlinks.PublicTLSAddress
+	if baseURL == "" {
+		baseURL = downlinks.PublicAddress
 	}
-}
-
-func (w *webhooks) requireApplicationRights(required ...ttnpb.Right) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			ctx := w.server.FillContext(c.Request().Context())
-			ctx = log.NewContextWithField(ctx, "namespace", "applicationserver/io/web")
-
-			appID := c.Get(applicationIDKey).(ttnpb.ApplicationIdentifiers)
-			md := metadata.New(map[string]string{
-				"id":            appID.ApplicationID,
-				"authorization": c.Request().Header.Get(echo.HeaderAuthorization),
-			})
-			if ctxMd, ok := metadata.FromIncomingContext(ctx); ok {
-				md = metadata.Join(ctxMd, md)
-			}
-			ctx = metadata.NewIncomingContext(ctx, md)
-
-			if err := rights.RequireApplication(ctx, appID, required...); err != nil {
-				return err
-			}
-
-			return next(c)
-		}
-	}
+	return fmt.Sprintf(downlinkOperationURLFormat,
+		baseURL,
+		webhookID.ApplicationID,
+		webhookID.WebhookID,
+		devID.DeviceID,
+		op,
+	)
 }
 
 func (w *webhooks) NewSubscription() *io.Subscription {
@@ -283,14 +222,17 @@ func (w *webhooks) handleUp(ctx context.Context, msg *ttnpb.ApplicationUp) error
 		[]string{
 			"base_url",
 			"downlink_ack",
+			"downlink_api_key",
 			"downlink_failed",
 			"downlink_nack",
 			"downlink_queued",
+			"downlink_queue_invalidated",
 			"downlink_sent",
 			"format",
 			"headers",
 			"join_accept",
 			"location_solved",
+			"service_data",
 			"uplink_message",
 		},
 	)
@@ -339,21 +281,42 @@ func (w *webhooks) newRequest(ctx context.Context, msg *ttnpb.ApplicationUp, hoo
 		cfg = hook.DownlinkFailed
 	case *ttnpb.ApplicationUp_DownlinkQueued:
 		cfg = hook.DownlinkQueued
+	case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
+		cfg = hook.DownlinkQueueInvalidated
 	case *ttnpb.ApplicationUp_LocationSolved:
 		cfg = hook.LocationSolved
+	case *ttnpb.ApplicationUp_ServiceData:
+		cfg = hook.ServiceData
 	}
 	if cfg == nil {
 		return nil, nil
 	}
-	url, err := url.Parse(hook.BaseURL)
+	baseURL, err := url.Parse(hook.BaseURL)
 	if err != nil {
 		return nil, err
 	}
-	url.Path = path.Join(url.Path, cfg.Path)
-	expandVariables(url, msg)
+	expandVariables(baseURL, msg)
+	pathURL, err := url.Parse(cfg.Path)
 	if err != nil {
 		return nil, err
 	}
+	expandVariables(pathURL, msg)
+	if strings.HasPrefix(pathURL.Path, "/") {
+		// Trim the leading slash, in order to ensure that the path is not
+		// interpreted as relative to the root of the URL.
+		pathURL.Path = strings.TrimLeft(pathURL.Path, "/")
+		// Add the "/" suffix here instead of the condition below in order
+		// to treat the case in which the pathURL.Path is "/".
+		if !strings.HasSuffix(baseURL.Path, "/") {
+			baseURL.Path += "/"
+		}
+	}
+	// If the path URL contains an actual path (i.e. is not only a query)
+	// ensure that it does not override the top level path.
+	if pathURL.Path != "" && !strings.HasSuffix(baseURL.Path, "/") {
+		baseURL.Path += "/"
+	}
+	finalURL := baseURL.ResolveReference(pathURL)
 	format, ok := formats[hook.Format]
 	if !ok {
 		return nil, errFormatNotFound.WithAttributes("format", hook.Format)
@@ -362,12 +325,17 @@ func (w *webhooks) newRequest(ctx context.Context, msg *ttnpb.ApplicationUp, hoo
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, url.String(), bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, finalURL.String(), bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
 	for key, value := range hook.Headers {
 		req.Header.Set(key, value)
+	}
+	if hook.DownlinkAPIKey != "" {
+		req.Header.Set(downlinkKeyHeader, hook.DownlinkAPIKey)
+		req.Header.Set(downlinkPushHeader, w.createDownlinkURL(ctx, hook.ApplicationWebhookIdentifiers, msg.EndDeviceIdentifiers, "push"))
+		req.Header.Set(downlinkReplaceHeader, w.createDownlinkURL(ctx, hook.ApplicationWebhookIdentifiers, msg.EndDeviceIdentifiers, "replace"))
 	}
 	req.Header.Set("Content-Type", format.ContentType)
 	req.Header.Set("User-Agent", userAgent)
@@ -376,39 +344,49 @@ func (w *webhooks) newRequest(ctx context.Context, msg *ttnpb.ApplicationUp, hoo
 
 var errWebhookNotFound = errors.DefineNotFound("webhook_not_found", "webhook not found")
 
-func (w *webhooks) handleDown(c echo.Context, op func(io.Server, context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error) error {
-	ctx := w.server.FillContext(c.Request().Context())
-	devID := c.Get(deviceIDKey).(ttnpb.EndDeviceIdentifiers)
-	hookID := c.Get(webhookIDKey).(ttnpb.ApplicationWebhookIdentifiers)
-	logger := log.FromContext(ctx).WithFields(log.Fields(
-		"application_id", devID.ApplicationID,
-		"device_id", devID.DeviceID,
-		"webhook_id", hookID.WebhookID,
-	))
-	hook, err := w.registry.Get(ctx, hookID, []string{"format"})
-	if err != nil {
-		return err
-	}
-	if hook == nil {
-		return errWebhookNotFound
-	}
-	format, ok := formats[hook.Format]
-	if !ok {
-		return errFormatNotFound.WithAttributes("format", hook.Format)
-	}
-	body, err := ioutil.ReadAll(c.Request().Body)
-	if err != nil {
-		return err
-	}
-	items, err := format.ToDownlinks(body)
-	if err != nil {
-		return err
-	}
-	logger.Debug("Perform downlink queue operation")
-	if err := op(w.server, ctx, devID, items.Downlinks); err != nil {
-		return err
-	}
-	return nil
+func (w *webhooks) handleDown(op func(io.Server, context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		devID := deviceIDFromContext(ctx)
+		hookID := webhookIDFromContext(ctx)
+		logger := log.FromContext(ctx).WithFields(log.Fields(
+			"application_id", devID.ApplicationID,
+			"device_id", devID.DeviceID,
+			"webhook_id", hookID.WebhookID,
+		))
+
+		hook, err := w.registry.Get(ctx, hookID, []string{"format"})
+		if err != nil {
+			webhandlers.Error(res, req, err)
+			return
+		}
+		if hook == nil {
+			webhandlers.Error(res, req, errWebhookNotFound.New())
+			return
+		}
+		format, ok := formats[hook.Format]
+		if !ok {
+			webhandlers.Error(res, req, errFormatNotFound.WithAttributes("format", hook.Format))
+			return
+		}
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			webhandlers.Error(res, req, err)
+			return
+		}
+		items, err := format.ToDownlinks(body)
+		if err != nil {
+			webhandlers.Error(res, req, err)
+			return
+		}
+		logger.Debug("Perform downlink queue operation")
+		if err := op(w.server, ctx, devID, items.Downlinks); err != nil {
+			webhandlers.Error(res, req, err)
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
+	})
 }
 
 func expandVariables(url *url.URL, up *ttnpb.ApplicationUp) {

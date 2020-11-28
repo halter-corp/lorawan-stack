@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-$height = 2.3rem
 $height-small = 2rem
 
 .container
   border-input()
   horizontalize()
   border-radius: $br.s
-  height: $height
+  height: $default-input-height
   justify-content: space-between
   position: relative
   box-sizing: border-box
@@ -51,13 +50,14 @@ $height-small = 2rem
     &:not(.button-swap)
       border-input('left')
 
-    &:hover
-      color: black
+    &:not(:disabled)
+      &:hover
+        color: black
 
-    &:active
-      background-color: $c-backdrop
+      &:active
+        background-color: $c-backdrop
 
-  & > span // byte-order
+  & > span // Byte-order.
     nudge('up', 2px)
     font-size: $fs.s
     line-height: $height
@@ -93,7 +93,7 @@ $height-small = 2rem
   border-radius: $br.s
 
   &:hover
-    background-color: white // Needs to be here for Safari to work
+    background-color: white // Needs to be here for Safari to work.
 
   span
     margin-right: .3rem
@@ -149,4 +149,3 @@ $height-small = 2rem
   100%
     opacity: 0
     transform:  translate(0, -3px) scale(1)
-

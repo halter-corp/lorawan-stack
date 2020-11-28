@@ -17,7 +17,7 @@ import {
   GET_APP_LINK_FAILURE,
   UPDATE_APP_LINK_SUCCESS,
   DELETE_APP_LINK_SUCCESS,
-} from '../actions/link'
+} from '@console/store/actions/link'
 
 const defaultProps = {
   linked: undefined,
@@ -36,12 +36,12 @@ const getLinkSuccess = function(state, { payload }) {
   }
 }
 
-const getLinkFailure = function(state) {
+const getLinkFailure = function(state, { payload }) {
   return {
     ...state,
-    link: {},
-    stats: undefined,
-    linked: false,
+    link: payload.link || {},
+    stats: payload.stats || undefined,
+    linked: payload.linked || false,
   }
 }
 

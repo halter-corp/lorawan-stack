@@ -16,15 +16,17 @@ import React, { Component } from 'react'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import sharedMessages from '../../lib/shared-messages'
-import PropTypes from '../../lib/prop-types'
+import Checkbox from '@ttn-lw/components/checkbox'
 
-import Checkbox from '../checkbox'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import style from './toggled.styl'
-import Input from './'
 
-@bind
+import Input from '.'
+
 class Toggled extends Component {
+  @bind
   handleCheckboxChange(event) {
     const enabled = event.target.checked
     const { value } = this.props.value
@@ -32,6 +34,7 @@ class Toggled extends Component {
     this.props.onChange({ value, enabled }, true)
   }
 
+  @bind
   handleInputChange(value) {
     const { enabled } = this.props.value
 
@@ -69,22 +72,39 @@ class Toggled extends Component {
 }
 
 Toggled.propTypes = {
-  value: PropTypes.object,
-  enabledMessage: PropTypes.message,
   className: PropTypes.string,
-  icon: PropTypes.string,
-  placeholder: PropTypes.string,
-  error: PropTypes.bool,
-  warning: PropTypes.bool,
-  valid: PropTypes.bool,
   disabled: PropTypes.bool,
-  readOnly: PropTypes.bool,
+  enabledMessage: PropTypes.message,
+  error: PropTypes.bool,
+  icon: PropTypes.string,
   label: PropTypes.string,
   loading: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  readOnly: PropTypes.bool,
+  type: PropTypes.string,
+  valid: PropTypes.bool,
+  value: PropTypes.shape({
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    enabled: PropTypes.bool,
+  }),
+  warning: PropTypes.bool,
 }
 
 Toggled.defaultProps = {
+  className: undefined,
+  disabled: false,
   enabledMessage: sharedMessages.enabled,
+  error: false,
+  icon: undefined,
+  label: undefined,
+  loading: false,
+  placeholder: undefined,
+  readOnly: false,
+  valid: false,
+  value: undefined,
+  warning: false,
+  type: 'text',
 }
 
 export default Toggled

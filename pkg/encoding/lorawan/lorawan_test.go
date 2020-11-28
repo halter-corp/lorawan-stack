@@ -21,12 +21,13 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	. "go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	_ "go.thethings.network/lorawan-stack/v3/pkg/crypto" // Needed to make the populators work.
+	. "go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestMessageEncodingSymmetricity(t *testing.T) {
@@ -235,6 +236,46 @@ func TestLoRaWANEncodingRaw(t *testing.T) {
 				0x42,
 
 				/** FRMPayload **/
+				0xfe, 0xff,
+
+				/* MIC */
+				0x42, 0xff, 0xff, 0xff,
+			},
+		},
+		{
+			"Downlink(Unconfirmed)/no FPort",
+			&ttnpb.Message{
+				MHDR: ttnpb.MHDR{MType: ttnpb.MType_UNCONFIRMED_DOWN, Major: 0},
+				Payload: &ttnpb.Message_MACPayload{MACPayload: &ttnpb.MACPayload{
+					FHDR: ttnpb.FHDR{
+						DevAddr: types.DevAddr{0x42, 0xff, 0xff, 0xff},
+						FCtrl: ttnpb.FCtrl{
+							ADR:       true,
+							ADRAckReq: false,
+							Ack:       true,
+							ClassB:    false,
+							FPending:  true,
+						},
+						FCnt:  0xff42,
+						FOpts: []byte{0xfe, 0xff},
+					},
+				}},
+				MIC: []byte{0x42, 0xff, 0xff, 0xff},
+			},
+			[]byte{
+				/* MHDR */
+				0x60,
+
+				/* MACPayload */
+
+				/** FHDR **/
+				/*** DevAddr ***/
+				0xff, 0xff, 0xff, 0x42,
+				/*** FCtrl ***/
+				0xb2,
+				/*** FCnt ***/
+				0x42, 0xff,
+				/*** FOpts ***/
 				0xfe, 0xff,
 
 				/* MIC */
@@ -570,10 +611,7 @@ func TestUnmarshalIdentifiers(t *testing.T) {
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			a := assertions.New(t)
-			msg := &ttnpb.UplinkMessage{
-				RawPayload: tc.Bytes,
-			}
-			ids, err := GetUplinkMessageIdentifiers(msg)
+			ids, err := GetUplinkMessageIdentifiers(tc.Bytes)
 			if !a.So(err, should.BeNil) {
 				t.FailNow()
 			}
@@ -627,10 +665,7 @@ func TestUnmarshalResilience(t *testing.T) {
 				a.So(err, should.NotBeNil)
 			}, should.NotPanic)
 			a.So(func() {
-				msg := &ttnpb.UplinkMessage{
-					RawPayload: tc,
-				}
-				_, err := GetUplinkMessageIdentifiers(msg)
+				_, err := GetUplinkMessageIdentifiers(tc)
 				a.So(err, should.NotBeNil)
 			}, should.NotPanic)
 		})

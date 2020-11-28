@@ -14,14 +14,17 @@
 
 import axios from 'axios'
 
-import getCookieValue from '../../lib/cookie'
-import { selectApplicationRootPath, selectStackConfig } from '../../lib/selectors/env'
+import {
+  selectApplicationRootPath,
+  selectStackConfig,
+  selectCSRFToken,
+} from '@ttn-lw/lib/selectors/env'
 
 const appRoot = selectApplicationRootPath()
 const stackConfig = selectStackConfig()
 const isBaseUrl = stackConfig.is.base_url
 
-const csrf = getCookieValue('_csrf')
+const csrf = selectCSRFToken()
 const instance = axios.create({
   headers: { 'X-CSRF-Token': csrf },
 })
@@ -29,16 +32,16 @@ const instance = axios.create({
 export default {
   users: {
     async register(userData) {
-      return axios.post(`${isBaseUrl}/users`, userData)
+      return instance.post(`${isBaseUrl}/users`, userData)
     },
     async resetPassword(user_id) {
-      return axios.post(`${isBaseUrl}/users/${user_id}/temporary_password`)
+      return instance.post(`${isBaseUrl}/users/${user_id}/temporary_password`)
     },
     async updatePassword(user_id, passwordData) {
-      return axios.put(`${isBaseUrl}/users/${user_id}/password`, passwordData)
+      return instance.put(`${isBaseUrl}/users/${user_id}/password`, passwordData)
     },
     async validate(validationData) {
-      return axios.patch(`${isBaseUrl}/contact_info/validation`, validationData)
+      return instance.patch(`${isBaseUrl}/contact_info/validation`, validationData)
     },
   },
   oauth: {

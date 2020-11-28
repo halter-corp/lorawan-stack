@@ -7,6 +7,7 @@ var JoinRequestFieldPathsNested = []string{
 	"cf_list.ch_masks",
 	"cf_list.freq",
 	"cf_list.type",
+	"consumed_airtime",
 	"correlation_ids",
 	"dev_addr",
 	"downlink_settings",
@@ -48,6 +49,7 @@ var JoinRequestFieldPathsNested = []string{
 	"payload.Payload.mac_payload.f_hdr.f_opts",
 	"payload.Payload.mac_payload.f_port",
 	"payload.Payload.mac_payload.frm_payload",
+	"payload.Payload.mac_payload.full_f_cnt",
 	"payload.Payload.rejoin_request_payload",
 	"payload.Payload.rejoin_request_payload.dev_eui",
 	"payload.Payload.rejoin_request_payload.join_eui",
@@ -65,6 +67,7 @@ var JoinRequestFieldPathsNested = []string{
 
 var JoinRequestFieldPathsTopLevel = []string{
 	"cf_list",
+	"consumed_airtime",
 	"correlation_ids",
 	"dev_addr",
 	"downlink_settings",

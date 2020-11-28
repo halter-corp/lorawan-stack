@@ -20,17 +20,18 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/mock"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 var timeout = (1 << 3) * test.Delay
@@ -42,6 +43,7 @@ func TestFlow(t *testing.T) {
 	ctx := log.NewContext(test.Context(), test.GetLogger(t))
 
 	c := componenttest.NewComponent(t, &component.Config{})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 
 	ids := ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}
@@ -72,6 +74,8 @@ func TestFlow(t *testing.T) {
 	a.So(time.Since(conn.ConnectTime()), should.BeLessThan, timeout)
 	a.So(conn.Gateway(), should.Resemble, gtw)
 	a.So(conn.Frontend().Protocol(), should.Equal, "mock")
+	a.So(conn.PrimaryFrequencyPlan(), should.NotBeNil)
+	a.So(conn.PrimaryFrequencyPlan().BandID, should.Equal, "EU_863_870")
 
 	{
 		frontend.Up <- &ttnpb.UplinkMessage{
@@ -84,14 +88,15 @@ func TestFlow(t *testing.T) {
 		}
 		select {
 		case up := <-conn.Up():
-			tokenIDs, timestamp, err := io.ParseUplinkToken(up.RxMetadata[0].UplinkToken)
+			token, err := io.ParseUplinkToken(up.RxMetadata[0].UplinkToken)
 			a.So(err, should.BeNil)
-			a.So(tokenIDs.GatewayIdentifiers, should.Resemble, ids)
-			a.So(tokenIDs.AntennaIndex, should.Equal, 0)
-			a.So(timestamp, should.Equal, 100)
+			a.So(token.GatewayIdentifiers, should.Resemble, ids)
+			a.So(token.AntennaIndex, should.Equal, 0)
+			a.So(token.Timestamp, should.Equal, 100)
 		case <-time.After(timeout):
 			t.Fatalf("Expected uplink message time-out")
 		}
+		time.Sleep(timeout / 2)
 		total, t, ok := conn.UpStats()
 		a.So(ok, should.BeTrue)
 		a.So(total, should.Equal, 1)
@@ -105,6 +110,7 @@ func TestFlow(t *testing.T) {
 		case <-time.After(timeout):
 			t.Fatalf("Expected status message time-out")
 		}
+		time.Sleep(timeout / 2)
 		last, t, ok := conn.StatusStats()
 		a.So(ok, should.BeTrue)
 		a.So(last, should.NotBeNil)
@@ -133,7 +139,12 @@ func TestFlow(t *testing.T) {
 			Name: "NoRequest",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -150,7 +161,12 @@ func TestFlow(t *testing.T) {
 			Name: "ValidClassA",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -159,6 +175,7 @@ func TestFlow(t *testing.T) {
 					Request: &ttnpb.TxRequest{
 						Class:            ttnpb.CLASS_A,
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
+						Rx1Delay:         ttnpb.RX_DELAY_1,
 						Rx1DataRateIndex: 5,
 						Rx1Frequency:     868100000,
 					},
@@ -170,7 +187,12 @@ func TestFlow(t *testing.T) {
 			Name: "ConflictClassA",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100), // Same as previous.
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					), // Same as previous.
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -179,6 +201,7 @@ func TestFlow(t *testing.T) {
 					Request: &ttnpb.TxRequest{
 						Class:            ttnpb.CLASS_A,
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
+						Rx1Delay:         ttnpb.RX_DELAY_1,
 						Rx1DataRateIndex: 5,         // Same as previous.
 						Rx1Frequency:     868100000, // Same as previous.
 					},
@@ -207,8 +230,36 @@ func TestFlow(t *testing.T) {
 					Request: &ttnpb.TxRequest{
 						Class:            ttnpb.CLASS_A,
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
+						Rx1Delay:         ttnpb.RX_DELAY_1,
 						Rx1DataRateIndex: 5,         // Same as previous.
 						Rx1Frequency:     868100000, // Same as previous.
+						FrequencyPlanID:  test.EUFrequencyPlanID,
+					},
+				},
+			},
+			ErrorAssertion: errors.IsInvalidArgument,
+		},
+		{
+			Name: "NoRx1DelayClassA",
+			Path: &ttnpb.DownlinkPath{
+				Path: &ttnpb.DownlinkPath_UplinkToken{
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
+				},
+			},
+			Message: &ttnpb.DownlinkMessage{
+				RawPayload: []byte{0x01},
+				Settings: &ttnpb.DownlinkMessage_Request{
+					Request: &ttnpb.TxRequest{
+						Class:            ttnpb.CLASS_A,
+						Priority:         ttnpb.TxSchedulePriority_NORMAL,
+						Rx1DataRateIndex: 5,
+						Rx1Frequency:     868100000,
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -218,7 +269,12 @@ func TestFlow(t *testing.T) {
 			Name: "ValidClassC/UplinkToken",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -229,6 +285,7 @@ func TestFlow(t *testing.T) {
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
 						Rx2DataRateIndex: 5,
 						Rx2Frequency:     869525000,
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -253,6 +310,7 @@ func TestFlow(t *testing.T) {
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
 						Rx2DataRateIndex: 5,
 						Rx2Frequency:     869525000,
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -278,6 +336,7 @@ func TestFlow(t *testing.T) {
 						Rx2DataRateIndex: 5,
 						Rx2Frequency:     869525000,
 						AbsoluteTime:     timePtr(time.Unix(100, 0)), // The mock front-end uses Unix epoch as start time.
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -295,6 +354,7 @@ func TestFlow(t *testing.T) {
 						Rx2DataRateIndex: 5,
 						Rx2Frequency:     869525000,
 						AbsoluteTime:     timePtr(time.Unix(100, 0)), // The mock front-end uses Unix epoch as start time.
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -304,7 +364,12 @@ func TestFlow(t *testing.T) {
 			Name: "InvalidDataRate",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -315,6 +380,7 @@ func TestFlow(t *testing.T) {
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
 						Rx2DataRateIndex: 10, // This one doesn't exist in the band.
 						Rx2Frequency:     869525000,
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -324,7 +390,12 @@ func TestFlow(t *testing.T) {
 			Name: "TooLong",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "foo-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -335,6 +406,7 @@ func TestFlow(t *testing.T) {
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
 						Rx2DataRateIndex: 0,
 						Rx2Frequency:     869525000,
+						FrequencyPlanID:  test.EUFrequencyPlanID,
 					},
 				},
 			},
@@ -385,6 +457,7 @@ func TestSubBandEIRPOverride(t *testing.T) {
 	ctx := log.NewContext(test.Context(), test.GetLogger(t))
 
 	c := componenttest.NewComponent(t, &component.Config{})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 
 	ids := ttnpb.GatewayIdentifiers{GatewayID: "bar-gateway"}
@@ -428,11 +501,11 @@ func TestSubBandEIRPOverride(t *testing.T) {
 		}
 		select {
 		case up := <-conn.Up():
-			tokenIDs, timestamp, err := io.ParseUplinkToken(up.RxMetadata[0].UplinkToken)
+			token, err := io.ParseUplinkToken(up.RxMetadata[0].UplinkToken)
 			a.So(err, should.BeNil)
-			a.So(tokenIDs.GatewayIdentifiers, should.Resemble, ids)
-			a.So(tokenIDs.AntennaIndex, should.Equal, 0)
-			a.So(timestamp, should.Equal, 100)
+			a.So(token.GatewayIdentifiers, should.Resemble, ids)
+			a.So(token.AntennaIndex, should.Equal, 0)
+			a.So(token.Timestamp, should.Equal, 100)
 		case <-time.After(timeout):
 			t.Fatalf("Expected uplink message time-out")
 		}
@@ -453,7 +526,12 @@ func TestSubBandEIRPOverride(t *testing.T) {
 			Name: "ValidClassA",
 			Path: &ttnpb.DownlinkPath{
 				Path: &ttnpb.DownlinkPath_UplinkToken{
-					UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "bar-gateway"}}, 100),
+					UplinkToken: io.MustUplinkToken(
+						ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "bar-gateway"}},
+						100,
+						100000,
+						time.Unix(0, 100*1000),
+					),
 				},
 			},
 			Message: &ttnpb.DownlinkMessage{
@@ -462,8 +540,10 @@ func TestSubBandEIRPOverride(t *testing.T) {
 					Request: &ttnpb.TxRequest{
 						Class:            ttnpb.CLASS_A,
 						Priority:         ttnpb.TxSchedulePriority_NORMAL,
+						Rx1Delay:         ttnpb.RX_DELAY_1,
 						Rx1DataRateIndex: 5,
 						Rx1Frequency:     923200000,
+						FrequencyPlanID:  "AS_923_925_AU",
 					},
 				},
 			},

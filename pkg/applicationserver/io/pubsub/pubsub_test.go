@@ -19,20 +19,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/formatters"
-	mock_server "go.thethings.network/lorawan-stack/pkg/applicationserver/io/mock"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	mock_provider "go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider/mock"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/redis"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/formatters"
+	mock_server "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	mock_provider "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	cloudpubsub "gocloud.dev/pubsub"
 )
 
@@ -55,69 +56,85 @@ func TestPubSub(t *testing.T) {
 		PubSubID:               registeredPubSubID,
 	}
 
-	_, err := registry.Set(ctx, ids, nil, func(_ *ttnpb.ApplicationPubSub) (*ttnpb.ApplicationPubSub, []string, error) {
-		return &ttnpb.ApplicationPubSub{
-				ApplicationPubSubIdentifiers: ttnpb.ApplicationPubSubIdentifiers{
-					ApplicationIdentifiers: registeredApplicationID,
-					PubSubID:               registeredPubSubID,
-				},
-				Provider: &ttnpb.ApplicationPubSub_NATS{
-					NATS: &ttnpb.ApplicationPubSub_NATSProvider{
-						ServerURL: "nats://localhost",
-					},
-				},
-				Format:    "json",
-				BaseTopic: "app1.ps1",
-				DownlinkPush: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.push",
-				},
-				DownlinkReplace: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.replace",
-				},
-				UplinkMessage: &ttnpb.ApplicationPubSub_Message{
-					Topic: "uplink.message",
-				},
-				JoinAccept: &ttnpb.ApplicationPubSub_Message{
-					Topic: "join.accept",
-				},
-				DownlinkAck: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.ack",
-				},
-				DownlinkNack: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.nack",
-				},
-				DownlinkSent: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.sent",
-				},
-				DownlinkFailed: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlnk.failed",
-				},
-				DownlinkQueued: &ttnpb.ApplicationPubSub_Message{
-					Topic: "downlink.queued",
-				},
-				LocationSolved: &ttnpb.ApplicationPubSub_Message{
-					Topic: "location.solved",
-				},
+	ps := &ttnpb.ApplicationPubSub{
+		ApplicationPubSubIdentifiers: ttnpb.ApplicationPubSubIdentifiers{
+			ApplicationIdentifiers: registeredApplicationID,
+			PubSubID:               registeredPubSubID,
+		},
+		Provider: &ttnpb.ApplicationPubSub_NATS{
+			NATS: &ttnpb.ApplicationPubSub_NATSProvider{
+				ServerURL: "nats://localhost",
 			},
-			[]string{
-				"base_topic",
-				"downlink_ack",
-				"downlink_failed",
-				"downlink_nack",
-				"downlink_queued",
-				"downlink_sent",
-				"downlink_push",
-				"downlink_replace",
-				"format",
-				"ids",
-				"provider",
-				"join_accept",
-				"location_solved",
-				"uplink_message",
-			}, nil
+		},
+		Format:    "json",
+		BaseTopic: "app1.ps1",
+		DownlinkPush: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.push",
+		},
+		DownlinkReplace: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.replace",
+		},
+		UplinkMessage: &ttnpb.ApplicationPubSub_Message{
+			Topic: "uplink.message",
+		},
+		JoinAccept: &ttnpb.ApplicationPubSub_Message{
+			Topic: "join.accept",
+		},
+		DownlinkAck: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.ack",
+		},
+		DownlinkNack: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.nack",
+		},
+		DownlinkSent: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.sent",
+		},
+		DownlinkFailed: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlnk.failed",
+		},
+		DownlinkQueued: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.queued",
+		},
+		DownlinkQueueInvalidated: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.invalidated",
+		},
+		LocationSolved: &ttnpb.ApplicationPubSub_Message{
+			Topic: "location.solved",
+		},
+		ServiceData: &ttnpb.ApplicationPubSub_Message{
+			Topic: "service.data",
+		},
+	}
+	paths := []string{
+		"base_topic",
+		"downlink_ack",
+		"downlink_failed",
+		"downlink_nack",
+		"downlink_queued",
+		"downlink_queue_invalidated",
+		"downlink_sent",
+		"downlink_push",
+		"downlink_replace",
+		"format",
+		"ids",
+		"provider",
+		"join_accept",
+		"location_solved",
+		"uplink_message",
+		"service_data",
+	}
+
+	_, err := registry.Set(ctx, ids, nil, func(_ *ttnpb.ApplicationPubSub) (*ttnpb.ApplicationPubSub, []string, error) {
+		return ps, paths, nil
 	})
 	if err != nil {
 		t.Fatalf("Failed to set pubsub in registry: %s", err)
+	}
+
+	result, err := registry.List(ctx, ids.ApplicationIdentifiers, paths)
+	a.So(err, should.BeNil)
+	if a.So(len(result), should.Equal, 1) {
+		a.So(result[0], should.Resemble, ps)
 	}
 
 	mockProvider, err := provider.GetProvider(&ttnpb.ApplicationPubSub{
@@ -236,6 +253,26 @@ func TestPubSub(t *testing.T) {
 				Subscription: conn.DownlinkQueued,
 			},
 			{
+				Name: "DownlinkMessage/QueueInvalidated",
+				Message: &ttnpb.ApplicationUp{
+					EndDeviceIdentifiers: registeredDeviceID,
+					Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+						DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+							Downlinks: []*ttnpb.ApplicationDownlink{
+								{
+									SessionKeyID: []byte{0x22},
+									FCnt:         42,
+									FPort:        42,
+									FRMPayload:   []byte{0x1, 0x2, 0x3},
+								},
+							},
+							LastFCntDown: 42,
+						},
+					},
+				},
+				Subscription: conn.DownlinkQueueInvalidated,
+			},
+			{
 				Name: "DownlinkMessage/Failed",
 				Message: &ttnpb.ApplicationUp{
 					EndDeviceIdentifiers: registeredDeviceID,
@@ -271,6 +308,27 @@ func TestPubSub(t *testing.T) {
 					},
 				},
 				Subscription: conn.LocationSolved,
+			},
+			{
+				Name: "ServiceData",
+				Message: &ttnpb.ApplicationUp{
+					EndDeviceIdentifiers: registeredDeviceID,
+					Up: &ttnpb.ApplicationUp_ServiceData{
+						ServiceData: &ttnpb.ApplicationServiceData{
+							Data: &types.Struct{
+								Fields: map[string]*types.Value{
+									"battery": {
+										Kind: &types.Value_NumberValue{
+											NumberValue: 42.0,
+										},
+									},
+								},
+							},
+							Service: "test",
+						},
+					},
+				},
+				Subscription: conn.ServiceData,
 			},
 		} {
 			tcok := t.Run(tc.Name, func(t *testing.T) {

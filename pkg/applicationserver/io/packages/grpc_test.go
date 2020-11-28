@@ -22,20 +22,20 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/mock"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/packages"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/packages/redis"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -89,7 +89,7 @@ func TestAuthentication(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -99,7 +99,7 @@ func TestAuthentication(t *testing.T) {
 	defer flush()
 	defer redisClient.Close()
 	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient}
-	srv, err := packages.New(ctx, as, apRegistry)
+	srv, err := packages.New(ctx, as, apRegistry, map[string]packages.ApplicationPackageHandler{})
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
@@ -168,7 +168,7 @@ func TestAssociations(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -180,15 +180,11 @@ func TestAssociations(t *testing.T) {
 	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient}
 
 	handleUpCh := make(chan *handleUpRequest, 4)
-	applicationPackageFactory = packages.CreateApplicationPackage(
-		func(server io.Server, registry packages.Registry) packages.ApplicationPackageHandler {
-			a.So(server, should.Equal, as)
-			a.So(registry, should.Equal, apRegistry)
-			return createMockPackageHandler(handleUpCh)
-		},
-	)
-
-	srv, err := packages.New(ctx, as, apRegistry)
+	mockHandler := createMockPackageHandler(handleUpCh)
+	handlers := map[string]packages.ApplicationPackageHandler{
+		mockHandler.Package().Name: mockHandler,
+	}
+	srv, err := packages.New(ctx, as, apRegistry, handlers)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
@@ -315,9 +311,9 @@ func TestAssociations(t *testing.T) {
 				valid: true,
 			},
 			{
-				name:  "Wrong FPort",
+				name:  "Different FPort",
 				up:    &registeredApplicationUp2,
-				valid: false,
+				valid: true,
 			},
 			{
 				name:  "Wrong application",
@@ -470,20 +466,4 @@ func TestAssociations(t *testing.T) {
 				})
 		}
 	})
-}
-
-var applicationPackageFactory = func(io.Server, packages.Registry) packages.ApplicationPackageHandler {
-	return &mockPackageHandler{}
-}
-
-func init() {
-	p := ttnpb.ApplicationPackage{
-		Name:         "test-package",
-		DefaultFPort: 123,
-	}
-	packages.RegisterPackage(p, packages.CreateApplicationPackage(
-		func(server io.Server, registry packages.Registry) packages.ApplicationPackageHandler {
-			return applicationPackageFactory(server, registry)
-		},
-	))
 }

@@ -46,6 +46,8 @@ type TemplateData struct {
 	IconPrefix      string   `name:"icon-prefix" description:"The prefix to put before the page icons (favicon.ico, touch-icon.png, og-image.png)"`
 	CSSFiles        []string `name:"css-file" description:"The names of the CSS files"`
 	JSFiles         []string `name:"js-file" description:"The names of the JS files"`
+	SentryDSN       string   `name:"sentry-dsn" description:"The Sentry DSN"`
+	CSRFToken       string   `name:-`
 }
 
 // MountPath derives the mount path from the canonical URL of the config.
@@ -79,21 +81,33 @@ const appHTML = `
     <meta property="og:image:secure_url" content="{{$brandingBaseURL}}/{{.IconPrefix}}og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <link rel="shortcut icon" type="image/x-icon" href="{{$brandingBaseURL}}/{{.IconPrefix}}favicon.ico">
+    <link rel="alternate icon" href="{{$brandingBaseURL}}/{{.IconPrefix}}favicon.ico">
+    <link rel="alternate icon" type="image/png" href="{{$brandingBaseURL}}/{{.IconPrefix}}favicon.png">
+    <link rel="icon" type="image/svg+xml" href="{{$brandingBaseURL}}/{{.IconPrefix}}favicon.svg">
     <link rel="apple-touch-icon" sizes="180x180" href="{{$brandingBaseURL}}/{{.IconPrefix}}touch-icon.png">
     {{range .CSSFiles}}<link href="{{$assetsBaseURL}}/{{.}}" rel="stylesheet">{{end}}
   </head>
   <body>
     <div id="app"></div>
-    <script>
-      window.APP_ROOT={{.MountPath}};
-      window.ASSETS_ROOT={{$assetsBaseURL}};
-      window.BRANDING_ROOT={{$brandingBaseURL}};
-      window.APP_CONFIG={{.AppConfig}};
-      window.SITE_NAME={{.SiteName}};
-      window.SITE_TITLE={{.Title}};
-      window.SITE_SUB_TITLE={{.SubTitle}};
-      {{with .PageData}}window.PAGE_DATA={{.}};{{end}}
+		<script>
+		(function (win) {
+			var config = {
+				APP_ROOT:{{.MountPath}},
+				ASSETS_ROOT:{{$assetsBaseURL}},
+				BRANDING_ROOT:{{$brandingBaseURL}},
+				APP_CONFIG:{{.AppConfig}},
+				SITE_NAME:{{.SiteName}},
+				SITE_TITLE:{{.Title}},
+				SITE_SUB_TITLE:{{.SubTitle}},
+				SENTRY_DSN:{{.SentryDSN}},
+				{{with .CSRFToken}}CSRF_TOKEN:{{.}},{{end}}
+				{{with .PageData}}PAGE_DATA:{{.}}{{end}}
+			};
+			win.__ttn_config__ = config;
+			if (win.Cypress && win.__initStackConfig) {
+				win.__initStackConfig(config);
+			}
+		})(window);
     </script>
     {{range .JSFiles}}<script type="text/javascript" src="{{$assetsBaseURL}}/{{.}}"></script>{{end}}
   </body>
@@ -126,7 +140,8 @@ func NewAppTemplate(t *template.Template) *AppTemplate {
 
 var hashedFiles = map[string]string{}
 
-func registerHashedFile(original, hashed string) {
+// RegisterHashedFile maps filenames to webpack generated hashed filenames
+func RegisterHashedFile(original, hashed string) {
 	hashedFiles[original] = hashed
 }
 

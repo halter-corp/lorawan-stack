@@ -18,20 +18,21 @@ import (
 	"context"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/metrics"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtRejectJoin = events.Define(
 		"js.join.reject", "reject join-request",
-		ttnpb.RIGHT_APPLICATION_TRAFFIC_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
+		events.WithErrorDataType(),
 	)
 	evtAcceptJoin = events.Define(
 		"js.join.accept", "accept join-request",
-		ttnpb.RIGHT_APPLICATION_TRAFFIC_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
 	)
 )
 
@@ -47,7 +48,7 @@ var jsMetrics = &messageMetrics{
 			Name:      "join_accepted_total",
 			Help:      "Total number of accepted joins",
 		},
-		[]string{"application_id"},
+		[]string{"net_id"},
 	),
 	joinRejected: metrics.NewContextualCounterVec(
 		prometheus.CounterOpts{
@@ -79,12 +80,12 @@ func (m messageMetrics) Collect(ch chan<- prometheus.Metric) {
 }
 
 func registerAcceptJoin(ctx context.Context, dev *ttnpb.EndDevice, msg *ttnpb.JoinRequest) {
-	events.Publish(evtAcceptJoin(ctx, dev.EndDeviceIdentifiers, nil))
-	jsMetrics.joinAccepted.WithLabelValues(ctx, dev.ApplicationID).Inc()
+	events.Publish(evtAcceptJoin.NewWithIdentifiersAndData(ctx, dev.EndDeviceIdentifiers, nil))
+	jsMetrics.joinAccepted.WithLabelValues(ctx, msg.NetID.String()).Inc()
 }
 
 func registerRejectJoin(ctx context.Context, req *ttnpb.JoinRequest, err error) {
-	events.Publish(evtRejectJoin(ctx, nil, err))
+	events.Publish(evtRejectJoin.NewWithIdentifiersAndData(ctx, nil, err))
 	if ttnErr, ok := errors.From(err); ok {
 		jsMetrics.joinRejected.WithLabelValues(ctx, ttnErr.FullName()).Inc()
 	} else {

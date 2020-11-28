@@ -17,25 +17,44 @@ import { injectIntl } from 'react-intl'
 import classnames from 'classnames'
 import bind from 'autobind-decorator'
 
-import Icon from '../icon'
-import Spinner from '../spinner'
-import PropTypes from '../../lib/prop-types'
-import Button from '../button'
+import Icon from '@ttn-lw/components/icon'
+import Spinner from '@ttn-lw/components/spinner'
+import Button from '@ttn-lw/components/button'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import ByteInput from './byte'
 import Toggled from './toggled'
+import Generate from './generate'
 
 import style from './input.styl'
 
-@bind
 class Input extends React.Component {
   static propTypes = {
     action: PropTypes.shape({
       ...Button.propTypes,
     }),
+    autoComplete: PropTypes.oneOf([
+      'current-password',
+      'email',
+      'name',
+      'new-password',
+      'off',
+      'on',
+      'url',
+      'username',
+    ]),
+    className: PropTypes.string,
     code: PropTypes.bool,
+    component: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     disabled: PropTypes.bool,
     error: PropTypes.bool,
+    forwardedRef: PropTypes.shape({}),
+    horizontal: PropTypes.bool,
     icon: PropTypes.string,
+    intl: PropTypes.shape({
+      formatMessage: PropTypes.func,
+    }).isRequired,
     label: PropTypes.string,
     loading: PropTypes.bool,
     onBlur: PropTypes.func,
@@ -45,18 +64,36 @@ class Input extends React.Component {
     placeholder: PropTypes.message,
     readOnly: PropTypes.bool,
     title: PropTypes.message,
-    type: PropTypes.string.isRequired,
+    type: PropTypes.string,
     valid: PropTypes.bool,
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     warning: PropTypes.bool,
   }
 
   static defaultProps = {
+    action: undefined,
+    autoComplete: 'off',
+    className: undefined,
+    code: false,
+    component: 'input',
+    disabled: false,
+    error: false,
+    icon: undefined,
+    label: undefined,
+    loading: false,
     onFocus: () => null,
     onBlur: () => null,
     onChange: () => null,
     onEnter: () => null,
+    placeholder: undefined,
+    readOnly: false,
+    title: undefined,
     type: 'text',
+    valid: false,
+    value: '',
+    warning: false,
+    forwardedRef: null,
+    horizontal: true,
   }
 
   state = {
@@ -84,7 +121,7 @@ class Input extends React.Component {
   render() {
     const {
       icon,
-      value = '',
+      value,
       error,
       warning,
       valid,
@@ -98,7 +135,7 @@ class Input extends React.Component {
       onEnter,
       className,
       label,
-      component = 'input',
+      component,
       loading,
       title,
       intl,
@@ -106,6 +143,7 @@ class Input extends React.Component {
       code,
       action,
       forwardedRef,
+      autoComplete,
       ...rest
     } = this.props
 
@@ -120,12 +158,12 @@ class Input extends React.Component {
 
     let inputPlaceholder = placeholder
     if (typeof placeholder === 'object') {
-      inputPlaceholder = intl.formatMessage(placeholder)
+      inputPlaceholder = intl.formatMessage(placeholder, placeholder.values)
     }
 
     let inputTitle = title
     if (typeof title === 'object') {
-      inputTitle = intl.formatMessage(title)
+      inputTitle = intl.formatMessage(title, title.values)
     }
 
     const v = valid && (Component.validate ? Component.validate(value, this.props) : true)
@@ -160,6 +198,7 @@ class Input extends React.Component {
             disabled={disabled}
             readOnly={readOnly}
             title={inputTitle}
+            autoComplete={autoComplete}
             {...rest}
           />
           {v && <Valid show={v} />}
@@ -167,13 +206,14 @@ class Input extends React.Component {
         </div>
         {hasAction && (
           <div className={style.actions}>
-            <Button className={style.button} {...action} />
+            <Button className={style.button} disabled={disabled} {...action} />
           </div>
         )}
       </div>
     )
   }
 
+  @bind
   onFocus(evt) {
     const { onFocus } = this.props
 
@@ -181,6 +221,7 @@ class Input extends React.Component {
     onFocus(evt)
   }
 
+  @bind
   onBlur(evt) {
     const { onBlur } = this.props
 
@@ -188,6 +229,7 @@ class Input extends React.Component {
     onBlur(evt)
   }
 
+  @bind
   onChange(evt) {
     const { onChange } = this.props
     const { value } = evt.target
@@ -195,6 +237,7 @@ class Input extends React.Component {
     onChange(value)
   }
 
+  @bind
   onKeyDown(evt) {
     if (evt.key === 'Enter') {
       this.props.onEnter(evt.target.value)
@@ -214,6 +257,15 @@ const Valid = function(props) {
   )
 }
 
+Valid.propTypes = {
+  show: PropTypes.bool,
+}
+
+Valid.defaultProps = {
+  show: false,
+}
+
 Input.Toggled = Toggled
+Input.Generate = Generate
 
 export default injectIntl(Input, { forwardRef: true })

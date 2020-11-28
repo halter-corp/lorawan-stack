@@ -19,44 +19,55 @@ import PropTypes from 'prop-types'
 import style from './icon.styl'
 
 // A map of hardcoded names to their corresponding icons.
+// Keep these sorted alphabetically.
 const hardcoded = {
-  devices: 'device_hub',
-  device: 'device_hub',
-  settings: 'tune',
-  integration: 'call_merge',
-  data: 'poll',
-  sort: 'arrow_drop_down',
-  overview: 'dashboard',
-  application: 'web_asset',
-  gateway: 'router',
-  organization: 'people',
-  api_keys: 'vpn_key',
-  link: 'link',
-  payload_formats: 'code',
-  develop: 'code',
   access: 'lock',
-  general_settings: 'settings',
-  location: 'place',
-  user: 'person',
+  api_keys: 'vpn_key',
+  application: 'web_asset',
+  collaborators: 'people',
+  data: 'poll',
+  develop: 'code',
+  device: 'device_hub',
+  devices: 'device_hub',
+  downlink: 'arrow_downward',
   event: 'info',
   event_create: 'add_circle',
-  event_delete: 'remove_circle',
+  event_connection: 'settings_ethernet',
+  event_clear_all: 'clear_all',
+  event_delete: 'delete',
+  event_downlink: 'arrow_downward',
+  event_error: 'error',
+  event_gateway_connect: 'flash_on',
+  event_gateway_disconnect: 'flash_off',
+  event_join: 'link',
+  event_rekey: 'vpn_key',
+  event_status: 'network_check',
+  event_switch: 'tune',
   event_update: 'edit',
-  uplink: 'arrow_drop_up',
-  downlink: 'arrow_drop_down',
+  event_uplink: 'arrow_upward',
+  event_mode: 'tune',
+  expand_down: 'keyboard_arrow_down',
+  expand_up: 'keyboard_arrow_up',
+  gateway: 'router',
+  general_settings: 'settings',
   import_devices: 'playlist_add',
-  collaborators: 'people',
+  integration: 'call_merge',
+  join: 'link',
+  link: 'link',
+  location: 'place',
+  logout: 'power_settings_new',
+  organization: 'people',
+  overview: 'dashboard',
+  payload_formats: 'code',
+  settings: 'tune',
+  sort_order_asc: 'arrow_drop_down',
+  sort_order_desc: 'arrow_drop_up',
+  uplink: 'arrow_upward',
+  user: 'person',
+  user_management: 'how_to_reg',
 }
 
-const Icon = function({
-  icon = '',
-  className,
-  nudgeUp = false,
-  nudgeDown = false,
-  small = false,
-  large = false,
-  ...rest
-}) {
+const Icon = function({ icon, className, nudgeUp, nudgeDown, small, large, ...rest }) {
   const classname = classnames(style.icon, className, {
     [style.nudgeUp]: nudgeUp,
     [style.nudgeDown]: nudgeDown,
@@ -72,16 +83,25 @@ const Icon = function({
 }
 
 Icon.propTypes = {
-  /** Which icon to display, using google material icon set */
+  className: PropTypes.string,
+  /** Which icon to display, using google material icon set. */
   icon: PropTypes.string.isRequired,
-  /** Nudges the icon up by one pixel using position: relative */
-  nudgeUp: PropTypes.bool,
-  /** Nudges the icon down by one pixel using position: relative */
-  nudgeDown: PropTypes.bool,
-  /** Renders a smaller icon */
-  small: PropTypes.bool,
-  /** Renders a bigger icon */
+  /** Renders a bigger icon. */
   large: PropTypes.bool,
+  /** Nudges the icon down by one pixel using position: relative. */
+  nudgeDown: PropTypes.bool,
+  /** Nudges the icon up by one pixel using position: relative. */
+  nudgeUp: PropTypes.bool,
+  /** Renders a smaller icon. */
+  small: PropTypes.bool,
+}
+
+Icon.defaultProps = {
+  className: undefined,
+  large: false,
+  nudgeDown: false,
+  nudgeUp: false,
+  small: false,
 }
 
 export default Icon

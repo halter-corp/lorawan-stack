@@ -21,14 +21,14 @@ import (
 	"testing"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc"
 )
 
@@ -71,6 +71,10 @@ func init() {
 	defaultUser.Admin = false
 	defaultUser.PrimaryEmailAddressValidatedAt = &now
 	defaultUser.State = ttnpb.STATE_APPROVED
+
+	defaultUser.TemporaryPassword = ""
+	defaultUser.TemporaryPasswordCreatedAt = nil
+	defaultUser.TemporaryPasswordExpiresAt = nil
 
 	for id, apiKeys := range population.APIKeys {
 		if id.GetUserIDs().GetUserID() == defaultUser.GetUserID() {
@@ -272,7 +276,11 @@ func getIdentityServer(t *testing.T) (*IdentityServer, *grpc.ClientConn) {
 		if dbName == "" {
 			dbName = "ttn_lorawan_is_test"
 		}
-		dbConnString = fmt.Sprintf("postgresql://root@%s/%s?sslmode=disable", dbAddress, dbName)
+		dbAuth := os.Getenv("SQL_DB_AUTH")
+		if dbAuth == "" {
+			dbAuth = "root"
+		}
+		dbConnString = fmt.Sprintf("postgresql://%s@%s/%s?sslmode=disable", dbAuth, dbAddress, dbName)
 		db, err := store.Open(ctx, dbConnString)
 		if err != nil {
 			panic(err)
@@ -297,6 +305,12 @@ func getIdentityServer(t *testing.T) (*IdentityServer, *grpc.ClientConn) {
 				Level: log.DebugLevel,
 			},
 		},
+		KeyVault: config.KeyVault{
+			Provider: "static",
+			Static: map[string][]byte{
+				"is-test": {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
+			},
+		},
 	}})
 	conf := &Config{
 		DatabaseURI: dbConnString,
@@ -308,6 +322,10 @@ func getIdentityServer(t *testing.T) (*IdentityServer, *grpc.ClientConn) {
 		"overridden.html":        []byte("Overridden HTML {{.User.Name}} {{.User.Email}}"),
 		"overridden.txt":         []byte("Overridden text {{.User.Name}} {{.User.Email}}"),
 	}
+	conf.UserRights.CreateApplications = true
+	conf.UserRights.CreateClients = true
+	conf.UserRights.CreateGateways = true
+	conf.UserRights.CreateOrganizations = true
 	is, err := New(c, conf)
 	if err != nil {
 		t.Fatal(err)

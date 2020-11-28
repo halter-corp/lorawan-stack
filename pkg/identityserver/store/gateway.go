@@ -15,10 +15,13 @@
 package store
 
 import (
+	"bytes"
 	"sort"
+	"strings"
+	"time"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Gateway model.
@@ -47,21 +50,29 @@ type Gateway struct {
 	AutoUpdate    bool   `gorm:"not null"`
 	UpdateChannel string `gorm:"type:VARCHAR"`
 
+	// Frequency Plan IDs separated by spaces.
 	FrequencyPlanID string `gorm:"type:VARCHAR"`
 
 	StatusPublic   bool `gorm:"not null"`
 	LocationPublic bool `gorm:"not null"`
 
-	ScheduleDownlinkLate   bool `gorm:"not null"`
-	EnforceDutyCycle       bool `gorm:"not null"`
+	ScheduleDownlinkLate   bool  `gorm:"not null"`
+	EnforceDutyCycle       bool  `gorm:"not null"`
+	ScheduleAnytimeDelay   int64 `gorm:"default:0 not null"`
 	DownlinkPathConstraint int
 
+	UpdateLocationFromStatus bool `gorm:"default:false not null"`
+
 	Antennas []GatewayAntenna
+
+	LBSLNSSecret []byte `gorm:"type:BYTEA;column:lbs_lns_secret"`
 }
 
 func init() {
 	registerModel(&Gateway{})
 }
+
+var lbsLNSSecretSeparator = []byte(":")
 
 // functions to set fields from the gateway model into the gateway proto.
 var gatewayPBSetters = map[string]func(*ttnpb.Gateway, *Gateway){
@@ -84,11 +95,22 @@ var gatewayPBSetters = map[string]func(*ttnpb.Gateway, *Gateway){
 	gatewayServerAddressField: func(pb *ttnpb.Gateway, gtw *Gateway) { pb.GatewayServerAddress = gtw.GatewayServerAddress },
 	autoUpdateField:           func(pb *ttnpb.Gateway, gtw *Gateway) { pb.AutoUpdate = gtw.AutoUpdate },
 	updateChannelField:        func(pb *ttnpb.Gateway, gtw *Gateway) { pb.UpdateChannel = gtw.UpdateChannel },
-	frequencyPlanIDField:      func(pb *ttnpb.Gateway, gtw *Gateway) { pb.FrequencyPlanID = gtw.FrequencyPlanID },
+	frequencyPlanIDsField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		if gtw.FrequencyPlanID == "" {
+			pb.FrequencyPlanIDs = nil
+		} else {
+			pb.FrequencyPlanIDs = strings.Split(gtw.FrequencyPlanID, " ")
+		}
+	},
 	statusPublicField:         func(pb *ttnpb.Gateway, gtw *Gateway) { pb.StatusPublic = gtw.StatusPublic },
 	locationPublicField:       func(pb *ttnpb.Gateway, gtw *Gateway) { pb.LocationPublic = gtw.LocationPublic },
 	scheduleDownlinkLateField: func(pb *ttnpb.Gateway, gtw *Gateway) { pb.ScheduleDownlinkLate = gtw.ScheduleDownlinkLate },
-	enforceDutyCycleField:     func(pb *ttnpb.Gateway, gtw *Gateway) { pb.EnforceDutyCycle = gtw.EnforceDutyCycle },
+	scheduleAnytimeDelayField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		d := time.Duration(gtw.ScheduleAnytimeDelay)
+		pb.ScheduleAnytimeDelay = &d
+	},
+	updateLocationFromStatusField: func(pb *ttnpb.Gateway, gtw *Gateway) { pb.UpdateLocationFromStatus = gtw.UpdateLocationFromStatus },
+	enforceDutyCycleField:         func(pb *ttnpb.Gateway, gtw *Gateway) { pb.EnforceDutyCycle = gtw.EnforceDutyCycle },
 	downlinkPathConstraintField: func(pb *ttnpb.Gateway, gtw *Gateway) {
 		pb.DownlinkPathConstraint = ttnpb.DownlinkPathConstraint(gtw.DownlinkPathConstraint)
 	},
@@ -97,6 +119,17 @@ var gatewayPBSetters = map[string]func(*ttnpb.Gateway, *Gateway){
 		pb.Antennas = make([]ttnpb.GatewayAntenna, len(gtw.Antennas))
 		for i, antenna := range gtw.Antennas {
 			pb.Antennas[i] = antenna.toPB()
+		}
+	},
+	lbsLNSSecretField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		blocks := bytes.SplitN(gtw.LBSLNSSecret, lbsLNSSecretSeparator, 2)
+		if len(blocks) == 2 {
+			pb.LBSLNSSecret = &ttnpb.Secret{
+				KeyID: string(blocks[0]),
+				Value: blocks[1],
+			}
+		} else {
+			pb.LBSLNSSecret = nil
 		}
 	},
 }
@@ -115,19 +148,27 @@ var gatewayModelSetters = map[string]func(*Gateway, *ttnpb.Gateway){
 		gtw.HardwareVersion = pb.HardwareVersion
 		gtw.FirmwareVersion = pb.FirmwareVersion
 	},
-	brandIDField:                func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.BrandID = pb.BrandID },
-	modelIDField:                func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.ModelID = pb.ModelID },
-	hardwareVersionField:        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.HardwareVersion = pb.HardwareVersion },
-	firmwareVersionField:        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.FirmwareVersion = pb.FirmwareVersion },
-	gatewayServerAddressField:   func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.GatewayServerAddress = pb.GatewayServerAddress },
-	autoUpdateField:             func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.AutoUpdate = pb.AutoUpdate },
-	updateChannelField:          func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.UpdateChannel = pb.UpdateChannel },
-	frequencyPlanIDField:        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.FrequencyPlanID = pb.FrequencyPlanID },
-	statusPublicField:           func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.StatusPublic = pb.StatusPublic },
-	locationPublicField:         func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.LocationPublic = pb.LocationPublic },
-	scheduleDownlinkLateField:   func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.ScheduleDownlinkLate = pb.ScheduleDownlinkLate },
-	enforceDutyCycleField:       func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.EnforceDutyCycle = pb.EnforceDutyCycle },
-	downlinkPathConstraintField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.DownlinkPathConstraint = int(pb.DownlinkPathConstraint) },
+	brandIDField:              func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.BrandID = pb.BrandID },
+	modelIDField:              func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.ModelID = pb.ModelID },
+	hardwareVersionField:      func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.HardwareVersion = pb.HardwareVersion },
+	firmwareVersionField:      func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.FirmwareVersion = pb.FirmwareVersion },
+	gatewayServerAddressField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.GatewayServerAddress = pb.GatewayServerAddress },
+	autoUpdateField:           func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.AutoUpdate = pb.AutoUpdate },
+	updateChannelField:        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.UpdateChannel = pb.UpdateChannel },
+	frequencyPlanIDsField:     func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.FrequencyPlanID = strings.Join(pb.FrequencyPlanIDs, " ") },
+	statusPublicField:         func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.StatusPublic = pb.StatusPublic },
+	locationPublicField:       func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.LocationPublic = pb.LocationPublic },
+	scheduleDownlinkLateField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.ScheduleDownlinkLate = pb.ScheduleDownlinkLate },
+	scheduleAnytimeDelayField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		if pb.ScheduleAnytimeDelay == nil {
+			gtw.ScheduleAnytimeDelay = 0
+		} else {
+			gtw.ScheduleAnytimeDelay = int64(*pb.ScheduleAnytimeDelay)
+		}
+	},
+	updateLocationFromStatusField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.UpdateLocationFromStatus = pb.UpdateLocationFromStatus },
+	enforceDutyCycleField:         func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.EnforceDutyCycle = pb.EnforceDutyCycle },
+	downlinkPathConstraintField:   func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.DownlinkPathConstraint = int(pb.DownlinkPathConstraint) },
 	antennasField: func(gtw *Gateway, pb *ttnpb.Gateway) {
 		sort.Slice(gtw.Antennas, func(i int, j int) bool { return gtw.Antennas[i].Index < gtw.Antennas[j].Index })
 		antennas := make([]GatewayAntenna, len(pb.Antennas))
@@ -138,6 +179,17 @@ var gatewayModelSetters = map[string]func(*Gateway, *ttnpb.Gateway){
 			antenna.fromPB(pb)
 			antenna.Index = i
 			gtw.Antennas[i] = antenna
+		}
+	},
+	lbsLNSSecretField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		if pb.LBSLNSSecret != nil {
+			var secretBuffer bytes.Buffer
+			secretBuffer.WriteString(pb.LBSLNSSecret.KeyID)
+			secretBuffer.Write(lbsLNSSecretSeparator)
+			secretBuffer.Write(pb.LBSLNSSecret.Value)
+			gtw.LBSLNSSecret = secretBuffer.Bytes()
+		} else {
+			gtw.LBSLNSSecret = nil
 		}
 	},
 }
@@ -157,26 +209,29 @@ func init() {
 
 // fieldmask path to column name in gateways table.
 var gatewayColumnNames = map[string][]string{
-	"ids.eui":                   {"gateway_eui"},
-	attributesField:             {},
-	contactInfoField:            {},
-	nameField:                   {nameField},
-	descriptionField:            {descriptionField},
-	gatewayServerAddressField:   {gatewayServerAddressField},
-	versionIDsField:             {"brand_id", "model_id", "hardware_version", "firmware_version"},
-	brandIDField:                {"brand_id"},
-	modelIDField:                {"model_id"},
-	hardwareVersionField:        {"hardware_version"},
-	firmwareVersionField:        {"firmware_version"},
-	autoUpdateField:             {autoUpdateField},
-	updateChannelField:          {updateChannelField},
-	frequencyPlanIDField:        {frequencyPlanIDField},
-	statusPublicField:           {statusPublicField},
-	locationPublicField:         {locationPublicField},
-	scheduleDownlinkLateField:   {scheduleDownlinkLateField},
-	enforceDutyCycleField:       {enforceDutyCycleField},
-	downlinkPathConstraintField: {downlinkPathConstraintField},
-	antennasField:               {},
+	"ids.eui":                     {"gateway_eui"},
+	antennasField:                 {},
+	attributesField:               {},
+	autoUpdateField:               {autoUpdateField},
+	brandIDField:                  {"brand_id"},
+	contactInfoField:              {},
+	descriptionField:              {descriptionField},
+	downlinkPathConstraintField:   {downlinkPathConstraintField},
+	enforceDutyCycleField:         {enforceDutyCycleField},
+	firmwareVersionField:          {"firmware_version"},
+	frequencyPlanIDsField:         {"frequency_plan_id"},
+	gatewayServerAddressField:     {gatewayServerAddressField},
+	hardwareVersionField:          {"hardware_version"},
+	locationPublicField:           {locationPublicField},
+	lbsLNSSecretField:             {lbsLNSSecretField},
+	modelIDField:                  {"model_id"},
+	nameField:                     {nameField},
+	scheduleAnytimeDelayField:     {scheduleAnytimeDelayField},
+	scheduleDownlinkLateField:     {scheduleDownlinkLateField},
+	statusPublicField:             {statusPublicField},
+	updateChannelField:            {updateChannelField},
+	updateLocationFromStatusField: {updateLocationFromStatusField},
+	versionIDsField:               {"brand_id", "model_id", "hardware_version", "firmware_version"},
 }
 
 func (gtw Gateway) toPB(pb *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) {

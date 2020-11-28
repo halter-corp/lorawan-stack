@@ -23,8 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetClientStore returns an ClientStore on the given db (or transaction).
@@ -85,6 +85,7 @@ func (s *clientStore) FindClients(ctx context.Context, ids []*ttnpb.ClientIdenti
 	}
 	query := s.query(ctx, Client{}, withClientID(idStrings...))
 	query = selectClientFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "clients", "client_id", "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query.Model(Client{}))
 		query = query.Limit(limit).Offset(offset)

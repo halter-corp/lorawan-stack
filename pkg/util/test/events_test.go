@@ -20,21 +20,25 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	. "go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	. "go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestSetDefaultEventPubSub(t *testing.T) {
 	a := assertions.New(t)
 
-	ctx := ContextWithT(Context(), t)
+	ctx := ContextWithTB(Context(), t)
 	ctx, cancel := context.WithTimeout(ctx, (1<<5)*Delay)
 	defer cancel()
 
-	testEvent1 := events.Define("test-set-default-event-pub-sub-1", "test-event-1")(ctx, ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}, nil)
-	testEvent2 := events.Define("test-set-default-event-pub-sub-2", "test-event-2")(ctx, ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}, nil)
+	testEvent1 := events.New(ctx, "test-set-default-event-pub-sub-1", "test-event-1",
+		events.WithIdentifiers(ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}),
+	)
+	testEvent2 := events.New(ctx, "test-set-default-event-pub-sub-2", "test-event-2",
+		events.WithIdentifiers(ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}),
+	)
 
 	events.Publish(testEvent1)
 	events.Publish(testEvent2)
@@ -71,8 +75,12 @@ func TestSetDefaultEventPubSub(t *testing.T) {
 
 func TestCollectEvents(t *testing.T) {
 	ctx := Context()
-	testEvent1 := events.Define("test-collect-events-1", "test-event-1")(ctx, ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}, nil)
-	testEvent2 := events.Define("test-collect-events-2", "test-event-2")(ctx, ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}, nil)
+	testEvent1 := events.New(ctx, "test-collect-events-1", "test-event-1",
+		events.WithIdentifiers(ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}),
+	)
+	testEvent2 := events.New(ctx, "test-collect-events-2", "test-event-2",
+		events.WithIdentifiers(ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}),
+	)
 	assertions.New(t).So(CollectEvents(func() {
 		events.Publish(testEvent1)
 		events.Publish(testEvent1)
@@ -86,8 +94,12 @@ func TestCollectEvents(t *testing.T) {
 
 func TestRedirectEvents(t *testing.T) {
 	ctx := Context()
-	testEvent1 := events.Define("test-redirect-events-1", "test-event-1")(ctx, ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}, nil)
-	testEvent2 := events.Define("test-redirect-events-2", "test-event-2")(ctx, ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}, nil)
+	testEvent1 := events.New(ctx, "test-redirect-events-1", "test-event-1",
+		events.WithIdentifiers(ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}),
+	)
+	testEvent2 := events.New(ctx, "test-redirect-events-2", "test-event-2",
+		events.WithIdentifiers(ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}),
+	)
 	ch := make(chan events.Event, 2)
 	defer RedirectEvents(ch)()
 	events.Publish(testEvent1)
@@ -108,7 +120,9 @@ func TestRedirectEvents(t *testing.T) {
 func TestWaitEvent(t *testing.T) {
 	ctx := Context()
 	ch := make(chan events.Event, 1)
-	ch <- events.Define("test-wait-event-1", "test-event-1")(ctx, ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}, nil)
+	ch <- events.New(ctx, "test-wait-event-1", "test-event-1",
+		events.WithIdentifiers(ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}),
+	)
 	defer close(ch)
 	assertions.New(t).So(
 		WaitEvent(ctx, ch, "test-wait-event-1"),

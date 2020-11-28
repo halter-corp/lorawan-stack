@@ -18,27 +18,33 @@ import (
 	"context"
 
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/email"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/emails"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/email"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/emails"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateUserAPIKey = events.Define(
 		"user.api-key.create", "create user API key",
-		ttnpb.RIGHT_USER_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_USER_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateUserAPIKey = events.Define(
 		"user.api-key.update", "update user API key",
-		ttnpb.RIGHT_USER_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_USER_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteUserAPIKey = events.Define(
 		"user.api-key.delete", "delete user API key",
-		ttnpb.RIGHT_USER_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_USER_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
@@ -70,7 +76,7 @@ func (is *IdentityServer) createUserAPIKey(ctx context.Context, req *ttnpb.Creat
 		return nil, err
 	}
 	key.Key = token
-	events.Publish(evtCreateUserAPIKey(ctx, req.UserIdentifiers, nil))
+	events.Publish(evtCreateUserAPIKey.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
 	err = is.SendUserEmail(ctx, &req.UserIdentifiers, func(data emails.Data) email.MessageData {
 		data.SetEntity(req.EntityIdentifiers())
 		return &emails.APIKeyCreated{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
@@ -158,22 +164,20 @@ func (is *IdentityServer) updateUserAPIKey(ctx context.Context, req *ttnpb.Updat
 	if err != nil {
 		return nil, err
 	}
-	if key == nil {
+	if key == nil { // API key was deleted.
+		events.Publish(evtDeleteUserAPIKey.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
 		return &ttnpb.APIKey{}, nil
 	}
 	key.Key = ""
-	if len(req.Rights) > 0 {
-		events.Publish(evtUpdateUserAPIKey(ctx, req.UserIdentifiers, nil))
-		err = is.SendUserEmail(ctx, &req.UserIdentifiers, func(data emails.Data) email.MessageData {
-			data.SetEntity(req.EntityIdentifiers())
-			return &emails.APIKeyChanged{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
-		})
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("Could not send API key update notification email")
-		}
-	} else {
-		events.Publish(evtDeleteUserAPIKey(ctx, req.UserIdentifiers, nil))
+	events.Publish(evtUpdateUserAPIKey.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
+	err = is.SendUserEmail(ctx, &req.UserIdentifiers, func(data emails.Data) email.MessageData {
+		data.SetEntity(req.EntityIdentifiers())
+		return &emails.APIKeyChanged{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
+	})
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("Could not send API key update notification email")
 	}
+
 	return key, nil
 }
 

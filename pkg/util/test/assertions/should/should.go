@@ -17,7 +17,7 @@ package should
 
 import (
 	"github.com/smartystreets/assertions"
-	testassertions "go.thethings.network/lorawan-stack/pkg/util/test/assertions"
+	testassertions "go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions"
 )
 
 var (
@@ -63,6 +63,8 @@ var (
 	EndWith = assertions.ShouldEndWith
 	// Equal receives exactly two parameters and does an equality check using the following semantics: 1. If the expected and actual values implement an Equal method in the form `func (this T) Equal(that T) bool` then call the method. If true, they are equal. 2. The expected and actual values are judged equal or not by oglematchers.Equals.
 	Equal = assertions.ShouldEqual
+	// EqualJSON receives exactly two parameters and does an equality check by marshalling to JSON.
+	EqualJSON = assertions.ShouldEqualJSON
 	// EqualTrimSpace receives exactly 2 string parameters and ensures that the first is equal to the second after removing all leading and trailing whitespace using strings.TrimSpace(first).
 	EqualTrimSpace = assertions.ShouldEqualTrimSpace
 	// EqualWithout receives exactly 3 string parameters and ensures that the first is equal to the second after removing all instances of the third from the first using strings.Replace(first, third, "", -1).
@@ -95,12 +97,18 @@ var (
 	NotBeBetweenOrEqual = assertions.ShouldNotBeBetweenOrEqual
 	// NotBeBlank receives exactly 1 string parameter and ensures that it is equal to "".
 	NotBeBlank = assertions.ShouldNotBeBlank
+	// NotBeChronological receives a []time.Time slice and asserts that they are
+	// NOT in chronological order.
+	NotBeChronological = assertions.ShouldNotBeChronological
 	// NotBeEmpty receives a single parameter (actual) and determines whether or not calling len(actual) would return a value greater than zero. It obeys the rules specified by the `len` function for determining length: http:// golang.org/pkg/builtin/#len
 	NotBeEmpty = assertions.ShouldNotBeEmpty
 	// NotBeIn receives at least 2 parameters. The first is a proposed member of the collection that is passed in either as the second parameter, or of the collection that is comprised of all the remaining parameters. This assertion ensures that the proposed member is NOT in the collection (usingEqual).
 	NotBeIn = assertions.ShouldNotBeIn
 	// NotBeNil receives a single parameter and ensures that it is not nil.
 	NotBeNil = assertions.ShouldNotBeNil
+	// NotBeZeroValue receives a single parameter and ensures that it is NOT
+	// the Go equivalent of the default value, or "zero" value.
+	NotBeZeroValue = assertions.ShouldNotBeZeroValue
 	// NotContain receives exactly two parameters. The first is a slice and the second is a proposed member. Membership is determinied usingEqual.
 	NotContain = assertions.ShouldNotContain
 	// NotContainKey receives exactly two parameters. The first is a map and the second is a proposed absent key. Keys are compared with a simple '=='.
@@ -140,10 +148,10 @@ var (
 	// StartWith receives exactly 2 string parameters and ensures that the first starts with the second.
 	StartWith = assertions.ShouldStartWith
 
-	// HaveSameElements asserts that the actual A and expected B elements are equal using an equality function with signature func(A, B) bool.
-	HaveSameElements = testassertions.ShouldHaveSameElementsFunc
-	// NotHaveSameElements asserts that the actual A and expected B elements are not equal using an equality function with signature func(A, B) bool.
-	NotHaveSameElements = testassertions.ShouldNotHaveSameElementsFunc
+	// HaveSameElementsFunc asserts that the actual A and expected B elements are equal using an equality function with signature func(A, B) bool.
+	HaveSameElementsFunc = testassertions.ShouldHaveSameElementsFunc
+	// NotHaveSameElementsFunc asserts that the actual A and expected B elements are not equal using an equality function with signature func(A, B) bool.
+	NotHaveSameElementsFunc = testassertions.ShouldNotHaveSameElementsFunc
 	// HaveSameElementsDeep asserts that the actual A and expected B elements are equal using reflect.Equal.
 	HaveSameElementsDeep = testassertions.ShouldHaveSameElementsDeep
 	// NotHaveSameElementsDeep asserts that the actual A and expected B elements are not equal using reflect.Equal.
@@ -152,6 +160,14 @@ var (
 	HaveSameElementsDiff = testassertions.ShouldHaveSameElementsDiff
 	// NotHaveSameElementsDiff asserts that the actual A and expected B elements are not equal using pretty.Diff.
 	NotHaveSameElementsDiff = testassertions.ShouldNotHaveSameElementsDiff
+	// HaveSameElementsEvent asserts that the actual A and expected B elements are equal using test.EventEqual.
+	HaveSameElementsEvent = testassertions.ShouldHaveSameElementsEvent
+	// NotHaveSameElementsEvent asserts that the actual A and expected B elements are not equal using test.EventEqual.
+	NotHaveSameElementsEvent = testassertions.ShouldNotHaveSameElementsEvent
+
+	// BeProperSupersetOfElementsFunc asserts that the actual A elements represents a proper superset of expected B elements using an equality function with signature func(A, B) bool.
+	BeProperSupersetOfElementsFunc = testassertions.ShouldBeProperSupersetOfElementsFunc
+
 	// HaveParentContext asserts that the context.Context is a child of context.Context.
 	HaveParentContext = testassertions.ShouldHaveParentContext
 	// HaveParentContextOrEqual asserts that the context.Context is a child of context.Context or they're equal.
@@ -172,8 +188,21 @@ var (
 
 	// ResembleEvent receives exactly two events.Event and does a resemblance check.
 	ResembleEvent = testassertions.ShouldResembleEvent
-	// ResembleEventDefinitionDataClosure receives exactly two events.DefinitionDataClosure and does a resemblance check.
-	ResembleEventDefinitionDataClosure = testassertions.ShouldResembleEventDefinitionDataClosure
-	// ResembleEventDefinitionDataClosures receives exactly two []events.DefinitionDataClosure and does a resemblance check.
-	ResembleEventDefinitionDataClosures = testassertions.ShouldResembleEventDefinitionDataClosures
+	// ResembleEventBuilder receives exactly two events.Builder and does a resemblance check.
+	ResembleEventBuilder = testassertions.ShouldResembleEventBuilder
+	// ResembleEventBuilders receives exactly two events.Builders and does a resemblance check.
+	ResembleEventBuilders = testassertions.ShouldResembleEventBuilders
+
+	// ResembleFields receives at least two SetFielder parameters and optional variadic field paths and does a deep equal check (see reflect.DeepEqual) on selected fields. If field paths are empty, it checks all fields similar to Resemble.
+	ResembleFields = testassertions.ShouldResembleFields
+
+	// ReceiveEventResembling receives <-chan events.Event or <-chan test.EventPubSubPublishRequest as first argument and events.Event as second one and does resemblance check on received event.
+	ReceiveEventResembling = testassertions.ShouldReceiveEventResembling
+	// ReceiveEventsResembling is like ReceiveEvent, but for multiple events.
+	ReceiveEventsResembling = testassertions.ShouldReceiveEventsResembling
+
+	// ReceiveEventFunc receives <-chan events.Event or <-chan test.EventPubSubPublishRequest as first argument, equality assertion func(events.Event) bool as second one and events.Event as third one and asserts equality under equality assertion specified.
+	ReceiveEventFunc = testassertions.ShouldReceiveEventFunc
+	// ReceiveEventsFunc is like ReceiveEvent, but for multiple events.
+	ReceiveEventsFunc = testassertions.ShouldReceiveEventsFunc
 )

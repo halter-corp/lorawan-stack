@@ -18,33 +18,38 @@ import { defineMessages } from 'react-intl'
 import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 
-import sharedMessages from '../../../lib/shared-messages'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import { withEnv } from '../../../lib/components/env'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Message from '../../../lib/components/message'
-import Status from '../../../components/status'
-import Spinner from '../../../components/spinner'
-import Link from '../../../components/link'
-import Animation from '../../../lib/components/animation'
-import { selectApplicationsTotalCount } from '../../store/selectors/applications'
-import { getApplicationsList, GET_APPS_LIST } from '../../store/actions/applications'
-import { selectGatewaysTotalCount } from '../../store/selectors/gateways'
-import { getGatewaysList, GET_GTWS_LIST } from '../../store/actions/gateways'
-import { createFetchingSelector } from '../../store/selectors/fetching'
-import { selectUserId, selectUserRights } from '../../store/selectors/user'
+import ServerIcon from '@assets/auxiliary-icons/server.svg'
+import AppAnimation from '@assets/animations/illustrations/app.json'
+import GatewayAnimation from '@assets/animations/illustrations/gateway.json'
+
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import Status from '@ttn-lw/components/status'
+import Spinner from '@ttn-lw/components/spinner'
+import Link from '@ttn-lw/components/link'
+
+import Message from '@ttn-lw/lib/components/message'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import { withEnv } from '@ttn-lw/lib/components/env'
+import Animation from '@ttn-lw/lib/components/animation'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import {
   mayViewApplications,
   mayViewGateways,
   mayCreateApplications,
   mayCreateGateways,
-} from '../../lib/feature-checks'
+} from '@console/lib/feature-checks'
 
-import ServerIcon from '../../../assets/auxiliary-icons/server.svg'
-import AppAnimation from '../../../assets/animations/illustrations/app.json'
-import GatewayAnimation from '../../../assets/animations/illustrations/gateway.json'
+import { getApplicationsList, GET_APPS_LIST_BASE } from '@console/store/actions/applications'
+import { getGatewaysList, GET_GTWS_LIST_BASE } from '@console/store/actions/gateways'
+
+import { selectApplicationsTotalCount } from '@console/store/selectors/applications'
+import { selectGatewaysTotalCount } from '@console/store/selectors/gateways'
+import { createFetchingSelector } from '@console/store/selectors/fetching'
+import { selectUserNameOrId, selectUserRights } from '@console/store/selectors/user'
 
 import style from './overview.styl'
 
@@ -54,20 +59,22 @@ const m = defineMessages({
   gotoApplications: 'Go to applications',
   gotoGateways: 'Go to gateways',
   welcome: 'Welcome to the Console!',
-  welcomeBack: 'Welcome back, {userId} 👋!',
-  getStarted: 'Get started right away by creating an application or registering a gateway.',
-  continueWorking: 'Walk right through to your applications and/or gateways.',
-  componentStatus: 'Component Status',
-  versionInfo: 'Version Info',
+  welcomeBack: 'Welcome back, {userName}! 👋',
+  getStarted: 'Get started right away by creating an application or registering a gateway',
+  continueWorking: 'Walk right through to your applications and/or gateways',
+  componentStatus: 'Component status',
+  versionInfo: 'Version info',
 })
 
 const componentMap = {
-  is: sharedMessages.componentIdentityServer,
-  gs: sharedMessages.componentGatewayServer,
-  ns: sharedMessages.componentNetworkServer,
-  as: sharedMessages.componentApplicationServer,
-  js: sharedMessages.componentJoinServer,
+  is: sharedMessages.componentIs,
+  gs: sharedMessages.componentGs,
+  ns: sharedMessages.componentNs,
+  as: sharedMessages.componentAs,
+  js: sharedMessages.componentJs,
 }
+
+const overviewFetchingSelector = createFetchingSelector([GET_APPS_LIST_BASE, GET_GTWS_LIST_BASE])
 
 @connect(
   function(state) {
@@ -76,8 +83,8 @@ const componentMap = {
     return {
       applicationCount: selectApplicationsTotalCount(state),
       gatewayCount: selectGatewaysTotalCount(state),
-      fetching: createFetchingSelector([GET_APPS_LIST, GET_GTWS_LIST])(state),
-      userId: selectUserId(state),
+      fetching: overviewFetchingSelector(state),
+      userName: selectUserNameOrId(state),
       mayCreateApplications: mayCreateApplications.check(rights),
       mayViewApplications: mayViewApplications.check(rights),
       mayViewGateways: mayViewGateways.check(rights),
@@ -95,8 +102,26 @@ const componentMap = {
   return <Breadcrumb path="/" content={sharedMessages.overview} />
 })
 @withEnv
-@bind
 export default class Overview extends React.Component {
+  static propTypes = {
+    applicationCount: PropTypes.number,
+    env: PropTypes.env,
+    fetching: PropTypes.bool.isRequired,
+    gatewayCount: PropTypes.number,
+    loadData: PropTypes.func.isRequired,
+    mayCreateApplications: PropTypes.bool.isRequired,
+    mayCreateGateways: PropTypes.bool.isRequired,
+    mayViewApplications: PropTypes.bool.isRequired,
+    mayViewGateways: PropTypes.bool.isRequired,
+    userName: PropTypes.string.isRequired,
+  }
+
+  static defaultProps = {
+    applicationCount: 0,
+    env: undefined,
+    gatewayCount: 0,
+  }
+
   constructor(props) {
     super(props)
 
@@ -109,20 +134,24 @@ export default class Overview extends React.Component {
     loadData()
   }
 
+  @bind
   handleAppChooserMouseEnter() {
     this.appAnimationRef.current.instance.setDirection(1)
     this.appAnimationRef.current.instance.goToAndPlay(0)
   }
 
+  @bind
   handleAppChooserMouseLeave() {
     this.appAnimationRef.current.instance.setDirection(-1)
   }
 
+  @bind
   handleGatewayChooserMouseEnter() {
     this.gatewayAnimationRef.current.instance.setDirection(1)
     this.gatewayAnimationRef.current.instance.goToAndPlay(0)
   }
 
+  @bind
   handleGatewayChooserMouseLeave() {
     this.gatewayAnimationRef.current.instance.setDirection(-1)
   }
@@ -144,7 +173,10 @@ export default class Overview extends React.Component {
                 className={style.chooser}
               >
                 <Animation ref={this.appAnimationRef} animationData={AppAnimation} />
-                <Message content={hasEntities ? m.gotoApplications : m.createApplication} />
+                <Message
+                  component="span"
+                  content={hasEntities ? m.gotoApplications : m.createApplication}
+                />
               </div>
             </Link>
           </Col>
@@ -158,7 +190,10 @@ export default class Overview extends React.Component {
                 className={style.chooser}
               >
                 <Animation ref={this.gatewayAnimationRef} animationData={GatewayAnimation} />
-                <Message content={hasEntities ? m.gotoGateways : m.createGateway} />
+                <Message
+                  component="span"
+                  content={hasEntities ? m.gotoGateways : m.createGateway}
+                />
               </div>
             </Link>
           </Col>
@@ -175,7 +210,7 @@ export default class Overview extends React.Component {
       fetching,
       applicationCount,
       gatewayCount,
-      userId,
+      userName,
       mayCreateApplications,
       mayCreateGateways,
       mayViewApplications,
@@ -202,7 +237,7 @@ export default class Overview extends React.Component {
               <Message
                 className={style.welcome}
                 content={hasEntities ? m.welcomeBack : m.welcome}
-                values={{ userId }}
+                values={{ userName }}
                 component="h1"
               />
               {!mayNotViewEntities && (
@@ -231,7 +266,7 @@ export default class Overview extends React.Component {
                 }
                 const component = stackConfig[componentKey]
                 const name = componentMap[componentKey]
-                const host = new URL(component.base_url).host
+                const host = component.enabled ? new URL(component.base_url).host : undefined
                 return (
                   <ComponentCard
                     key={componentKey}
@@ -255,13 +290,22 @@ const ComponentCard = function({ name, enabled, host }) {
       <img src={ServerIcon} className={style.componentCardIcon} />
       <div className={style.componentCardDesc}>
         <div className={style.componentCardName}>
-          <Status status={enabled ? 'good' : 'bad'} />
-          <Message content={name} />
+          <Status label={name} status={enabled ? 'good' : 'unknown'} flipped />
         </div>
         <span className={style.componentCardHost} title={host}>
-          {host}
+          {enabled ? host : <Message content={sharedMessages.disabled} />}
         </span>
       </div>
     </div>
   )
+}
+
+ComponentCard.propTypes = {
+  enabled: PropTypes.bool.isRequired,
+  host: PropTypes.string,
+  name: PropTypes.message.isRequired,
+}
+
+ComponentCard.defaultProps = {
+  host: undefined,
 }

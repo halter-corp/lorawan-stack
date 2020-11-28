@@ -19,8 +19,8 @@ import (
 	"strconv"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -39,11 +39,11 @@ func appendImplicitWebhookGetPaths(paths ...string) []string {
 
 type webhookRegistryRPC struct {
 	webhooks  WebhookRegistry
-	templates *TemplateStore
+	templates TemplateStore
 }
 
 // NewWebhookRegistryRPC returns a new webhook registry gRPC server.
-func NewWebhookRegistryRPC(webhooks WebhookRegistry, templates *TemplateStore) ttnpb.ApplicationWebhookRegistryServer {
+func NewWebhookRegistryRPC(webhooks WebhookRegistry, templates TemplateStore) ttnpb.ApplicationWebhookRegistryServer {
 	return &webhookRegistryRPC{
 		webhooks:  webhooks,
 		templates: templates,

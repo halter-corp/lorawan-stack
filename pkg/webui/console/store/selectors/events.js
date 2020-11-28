@@ -28,11 +28,32 @@ export const createEventsStatusSelector = entity =>
     return store ? store.status : 'unknown'
   }
 
+export const createEventsPausedSelector = entity =>
+  function(state, entityId) {
+    const store = selectEventsStore(state.events[entity], entityId)
+
+    return Boolean(store.paused)
+  }
+
+export const createEventsInterruptedSelector = entity =>
+  function(state, entityId) {
+    const store = selectEventsStore(state.events[entity], entityId)
+
+    return Boolean(store.interrupted)
+  }
+
 export const createEventsErrorSelector = entity =>
   function(state, entityId) {
     const store = selectEventsStore(state.events[entity], entityId)
 
     return store ? store.error : undefined
+  }
+
+export const createEventsTruncatedSelector = entity =>
+  function(state, entityId) {
+    const store = selectEventsStore(state.events[entity], entityId)
+
+    return Boolean(store.truncated)
   }
 
 export const createLatestEventSelector = function(entity) {
@@ -43,4 +64,16 @@ export const createLatestEventSelector = function(entity) {
 
     return events[0]
   }
+}
+
+export const createInterruptedStreamsSelector = entity => state => {
+  const eventsStore = state.events[entity]
+
+  return Object.keys(eventsStore).reduce((acc, id) => {
+    if (eventsStore[id].interrupted) {
+      acc[id] = eventsStore[id]
+    }
+
+    return acc
+  }, {})
 }

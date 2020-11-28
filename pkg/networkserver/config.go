@@ -17,25 +17,18 @@ package networkserver
 import (
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	pbtypes "github.com/gogo/protobuf/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/mac"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
-// Config represents the NetworkServer configuration.
-type Config struct {
-	ApplicationUplinks  ApplicationUplinkQueue `name:"-"`
-	Devices             DeviceRegistry         `name:"-"`
-	DownlinkTasks       DownlinkTaskQueue      `name:"-"`
-	NetID               types.NetID            `name:"net-id" description:"NetID of this Network Server"`
-	DevAddrPrefixes     []types.DevAddrPrefix  `name:"dev-addr-prefixes" description:"Device address prefixes of this Network Server"`
-	DeduplicationWindow time.Duration          `name:"deduplication-window" description:"Time window during which, duplicate messages are collected for metadata"`
-	CooldownWindow      time.Duration          `name:"cooldown-window" description:"Time window starting right after deduplication window, during which, duplicate messages are discarded"`
-	DownlinkPriorities  DownlinkPriorityConfig `name:"downlink-priorities" description:"Downlink message priorities"`
-	DefaultMACSettings  MACSettingConfig       `name:"default-mac-settings" description:"Default MAC settings to fallback to if not specified by device, band or frequency plan"`
-	Interop             config.InteropClient   `name:"interop" description:"Interop client configuration"`
-	DeviceKEKLabel      string                 `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`
+// ApplicationUplinkQueueConfig defines application uplink queue configuration.
+type ApplicationUplinkQueueConfig struct {
+	Queue      ApplicationUplinkQueue `name:"-"`
+	BufferSize uint64                 `name:"buffer-size"`
 }
 
 // MACSettingConfig defines MAC-layer configuration.
@@ -49,6 +42,34 @@ type MACSettingConfig struct {
 	ClassCTimeout              *time.Duration             `name:"class-c-timeout" description:"Deadline for a device in class C mode to respond to requests from the Network Server if not configured in device's MAC settings"`
 	StatusTimePeriodicity      *time.Duration             `name:"status-time-periodicity" description:"The interval after which a DevStatusReq MACCommand shall be sent by Network Server if not configured in device's MAC settings"`
 	StatusCountPeriodicity     *uint32                    `name:"status-count-periodicity" description:"Number of uplink messages after which a DevStatusReq MACCommand shall be sent by Network Server if not configured in device's MAC settings"`
+}
+
+// Parse parses the configuration and returns ttnpb.MACSettings.
+func (c MACSettingConfig) Parse() ttnpb.MACSettings {
+	p := ttnpb.MACSettings{
+		ClassBTimeout:         c.ClassBTimeout,
+		ClassCTimeout:         c.ClassCTimeout,
+		StatusTimePeriodicity: c.StatusTimePeriodicity,
+	}
+	if c.ADRMargin != nil {
+		p.ADRMargin = &pbtypes.FloatValue{Value: *c.ADRMargin}
+	}
+	if c.DesiredRx1Delay != nil {
+		p.DesiredRx1Delay = &ttnpb.RxDelayValue{Value: *c.DesiredRx1Delay}
+	}
+	if c.DesiredMaxDutyCycle != nil {
+		p.DesiredMaxDutyCycle = &ttnpb.AggregatedDutyCycleValue{Value: *c.DesiredMaxDutyCycle}
+	}
+	if c.DesiredADRAckLimitExponent != nil {
+		p.DesiredADRAckLimitExponent = &ttnpb.ADRAckLimitExponentValue{Value: *c.DesiredADRAckLimitExponent}
+	}
+	if c.DesiredADRAckDelayExponent != nil {
+		p.DesiredADRAckDelayExponent = &ttnpb.ADRAckDelayExponentValue{Value: *c.DesiredADRAckDelayExponent}
+	}
+	if c.StatusCountPeriodicity != nil {
+		p.StatusCountPeriodicity = &pbtypes.UInt32Value{Value: *c.StatusCountPeriodicity}
+	}
+	return p
 }
 
 // DownlinkPriorityConfig defines priorities for downlink messages.
@@ -90,4 +111,44 @@ func (c DownlinkPriorityConfig) Parse() (DownlinkPriorities, error) {
 		return DownlinkPriorities{}, errDownlinkPriority.WithAttributes("value", c.MaxApplicationDownlink)
 	}
 	return p, nil
+}
+
+// Config represents the NetworkServer configuration.
+type Config struct {
+	ApplicationUplinkQueue ApplicationUplinkQueueConfig `name:"application-uplink-queue"`
+	Devices                DeviceRegistry               `name:"-"`
+	DownlinkTasks          DownlinkTaskQueue            `name:"-"`
+	UplinkDeduplicator     UplinkDeduplicator           `name:"-"`
+	NetID                  types.NetID                  `name:"net-id" description:"NetID of this Network Server"`
+	DevAddrPrefixes        []types.DevAddrPrefix        `name:"dev-addr-prefixes" description:"Device address prefixes of this Network Server"`
+	DeduplicationWindow    time.Duration                `name:"deduplication-window" description:"Time window during which, duplicate messages are collected for metadata"`
+	CooldownWindow         time.Duration                `name:"cooldown-window" description:"Time window starting right after deduplication window, during which, duplicate messages are discarded"`
+	DownlinkPriorities     DownlinkPriorityConfig       `name:"downlink-priorities" description:"Downlink message priorities"`
+	DefaultMACSettings     MACSettingConfig             `name:"default-mac-settings" description:"Default MAC settings to fallback to if not specified by device, band or frequency plan"`
+	Interop                config.InteropClient         `name:"interop" description:"Interop client configuration"`
+	DeviceKEKLabel         string                       `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`
+	DownlinkQueueCapacity  int                          `name:"downlink-queue-capacity" description:"Maximum downlink queue size per-session"`
+}
+
+// DefaultConfig is the default Network Server configuration.
+var DefaultConfig = Config{
+	ApplicationUplinkQueue: ApplicationUplinkQueueConfig{
+		BufferSize: 1000,
+	},
+	DeduplicationWindow: 200 * time.Millisecond,
+	CooldownWindow:      time.Second,
+	DownlinkPriorities: DownlinkPriorityConfig{
+		JoinAccept:             "highest",
+		MACCommands:            "highest",
+		MaxApplicationDownlink: "high",
+	},
+	DefaultMACSettings: MACSettingConfig{
+		ADRMargin:              func(v float32) *float32 { return &v }(mac.DefaultADRMargin),
+		DesiredRx1Delay:        func(v ttnpb.RxDelay) *ttnpb.RxDelay { return &v }(ttnpb.RX_DELAY_5),
+		ClassBTimeout:          func(v time.Duration) *time.Duration { return &v }(mac.DefaultClassBTimeout),
+		ClassCTimeout:          func(v time.Duration) *time.Duration { return &v }(mac.DefaultClassCTimeout),
+		StatusTimePeriodicity:  func(v time.Duration) *time.Duration { return &v }(mac.DefaultStatusTimePeriodicity),
+		StatusCountPeriodicity: func(v uint32) *uint32 { return &v }(mac.DefaultStatusCountPeriodicity),
+	},
+	DownlinkQueueCapacity: 10000,
 }

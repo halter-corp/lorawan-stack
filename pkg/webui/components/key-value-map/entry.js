@@ -16,54 +16,92 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 
-import PropTypes from '../../lib/prop-types'
-import Input from '../input'
-import Button from '../button'
+import Input from '@ttn-lw/components/input'
+import Button from '@ttn-lw/components/button'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './key-value-map.styl'
 
 const m = defineMessages({
-  deleteEntry: 'Delete Entry',
+  deleteEntry: 'Delete entry',
 })
 
-@bind
 class Entry extends React.Component {
+  _getKeyInputName() {
+    const { name, index } = this.props
+
+    return `${name}[${index}].key`
+  }
+
+  _getValueInputName() {
+    const { name, index } = this.props
+
+    return `${name}[${index}].value`
+  }
+
+  @bind
   handleRemoveButtonClicked(event) {
     const { onRemoveButtonClick, index } = this.props
     onRemoveButtonClick(index, event)
   }
 
+  @bind
   handleKeyChanged(newKey) {
     const { onChange, index } = this.props
     onChange(index, { key: newKey })
   }
 
+  @bind
   handleValueChanged(newValue) {
     const { onChange, index } = this.props
     onChange(index, { value: newValue })
   }
 
+  @bind
+  handleBlur(event) {
+    const { name, onBlur, value } = this.props
+
+    const { relatedTarget } = event
+    const nextTarget = relatedTarget || {}
+
+    if (
+      nextTarget.name !== this._getKeyInputName() &&
+      nextTarget.name !== this._getValueInputName()
+    ) {
+      onBlur({
+        target: {
+          name,
+          value,
+        },
+      })
+    }
+  }
+
   render() {
-    const { name, index, keyPlaceholder, valuePlaceholder, value, onBlur } = this.props
+    const { keyPlaceholder, valuePlaceholder, value } = this.props
 
     return (
       <div className={style.entriesRow}>
         <Input
+          data-test-id={this._getKeyInputName()}
           className={style.input}
-          name={`${name}[${index}].key`}
+          name={this._getKeyInputName()}
           placeholder={keyPlaceholder}
           type="text"
           onChange={this.handleKeyChanged}
+          onBlur={this.handleBlur}
           value={value.key}
           code
         />
         <Input
+          data-test-id={this._getValueInputName()}
           className={style.input}
-          name={`${name}[${index}].value`}
+          name={this._getValueInputName()}
           placeholder={valuePlaceholder}
           type="text"
           onChange={this.handleValueChanged}
-          onBlur={onBlur}
+          onBlur={this.handleBlur}
           value={value.value}
           code
         />
@@ -80,15 +118,14 @@ class Entry extends React.Component {
 }
 
 Entry.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  value: PropTypes.object.isRequired,
-  keyPlaceholder: PropTypes.message.isRequired,
-  valuePlaceholder: PropTypes.message.isRequired,
   index: PropTypes.number.isRequired,
-  onRemoveButtonClick: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired,
+  keyPlaceholder: PropTypes.message.isRequired,
+  name: PropTypes.string.isRequired,
   onBlur: PropTypes.func.isRequired,
+  onChange: PropTypes.func.isRequired,
+  onRemoveButtonClick: PropTypes.func.isRequired,
+  value: PropTypes.shape({ key: PropTypes.string, value: PropTypes.string }).isRequired,
+  valuePlaceholder: PropTypes.message.isRequired,
 }
 
 export default Entry

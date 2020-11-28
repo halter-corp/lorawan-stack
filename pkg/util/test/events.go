@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
 )
 
 type MockEventPubSub struct {
@@ -100,31 +100,108 @@ func AssertEventPubSubPublishRequests(ctx context.Context, reqCh <-chan EventPub
 	var evs []events.Event
 	for i := 0; i < n; i++ {
 		if !AssertEventPubSubPublishRequest(ctx, reqCh, func(ev events.Event) bool {
+			t.Logf("Received event number %d out of %d expected: %v", i+1, n, ev)
 			evs = append(evs, ev)
 			return true
 		}) {
+			t.Errorf("Failed to receive event number %d out of %d expected", i+1, n)
 			return false
 		}
 	}
 	return assert(evs...)
 }
 
-func EventEqual(a, b events.Event) bool {
-	if a == nil {
-		return b == nil
-	}
+type EventEqualConfig struct {
+	UniqueID       bool
+	Time           bool
+	Identifiers    bool
+	Data           bool
+	CorrelationIDs bool
+	Origin         bool
+	Context        bool
+	Visibility     bool
+	Authentication bool
+	RemoteIP       bool
+	UserAgent      bool
+}
 
-	ap, err := events.Proto(a)
-	if err != nil {
-		return false
+func MakeEventEqual(conf EventEqualConfig) func(a, b events.Event) bool {
+	return func(a, b events.Event) bool {
+		if a == nil {
+			return b == nil
+		}
+
+		ap, err := events.Proto(a)
+		if err != nil {
+			return false
+		}
+		bp, err := events.Proto(b)
+		if err != nil {
+			return false
+		}
+
+		if !conf.UniqueID {
+			ap.UniqueID = ""
+			bp.UniqueID = ""
+		}
+		if !conf.Time {
+			ap.Time = time.Time{}
+			bp.Time = time.Time{}
+		}
+		if !conf.Identifiers {
+			ap.Identifiers = nil
+			bp.Identifiers = nil
+		}
+		if !conf.Data {
+			ap.Data = nil
+			bp.Data = nil
+		}
+		if !conf.CorrelationIDs {
+			ap.CorrelationIDs = nil
+			bp.CorrelationIDs = nil
+		}
+		if !conf.Origin {
+			ap.Origin = ""
+			bp.Origin = ""
+		}
+		if !conf.Context {
+			ap.Context = nil
+			bp.Context = nil
+		}
+		if !conf.Visibility {
+			ap.Visibility = nil
+			bp.Visibility = nil
+		}
+		if !conf.Authentication {
+			ap.Authentication = nil
+			bp.Authentication = nil
+		}
+		if !conf.RemoteIP {
+			ap.RemoteIP = ""
+			bp.RemoteIP = ""
+		}
+		if !conf.UserAgent {
+			ap.UserAgent = ""
+			bp.UserAgent = ""
+		}
+		return reflect.DeepEqual(ap, bp)
 	}
-	bp, err := events.Proto(b)
-	if err != nil {
-		return false
-	}
-	ap.Time = time.Time{}
-	bp.Time = time.Time{}
-	return reflect.DeepEqual(ap, bp)
+}
+
+var EventEqual = MakeEventEqual(EventEqualConfig{
+	Identifiers:    true,
+	Data:           true,
+	CorrelationIDs: true,
+	Origin:         true,
+	Context:        true,
+	Visibility:     true,
+	RemoteIP:       true,
+	UserAgent:      true,
+})
+
+func EventBuilderEqual(a, b events.Builder) bool {
+	ctx := Context()
+	return EventEqual(a.New(ctx), b.New(ctx))
 }
 
 var (

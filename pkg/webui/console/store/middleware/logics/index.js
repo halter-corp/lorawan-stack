@@ -13,23 +13,35 @@
 // limitations under the License.
 
 import user from './user'
+import users from './users'
 import init from './init'
 import applications from './applications'
 import devices from './devices'
-import device from './device'
 import gateways from './gateways'
 import configuration from './configuration'
 import organizations from './organizations'
 import js from './join-server'
+import apiKeys from './api-keys'
+import collaborators from './collaborators'
+import webhooks from './webhooks'
+import pubsubs from './pubsubs'
+import applicationPackages from './application-packages'
+import is from './identity-server'
 
 export default [
   ...user,
+  ...users,
   ...init,
   ...applications,
   ...devices,
-  ...device,
   ...gateways,
   ...configuration,
   ...organizations,
   ...js,
+  ...apiKeys,
+  ...collaborators,
+  ...webhooks,
+  ...pubsubs,
+  ...applicationPackages,
+  ...is,
 ]

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/gregjones/httpcache"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 const timeout = 10 * time.Second
@@ -35,7 +35,7 @@ type httpFetcher struct {
 
 func (f httpFetcher) File(pathElements ...string) ([]byte, error) {
 	if len(pathElements) == 0 {
-		return nil, errFilenameNotSpecified
+		return nil, errFilenameNotSpecified.New()
 	}
 
 	start := time.Now()
@@ -77,7 +77,7 @@ func FromHTTP(rootURL string, cache bool) (Interface, error) {
 			return nil, err
 		}
 		if !root.IsAbs() {
-			return nil, errSchemeNotSpecified
+			return nil, errSchemeNotSpecified.New()
 		}
 	}
 	return httpFetcher{

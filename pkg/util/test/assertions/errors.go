@@ -18,14 +18,14 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"github.com/smartystreets/assertions"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 const (
 	needDescriptor                = "This assertion requires ErrDescriptor as comparison type (you provided %T)."
 	shouldBeErrorType             = "Expected a known error value (but was of type %T instead)!"
 	shouldHaveNamespace           = "Expected error to have namespace '%v' (but it was '%v' instead)!"
-	shouldHaveCode                = "Expected error to have code '%v' (but it was '%v' instead)!"
 	shouldNotDescribe             = "Expected error to not describe '%v' (but it does)!"
 	needDefinitionCompatible      = "This assertion requires a Definition-compatible comparison type (you provided %T)."
 	needErrorDefinitionCompatible = "This assertion requires an Error-compatible or Definition-compatible comparison type (you provided %T)."
@@ -64,9 +64,6 @@ func assertDefinitionCompatibleEquals(actual, expected errors.DefinitionInterfac
 	if actual.MessageFormat() != expected.MessageFormat() {
 		return fmt.Sprintf(shouldHaveMessageFormat, expected.MessageFormat(), actual.MessageFormat())
 	}
-	if actual.Code() != expected.Code() {
-		return fmt.Sprintf(shouldHaveCode, expected.Code(), actual.Code())
-	}
 	return success
 }
 
@@ -91,8 +88,11 @@ func ShouldEqualErrorOrDefinition(actual interface{}, expected ...interface{}) s
 	if len(expected) != 1 {
 		return fmt.Sprintf(needExactValues, 1, len(expected))
 	}
-	if actual == nil && expected[0] == nil {
-		return success
+	if expected[0] == nil {
+		return assertions.ShouldBeNil(actual)
+	}
+	if s := assertions.ShouldNotBeNil(actual); s != "" {
+		return s
 	}
 	if expected, ok := expected[0].(errors.Interface); ok {
 		if actual, ok := actual.(errors.Interface); ok {

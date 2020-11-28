@@ -14,46 +14,47 @@
 
 import React from 'react'
 import { ToastContainer as Container, Slide } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
 
-import PropTypes from '../../lib/prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import createToast from './toast'
 
+import './react-toastify.styl'
 import style from './toast.styl'
 
 class ToastContainer extends React.Component {
+  static propTypes = {
+    autoClose: PropTypes.oneOfType([PropTypes.bool, PropTypes.number]),
+    closeButton: PropTypes.oneOfType([PropTypes.bool, PropTypes.element]),
+    closeOnClick: PropTypes.bool,
+    hideProgressBar: PropTypes.bool,
+    pauseOnFocusLoss: PropTypes.bool,
+    pauseOnHover: PropTypes.bool,
+    position: PropTypes.oneOf([
+      'bottom-right',
+      'bottom-left',
+      'top-right',
+      'top-left',
+      'top-center',
+      'bottom-center',
+    ]),
+    transition: PropTypes.func,
+  }
+
+  static defaultProps = {
+    position: 'bottom-right',
+    autoClose: 4000,
+    closeButton: false,
+    hideProgressBar: true,
+    pauseOnHover: true,
+    closeOnClick: true,
+    pauseOnFocusLoss: true,
+    transition: Slide,
+  }
+
   render() {
     return <Container toastClassName={style.toast} bodyClassName={style.body} {...this.props} />
   }
-}
-
-ToastContainer.propTypes = {
-  position: PropTypes.oneOf([
-    'bottom-right',
-    'bottom-left',
-    'top-right',
-    'top-left',
-    'top-center',
-    'bottom-center',
-  ]),
-  autoClose: PropTypes.oneOfType([PropTypes.bool, PropTypes.number]),
-  closeButton: PropTypes.oneOfType([PropTypes.bool, PropTypes.element]),
-  hideProgressBar: PropTypes.bool,
-  pauseOnHover: PropTypes.bool,
-  closeOnClick: PropTypes.bool,
-  pauseOnFocusLoss: PropTypes.bool,
-  transition: PropTypes.func,
-}
-
-ToastContainer.defaultProps = {
-  position: 'bottom-right',
-  autoClose: 4000,
-  closeButton: false,
-  hideProgressBar: true,
-  pauseOnHover: true,
-  closeOnClick: true,
-  pauseOnFocusLoss: true,
-  transition: Slide,
 }
 
 const toast = createToast()

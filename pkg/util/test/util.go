@@ -19,9 +19,23 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
+
+func FormatError(err error) string {
+	var s string
+	for i, err := range errors.Stack(err) {
+		s += fmt.Sprintf(`
+%s-> %s`,
+			strings.Repeat("-", i), err,
+		)
+	}
+	return s
+}
 
 // Delay is the value, which can be used to slowdown the execution of time-dependent tests.
 // You can assume, that most function calls will return in at most Delay time.
@@ -43,7 +57,7 @@ var Delay = time.Millisecond * func() time.Duration {
 // Must returns v if err is nil and panics otherwise.
 func Must(v interface{}, err error) interface{} {
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Must received error: %v", FormatError(err)))
 	}
 	return v
 }
@@ -63,7 +77,7 @@ func MustMultiple(vs ...interface{}) []interface{} {
 	}
 
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("MustMultiple received error: %s", FormatError(err)))
 	}
 	return vs[:n-1]
 }
@@ -71,7 +85,7 @@ func MustMultiple(vs ...interface{}) []interface{} {
 // WaitTimeout returns true if f returns after at most d or false otherwise.
 // An example of a f, for which this is useful would be Wait method of sync.WaitGroup.
 // Note, this function leaks a goroutine if f never returns.
-func WaitTimeout(d time.Duration, f func()) (ok bool) {
+func WaitTimeout(d time.Duration, f func()) bool {
 	done := make(chan struct{})
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -91,14 +105,14 @@ func WaitTimeout(d time.Duration, f func()) (ok bool) {
 }
 
 // WaitDeadline returns WaitTimeout(time.Until(t), f).
-func WaitDeadline(t time.Time, f func()) (ok bool) {
+func WaitDeadline(t time.Time, f func()) bool {
 	return WaitTimeout(time.Until(t), f)
 }
 
 // WaitContext returns true if f returns before <-ctx.Done() or false otherwise.
 // An example of a f, for which this is useful would be Wait method of sync.WaitGroup.
 // Note, this function leaks a goroutine if f never returns.
-func WaitContext(ctx context.Context, f func()) (ok bool) {
+func WaitContext(ctx context.Context, f func()) bool {
 	done := make(chan struct{})
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -115,4 +129,38 @@ func WaitContext(ctx context.Context, f func()) (ok bool) {
 	case <-done:
 		return true
 	}
+}
+
+// AllTrue returns true iff v == true for each v in vs.
+func AllTrue(vs ...bool) bool {
+	for _, v := range vs {
+		if !v {
+			return false
+		}
+	}
+	return true
+}
+
+// JoinStringsMap maps contents of xs to strings using f and joins them with sep.
+func JoinStringsMap(f func(k interface{}, v interface{}) string, sep string, xs interface{}) string {
+	r, ok := WrapRanger(xs)
+	if !ok {
+		panic(fmt.Sprintf("cannot range over values of type %T", xs))
+	}
+	var ss []string
+	r.Range(func(k, v interface{}) bool {
+		ss = append(ss, f(k, v))
+		return true
+	})
+	return strings.Join(ss, sep)
+}
+
+// JoinStringsf formats contents of xs using format and joins them with sep.
+func JoinStringsf(format, sep string, withKeys bool, xs interface{}) string {
+	return JoinStringsMap(func(k, v interface{}) string {
+		if withKeys {
+			return fmt.Sprintf(format, k, v)
+		}
+		return fmt.Sprintf(format, v)
+	}, sep, xs)
 }

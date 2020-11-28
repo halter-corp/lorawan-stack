@@ -18,9 +18,9 @@ import (
 	"bytes"
 	"math"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // AppendMHDR appends encoded msg to dst.
@@ -105,10 +105,7 @@ func AppendFHDR(dst []byte, msg ttnpb.FHDR, isUplink bool) ([]byte, error) {
 	if err != nil {
 		return nil, errFailedEncoding("FCtrl").WithCause(err)
 	}
-	if msg.FCnt > math.MaxUint16 {
-		return nil, errExpectedLowerOrEqual("FCnt", math.MaxUint16)(msg.FCnt)
-	}
-	dst = appendUint32(dst, msg.FCnt, 2)
+	dst = appendUint32(dst, msg.FCnt&0xffff, 2)
 	dst = append(dst, msg.FOpts...)
 	return dst, nil
 }
@@ -124,6 +121,10 @@ func UnmarshalFHDR(b []byte, msg *ttnpb.FHDR, isUplink bool) error {
 		return errFailedDecoding("FCtrl").WithCause(err)
 	}
 	msg.FCnt = parseUint32(b[5:7])
+	if n == 7 {
+		// No FOpts
+		return nil
+	}
 	msg.FOpts = make([]byte, 0, n-7)
 	msg.FOpts = append(msg.FOpts, b[7:n]...)
 	return nil
@@ -170,7 +171,7 @@ func UnmarshalMACPayload(b []byte, msg *ttnpb.MACPayload, isUplink bool) error {
 		msg.FPort = uint32(b[fPortIdx])
 
 		frmPayloadIdx := fPortIdx + 1
-		if n >= frmPayloadIdx {
+		if n > frmPayloadIdx {
 			msg.FRMPayload = make([]byte, 0, n-frmPayloadIdx)
 			msg.FRMPayload = append(msg.FRMPayload, b[frmPayloadIdx:]...)
 		}
@@ -232,13 +233,13 @@ func AppendCFList(dst []byte, msg ttnpb.CFList) ([]byte, error) {
 		// Fill remaining space with zeros.
 		dst = append(dst, bytes.Repeat([]byte{0x0}, 15-n*3)...)
 	case 1:
-		n := len(msg.ChMasks)
+		n := uint(len(msg.ChMasks))
 		if n > 96 {
 			return nil, errExpectedLengthLowerOrEqual("CFListChMasks", 96)(n)
 		}
-		for i := uint(0); i < uint(n); i += 8 {
+		for i := uint(0); i < n; i += 8 {
 			var b byte
-			for j := uint(0); j < 8; j++ {
+			for j := uint(0); j < 8 && i+j < n; j++ {
 				if msg.ChMasks[i+j] {
 					b |= (1 << j)
 				}
@@ -246,7 +247,7 @@ func AppendCFList(dst []byte, msg ttnpb.CFList) ([]byte, error) {
 			dst = append(dst, b)
 		}
 		// Fill remaining space with zeros.
-		dst = append(dst, bytes.Repeat([]byte{0x0}, 15-(n+7)/8)...)
+		dst = append(dst, bytes.Repeat([]byte{0x0}, int(15-(n+7)/8))...)
 	}
 	dst = append(dst, byte(msg.Type))
 	return dst, nil
@@ -441,7 +442,7 @@ func AppendMessage(dst []byte, msg ttnpb.Message) ([]byte, error) {
 		}
 		dst, err = AppendMACPayload(dst, *pld, false)
 		if err != nil {
-			return nil, errFailedEncoding("MACPayload").WithCause(err)
+			return nil, errFailedEncoding("downlink MACPayload").WithCause(err)
 		}
 	case ttnpb.MType_CONFIRMED_UP, ttnpb.MType_UNCONFIRMED_UP:
 		pld := msg.GetMACPayload()
@@ -579,14 +580,14 @@ func UnmarshalMessage(b []byte, msg *ttnpb.Message) error {
 	return nil
 }
 
-// GetUplinkMessageIdentifiers parses the msg and retrieves the EndDeviceIdentifers (except DeviceID).
-func GetUplinkMessageIdentifiers(msg *ttnpb.UplinkMessage) (ttnpb.EndDeviceIdentifiers, error) {
-	n := len(msg.RawPayload)
+// GetUplinkMessageIdentifiers parses the PHYPayload and retrieves the EndDeviceIdentifers (except DeviceID).
+func GetUplinkMessageIdentifiers(phyPayload []byte) (ttnpb.EndDeviceIdentifiers, error) {
+	n := len(phyPayload)
 	if n == 0 {
 		return ttnpb.EndDeviceIdentifiers{}, errMissing("PHYPayload")
 	}
 	var mhdr ttnpb.MHDR
-	if err := UnmarshalMHDR(msg.RawPayload[0:1], &mhdr); err != nil {
+	if err := UnmarshalMHDR(phyPayload[0:1], &mhdr); err != nil {
 		return ttnpb.EndDeviceIdentifiers{}, errFailedDecoding("MHDR").WithCause(err)
 	}
 	var ids ttnpb.EndDeviceIdentifiers
@@ -596,7 +597,7 @@ func GetUplinkMessageIdentifiers(msg *ttnpb.UplinkMessage) (ttnpb.EndDeviceIdent
 			return ttnpb.EndDeviceIdentifiers{}, errExpectedLengthHigherOrEqual("FHDR", 7)(n - 5)
 		}
 		var devAddr types.DevAddr
-		copyReverse(devAddr[:], msg.RawPayload[1:5])
+		copyReverse(devAddr[:], phyPayload[1:5])
 		ids.DevAddr = &devAddr
 		return ids, nil
 	case ttnpb.MType_JOIN_REQUEST:
@@ -604,8 +605,8 @@ func GetUplinkMessageIdentifiers(msg *ttnpb.UplinkMessage) (ttnpb.EndDeviceIdent
 			return ttnpb.EndDeviceIdentifiers{}, errExpectedLengthEqual("JoinRequestPHYPayload", 23)(n)
 		}
 		var joinEUI, devEUI types.EUI64
-		copyReverse(joinEUI[:], msg.RawPayload[1:9])
-		copyReverse(devEUI[:], msg.RawPayload[9:17])
+		copyReverse(joinEUI[:], phyPayload[1:9])
+		copyReverse(devEUI[:], phyPayload[9:17])
 		ids.JoinEUI = &joinEUI
 		ids.DevEUI = &devEUI
 		return ids, nil
@@ -613,25 +614,25 @@ func GetUplinkMessageIdentifiers(msg *ttnpb.UplinkMessage) (ttnpb.EndDeviceIdent
 		if n != 19 && n != 24 {
 			return ttnpb.EndDeviceIdentifiers{}, errExpectedLengthTwoChoices("RejoinRequestPHYPayload", 19, 24)(n)
 		}
-		switch msg.RawPayload[1] {
+		switch phyPayload[1] {
 		case 0, 2:
 			if n != 19 {
 				return ttnpb.EndDeviceIdentifiers{}, errExpectedLengthEqual("RejoinRequestPHYPayload", 19)(n)
 			}
 			var devEUI types.EUI64
-			copyReverse(devEUI[:], msg.RawPayload[5:13])
+			copyReverse(devEUI[:], phyPayload[5:13])
 			ids.DevEUI = &devEUI
 		case 1:
 			if n != 24 {
 				return ttnpb.EndDeviceIdentifiers{}, errExpectedLengthEqual("RejoinRequestPHYPayload", 24)(n)
 			}
 			var joinEUI, devEUI types.EUI64
-			copyReverse(joinEUI[:], msg.RawPayload[2:10])
-			copyReverse(devEUI[:], msg.RawPayload[10:18])
+			copyReverse(joinEUI[:], phyPayload[2:10])
+			copyReverse(devEUI[:], phyPayload[10:18])
 			ids.JoinEUI = &joinEUI
 			ids.DevEUI = &devEUI
 		default:
-			return ttnpb.EndDeviceIdentifiers{}, errUnknown("RejoinType")(msg.RawPayload[1])
+			return ttnpb.EndDeviceIdentifiers{}, errUnknown("RejoinType")(phyPayload[1])
 		}
 		return ids, nil
 	default:

@@ -15,17 +15,17 @@
 import React from 'react'
 import bind from 'autobind-decorator'
 
-import Button from '../'
-import PortalledModal from '../../../components/modal/portalled'
+import PortalledModal from '@ttn-lw/components/modal/portalled'
 
-import PropTypes from '../../../lib/prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import Button from '..'
 
 /**
  * ModalButton is a button which needs a modal confirmation to complete the
  * action. It can be used as an easy way to get the users explicit confirmation
- * before doing an action, e.g. deleting a resource.
+ * before doing an action, e.g. Deleting a resource.
  */
-@bind
 class ModalButton extends React.Component {
   constructor(props) {
     super(props)
@@ -34,6 +34,8 @@ class ModalButton extends React.Component {
       modalVisible: false,
     }
   }
+
+  @bind
   handleClick() {
     const { modalData } = this.props
 
@@ -46,6 +48,7 @@ class ModalButton extends React.Component {
     this.setState({ modalVisible: true })
   }
 
+  @bind
   handleComplete(confirmed) {
     const { onApprove, onCancel } = this.props
 
@@ -71,7 +74,7 @@ class ModalButton extends React.Component {
 
     return (
       <React.Fragment>
-        <PortalledModal visible={this.state.modalVisible} modal={modalComposedData} />
+        <PortalledModal visible={this.state.modalVisible} {...modalComposedData} />
         <Button onClick={this.handleClick} message={message} {...rest} />
       </React.Fragment>
     )
@@ -84,9 +87,10 @@ ModalButton.defaultProps = {
 }
 
 ModalButton.propTypes = {
+  message: PropTypes.message.isRequired,
+  modalData: PropTypes.shape({ ...PortalledModal.Modal.propTypes }).isRequired,
   onApprove: PropTypes.func,
   onCancel: PropTypes.func,
-  modalData: PropTypes.object.isRequired,
 }
 
 export default ModalButton

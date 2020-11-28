@@ -19,8 +19,8 @@ import (
 	"regexp"
 	"strconv"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // DR encodes a LoRa data rate or an FSK data rate, and implements marshalling and unmarshalling between JSON.
@@ -86,19 +86,19 @@ func (dr DR) String() string {
 func ParseLoRa(dr string) (DR, error) {
 	matches := sfRegexp.FindStringSubmatch(dr)
 	if len(matches) != 2 {
-		return DR{}, errDataRate
+		return DR{}, errDataRate.New()
 	}
 	sf, err := strconv.ParseUint(matches[1], 10, 64)
 	if err != nil {
-		return DR{}, errDataRate
+		return DR{}, errDataRate.New()
 	}
 	matches = bwRegexp.FindStringSubmatch(dr)
 	if len(matches) != 2 {
-		return DR{}, errDataRate
+		return DR{}, errDataRate.New()
 	}
 	bw, err := strconv.ParseFloat(matches[1], 64)
 	if err != nil {
-		return DR{}, errDataRate
+		return DR{}, errDataRate.New()
 	}
 	return DR{
 		DataRate: ttnpb.DataRate{

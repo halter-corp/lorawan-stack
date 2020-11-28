@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pubsub implements the go-cloud PubSub frontend.
+// Package pubsub implements the go-cloud pub/sub frontend.
 package pubsub
 
 import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errorcontext"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"gocloud.dev/pubsub"
 )
 
-// PubSub is an PubSub frontend that exposes ttnpb.ApplicationPubSubRegistryServer.
+// PubSub is an pub/sub frontend that exposes ttnpb.ApplicationPubSubRegistryServer.
 type PubSub struct {
 	ttnpb.ApplicationPubSubRegistryServer
 
@@ -42,20 +41,25 @@ type PubSub struct {
 	server   io.Server
 	registry Registry
 
-	integrations      sync.Map
-	integrationErrors sync.Map
+	integrations sync.Map
 }
 
 // New creates a new pusub frontend.
 func New(c *component.Component, server io.Server, registry Registry) (*PubSub, error) {
-	ctx := log.NewContextWithField(c.FillContext(c.Context()), "namespace", "applicationserver/io/pubsub")
+	ctx := log.NewContextWithField(c.Context(), "namespace", "applicationserver/io/pubsub")
 	ps := &PubSub{
 		Component: c,
 		ctx:       ctx,
 		server:    server,
 		registry:  registry,
 	}
-	ps.RegisterTask(ctx, "pubsubs_start_all", ps.startAll, component.TaskRestartOnFailure)
+	ps.RegisterTask(&component.TaskConfig{
+		Context: ctx,
+		ID:      "pubsubs_start_all",
+		Func:    ps.startAll,
+		Restart: component.TaskRestartOnFailure,
+		Backoff: component.DefaultTaskBackoffConfig,
+	})
 	return ps, nil
 }
 
@@ -68,37 +72,28 @@ func (ps *PubSub) startAll(ctx context.Context) error {
 	)
 }
 
-var startBackoff = []time.Duration{100 * time.Millisecond, 1 * time.Second, 10 * time.Second}
-
 func (ps *PubSub) startTask(ctx context.Context, ids ttnpb.ApplicationPubSubIdentifiers) {
 	ctx = log.NewContextWithFields(ctx, log.Fields(
 		"application_uid", unique.ID(ctx, ids.ApplicationIdentifiers),
 		"pub_sub_id", ids.PubSubID,
 	))
-	ps.StartTask(ctx, "pubsub", func(ctx context.Context) error {
-		target, err := ps.registry.Get(ctx, ids, ttnpb.ApplicationPubSubFieldPathsNested)
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				log.FromContext(ctx).WithError(err).Error("Failed to stop pubsub")
+	ps.StartTask(&component.TaskConfig{
+		Context: ctx,
+		ID:      "pubsub",
+		Func: func(ctx context.Context) error {
+			target, err := ps.registry.Get(ctx, ids, ttnpb.ApplicationPubSubFieldPathsNested)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			} else if err != nil {
+				log.FromContext(ctx).WithError(err).Warn("Pub/Sub not found")
+				return nil
 			}
-			return nil
-		}
 
-		err = ps.start(ctx, target)
-		switch {
-		case errors.IsFailedPrecondition(err),
-			errors.IsUnauthenticated(err),
-			errors.IsPermissionDenied(err),
-			errors.IsInvalidArgument(err):
-			log.FromContext(ctx).WithError(err).Warn("Failed to start")
-			return nil
-		case errors.IsCanceled(err),
-			errors.IsAlreadyExists(err):
-			return nil
-		default:
-			return err
-		}
-	}, component.TaskRestartOnFailure, 0.1, startBackoff...)
+			return ps.start(ctx, target)
+		},
+		Restart: component.TaskRestartOnFailure,
+		Backoff: io.DialTaskBackoffConfig,
+	})
 }
 
 type integration struct {
@@ -138,8 +133,12 @@ func (i *integration) handleUp(ctx context.Context) {
 				topic = i.conn.Topics.DownlinkFailed
 			case *ttnpb.ApplicationUp_DownlinkQueued:
 				topic = i.conn.Topics.DownlinkQueued
+			case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
+				topic = i.conn.Topics.DownlinkQueueInvalidated
 			case *ttnpb.ApplicationUp_LocationSolved:
 				topic = i.conn.Topics.LocationSolved
+			case *ttnpb.ApplicationUp_ServiceData:
+				topic = i.conn.Topics.ServiceData
 			}
 			if topic == nil {
 				continue
@@ -154,7 +153,8 @@ func (i *integration) handleUp(ctx context.Context) {
 			})
 			if err != nil {
 				logger.WithError(err).Warn("Failed to publish upstream message")
-				continue
+				i.cancel(err)
+				return
 			}
 			logger.Debug("Publish upstream message")
 		}
@@ -163,11 +163,17 @@ func (i *integration) handleUp(ctx context.Context) {
 
 func (i *integration) handleDown(ctx context.Context, op func(io.Server, context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error, subscription *pubsub.Subscription) {
 	logger := log.FromContext(ctx)
-	for ctx.Err() == nil {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 		msg, err := subscription.Receive(ctx)
 		if err != nil {
 			logger.WithError(err).Warn("Failed to receive downlink queue operation")
-			continue
+			i.cancel(err)
+			return
 		}
 		msg.Ack()
 		operation, err := i.format.ToDownlinkQueueRequest(msg.Body)
@@ -213,15 +219,16 @@ func (i *integration) startHandleDown(ctx context.Context) {
 	}
 }
 
-var errAlreadyConfigured = errors.DefineAlreadyExists("already_configured", "already configured to `{application_uid}` `{pub_sub_id}`")
-
 func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err error) {
 	appUID := unique.ID(ctx, pb.ApplicationIdentifiers)
 	psUID := PubSubUID(appUID, pb.PubSubID)
+
 	ctx = log.NewContextWithFields(ctx, log.Fields(
 		"application_uid", appUID,
 		"pub_sub_id", pb.PubSubID,
+		"provider", fmt.Sprintf("%T", pb.Provider),
 	))
+	logger := log.FromContext(ctx)
 	ctx = rights.NewContext(ctx, rights.Rights{
 		ApplicationRights: map[string]*ttnpb.Rights{
 			appUID: {
@@ -233,6 +240,7 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 	defer func() {
 		cancel(err)
 	}()
+
 	i := &integration{
 		ApplicationPubSub: *pb,
 		ctx:               ctx,
@@ -240,20 +248,20 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 		closed:            make(chan struct{}),
 		server:            ps.server,
 	}
+	defer close(i.closed)
 	if _, loaded := ps.integrations.LoadOrStore(psUID, i); loaded {
-		log.FromContext(ctx).Warn("Integration already started")
-		return errAlreadyConfigured.WithAttributes("application_uid", appUID, "pub_sub_id", pb.PubSubID)
+		logger.Debug("Pub/sub already started")
+		return nil
 	}
-	go func() {
-		<-ctx.Done()
-		ps.integrationErrors.Store(psUID, ctx.Err())
-		ps.integrations.Delete(psUID)
-		if err := ctx.Err(); err != nil && !errors.IsCanceled(err) {
-			log.FromContext(ctx).WithError(err).Warn("Integration failed")
+	defer ps.integrations.Delete(psUID)
+
+	defer func() {
+		if err != nil {
+			logger.WithError(err).Warn("Pub/sub failed")
 			registerIntegrationFail(ctx, i, err)
 		}
-		close(i.closed)
 	}()
+
 	provider, err := provider.GetProvider(pb)
 	if err != nil {
 		return err
@@ -262,28 +270,42 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 	if err != nil {
 		return err
 	}
-	ctx = log.NewContextWithField(ctx, "provider", fmt.Sprintf("%T", pb.Provider))
-	logger := log.FromContext(ctx)
+	defer func() {
+		if err := i.conn.Shutdown(ctx); err != nil {
+			logger.WithError(err).Warn("Failed to shutdown pub/sub connection")
+		} else {
+			logger.Debug("Shutdown pub/sub connection success")
+		}
+	}()
 	i.sub, err = ps.server.Subscribe(ctx, "pubsub", pb.ApplicationIdentifiers)
 	if err != nil {
 		return err
 	}
-	format, ok := formats[pb.Format]
-	if !ok {
+	go func() {
+		// Close the integration if the subscription is canceled.
+		select {
+		case <-i.sub.Context().Done():
+			err := i.sub.Context().Err()
+			cancel(err)
+		case <-ctx.Done():
+		}
+	}()
+	var ok bool
+	if i.format, ok = formats[pb.Format]; !ok {
 		return errFormatNotFound.WithAttributes("format", pb.Format)
 	}
-	i.format = format
+
 	go i.handleUp(ctx)
 	i.startHandleDown(ctx)
-	logger.Info("Started")
+	logger.Info("Pub/sub started")
 	registerIntegrationStart(ctx, i)
-	<-ctx.Done()
-	if err := ctx.Err(); errors.IsCanceled(err) {
-		logger.Info("Integration canceled")
-		i.conn.Shutdown(ctx)
+	defer func() {
+		logger.Info("Pub/sub stopped")
 		registerIntegrationStop(ctx, i)
-	}
-	return
+	}()
+
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func (ps *PubSub) stop(ctx context.Context, ids ttnpb.ApplicationPubSubIdentifiers) error {
@@ -291,14 +313,12 @@ func (ps *PubSub) stop(ctx context.Context, ids ttnpb.ApplicationPubSubIdentifie
 	psUID := PubSubUID(appUID, ids.PubSubID)
 	if val, ok := ps.integrations.Load(psUID); ok {
 		i := val.(*integration)
-		log.FromContext(ctx).WithFields(log.Fields(
-			"application_uid", appUID,
-			"pub_sub_id", ids.PubSubID,
-		)).Debug("Integration canceled")
 		i.cancel(context.Canceled)
-		<-i.closed
-	} else {
-		ps.integrationErrors.Delete(psUID)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-i.closed:
+		}
 	}
 	return nil
 }

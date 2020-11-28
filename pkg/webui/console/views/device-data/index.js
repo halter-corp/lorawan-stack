@@ -14,22 +14,30 @@
 
 import React from 'react'
 import { connect } from 'react-redux'
-import { Col, Row, Container } from 'react-grid-system'
-import bind from 'autobind-decorator'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import DeviceEvents from '../../containers/device-events'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import { getDeviceId } from '../../../lib/selectors/id'
+import WithRootClass from '@ttn-lw/lib/components/with-root-class'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
-@connect(function({ device, application }, props) {
+import DeviceEvents from '@console/containers/device-events'
+
+import appStyle from '@console/views/app/app.styl'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { selectSelectedDevice, selectSelectedDeviceId } from '@console/store/selectors/devices'
+
+import style from './device-data.styl'
+
+@connect(function(state, props) {
+  const device = selectSelectedDevice(state)
   return {
-    device: device.device,
-    devId: getDeviceId(device.device),
-    devIds: device.device && device.device.ids,
+    device,
+    devId: selectSelectedDeviceId(state),
+    devIds: device && device.ids,
   }
 })
 @withBreadcrumb('device.single.data', function(props) {
@@ -38,25 +46,27 @@ import { getDeviceId } from '../../../lib/selectors/id'
   return (
     <Breadcrumb
       path={`/applications/${appId}/devices/${devId}/data`}
-      icon="data"
-      content={sharedMessages.data}
+      content={sharedMessages.liveData}
     />
   )
 })
-@bind
 export default class Data extends React.Component {
+  static propTypes = {
+    device: PropTypes.device.isRequired,
+  }
+
   render() {
-    const { devIds } = this.props
+    const {
+      device: { ids },
+    } = this.props
 
     return (
-      <Container>
-        <IntlHelmet hideHeading title={sharedMessages.data} />
-        <Row>
-          <Col>
-            <DeviceEvents devIds={devIds} />
-          </Col>
-        </Row>
-      </Container>
+      <WithRootClass className={appStyle.stageFlex} id="stage">
+        <div className={style.overflowContainer}>
+          <IntlHelmet hideHeading title={sharedMessages.liveData} />
+          <DeviceEvents devIds={ids} />
+        </div>
+      </WithRootClass>
     )
   }
 }

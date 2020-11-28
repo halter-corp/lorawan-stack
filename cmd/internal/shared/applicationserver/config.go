@@ -18,10 +18,16 @@ import (
 	"fmt"
 	"time"
 
-	"go.thethings.network/lorawan-stack/cmd/internal/shared"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver"
-	"go.thethings.network/lorawan-stack/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
 )
+
+// DefaultWebhookTemplatesConfig is the default configuration for the Webhook templates.
+var DefaultWebhookTemplatesConfig = web.TemplatesConfig{
+	URL: "https://raw.githubusercontent.com/TheThingsNetwork/lorawan-webhook-templates/master",
+}
 
 // DefaultApplicationServerConfig is the default configuration for the Application Server.
 var DefaultApplicationServerConfig = applicationserver.Config{
@@ -33,9 +39,17 @@ var DefaultApplicationServerConfig = applicationserver.Config{
 		PublicTLSAddress: fmt.Sprintf("%s:8883", shared.DefaultPublicHost),
 	},
 	Webhooks: applicationserver.WebhooksConfig{
+		Templates: DefaultWebhookTemplatesConfig,
 		Target:    "direct",
 		Timeout:   5 * time.Second,
 		QueueSize: 16,
 		Workers:   16,
+		Downlinks: web.DownlinksConfig{PublicAddress: shared.DefaultPublicURL + "/api/v3"},
+	},
+	EndDeviceFetcher: applicationserver.EndDeviceFetcherConfig{
+		Cache: applicationserver.EndDeviceFetcherCacheConfig{
+			Enable: true,
+			TTL:    5 * time.Minute,
+		},
 	},
 }

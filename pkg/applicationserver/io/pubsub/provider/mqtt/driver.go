@@ -21,7 +21,7 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"gocloud.dev/gcerrors"
 	"gocloud.dev/pubsub"
 	"gocloud.dev/pubsub/driver"
@@ -37,31 +37,32 @@ type topic struct {
 var errNilClient = errors.DefineInvalidArgument("nil_client", "client is nil")
 
 // OpenTopic returns a *pubsub.Topic that publishes to the given topic name with the given MQTT client.
-func OpenTopic(client mqtt.Client, topicName string, timeout time.Duration, qos byte) (*pubsub.Topic, error) {
-	dt, err := openDriverTopic(client, topicName, timeout, qos)
+func OpenTopic(client mqtt.Client, topicName string, qos byte) (*pubsub.Topic, error) {
+	dt, err := openDriverTopic(client, topicName, qos)
 	if err != nil {
 		return nil, err
 	}
 	return pubsub.NewTopic(dt, nil), nil
 }
 
-func openDriverTopic(client mqtt.Client, topicName string, timeout time.Duration, qos byte) (driver.Topic, error) {
+func openDriverTopic(client mqtt.Client, topicName string, qos byte) (driver.Topic, error) {
 	if client == nil {
-		return nil, errNilClient
+		return nil, errNilClient.New()
 	}
 	dt := &topic{
-		client:  client,
-		topic:   topicName,
-		timeout: timeout,
-		qos:     qos,
+		client: client,
+		topic:  topicName,
+		qos:    qos,
 	}
 	return dt, nil
 }
 
+var errPublishFailed = errors.Define("publish_failed", "publish to MQTT topic failed")
+
 // SendBatch implements driver.Topic.
 func (t *topic) SendBatch(ctx context.Context, msgs []*driver.Message) error {
 	if t == nil || t.client == nil {
-		return errNilClient
+		return errNilClient.New()
 	}
 	for _, msg := range msgs {
 		if ctx.Err() != nil {
@@ -77,8 +78,9 @@ func (t *topic) SendBatch(ctx context.Context, msgs []*driver.Message) error {
 		if err != nil {
 			return err
 		}
-		if token := t.client.Publish(t.topic, t.qos, false, body); !token.WaitTimeout(t.timeout) {
-			return convertToCancelled(token.Error())
+		token := t.client.Publish(t.topic, t.qos, false, body)
+		if err := waitToken(ctx, token); err != nil {
+			return errPublishFailed.WithCause(err)
 		}
 	}
 	return nil
@@ -150,6 +152,7 @@ func (*topic) ErrorCode(err error) gcerrors.ErrorCode {
 func (*topic) Close() error { return nil }
 
 type subscription struct {
+	ctx     context.Context
 	client  mqtt.Client
 	topic   string
 	subCh   chan mqtt.Message
@@ -160,62 +163,63 @@ type subscription struct {
 const subscriptionQueueSize = 16
 
 // OpenSubscription returns a *pubsub.Subscription that subscribes to the given topic name with the given MQTT client.
-func OpenSubscription(client mqtt.Client, topicName string, timeout time.Duration, qos byte) (*pubsub.Subscription, error) {
-	ds, err := openDriverSubscription(client, topicName, timeout, qos)
+func OpenSubscription(ctx context.Context, client mqtt.Client, topicName string, qos byte) (*pubsub.Subscription, error) {
+	ds, err := openDriverSubscription(ctx, client, topicName, qos)
 	if err != nil {
 		return nil, err
 	}
 	return pubsub.NewSubscription(ds, nil, nil), nil
 }
 
-func openDriverSubscription(client mqtt.Client, topicName string, timeout time.Duration, qos byte) (driver.Subscription, error) {
+var errSubscribeFailed = errors.Define("subscribe_failed", "subscribe to MQTT topic failed")
+
+func openDriverSubscription(ctx context.Context, client mqtt.Client, topicName string, qos byte) (driver.Subscription, error) {
 	if client == nil {
-		return nil, errNilClient
+		return nil, errNilClient.New()
 	}
 	subCh := make(chan mqtt.Message, subscriptionQueueSize)
 	handler := func(_ mqtt.Client, msg mqtt.Message) {
-		subCh <- msg
+		select {
+		case <-ctx.Done():
+			return
+		case subCh <- msg:
+		}
 	}
-	if token := client.Subscribe(topicName, qos, handler); !token.WaitTimeout(timeout) {
-		return nil, convertToCancelled(token.Error())
+	token := client.Subscribe(topicName, qos, handler)
+	if err := waitToken(ctx, token); err != nil {
+		return nil, errSubscribeFailed.WithCause(err)
 	}
 	ds := &subscription{
-		client:  client,
-		topic:   topicName,
-		subCh:   subCh,
-		timeout: timeout,
+		ctx:    ctx,
+		client: client,
+		topic:  topicName,
+		subCh:  subCh,
 	}
 	return ds, nil
 }
 
 // ReceiveBatch implements driver.Subscription.
+// We always return one message at a time, since the underlying MQTT client does not batch receives.
 func (s *subscription) ReceiveBatch(ctx context.Context, maxMessages int) ([]*driver.Message, error) {
 	if s == nil || s.client == nil {
-		return nil, errNilClient
+		return nil, errNilClient.New()
 	}
-	var messages []*driver.Message
-outer:
-	for i := 0; i < maxMessages; i++ {
-		select {
-		case <-ctx.Done():
-			break outer
-		case msg, ok := <-s.subCh:
-			if !ok {
-				break outer
-			}
-			dm, err := decodeMessage(msg)
-			if err != nil {
-				return nil, err
-			}
-			messages = append(messages, dm)
-		// We cannot delay the messages for too long for the sake of
-		// having bigger batches. Avoid busy waiting, but don't wait
-		// for too long.
-		case <-time.After(1 * time.Millisecond):
-			break outer
+	if maxMessages <= 0 {
+		return nil, nil
+	}
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case msg, ok := <-s.subCh:
+		if !ok {
+			return nil, nil
 		}
+		dm, err := decodeMessage(msg)
+		if err != nil {
+			return nil, err
+		}
+		return []*driver.Message{dm}, nil
 	}
-	return messages, ctx.Err()
 }
 
 // SendAcks implements driver.Subscription.
@@ -248,19 +252,22 @@ func (*subscription) ErrorCode(err error) gcerrors.ErrorCode {
 	return toErrorCode(err)
 }
 
+var errUnsubscribeFailed = errors.Define("unsubscribe_failed", "unsubscribe from MQTT topic failed")
+
 // Close implements driver.Subscription.
 func (s *subscription) Close() error {
 	if s == nil || s.client == nil {
 		return nil
 	}
-	if token := s.client.Unsubscribe(s.topic); !token.WaitTimeout(s.timeout) {
-		return convertToCancelled(token.Error())
+	token := s.client.Unsubscribe(s.topic)
+	if err := waitToken(s.ctx, token); err != nil {
+		return errUnsubscribeFailed.WithCause(err)
 	}
 	return nil
 }
 
 func toErrorCode(err error) gcerrors.ErrorCode {
-	if d, ok := err.(errors.Definition); ok && d.FullName() == errNilClient.FullName() {
+	if errors.Resemble(err, errNilClient) {
 		return gcerrors.NotFound
 	}
 	switch err {
@@ -275,12 +282,4 @@ func toErrorCode(err error) gcerrors.ErrorCode {
 	default:
 		return gcerrors.Unknown
 	}
-}
-
-// convertToCancelled returns the error if it is not nil, or context.DeadlineExceeded otherwise.
-func convertToCancelled(err error) error {
-	if err != nil {
-		return err
-	}
-	return context.DeadlineExceeded
 }

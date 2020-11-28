@@ -19,8 +19,8 @@ import (
 	"context"
 
 	"github.com/nats-io/nats.go"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"gocloud.dev/pubsub"
 	"gocloud.dev/pubsub/natspubsub"
 )
@@ -86,8 +86,16 @@ func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *pro
 			message: target.GetDownlinkQueued(),
 		},
 		{
+			topic:   &pc.Topics.DownlinkQueueInvalidated,
+			message: target.GetDownlinkQueueInvalidated(),
+		},
+		{
 			topic:   &pc.Topics.LocationSolved,
 			message: target.GetLocationSolved(),
+		},
+		{
+			topic:   &pc.Topics.ServiceData,
+			message: target.GetServiceData(),
 		},
 	} {
 		if t.message == nil {

@@ -19,9 +19,10 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
@@ -177,7 +178,7 @@ func getEndDevice(ids ttnpb.EndDeviceIdentifiers, nsPaths, asPaths, jsPaths []st
 	return &res, nil
 }
 
-func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths []string, isCreate, touch bool) (*ttnpb.EndDevice, error) {
+func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths, unsetPaths []string, isCreate, touch bool) (*ttnpb.EndDevice, error) {
 	var res ttnpb.EndDevice
 	res.SetFields(device, "ids", "created_at", "updated_at")
 
@@ -188,7 +189,7 @@ func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths []
 		}
 		var isDevice ttnpb.EndDevice
 		logger.WithField("paths", isPaths).Debug("Set end device on Identity Server")
-		isDevice.SetFields(device, append(isPaths, "ids")...)
+		isDevice.SetFields(device, append(ttnpb.ExcludeFields(isPaths, unsetPaths...), "ids")...)
 		isRes, err := ttnpb.NewEndDeviceRegistryClient(is).Update(ctx, &ttnpb.UpdateEndDeviceRequest{
 			EndDevice: isDevice,
 			FieldMask: types.FieldMask{Paths: isPaths},
@@ -214,7 +215,7 @@ func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths []
 		}
 		var jsDevice ttnpb.EndDevice
 		logger.WithField("paths", jsPaths).Debug("Set end device on Join Server")
-		jsDevice.SetFields(device, append(jsPaths, "ids")...)
+		jsDevice.SetFields(device, append(ttnpb.ExcludeFields(jsPaths, unsetPaths...), "ids")...)
 		jsRes, err := ttnpb.NewJsEndDeviceRegistryClient(js).Set(ctx, &ttnpb.SetEndDeviceRequest{
 			EndDevice: jsDevice,
 			FieldMask: types.FieldMask{Paths: jsPaths},
@@ -240,7 +241,7 @@ func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths []
 		}
 		var nsDevice ttnpb.EndDevice
 		logger.WithField("paths", nsPaths).Debug("Set end device on Network Server")
-		nsDevice.SetFields(device, append(nsPaths, "ids")...)
+		nsDevice.SetFields(device, append(ttnpb.ExcludeFields(nsPaths, unsetPaths...), "ids")...)
 		nsRes, err := ttnpb.NewNsEndDeviceRegistryClient(ns).Set(ctx, &ttnpb.SetEndDeviceRequest{
 			EndDevice: nsDevice,
 			FieldMask: types.FieldMask{Paths: nsPaths},
@@ -266,7 +267,7 @@ func setEndDevice(device *ttnpb.EndDevice, isPaths, nsPaths, asPaths, jsPaths []
 		}
 		var asDevice ttnpb.EndDevice
 		logger.WithField("paths", asPaths).Debug("Set end device on Application Server")
-		asDevice.SetFields(device, append(asPaths, "ids")...)
+		asDevice.SetFields(device, append(ttnpb.ExcludeFields(asPaths, unsetPaths...), "ids")...)
 		asRes, err := ttnpb.NewAsEndDeviceRegistryClient(as).Set(ctx, &ttnpb.SetEndDeviceRequest{
 			EndDevice: asDevice,
 			FieldMask: types.FieldMask{Paths: asPaths},
@@ -338,4 +339,39 @@ func deleteEndDevice(ctx context.Context, devID *ttnpb.EndDeviceIdentifiers) err
 	}
 
 	return nil
+}
+
+func hasUpdateDeviceLocationFlags(flags *pflag.FlagSet) bool {
+	return flags.Changed("location.latitude") ||
+		flags.Changed("location.longitude") ||
+		flags.Changed("location.altitude") ||
+		flags.Changed("location.accuracy")
+}
+
+func updateDeviceLocation(device *ttnpb.EndDevice, flags *pflag.FlagSet) {
+	if device.Locations == nil {
+		device.Locations = make(map[string]*ttnpb.Location)
+	}
+	loc, ok := device.Locations["user"]
+	if !ok {
+		loc = &ttnpb.Location{}
+	}
+	loc.Source = ttnpb.SOURCE_REGISTRY
+	if flags.Changed("location.longitude") {
+		longitude, _ := flags.GetFloat64("location.longitude")
+		loc.Longitude = longitude
+	}
+	if flags.Changed("location.latitude") {
+		latitude, _ := flags.GetFloat64("location.latitude")
+		loc.Latitude = latitude
+	}
+	if flags.Changed("location.altitude") {
+		altitude, _ := flags.GetInt32("location.altitude")
+		loc.Altitude = altitude
+	}
+	if flags.Changed("location.accuracy") {
+		accuracy, _ := flags.GetInt32("location.accuracy")
+		loc.Accuracy = accuracy
+	}
+	device.Locations["user"] = loc
 }

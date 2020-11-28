@@ -14,18 +14,18 @@
 
 .footer
   border-normal('top')
+  height: $footer-height
   display: flex
   justify-content: space-between
   align-items: center
-  padding: $cs.xs
+  padding: 0 $cs.xs
   color: $tc-subtle-gray
   flex: none
-  +media-query($bp.s)
-    background-color: white
+  background-color: white
+  box-sizing: border-box
 
 .link
   text-decoration: underline
-  color: $tc-subtle-gray
   margin-left: $ls.xxs
 
   &:first-of-type
@@ -38,3 +38,11 @@
   margin-left: $cs.xs
   &:not(:last-child)
     margin-right: $cs.xs
+
+.claim
+  +media-query($bp.s)
+    display: none
+
+.right
+  display: flex
+  align-items: center

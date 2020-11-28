@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"testing"
 
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 )
 
 var colorTerm = os.Getenv("COLORTERM") != "0"
@@ -58,17 +58,14 @@ func (f fields) sorted() fields {
 // GetLogger returns a logger for tests.
 func GetLogger(t testing.TB) log.Stack {
 	colorTerm, _ := strconv.ParseBool(os.Getenv("COLORTERM"))
-	level := log.InfoLevel
+	level := log.ErrorLevel
 	if testing.Verbose() {
 		level = log.DebugLevel
 	}
-	logger, err := log.NewLogger(
+	logger := log.NewLogger(
 		log.WithLevel(level),
 		log.WithHandler(log.NewCLI(os.Stdout, log.UseColor(colorTerm))),
 	)
-	if err != nil {
-		t.Fatalf("Could not get logger: %v", err)
-	}
 	return &testLogger{
 		stack:     logger,
 		Interface: logger.WithField("test_name", t.Name()),

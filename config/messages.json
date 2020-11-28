@@ -611,6 +611,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_GATEWAY_READ_SECRETS": {
+    "translations": {
+      "en": "retrieve secrets associated with a gateway"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_GATEWAY_SETTINGS_API_KEYS": {
     "translations": {
       "en": "view and edit gateway API keys"
@@ -659,6 +668,15 @@
   "enum:RIGHT_GATEWAY_TRAFFIC_READ": {
     "translations": {
       "en": "read gateway traffic"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
+  "enum:RIGHT_GATEWAY_WRITE_SECRETS": {
+    "translations": {
+      "en": "store secrets for a gateway"
     },
     "description": {
       "package": "pkg/ttnpb",
@@ -1070,6 +1088,15 @@
       "file": "i18n.go"
     }
   },
+  "error:cmd/internal/commands:invalid_shell": {
+    "translations": {
+      "en": "invalid shell"
+    },
+    "description": {
+      "package": "cmd/internal/commands",
+      "file": "complete.go"
+    }
+  },
   "error:cmd/internal/shared:initialize_application_server": {
     "translations": {
       "en": "could not initialize Application Server"
@@ -1151,6 +1178,15 @@
       "file": "errors.go"
     }
   },
+  "error:cmd/internal/shared:initialize_packet_broker_agent": {
+    "translations": {
+      "en": "could not initialize Packet Broker Agent"
+    },
+    "description": {
+      "package": "cmd/internal/shared",
+      "file": "errors.go"
+    }
+  },
   "error:cmd/internal/shared:initialize_qr_code_generator": {
     "translations": {
       "en": "could not initialize QR Code Generator"
@@ -1160,6 +1196,15 @@
       "file": "errors.go"
     }
   },
+  "error:cmd/ttn-lw-cli/commands:activation_mode": {
+    "translations": {
+      "en": "invalid activation mode"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "end_devices.go"
+    }
+  },
   "error:cmd/ttn-lw-cli/commands:antenna_index": {
     "translations": {
       "en": "index of antenna to update out of bounds"
@@ -1167,6 +1212,15 @@
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
       "file": "gateways.go"
+    }
+  },
+  "error:cmd/ttn-lw-cli/commands:conflicting_paths": {
+    "translations": {
+      "en": "conflicting set and unset field mask paths"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "end_devices.go"
     }
   },
   "error:cmd/ttn-lw-cli/commands:contact_info_exists": {
@@ -1185,6 +1239,15 @@
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
       "file": "contact_info.go"
+    }
+  },
+  "error:cmd/ttn-lw-cli/commands:data_rate_index": {
+    "translations": {
+      "en": "Data rate index is invalid"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "end_devices.go"
     }
   },
   "error:cmd/ttn-lw-cli/commands:end_device_eui_update": {
@@ -1214,6 +1277,24 @@
       "file": "end_devices.go"
     }
   },
+  "error:cmd/ttn-lw-cli/commands:fail_write": {
+    "translations": {
+      "en": "failed to write `{file}`"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "use.go"
+    }
+  },
+  "error:cmd/ttn-lw-cli/commands:file_exists": {
+    "translations": {
+      "en": "`{file}` exists"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "use.go"
+    }
+  },
   "error:cmd/ttn-lw-cli/commands:gateway_server_address_mismatch": {
     "translations": {
       "en": "gateway server address mismatch"
@@ -1223,18 +1304,18 @@
       "file": "gateways.go"
     }
   },
-  "error:cmd/ttn-lw-cli/commands:gateway_server_disabled": {
+  "error:cmd/ttn-lw-cli/commands:inconsistent_end_device_eui": {
     "translations": {
-      "en": "Gateway Server is disabled"
+      "en": "given end device EUIs do not match registered EUIs"
     },
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
       "file": "end_devices.go"
     }
   },
-  "error:cmd/ttn-lw-cli/commands:inconsistent_end_device_eui": {
+  "error:cmd/ttn-lw-cli/commands:join_server_disabled": {
     "translations": {
-      "en": "given end device EUIs do not match registered EUIs"
+      "en": "Join Server is disabled"
     },
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
@@ -1257,6 +1338,15 @@
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
       "file": "end_device_templates.go"
+    }
+  },
+  "error:cmd/ttn-lw-cli/commands:network_server_disabled": {
+    "translations": {
+      "en": "Network Server is disabled"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "end_devices.go"
     }
   },
   "error:cmd/ttn-lw-cli/commands:no_api_key_id": {
@@ -1394,6 +1484,15 @@
       "file": "gateways.go"
     }
   },
+  "error:cmd/ttn-lw-cli/commands:no_host": {
+    "translations": {
+      "en": "no host set"
+    },
+    "description": {
+      "package": "cmd/ttn-lw-cli/commands",
+      "file": "use.go"
+    }
+  },
   "error:cmd/ttn-lw-cli/commands:no_ids": {
     "translations": {
       "en": "no IDs set"
@@ -1414,7 +1513,7 @@
   },
   "error:cmd/ttn-lw-cli/commands:no_pub_sub_id": {
     "translations": {
-      "en": "no pubsub ID set"
+      "en": "no pub/sub ID set"
     },
     "description": {
       "package": "cmd/ttn-lw-cli/commands",
@@ -1592,6 +1691,78 @@
       "file": "mqtt.go"
     }
   },
+  "error:pkg/applicationserver/io/packages/loradms/v1/api/objects:uplink_type_unsupported": {
+    "translations": {
+      "en": "uplink type `{type}` is unsupported"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1/api/objects",
+      "file": "objects.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1/api:api_call_failed": {
+    "translations": {
+      "en": ""
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1/api",
+      "file": "messages.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1/api:request": {
+    "translations": {
+      "en": "request failed with status `{code}`"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1/api",
+      "file": "messages.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1:device_eui_missing": {
+    "translations": {
+      "en": "device EUI `{dev_eui}` not found"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1",
+      "file": "package.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1:field_not_found": {
+    "translations": {
+      "en": "field `{field}` not found"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1",
+      "file": "data.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1:invalid_field_type": {
+    "translations": {
+      "en": "field `{field}` has the wrong type `{type}`"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1",
+      "file": "data.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1:no_association": {
+    "translations": {
+      "en": "no association available"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1",
+      "file": "package.go"
+    }
+  },
+  "error:pkg/applicationserver/io/packages/loradms/v1:uplink_request_failed": {
+    "translations": {
+      "en": "uplink request failed"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/packages/loradms/v1",
+      "file": "package.go"
+    }
+  },
   "error:pkg/applicationserver/io/packages/redis:invalid_fieldmask": {
     "translations": {
       "en": "invalid fieldmask"
@@ -1619,15 +1790,6 @@
       "file": "registry.go"
     }
   },
-  "error:pkg/applicationserver/io/packages:package_already_registered": {
-    "translations": {
-      "en": "package `{name}` already registered"
-    },
-    "description": {
-      "package": "pkg/applicationserver/io/packages",
-      "file": "registration.go"
-    }
-  },
   "error:pkg/applicationserver/io/packages:package_not_implemented": {
     "translations": {
       "en": "package `{name}` is not implemented"
@@ -1646,9 +1808,54 @@
       "file": "tls.go"
     }
   },
+  "error:pkg/applicationserver/io/pubsub/provider/mqtt:configure_http_headers": {
+    "translations": {
+      "en": "configure HTTP headers"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
+      "file": "provider.go"
+    }
+  },
+  "error:pkg/applicationserver/io/pubsub/provider/mqtt:connect_failed": {
+    "translations": {
+      "en": "connection to MQTT server failed"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
+      "file": "provider.go"
+    }
+  },
   "error:pkg/applicationserver/io/pubsub/provider/mqtt:nil_client": {
     "translations": {
       "en": "client is nil"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
+      "file": "driver.go"
+    }
+  },
+  "error:pkg/applicationserver/io/pubsub/provider/mqtt:publish_failed": {
+    "translations": {
+      "en": "publish to MQTT topic failed"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
+      "file": "driver.go"
+    }
+  },
+  "error:pkg/applicationserver/io/pubsub/provider/mqtt:subscribe_failed": {
+    "translations": {
+      "en": "subscribe to MQTT topic failed"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
+      "file": "driver.go"
+    }
+  },
+  "error:pkg/applicationserver/io/pubsub/provider/mqtt:unsubscribe_failed": {
+    "translations": {
+      "en": "unsubscribe from MQTT topic failed"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub/provider/mqtt",
@@ -1671,6 +1878,15 @@
     "description": {
       "package": "pkg/applicationserver/io/pubsub/provider",
       "file": "provider.go"
+    }
+  },
+  "error:pkg/applicationserver/io/pubsub/provider:shutdown": {
+    "translations": {
+      "en": "shutdown"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/pubsub/provider",
+      "file": "connection.go"
     }
   },
   "error:pkg/applicationserver/io/pubsub/redis:application_uid": {
@@ -1709,15 +1925,6 @@
       "file": "registry.go"
     }
   },
-  "error:pkg/applicationserver/io/pubsub:already_configured": {
-    "translations": {
-      "en": "already configured to `{application_uid}` `{pub_sub_id}`"
-    },
-    "description": {
-      "package": "pkg/applicationserver/io/pubsub",
-      "file": "pubsub.go"
-    }
-  },
   "error:pkg/applicationserver/io/pubsub:format_not_found": {
     "translations": {
       "en": "format `{format}` not found"
@@ -1729,7 +1936,7 @@
   },
   "error:pkg/applicationserver/io/pubsub:integration_failed": {
     "translations": {
-      "en": "integration {pub_sub_id} failed"
+      "en": "integration `{pub_sub_id}` failed"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -1781,15 +1988,6 @@
       "file": "format.go"
     }
   },
-  "error:pkg/applicationserver/io/web:http": {
-    "translations": {
-      "en": "HTTP error: {message}"
-    },
-    "description": {
-      "package": "pkg/applicationserver/io/web",
-      "file": "webhooks.go"
-    }
-  },
   "error:pkg/applicationserver/io/web:parse_file": {
     "translations": {
       "en": "could not parse file"
@@ -1815,6 +2013,15 @@
     "description": {
       "package": "pkg/applicationserver/io/web",
       "file": "webhooks.go"
+    }
+  },
+  "error:pkg/applicationserver/io/web:template_not_found": {
+    "translations": {
+      "en": "template `{template_id}` not found"
+    },
+    "description": {
+      "package": "pkg/applicationserver/io/web",
+      "file": "templates.go"
     }
   },
   "error:pkg/applicationserver/io/web:webhook_not_found": {
@@ -1880,15 +2087,6 @@
       "file": "registry.go"
     }
   },
-  "error:pkg/applicationserver:already_linked": {
-    "translations": {
-      "en": "already linked to `{application_uid}`"
-    },
-    "description": {
-      "package": "pkg/applicationserver",
-      "file": "linking.go"
-    }
-  },
   "error:pkg/applicationserver:app_s_key": {
     "translations": {
       "en": "failed to get AppSKey"
@@ -1931,7 +2129,7 @@
     },
     "description": {
       "package": "pkg/applicationserver",
-      "file": "grpc_deviceregistry.go"
+      "file": "registry.go"
     }
   },
   "error:pkg/applicationserver:formatter_not_configured": {
@@ -1941,6 +2139,15 @@
     "description": {
       "package": "pkg/applicationserver",
       "file": "payload.go"
+    }
+  },
+  "error:pkg/applicationserver:invalid_ttl": {
+    "translations": {
+      "en": "Invalid TTL `{ttl}`"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "config.go"
     }
   },
   "error:pkg/applicationserver:join_server_unavailable": {
@@ -2015,15 +2222,6 @@
       "file": "payload.go"
     }
   },
-  "error:pkg/applicationserver:no_version": {
-    "translations": {
-      "en": "no end device version"
-    },
-    "description": {
-      "package": "pkg/applicationserver",
-      "file": "payload.go"
-    }
-  },
   "error:pkg/applicationserver:not_linked": {
     "translations": {
       "en": "not linked to `{application_uid}`"
@@ -2033,13 +2231,22 @@
       "file": "linking.go"
     }
   },
-  "error:pkg/applicationserver:version_unavailable": {
+  "error:pkg/applicationserver:payload_crypto_disabled": {
     "translations": {
-      "en": "end device version is unavailable in the repository"
+      "en": "payload crypto is disabled"
     },
     "description": {
       "package": "pkg/applicationserver",
-      "file": "payload.go"
+      "file": "applicationserver.go"
+    }
+  },
+  "error:pkg/applicationserver:unknown_session": {
+    "translations": {
+      "en": "unknown session"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "applicationserver.go"
     }
   },
   "error:pkg/applicationserver:webhooks_registry": {
@@ -2357,6 +2564,15 @@
       "file": "update_info.go"
     }
   },
+  "error:pkg/basicstation/cups:lns_credentials_not_found": {
+    "translations": {
+      "en": "LNS credentials not found for gateway `{gateway_uid}`"
+    },
+    "description": {
+      "package": "pkg/basicstation/cups",
+      "file": "update_info.go"
+    }
+  },
   "error:pkg/basicstation/cups:no_trust": {
     "translations": {
       "en": "no trusted certificate found"
@@ -2400,6 +2616,24 @@
     "description": {
       "package": "pkg/blob",
       "file": "bucket.go"
+    }
+  },
+  "error:pkg/cluster:cluster_key": {
+    "translations": {
+      "en": "invalid cluster key"
+    },
+    "description": {
+      "package": "pkg/cluster",
+      "file": "cluster.go"
+    }
+  },
+  "error:pkg/cluster:key_length": {
+    "translations": {
+      "en": "invalid key length %d, must be 16, 24 or 32 bytes"
+    },
+    "description": {
+      "package": "pkg/cluster",
+      "file": "cluster.go"
     }
   },
   "error:pkg/cluster:peer_connection": {
@@ -2447,40 +2681,67 @@
       "file": "listeners.go"
     }
   },
-  "error:pkg/component:missing_acme_dir": {
+  "error:pkg/component:task_recovered": {
+    "translations": {
+      "en": "task recovered"
+    },
+    "description": {
+      "package": "pkg/component",
+      "file": "tasks.go"
+    }
+  },
+  "error:pkg/config/tlsconfig:acme_already_initialized": {
+    "translations": {
+      "en": "ACME already initialized"
+    },
+    "description": {
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
+    }
+  },
+  "error:pkg/config/tlsconfig:missing_acme_dir": {
     "translations": {
       "en": "missing ACME storage directory"
     },
     "description": {
-      "package": "pkg/component",
-      "file": "acme.go"
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
     }
   },
-  "error:pkg/component:missing_acme_endpoint": {
+  "error:pkg/config/tlsconfig:missing_acme_endpoint": {
     "translations": {
       "en": "missing ACME endpoint"
     },
     "description": {
-      "package": "pkg/component",
-      "file": "acme.go"
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
     }
   },
-  "error:pkg/component:tls_config_empty": {
+  "error:pkg/config/tlsconfig:tls_config_source_invalid": {
     "translations": {
-      "en": "empty TLS configuration"
+      "en": "invalid TLS configuration source `{source}`"
     },
     "description": {
-      "package": "pkg/component",
-      "file": "tls.go"
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
     }
   },
-  "error:pkg/component:tls_key_vault_id": {
+  "error:pkg/config/tlsconfig:tls_key_vault_id": {
     "translations": {
       "en": "invalid TLS key vault ID"
     },
     "description": {
-      "package": "pkg/component",
-      "file": "tls.go"
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
+    }
+  },
+  "error:pkg/config/tlsconfig:tls_source_empty": {
+    "translations": {
+      "en": "empty TLS source"
+    },
+    "description": {
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
     }
   },
   "error:pkg/config:format": {
@@ -2573,6 +2834,15 @@
       "file": "cryptoutil.go"
     }
   },
+  "error:pkg/crypto/cryptoutil:key_not_found": {
+    "translations": {
+      "en": "key with ID `{id}` not found"
+    },
+    "description": {
+      "package": "pkg/crypto/cryptoutil",
+      "file": "cryptoutil.go"
+    }
+  },
   "error:pkg/crypto:corrupt_key": {
     "translations": {
       "en": "corrupt key data"
@@ -2618,6 +2888,24 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/crypto:malformed_cipher_text": {
+    "translations": {
+      "en": "malformed cipher text"
+    },
+    "description": {
+      "package": "pkg/crypto",
+      "file": "encryption.go"
+    }
+  },
+  "error:pkg/crypto:ping_period": {
+    "translations": {
+      "en": "ping period must be a power of 2 between 32 and 4096, got '{value}'"
+    },
+    "description": {
+      "package": "pkg/crypto",
+      "file": "ping_slot.go"
+    }
+  },
   "error:pkg/crypto:rejoin_request_0_2_size": {
     "translations": {
       "en": "invalid rejoin-request type 0 or 2 size of {size} bytes, expected 15 bytes"
@@ -2645,33 +2933,6 @@
       "file": "errors.go"
     }
   },
-  "error:pkg/devicerepository:fetch": {
-    "translations": {
-      "en": "failed to fetch file `{filename}`"
-    },
-    "description": {
-      "package": "pkg/devicerepository",
-      "file": "devicerepository.go"
-    }
-  },
-  "error:pkg/devicerepository:invalid_payload_formatter": {
-    "translations": {
-      "en": "invalid payload formatter `{formatter}`"
-    },
-    "description": {
-      "package": "pkg/devicerepository",
-      "file": "devicerepository.go"
-    }
-  },
-  "error:pkg/devicerepository:parse": {
-    "translations": {
-      "en": "parse failed"
-    },
-    "description": {
-      "package": "pkg/devicerepository",
-      "file": "devicerepository.go"
-    }
-  },
   "error:pkg/devicetemplateconverter:converter": {
     "translations": {
       "en": "converter `{id}` not found"
@@ -2679,6 +2940,15 @@
     "description": {
       "package": "pkg/devicetemplateconverter",
       "file": "devicetemplateconverter.go"
+    }
+  },
+  "error:pkg/devicetemplates:microchip_certificate_san": {
+    "translations": {
+      "en": "invalid Microchip certificate Subject Alternate Name"
+    },
+    "description": {
+      "package": "pkg/devicetemplates",
+      "file": "microchip.go"
     }
   },
   "error:pkg/devicetemplates:microchip_data": {
@@ -2690,9 +2960,27 @@
       "file": "microchip.go"
     }
   },
+  "error:pkg/devicetemplates:microchip_no_certificate": {
+    "translations": {
+      "en": "no Microchip certificate found"
+    },
+    "description": {
+      "package": "pkg/devicetemplates",
+      "file": "microchip.go"
+    }
+  },
   "error:pkg/devicetemplates:microchip_public_key": {
     "translations": {
       "en": "unknown Microchip public key ID `{id}`"
+    },
+    "description": {
+      "package": "pkg/devicetemplates",
+      "file": "microchip.go"
+    }
+  },
+  "error:pkg/devicetemplates:microchip_unknown_dev_eui": {
+    "translations": {
+      "en": "unknown Microchip DevEUI"
     },
     "description": {
       "package": "pkg/devicetemplates",
@@ -2861,6 +3149,15 @@
       "file": "messages.go"
     }
   },
+  "error:pkg/encoding/lorawan:no_unmarshaler": {
+    "translations": {
+      "en": "no unmarshaler available for MAC command with CID `{cid}`"
+    },
+    "description": {
+      "package": "pkg/encoding/lorawan",
+      "file": "mac.go"
+    }
+  },
   "error:pkg/encoding/lorawan:unknown_field": {
     "translations": {
       "en": "unknown `{lorawan_field}`"
@@ -2879,6 +3176,69 @@
       "file": "mac.go"
     }
   },
+  "error:pkg/errors:context_canceled": {
+    "translations": {
+      "en": "context canceled"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:context_deadline_exceeded": {
+    "translations": {
+      "en": "context deadline exceeded"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:net_addr": {
+    "translations": {
+      "en": "{message}"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:net_dns": {
+    "translations": {
+      "en": "{message}"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:net_invalid_addr": {
+    "translations": {
+      "en": "{message}"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:net_operation": {
+    "translations": {
+      "en": "{message}"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/errors:net_unknown_network": {
+    "translations": {
+      "en": "{message}"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
   "error:pkg/errors:odd_kv": {
     "translations": {
       "en": "Odd number of key-value elements"
@@ -2888,6 +3248,15 @@
       "file": "attributes.go"
     }
   },
+  "error:pkg/errors:request": {
+    "translations": {
+      "en": "request to `{url}` failed"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
   "error:pkg/errors:validation": {
     "translations": {
       "en": "invalid `{field}`: {reason}"
@@ -2895,6 +3264,33 @@
     "description": {
       "package": "pkg/errors",
       "file": "validation.go"
+    }
+  },
+  "error:pkg/errors:x509_unknown_authority": {
+    "translations": {
+      "en": "unknown certificate authority"
+    },
+    "description": {
+      "package": "pkg/errors",
+      "file": "conversion.go"
+    }
+  },
+  "error:pkg/events/grpc:no_identifiers": {
+    "translations": {
+      "en": "no identifiers"
+    },
+    "description": {
+      "package": "pkg/events/grpc",
+      "file": "grpc.go"
+    }
+  },
+  "error:pkg/events/redis:channel_closed": {
+    "translations": {
+      "en": "channel closed"
+    },
+    "description": {
+      "package": "pkg/events/redis",
+      "file": "redis.go"
     }
   },
   "error:pkg/fetch:fetch_file": {
@@ -2963,6 +3359,15 @@
   "error:pkg/frequencyplans:channel": {
     "translations": {
       "en": "invalid frequency plan channel `{index}`"
+    },
+    "description": {
+      "package": "pkg/frequencyplans",
+      "file": "frequencyplans.go"
+    }
+  },
+  "error:pkg/frequencyplans:data_rate_index": {
+    "translations": {
+      "en": "Data rate index is invalid"
     },
     "description": {
       "package": "pkg/frequencyplans",
@@ -3050,103 +3455,13 @@
       "file": "frequencyplans.go"
     }
   },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:data_rate": {
+  "error:pkg/gatewayconfigurationserver/v2:unauthenticated": {
     "translations": {
-      "en": "data rate not found"
+      "en": "unauthenticated"
     },
     "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "util.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:data_rate_index": {
-    "translations": {
-      "en": "data rate index is out of range"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "util.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:downlink_message": {
-    "translations": {
-      "en": "could not translate downlink message"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "downstream.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:frequency_plan": {
-    "translations": {
-      "en": "invalid frequency plan"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "messages.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:join_request_message": {
-    "translations": {
-      "en": "invalid join-request message received"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "upstream.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:uid": {
-    "translations": {
-      "en": "invalid uid `{uid}`"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "util.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:uplink_data_Frame": {
-    "translations": {
-      "en": "invalid uplink data frame received"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "upstream.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns/messages:uplink_message": {
-    "translations": {
-      "en": "invalid uplink message received"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns/messages",
-      "file": "upstream.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns:empty_gateway_eui": {
-    "translations": {
-      "en": "empty gateway EUI"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns",
-      "file": "basicstationlns.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns:invalid_gateway_id": {
-    "translations": {
-      "en": "invalid gateway id `{id}`"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns",
-      "file": "basicstationlns.go"
-    }
-  },
-  "error:pkg/gatewayserver/io/basicstationlns:listener": {
-    "translations": {
-      "en": "failed to serve Basic Station frontend listener"
-    },
-    "description": {
-      "package": "pkg/gatewayserver/io/basicstationlns",
-      "file": "basicstationlns.go"
+      "package": "pkg/gatewayconfigurationserver/v2",
+      "file": "http_gateway.go"
     }
   },
   "error:pkg/gatewayserver/io/grpc:connect": {
@@ -3212,6 +3527,15 @@
       "file": "format_protobufv2.go"
     }
   },
+  "error:pkg/gatewayserver/io/mqtt:mqtt_frontend_recovered": {
+    "translations": {
+      "en": "internal server error"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/mqtt",
+      "file": "mqtt.go"
+    }
+  },
   "error:pkg/gatewayserver/io/mqtt:not_authorized": {
     "translations": {
       "en": "not authorized"
@@ -3257,6 +3581,15 @@
       "file": "udp.go"
     }
   },
+  "error:pkg/gatewayserver/io/udp:connection_not_ready": {
+    "translations": {
+      "en": "connection is not ready"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/udp",
+      "file": "udp.go"
+    }
+  },
   "error:pkg/gatewayserver/io/udp:downlink_claim": {
     "translations": {
       "en": "failed to claim downlink"
@@ -3293,6 +3626,132 @@
       "file": "firewall.go"
     }
   },
+  "error:pkg/gatewayserver/io/udp:rate_exceeded": {
+    "translations": {
+      "en": "gateway traffic exceeded allowed rate"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/udp",
+      "file": "firewall_ratelimit.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/udp:udp_frontend_recovered": {
+    "translations": {
+      "en": "internal server error"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/udp",
+      "file": "udp.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:empty_gateway_eui": {
+    "translations": {
+      "en": "empty gateway EUI"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "discover.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:join_request_message": {
+    "translations": {
+      "en": "invalid join-request message received"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "upstream.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:no_clock_sync": {
+    "translations": {
+      "en": "no clock sync"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "downstream.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:not_supported": {
+    "translations": {
+      "en": "not supported"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "messages.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:session_state_not_found": {
+    "translations": {
+      "en": "session state not found"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "format.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:uplink_data_Frame": {
+    "translations": {
+      "en": "invalid uplink data frame received"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "upstream.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/lbslns:uplink_message": {
+    "translations": {
+      "en": "invalid uplink message received"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/lbslns",
+      "file": "upstream.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/util:data_rate": {
+    "translations": {
+      "en": "data rate not found"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/util",
+      "file": "util.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/util:data_rate_index": {
+    "translations": {
+      "en": "data rate index is out of range"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/util",
+      "file": "util.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws/util:uid": {
+    "translations": {
+      "en": "invalid uid `{uid}`"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws/util",
+      "file": "util.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws:invalid_gateway_id": {
+    "translations": {
+      "en": "invalid gateway ID `{id}`"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws",
+      "file": "ws.go"
+    }
+  },
+  "error:pkg/gatewayserver/io/ws:no_auth_provided": {
+    "translations": {
+      "en": "no auth provided `{uid}`"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io/ws",
+      "file": "ws.go"
+    }
+  },
   "error:pkg/gatewayserver/io:buffer_full": {
     "translations": {
       "en": "buffer is full"
@@ -3314,6 +3773,69 @@
   "error:pkg/gatewayserver/io:downlink_path": {
     "translations": {
       "en": "invalid downlink path"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:frequency_plan_not_configured": {
+    "translations": {
+      "en": "frequency plan `{id}` is not configured for this gateway"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:frequency_plans_not_from_same_band": {
+    "translations": {
+      "en": "frequency plans must be from the same band"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:inconsistent_frequency_plans": {
+    "translations": {
+      "en": "inconsistent frequency plans configuration"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:no_absolute_time": {
+    "translations": {
+      "en": "no absolute time provided for class B downlink"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:no_frequency_plan_id_in_tx_request": {
+    "translations": {
+      "en": "no frequency plan ID in tx request"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:no_gps_sync": {
+    "translations": {
+      "en": "gateway time is not GPS synchronized"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/io",
+      "file": "io.go"
+    }
+  },
+  "error:pkg/gatewayserver/io:no_rx_delay": {
+    "translations": {
+      "en": "no Rx delay provided for class A downlink"
     },
     "description": {
       "package": "pkg/gatewayserver/io",
@@ -3410,6 +3932,24 @@
       "file": "scheduler.go"
     }
   },
+  "error:pkg/gatewayserver/scheduling:frequency_plans_overlap_sub_band": {
+    "translations": {
+      "en": "frequency plans must not have overlapping sub bands"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/scheduling",
+      "file": "scheduler.go"
+    }
+  },
+  "error:pkg/gatewayserver/scheduling:frequency_plans_time_off_air": {
+    "translations": {
+      "en": "frequency plans must have the same time off air value"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/scheduling",
+      "file": "scheduler.go"
+    }
+  },
   "error:pkg/gatewayserver/scheduling:no_absolute_gateway_time": {
     "translations": {
       "en": "no absolute gateway time"
@@ -3422,6 +3962,15 @@
   "error:pkg/gatewayserver/scheduling:no_clock_sync": {
     "translations": {
       "en": "no clock sync"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/scheduling",
+      "file": "scheduler.go"
+    }
+  },
+  "error:pkg/gatewayserver/scheduling:no_server_time": {
+    "translations": {
+      "en": "no server time"
     },
     "description": {
       "package": "pkg/gatewayserver/scheduling",
@@ -3448,11 +3997,20 @@
   },
   "error:pkg/gatewayserver/upstream/ns:network_server_not_found": {
     "translations": {
-      "en": "network server not found for ids `ids`"
+      "en": "Network Server not found"
     },
     "description": {
       "package": "pkg/gatewayserver/upstream/ns",
       "file": "ns.go"
+    }
+  },
+  "error:pkg/gatewayserver/upstream/packetbroker:packet_broker_agent_not_found": {
+    "translations": {
+      "en": "Packet Broker Agent not found"
+    },
+    "description": {
+      "package": "pkg/gatewayserver/upstream/packetbroker",
+      "file": "packetbroker.go"
     }
   },
   "error:pkg/gatewayserver:empty_identifiers": {
@@ -3482,6 +4040,15 @@
       "file": "gatewayserver.go"
     }
   },
+  "error:pkg/gatewayserver:handler_recovered": {
+    "translations": {
+      "en": "internal server error"
+    },
+    "description": {
+      "package": "pkg/gatewayserver",
+      "file": "gatewayserver.go"
+    }
+  },
   "error:pkg/gatewayserver:host_handle": {
     "translations": {
       "en": "host `{host}` failed to handle message"
@@ -3493,7 +4060,7 @@
   },
   "error:pkg/gatewayserver:invalid_upstream_name": {
     "translations": {
-      "en": "upstream `{name}`is invalid"
+      "en": "upstream `{name}` is invalid"
     },
     "description": {
       "package": "pkg/gatewayserver",
@@ -3503,6 +4070,15 @@
   "error:pkg/gatewayserver:listen_frontend": {
     "translations": {
       "en": "failed to start frontend listener `{protocol}` on address `{address}`"
+    },
+    "description": {
+      "package": "pkg/gatewayserver",
+      "file": "gatewayserver.go"
+    }
+  },
+  "error:pkg/gatewayserver:new_connection": {
+    "translations": {
+      "en": "new connection from same gateway"
     },
     "description": {
       "package": "pkg/gatewayserver",
@@ -3521,6 +4097,15 @@
   "error:pkg/gatewayserver:no_network_server": {
     "translations": {
       "en": "no Network Server found to handle message"
+    },
+    "description": {
+      "package": "pkg/gatewayserver",
+      "file": "gatewayserver.go"
+    }
+  },
+  "error:pkg/gatewayserver:no_route": {
+    "translations": {
+      "en": "no route for `{host}`"
     },
     "description": {
       "package": "pkg/gatewayserver",
@@ -3574,7 +4159,7 @@
   },
   "error:pkg/gatewayserver:upstream": {
     "translations": {
-      "en": "failed to setup upstream `{hostname}`"
+      "en": "failed to setup upstream `{name}`"
     },
     "description": {
       "package": "pkg/gatewayserver",
@@ -3707,9 +4292,27 @@
       "file": "registry.go"
     }
   },
+  "error:pkg/identityserver/store:database_table_column": {
+    "translations": {
+      "en": "column `{column}` does not exist in database table `{table}`"
+    },
+    "description": {
+      "package": "pkg/identityserver/store",
+      "file": "registry.go"
+    }
+  },
   "error:pkg/identityserver/store:end_device_not_found": {
     "translations": {
       "en": "end device `{application_id}:{device_id}` not found"
+    },
+    "description": {
+      "package": "pkg/identityserver/store",
+      "file": "store.go"
+    }
+  },
+  "error:pkg/identityserver/store:eui_taken": {
+    "translations": {
+      "en": "EUI already taken"
     },
     "description": {
       "package": "pkg/identityserver/store",
@@ -3770,6 +4373,15 @@
       "file": "membership_store.go"
     }
   },
+  "error:pkg/identityserver/store:migration_not_found": {
+    "translations": {
+      "en": "migration not found"
+    },
+    "description": {
+      "package": "pkg/identityserver/store",
+      "file": "store.go"
+    }
+  },
   "error:pkg/identityserver/store:multiple_application_ids": {
     "translations": {
       "en": "can not list devices for multiple application IDs"
@@ -3791,6 +4403,15 @@
   "error:pkg/identityserver/store:session_not_found": {
     "translations": {
       "en": "session `{session_id}` for user `{user_id}` not found"
+    },
+    "description": {
+      "package": "pkg/identityserver/store",
+      "file": "store.go"
+    }
+  },
+  "error:pkg/identityserver/store:transaction_recovered": {
+    "translations": {
+      "en": "Internal Server Error"
     },
     "description": {
       "package": "pkg/identityserver/store",
@@ -3833,6 +4454,42 @@
       "file": "oauth_registry.go"
     }
   },
+  "error:pkg/identityserver:admins_create_applications": {
+    "translations": {
+      "en": "applications may only be created by admins, or in organizations"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "application_registry.go"
+    }
+  },
+  "error:pkg/identityserver:admins_create_clients": {
+    "translations": {
+      "en": "OAuth clients may only be created by admins, or in organizations"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "client_registry.go"
+    }
+  },
+  "error:pkg/identityserver:admins_create_gateways": {
+    "translations": {
+      "en": "gateways may only be created by admins, or in organizations"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "gateway_registry.go"
+    }
+  },
+  "error:pkg/identityserver:admins_create_organizations": {
+    "translations": {
+      "en": "organizations may only be created by admins"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "organization_registry.go"
+    }
+  },
   "error:pkg/identityserver:api_key_not_found": {
     "translations": {
       "en": "API key not found"
@@ -3858,6 +4515,51 @@
     "description": {
       "package": "pkg/identityserver",
       "file": "client_registry.go"
+    }
+  },
+  "error:pkg/identityserver:db_needs_migration": {
+    "translations": {
+      "en": "the database needs to be migrated"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "identityserver.go"
+    }
+  },
+  "error:pkg/identityserver:end_device_euis_taken": {
+    "translations": {
+      "en": "an end device with JoinEUI `{join_eui}` and DevEUI `{dev_eui}` is already registered as `{device_id}` in application `{application_id}`"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "end_device_registry.go"
+    }
+  },
+  "error:pkg/identityserver:end_device_picture_uploads_disabled": {
+    "translations": {
+      "en": "end device picture uploads are disabled"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "picture.go"
+    }
+  },
+  "error:pkg/identityserver:gateway_eui_taken": {
+    "translations": {
+      "en": "a gateway with EUI `{gateway_eui}` is already registered as `{gateway_id}`"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "gateway_registry.go"
+    }
+  },
+  "error:pkg/identityserver:gateway_secret_encryption_key_not_found": {
+    "translations": {
+      "en": "a gateway secret encryption key with id `{id}` not found"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "gateway_registry.go"
     }
   },
   "error:pkg/identityserver:invalid_authorization": {
@@ -3894,6 +4596,15 @@
     "description": {
       "package": "pkg/identityserver",
       "file": "organization_registry.go"
+    }
+  },
+  "error:pkg/identityserver:no_contact_info": {
+    "translations": {
+      "en": "no contact info for this entity type"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "contact_info_registry.go"
     }
   },
   "error:pkg/identityserver:no_invite_rights": {
@@ -3995,6 +4706,15 @@
       "file": "entity_access.go"
     }
   },
+  "error:pkg/identityserver:profile_picture_uploads_disabled": {
+    "translations": {
+      "en": "profile picture uploads are disabled"
+    },
+    "description": {
+      "package": "pkg/identityserver",
+      "file": "picture.go"
+    }
+  },
   "error:pkg/identityserver:search_forbidden": {
     "translations": {
       "en": "search is forbidden"
@@ -4024,7 +4744,7 @@
   },
   "error:pkg/identityserver:token_expired": {
     "translations": {
-      "en": "access token expired"
+      "en": "token expired"
     },
     "description": {
       "package": "pkg/identityserver",
@@ -4033,7 +4753,7 @@
   },
   "error:pkg/identityserver:token_not_found": {
     "translations": {
-      "en": "access token not found"
+      "en": "token not found"
     },
     "description": {
       "package": "pkg/identityserver",
@@ -4146,6 +4866,15 @@
     "description": {
       "package": "pkg/interop",
       "file": "errors.go"
+    }
+  },
+  "error:pkg/interop:generate_session_key_id": {
+    "translations": {
+      "en": "failed to generate session key ID"
+    },
+    "description": {
+      "package": "pkg/interop",
+      "file": "client.go"
     }
   },
   "error:pkg/interop:invalid_length": {
@@ -4382,6 +5111,24 @@
       "file": "registry.go"
     }
   },
+  "error:pkg/joinserver:application_activation_settings": {
+    "translations": {
+      "en": "failed to get application activation settings"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "joinserver.go"
+    }
+  },
+  "error:pkg/joinserver:application_activation_settings_not_found": {
+    "translations": {
+      "en": "application activation settings not found"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "grpc_application_activation_settings_registry.go"
+    }
+  },
   "error:pkg/joinserver:caller_not_authorized": {
     "translations": {
       "en": "caller `{name}` is not authorized for the entity"
@@ -4544,6 +5291,24 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/joinserver:kek": {
+    "translations": {
+      "en": "KEK not found"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "joinserver.go"
+    }
+  },
+  "error:pkg/joinserver:lookup_net_id": {
+    "translations": {
+      "en": "lookup NetID"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "errors.go"
+    }
+  },
   "error:pkg/joinserver:lorawan_major_version": {
     "translations": {
       "en": "unsupported LoRaWAN major version: `{major}`"
@@ -4652,6 +5417,15 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/joinserver:no_kek_label": {
+    "translations": {
+      "en": "no KEK label specified"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "grpc_application_activation_settings_registry.go"
+    }
+  },
   "error:pkg/joinserver:no_net_id": {
     "translations": {
       "en": "no NetID specified"
@@ -4677,6 +5451,15 @@
     "description": {
       "package": "pkg/joinserver",
       "file": "errors.go"
+    }
+  },
+  "error:pkg/joinserver:no_paths": {
+    "translations": {
+      "en": "no paths specified"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "grpc_application_activation_settings_registry.go"
     }
   },
   "error:pkg/joinserver:no_payload": {
@@ -4796,9 +5579,18 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/joinserver:unwrap_key": {
+    "translations": {
+      "en": "failed to unwrap key"
+    },
+    "description": {
+      "package": "pkg/joinserver",
+      "file": "errors.go"
+    }
+  },
   "error:pkg/joinserver:wrap_key": {
     "translations": {
-      "en": "failed to wrap key"
+      "en": "failed to wrap key with KEK label `{label}`"
     },
     "description": {
       "package": "pkg/joinserver",
@@ -4859,22 +5651,94 @@
       "file": "javascript.go"
     }
   },
-  "error:pkg/messageprocessors/javascript:output_range": {
+  "error:pkg/messageprocessors/javascript:output_errors": {
     "translations": {
-      "en": "output value `{value}` does not fall between `{low}` and `{high}`"
+      "en": "{errors}"
     },
     "description": {
       "package": "pkg/messageprocessors/javascript",
       "file": "javascript.go"
     }
   },
-  "error:pkg/messageprocessors/javascript:output_type": {
+  "error:pkg/networkserver/internal:corrupted_mac_state": {
     "translations": {
-      "en": "invalid output of type `{type}`"
+      "en": "MAC state is corrupted"
     },
     "description": {
-      "package": "pkg/messageprocessors/javascript",
-      "file": "javascript.go"
+      "package": "pkg/networkserver/internal",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/internal:data_rate": {
+    "translations": {
+      "en": "invalid data rate"
+    },
+    "description": {
+      "package": "pkg/networkserver/internal",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/internal:no_band_version": {
+    "translations": {
+      "en": "specified version `{ver}` of band `{id}` does not exist"
+    },
+    "description": {
+      "package": "pkg/networkserver/internal",
+      "file": "utils.go"
+    }
+  },
+  "error:pkg/networkserver/internal:payload": {
+    "translations": {
+      "en": "invalid payload"
+    },
+    "description": {
+      "package": "pkg/networkserver/internal",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/internal:unknown_chanel": {
+    "translations": {
+      "en": "channel is unknown"
+    },
+    "description": {
+      "package": "pkg/networkserver/internal",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/mac:class_a_multicast": {
+    "translations": {
+      "en": "multicast device in class A mode"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "utils.go"
+    }
+  },
+  "error:pkg/networkserver/mac:no_payload": {
+    "translations": {
+      "en": "no message payload specified"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/mac:request_not_found": {
+    "translations": {
+      "en": "MAC response received, but corresponding request not found"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver/redis:database_corruption": {
+    "translations": {
+      "en": "database is corrupted"
+    },
+    "description": {
+      "package": "pkg/networkserver/redis",
+      "file": "redis.go"
     }
   },
   "error:pkg/networkserver/redis:duplicate_identifiers": {
@@ -4889,6 +5753,15 @@
   "error:pkg/networkserver/redis:invalid_fieldmask": {
     "translations": {
       "en": "invalid fieldmask"
+    },
+    "description": {
+      "package": "pkg/networkserver/redis",
+      "file": "registry.go"
+    }
+  },
+  "error:pkg/networkserver/redis:invalid_format": {
+    "translations": {
+      "en": "invalid value format"
     },
     "description": {
       "package": "pkg/networkserver/redis",
@@ -4913,6 +5786,15 @@
       "file": "application_uplink_queue.go"
     }
   },
+  "error:pkg/networkserver/redis:missing_field_value": {
+    "translations": {
+      "en": "missing field `{field}` value"
+    },
+    "description": {
+      "package": "pkg/networkserver/redis",
+      "file": "registry.go"
+    }
+  },
   "error:pkg/networkserver/redis:missing_payload": {
     "translations": {
       "en": "missing payload"
@@ -4920,6 +5802,15 @@
     "description": {
       "package": "pkg/networkserver/redis",
       "file": "application_uplink_queue.go"
+    }
+  },
+  "error:pkg/networkserver/redis:no_uplink_match": {
+    "translations": {
+      "en": "no device matches uplink"
+    },
+    "description": {
+      "package": "pkg/networkserver/redis",
+      "file": "registry.go"
     }
   },
   "error:pkg/networkserver/redis:read_only_field": {
@@ -4951,34 +5842,16 @@
   },
   "error:pkg/networkserver:application_downlink_too_long": {
     "translations": {
-      "en": "application downlink payload is too long"
+      "en": "application downlink payload length `{length}` exceeds maximum '{max}'"
     },
     "description": {
       "package": "pkg/networkserver",
-      "file": "downlink.go"
+      "file": "errors.go"
     }
   },
   "error:pkg/networkserver:channel_index": {
     "translations": {
       "en": "invalid channel index"
-    },
-    "description": {
-      "package": "pkg/networkserver",
-      "file": "errors.go"
-    }
-  },
-  "error:pkg/networkserver:class_a_multicast": {
-    "translations": {
-      "en": "multicast device in class A mode"
-    },
-    "description": {
-      "package": "pkg/networkserver",
-      "file": "errors.go"
-    }
-  },
-  "error:pkg/networkserver:class_b_c_for_class_a": {
-    "translations": {
-      "en": "class B/C downlink queued for device in class A mode"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -5039,6 +5912,15 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/networkserver:data_rate_index_not_found": {
+    "translations": {
+      "en": "data rate with index `{index}` not found"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "errors.go"
+    }
+  },
   "error:pkg/networkserver:data_rate_not_found": {
     "translations": {
       "en": "data rate not found"
@@ -5055,6 +5937,15 @@
     "description": {
       "package": "pkg/networkserver",
       "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver:device_exists": {
+    "translations": {
+      "en": "device already exists"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "registry.go"
     }
   },
   "error:pkg/networkserver:device_not_found": {
@@ -5082,6 +5973,24 @@
     "description": {
       "package": "pkg/networkserver",
       "file": "config.go"
+    }
+  },
+  "error:pkg/networkserver:downlink_queue_capacity_exceeded": {
+    "translations": {
+      "en": "Downlink queue capacity exceeded"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_asns.go"
+    }
+  },
+  "error:pkg/networkserver:duplicate": {
+    "translations": {
+      "en": "uplink is a duplicate"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "errors.go"
     }
   },
   "error:pkg/networkserver:empty_session": {
@@ -5122,7 +6031,7 @@
   },
   "error:pkg/networkserver:f_cnt_too_low": {
     "translations": {
-      "en": "FCnt is too low"
+      "en": "FCnt `{f_cnt}` is lower than minimum of `{min_f_cnt}`"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -5246,6 +6155,24 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/networkserver:rejoin_request": {
+    "translations": {
+      "en": "rejoin-request handling is not implemented"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_gsns.go"
+    }
+  },
+  "error:pkg/networkserver:retransmission_delay_exceeded": {
+    "translations": {
+      "en": "retransmission delay exceeded maximum"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_gsns.go"
+    }
+  },
   "error:pkg/networkserver:schedule": {
     "translations": {
       "en": "all downlink scheduling attempts failed"
@@ -5255,9 +6182,27 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/networkserver:transmission_number_exceeded": {
+    "translations": {
+      "en": "transmission number exceeded maximum"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_gsns.go"
+    }
+  },
   "error:pkg/networkserver:unknown_chanel": {
     "translations": {
       "en": "channel is unknown"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/networkserver:unknown_f_nwk_s_int_key": {
+    "translations": {
+      "en": "FNwkSIntKey is unknown"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -5302,7 +6247,7 @@
   },
   "error:pkg/networkserver:unsupported_lorawan_version": {
     "translations": {
-      "en": "unsupported LoRaWAN version: {version}"
+      "en": "unsupported LoRaWAN version: `{version}`"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -5399,6 +6344,15 @@
       "file": "server.go"
     }
   },
+  "error:pkg/oauth:invalid_logout_redirect_uri": {
+    "translations": {
+      "en": "the redirect URI did not match the one(s) defined in the client"
+    },
+    "description": {
+      "package": "pkg/oauth",
+      "file": "user.go"
+    }
+  },
   "error:pkg/oauth:invalid_redirect_uri": {
     "translations": {
       "en": "invalid redirect URI"
@@ -5424,6 +6378,15 @@
     "description": {
       "package": "pkg/oauth",
       "file": "server.go"
+    }
+  },
+  "error:pkg/oauth:missing_param_access_token_id": {
+    "translations": {
+      "en": "access token ID was not provided"
+    },
+    "description": {
+      "package": "pkg/oauth",
+      "file": "user.go"
     }
   },
   "error:pkg/oauth:no_access_token": {
@@ -5516,6 +6479,213 @@
       "file": "server.go"
     }
   },
+  "error:pkg/packetbrokeragent:decode_payload": {
+    "translations": {
+      "en": "decode LoRaWAN payload"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:downlink_path": {
+    "translations": {
+      "en": "invalid uplink token downlink path"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:forwarder_disabled": {
+    "translations": {
+      "en": "Forwarder is disabled"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "grpc_gspba.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:home_network_disabled": {
+    "translations": {
+      "en": "Home Network is disabled"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "grpc_nspba.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:invalid_rx1_delay": {
+    "translations": {
+      "en": "invalid Rx1 delay"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:message_identifiers": {
+    "translations": {
+      "en": "invalid message identifiers"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "agent.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:net_id": {
+    "translations": {
+      "en": "invalid NetID `{net_id}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "agent.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:no_downlink_paths": {
+    "translations": {
+      "en": "no downlink paths"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:no_phy_payload": {
+    "translations": {
+      "en": "no PHYPayload in message"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "encryption.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:no_request": {
+    "translations": {
+      "en": "downlink message is not a transmission request"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:token_key": {
+    "translations": {
+      "en": "invalid token key"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "agent.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unknown_band": {
+    "translations": {
+      "en": "unknown band `{band_id}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unknown_class": {
+    "translations": {
+      "en": "unknown class `{class}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unknown_data_rate": {
+    "translations": {
+      "en": "unknown data rate in region `{region}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unknown_priority": {
+    "translations": {
+      "en": "unknown priority `{priority}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unsupported_lorawan_version": {
+    "translations": {
+      "en": "unsupported LoRaWAN version `{version}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unsupported_m_type": {
+    "translations": {
+      "en": "unsupported LoRaWAN MType `{m_type}`"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:unwrap_gateway_uplink_token": {
+    "translations": {
+      "en": "unwrap gateway uplink token"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:wrap_gateway_uplink_token": {
+    "translations": {
+      "en": "wrap gateway uplink token"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/packetbrokeragent:wrap_uplink_tokens": {
+    "translations": {
+      "en": "wrap uplink tokens"
+    },
+    "description": {
+      "package": "pkg/packetbrokeragent",
+      "file": "translation.go"
+    }
+  },
+  "error:pkg/pfconfig/lbslns:frequency_plan": {
+    "translations": {
+      "en": "invalid frequency plan `{name}`"
+    },
+    "description": {
+      "package": "pkg/pfconfig/lbslns",
+      "file": "lbslns.go"
+    }
+  },
+  "error:pkg/pfconfig/shared:empty_gateway_server_address": {
+    "translations": {
+      "en": "gateway server address is empty"
+    },
+    "description": {
+      "package": "pkg/pfconfig/shared",
+      "file": "shared.go"
+    }
+  },
+  "error:pkg/pfconfig/shared:invalid_gateway_server_address": {
+    "translations": {
+      "en": "gateway server address is invalid"
+    },
+    "description": {
+      "package": "pkg/pfconfig/shared",
+      "file": "shared.go"
+    }
+  },
   "error:pkg/pfconfig/shared:invalid_key": {
     "translations": {
       "en": "key `{key}` invalid"
@@ -5579,6 +6749,33 @@
       "file": "qrcodegenerator.go"
     }
   },
+  "error:pkg/redis:decode": {
+    "translations": {
+      "en": "failed to decode value"
+    },
+    "description": {
+      "package": "pkg/redis",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/redis:encode": {
+    "translations": {
+      "en": "failed to encode value"
+    },
+    "description": {
+      "package": "pkg/redis",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/redis:no_arguments": {
+    "translations": {
+      "en": "no arguments"
+    },
+    "description": {
+      "package": "pkg/redis",
+      "file": "errors.go"
+    }
+  },
   "error:pkg/redis:not_found": {
     "translations": {
       "en": "entity not found"
@@ -5591,6 +6788,15 @@
   "error:pkg/redis:store": {
     "translations": {
       "en": "store error"
+    },
+    "description": {
+      "package": "pkg/redis",
+      "file": "errors.go"
+    }
+  },
+  "error:pkg/redis:transaction_failed": {
+    "translations": {
+      "en": "transaction failed"
     },
     "description": {
       "package": "pkg/redis",
@@ -5624,6 +6830,15 @@
       "file": "discover.go"
     }
   },
+  "error:pkg/rpcmiddleware/discover:role": {
+    "translations": {
+      "en": "service role `{role}` not discoverable"
+    },
+    "description": {
+      "package": "pkg/rpcmiddleware/discover",
+      "file": "discover.go"
+    }
+  },
   "error:pkg/rpcmiddleware/validator:field_mask_paths": {
     "translations": {
       "en": "forbidden path(s) in field mask"
@@ -5651,6 +6866,24 @@
       "file": "rpcserver.go"
     }
   },
+  "error:pkg/scripting/javascript:entrypoint_not_found": {
+    "translations": {
+      "en": "entrypoint `{entrypoint}` not found"
+    },
+    "description": {
+      "package": "pkg/scripting/javascript",
+      "file": "javascript.go"
+    }
+  },
+  "error:pkg/scripting/javascript:no_script_output": {
+    "translations": {
+      "en": "no script output"
+    },
+    "description": {
+      "package": "pkg/scripting/javascript",
+      "file": "javascript.go"
+    }
+  },
   "error:pkg/scripting/javascript:runtime": {
     "translations": {
       "en": "runtime error"
@@ -5660,36 +6893,36 @@
       "file": "javascript.go"
     }
   },
-  "error:pkg/thethingsgateway/cups:no_default_firmware_path": {
+  "error:pkg/scripting/javascript:script": {
     "translations": {
-      "en": "no default firmware path specified"
+      "en": "{message}"
     },
     "description": {
-      "package": "pkg/thethingsgateway/cups",
-      "file": "server.go"
+      "package": "pkg/scripting/javascript",
+      "file": "javascript.go"
     }
   },
-  "error:pkg/thethingsgateway/cups:no_default_update_channel": {
+  "error:pkg/scripting/javascript:script_interrupt": {
     "translations": {
-      "en": "no default update channel specified"
+      "en": "script interrupt"
     },
     "description": {
-      "package": "pkg/thethingsgateway/cups",
-      "file": "server.go"
+      "package": "pkg/scripting/javascript",
+      "file": "javascript.go"
     }
   },
-  "error:pkg/thethingsgateway/cups:unauthenticated": {
+  "error:pkg/scripting/javascript:script_timeout": {
     "translations": {
-      "en": "call was not authenticated"
+      "en": "script timeout"
     },
     "description": {
-      "package": "pkg/thethingsgateway/cups",
-      "file": "middleware.go"
+      "package": "pkg/scripting/javascript",
+      "file": "javascript.go"
     }
   },
   "error:pkg/toa:bandwidth": {
     "translations": {
-      "en": "invalid bandwidth"
+      "en": "invalid bandwidth `{bandwidth}`"
     },
     "description": {
       "package": "pkg/toa",
@@ -5698,7 +6931,7 @@
   },
   "error:pkg/toa:coding_rate": {
     "translations": {
-      "en": "invalid coding rate"
+      "en": "invalid coding rate `{coding_rate}`"
     },
     "description": {
       "package": "pkg/toa",
@@ -5707,7 +6940,7 @@
   },
   "error:pkg/toa:frequency": {
     "translations": {
-      "en": "invalid frequency"
+      "en": "invalid frequency `{frequency}`"
     },
     "description": {
       "package": "pkg/toa",
@@ -5716,7 +6949,7 @@
   },
   "error:pkg/toa:spreading_factor": {
     "translations": {
-      "en": "invalid spreading factor"
+      "en": "invalid spreading factor `{spreading_factor}`"
     },
     "description": {
       "package": "pkg/toa",
@@ -5921,6 +7154,15 @@
       "file": "netid.go"
     }
   },
+  "error:pkg/types:net_id_overflow": {
+    "translations": {
+      "en": "NetID overflow"
+    },
+    "description": {
+      "package": "pkg/types",
+      "file": "netid.go"
+    }
+  },
   "error:pkg/types:net_id_type": {
     "translations": {
       "en": "NetID type must be lower or equal to 7"
@@ -6110,6 +7352,33 @@
       "file": "recover.go"
     }
   },
+  "error:pkg/web/oauthclient:exchange": {
+    "translations": {
+      "en": "token exchange refused"
+    },
+    "description": {
+      "package": "pkg/web/oauthclient",
+      "file": "callback.go"
+    }
+  },
+  "error:pkg/web/oauthclient:invalid_state": {
+    "translations": {
+      "en": "invalid state parameter"
+    },
+    "description": {
+      "package": "pkg/web/oauthclient",
+      "file": "callback.go"
+    }
+  },
+  "error:pkg/web/oauthclient:no_code": {
+    "translations": {
+      "en": "no code parameter present in request"
+    },
+    "description": {
+      "package": "pkg/web/oauthclient",
+      "file": "callback.go"
+    }
+  },
   "error:pkg/web/oauthclient:no_oauth_config": {
     "translations": {
       "en": "no OAuth configuration found for the OAuth client"
@@ -6119,40 +7388,67 @@
       "file": "oauthclient.go"
     }
   },
-  "error:pkg/web/oauthclient:oauth_callback_error": {
-    "translations": {
-      "en": "an error occurred: {error}"
-    },
-    "description": {
-      "package": "pkg/web/oauthclient",
-      "file": "callback.go"
-    }
-  },
-  "error:pkg/web/oauthclient:oauth_callback_invalid_state": {
-    "translations": {
-      "en": "invalid state parameter"
-    },
-    "description": {
-      "package": "pkg/web/oauthclient",
-      "file": "callback.go"
-    }
-  },
-  "error:pkg/web/oauthclient:oauth_callback_no_code": {
-    "translations": {
-      "en": "no code parameter present in request"
-    },
-    "description": {
-      "package": "pkg/web/oauthclient",
-      "file": "callback.go"
-    }
-  },
-  "error:pkg/web/oauthclient:oauth_callback_no_state": {
+  "error:pkg/web/oauthclient:no_state": {
     "translations": {
       "en": "no state parameter present in request"
     },
     "description": {
       "package": "pkg/web/oauthclient",
       "file": "callback.go"
+    }
+  },
+  "error:pkg/web/oauthclient:refresh": {
+    "translations": {
+      "en": "token refresh refused"
+    },
+    "description": {
+      "package": "pkg/web/oauthclient",
+      "file": "token.go"
+    }
+  },
+  "error:pkg/web/oauthclient:refused": {
+    "translations": {
+      "en": "refused by OAuth server"
+    },
+    "description": {
+      "package": "pkg/web/oauthclient",
+      "file": "callback.go"
+    }
+  },
+  "error:pkg/webhandlers:route_not_found": {
+    "translations": {
+      "en": "route `{route}` not found"
+    },
+    "description": {
+      "package": "pkg/webhandlers",
+      "file": "error.go"
+    }
+  },
+  "error:pkg/webmiddleware:http_recovered": {
+    "translations": {
+      "en": "Internal Server Error"
+    },
+    "description": {
+      "package": "pkg/webmiddleware",
+      "file": "recover.go"
+    }
+  },
+  "error:pkg/webmiddleware:request_body_too_large": {
+    "translations": {
+      "en": "request body too large"
+    },
+    "description": {
+      "package": "pkg/webmiddleware",
+      "file": "max_body.go"
+    }
+  },
+  "error:pkg/webmiddleware:secure_cookie_invalid_context": {
+    "translations": {
+      "en": "No secure cookie value in this context"
+    },
+    "description": {
+      "package": "pkg/webmiddleware",
+      "file": "cookie.go"
     }
   },
   "event:application.api-key.create": {
@@ -6245,9 +7541,45 @@
       "file": "observability.go"
     }
   },
+  "event:as.down.data.decode.fail": {
+    "translations": {
+      "en": "decode downlink data message failure"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "observability.go"
+    }
+  },
+  "event:as.down.data.decode.warning": {
+    "translations": {
+      "en": "decode downlink data message warning"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "observability.go"
+    }
+  },
   "event:as.down.data.drop": {
     "translations": {
       "en": "drop downlink data message"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "observability.go"
+    }
+  },
+  "event:as.down.data.encode.fail": {
+    "translations": {
+      "en": "encode downlink data message failure"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "observability.go"
+    }
+  },
+  "event:as.down.data.encode.warning": {
+    "translations": {
+      "en": "encode downlink data message warning"
     },
     "description": {
       "package": "pkg/applicationserver",
@@ -6346,7 +7678,7 @@
   },
   "event:as.pubsub.delete": {
     "translations": {
-      "en": "delete pubsub"
+      "en": "delete pub/sub"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -6355,7 +7687,7 @@
   },
   "event:as.pubsub.fail": {
     "translations": {
-      "en": "fail pubsub"
+      "en": "fail pub/sub"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -6364,7 +7696,7 @@
   },
   "event:as.pubsub.set": {
     "translations": {
-      "en": "set pubsub"
+      "en": "set pub/sub"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -6373,7 +7705,7 @@
   },
   "event:as.pubsub.start": {
     "translations": {
-      "en": "start pubsub"
+      "en": "start pub/sub"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -6382,7 +7714,7 @@
   },
   "event:as.pubsub.stop": {
     "translations": {
-      "en": "stop pubsub"
+      "en": "stop pub/sub"
     },
     "description": {
       "package": "pkg/applicationserver/io/pubsub",
@@ -6392,6 +7724,15 @@
   "event:as.up.data.decode.fail": {
     "translations": {
       "en": "decode uplink data message failure"
+    },
+    "description": {
+      "package": "pkg/applicationserver",
+      "file": "observability.go"
+    }
+  },
+  "event:as.up.data.decode.warning": {
+    "translations": {
+      "en": "decode uplink data message warning"
     },
     "description": {
       "package": "pkg/applicationserver",
@@ -6522,24 +7863,6 @@
     "description": {
       "package": "pkg/identityserver",
       "file": "end_device_registry.go"
-    }
-  },
-  "event:events.stream.start": {
-    "translations": {
-      "en": "start event stream"
-    },
-    "description": {
-      "package": "pkg/events/grpc",
-      "file": "grpc.go"
-    }
-  },
-  "event:events.stream.stop": {
-    "translations": {
-      "en": "stop event stream"
-    },
-    "description": {
-      "package": "pkg/events/grpc",
-      "file": "grpc.go"
     }
   },
   "event:gateway.api-key.create": {
@@ -6785,7 +8108,7 @@
       "file": "observability.go"
     }
   },
-  "event:ns.application.begin_link": {
+  "event:ns.application.link.begin": {
     "translations": {
       "en": "begin application link"
     },
@@ -6794,9 +8117,90 @@
       "file": "observability.go"
     }
   },
-  "event:ns.application.end_link": {
+  "event:ns.application.link.end": {
     "translations": {
       "en": "end application link"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.class.switch.a": {
+    "translations": {
+      "en": "switched to class A"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.class.switch.b": {
+    "translations": {
+      "en": "switched to class B"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.class.switch.c": {
+    "translations": {
+      "en": "switched to class C"
+    },
+    "description": {
+      "package": "pkg/networkserver/mac",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.data.schedule.attempt": {
+    "translations": {
+      "en": "schedule data downlink for transmission on Gateway Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.data.schedule.fail": {
+    "translations": {
+      "en": "failed to schedule data downlink for transmission on Gateway Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.data.schedule.success": {
+    "translations": {
+      "en": "successfully scheduled data downlink for transmission on Gateway Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.join.schedule.attempt": {
+    "translations": {
+      "en": "schedule join-accept for transmission on Gateway Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.join.schedule.fail": {
+    "translations": {
+      "en": "failed to schedule join-accept for transmission on Gateway Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.down.join.schedule.success": {
+    "translations": {
+      "en": "successfully scheduled join-accept for transmission on Gateway Server"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -6835,8 +8239,8 @@
       "en": "ADR parameter setup answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_adr_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "adr_param_setup.go"
     }
   },
   "event:ns.mac.adr_param_setup.request": {
@@ -6844,8 +8248,8 @@
       "en": "ADR parameter setup request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_adr_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "adr_param_setup.go"
     }
   },
   "event:ns.mac.beacon_freq.answer.accept": {
@@ -6853,8 +8257,8 @@
       "en": "beacon frequency change accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_beacon_freq.go"
+      "package": "pkg/networkserver/mac",
+      "file": "beacon_freq.go"
     }
   },
   "event:ns.mac.beacon_freq.answer.reject": {
@@ -6862,8 +8266,8 @@
       "en": "beacon frequency change rejection received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_beacon_freq.go"
+      "package": "pkg/networkserver/mac",
+      "file": "beacon_freq.go"
     }
   },
   "event:ns.mac.beacon_freq.request": {
@@ -6871,8 +8275,8 @@
       "en": "beacon frequency change request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_beacon_freq.go"
+      "package": "pkg/networkserver/mac",
+      "file": "beacon_freq.go"
     }
   },
   "event:ns.mac.dev_status.answer": {
@@ -6880,8 +8284,8 @@
       "en": "device status answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_dev_status.go"
+      "package": "pkg/networkserver/mac",
+      "file": "dev_status.go"
     }
   },
   "event:ns.mac.dev_status.request": {
@@ -6889,8 +8293,8 @@
       "en": "device status request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_dev_status.go"
+      "package": "pkg/networkserver/mac",
+      "file": "dev_status.go"
     }
   },
   "event:ns.mac.device_mode.confirmation": {
@@ -6898,8 +8302,8 @@
       "en": "device mode confirmation enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_device_mode.go"
+      "package": "pkg/networkserver/mac",
+      "file": "device_mode.go"
     }
   },
   "event:ns.mac.device_mode.indication": {
@@ -6907,8 +8311,8 @@
       "en": "device mode indication received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_device_mode.go"
+      "package": "pkg/networkserver/mac",
+      "file": "device_mode.go"
     }
   },
   "event:ns.mac.device_time.answer": {
@@ -6916,8 +8320,8 @@
       "en": "device time answer enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_device_time.go"
+      "package": "pkg/networkserver/mac",
+      "file": "device_time.go"
     }
   },
   "event:ns.mac.device_time.request": {
@@ -6925,8 +8329,8 @@
       "en": "device time request received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_device_time.go"
+      "package": "pkg/networkserver/mac",
+      "file": "device_time.go"
     }
   },
   "event:ns.mac.dl_channel.answer.accept": {
@@ -6934,8 +8338,8 @@
       "en": "downlink Rx1 channel frequency modification accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_dl_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "dl_channel.go"
     }
   },
   "event:ns.mac.dl_channel.answer.reject": {
@@ -6943,8 +8347,8 @@
       "en": "downlink Rx1 channel frequency modification rejection received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_dl_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "dl_channel.go"
     }
   },
   "event:ns.mac.dl_channel.request": {
@@ -6952,8 +8356,8 @@
       "en": "downlink Rx1 channel frequency modification request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_dl_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "dl_channel.go"
     }
   },
   "event:ns.mac.duty_cycle.answer": {
@@ -6961,8 +8365,8 @@
       "en": "maximum aggregated transmit duty-cycle change answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_duty_cycle.go"
+      "package": "pkg/networkserver/mac",
+      "file": "duty_cycle.go"
     }
   },
   "event:ns.mac.duty_cycle.request": {
@@ -6970,8 +8374,8 @@
       "en": "maximum aggregated transmit duty-cycle change request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_duty_cycle.go"
+      "package": "pkg/networkserver/mac",
+      "file": "duty_cycle.go"
     }
   },
   "event:ns.mac.force_rejoin.request": {
@@ -6979,8 +8383,8 @@
       "en": "force rejoin request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_force_rejoin.go"
+      "package": "pkg/networkserver/mac",
+      "file": "force_rejoin.go"
     }
   },
   "event:ns.mac.link_adr.answer.accept": {
@@ -6988,8 +8392,8 @@
       "en": "link ADR accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_link_adr.go"
+      "package": "pkg/networkserver/mac",
+      "file": "link_adr.go"
     }
   },
   "event:ns.mac.link_adr.answer.reject": {
@@ -6997,8 +8401,8 @@
       "en": "link ADR rejection received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_link_adr.go"
+      "package": "pkg/networkserver/mac",
+      "file": "link_adr.go"
     }
   },
   "event:ns.mac.link_adr.request": {
@@ -7006,8 +8410,8 @@
       "en": "link ADR request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_link_adr.go"
+      "package": "pkg/networkserver/mac",
+      "file": "link_adr.go"
     }
   },
   "event:ns.mac.link_check.answer": {
@@ -7015,8 +8419,8 @@
       "en": "link check answer enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_link_check.go"
+      "package": "pkg/networkserver/mac",
+      "file": "link_check.go"
     }
   },
   "event:ns.mac.link_check.request": {
@@ -7024,8 +8428,8 @@
       "en": "link check request received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_link_check.go"
+      "package": "pkg/networkserver/mac",
+      "file": "link_check.go"
     }
   },
   "event:ns.mac.new_channel.answer.accept": {
@@ -7033,8 +8437,8 @@
       "en": "new channel accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_new_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "new_channel.go"
     }
   },
   "event:ns.mac.new_channel.answer.reject": {
@@ -7042,8 +8446,8 @@
       "en": "new channel rejection received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_new_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "new_channel.go"
     }
   },
   "event:ns.mac.new_channel.request": {
@@ -7051,8 +8455,8 @@
       "en": "new channel request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_new_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "new_channel.go"
     }
   },
   "event:ns.mac.ping_slot_channel.answer.accept": {
@@ -7060,8 +8464,8 @@
       "en": "ping slot channel accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_ping_slot_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "ping_slot_channel.go"
     }
   },
   "event:ns.mac.ping_slot_channel.request": {
@@ -7069,8 +8473,8 @@
       "en": "ping slot channel request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_ping_slot_channel.go"
+      "package": "pkg/networkserver/mac",
+      "file": "ping_slot_channel.go"
     }
   },
   "event:ns.mac.ping_slot_info.answer": {
@@ -7078,8 +8482,8 @@
       "en": "ping slot info answer enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_ping_slot_info.go"
+      "package": "pkg/networkserver/mac",
+      "file": "ping_slot_info.go"
     }
   },
   "event:ns.mac.ping_slot_info.request": {
@@ -7087,16 +8491,16 @@
       "en": "ping slot info request received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_ping_slot_info.go"
+      "package": "pkg/networkserver/mac",
+      "file": "ping_slot_info.go"
     }
   },
   "event:ns.mac.proprietary.receive": {
     "translations": {
-      "en": "proprietary MAC command received"
+      "en": "receive proprietary MAC command"
     },
     "description": {
-      "package": "pkg/networkserver",
+      "package": "pkg/networkserver/mac",
       "file": "observability.go"
     }
   },
@@ -7105,8 +8509,8 @@
       "en": "rejoin parameter setup answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rejoin_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rejoin_param_setup.go"
     }
   },
   "event:ns.mac.rejoin_param_setup.request": {
@@ -7114,8 +8518,8 @@
       "en": "rejoin parameter setup request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rejoin_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rejoin_param_setup.go"
     }
   },
   "event:ns.mac.rekey.confirmation": {
@@ -7123,8 +8527,8 @@
       "en": "device rekey confirmation enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rekey.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rekey.go"
     }
   },
   "event:ns.mac.rekey.indication": {
@@ -7132,8 +8536,8 @@
       "en": "device rekey indication received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rekey.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rekey.go"
     }
   },
   "event:ns.mac.reset.confirmation": {
@@ -7141,8 +8545,8 @@
       "en": "device reset confirmation enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_reset.go"
+      "package": "pkg/networkserver/mac",
+      "file": "reset.go"
     }
   },
   "event:ns.mac.reset.indication": {
@@ -7150,8 +8554,8 @@
       "en": "device reset indication received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_reset.go"
+      "package": "pkg/networkserver/mac",
+      "file": "reset.go"
     }
   },
   "event:ns.mac.rx_param_setup.answer.accept": {
@@ -7159,8 +8563,8 @@
       "en": "Rx parameter setup accept received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rx_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rx_param_setup.go"
     }
   },
   "event:ns.mac.rx_param_setup.answer.reject": {
@@ -7168,8 +8572,8 @@
       "en": "Rx parameter setup rejection received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rx_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rx_param_setup.go"
     }
   },
   "event:ns.mac.rx_param_setup.request": {
@@ -7177,8 +8581,8 @@
       "en": "Rx parameter setup request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rx_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rx_param_setup.go"
     }
   },
   "event:ns.mac.rx_timing_setup.answer": {
@@ -7186,8 +8590,8 @@
       "en": "Rx timing setup answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rx_timing_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rx_timing_setup.go"
     }
   },
   "event:ns.mac.rx_timing_setup.request": {
@@ -7195,8 +8599,8 @@
       "en": "Rx timing setup request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_rx_timing_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "rx_timing_setup.go"
     }
   },
   "event:ns.mac.tx_param_setup.answer": {
@@ -7204,8 +8608,8 @@
       "en": "Tx parameter setup answer received"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_tx_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "tx_param_setup.go"
     }
   },
   "event:ns.mac.tx_param_setup.request": {
@@ -7213,8 +8617,8 @@
       "en": "Tx parameter setup request enqueued"
     },
     "description": {
-      "package": "pkg/networkserver",
-      "file": "mac_tx_param_setup.go"
+      "package": "pkg/networkserver/mac",
+      "file": "tx_param_setup.go"
     }
   },
   "event:ns.up.data.drop": {
@@ -7228,7 +8632,61 @@
   },
   "event:ns.up.data.forward": {
     "translations": {
-      "en": "forward data message"
+      "en": "forward data message to Application Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.data.process": {
+    "translations": {
+      "en": "successfully processed data message"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.data.receive": {
+    "translations": {
+      "en": "receive data message"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.join.accept.forward": {
+    "translations": {
+      "en": "forward join-accept to Application Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.join.cluster.attempt": {
+    "translations": {
+      "en": "send join-request to cluster-local Join Server"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.join.cluster.fail": {
+    "translations": {
+      "en": "join-request to cluster-local Join Server failed"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "observability.go"
+    }
+  },
+  "event:ns.up.join.cluster.success": {
+    "translations": {
+      "en": "join-request to cluster-local Join Server succeeded"
     },
     "description": {
       "package": "pkg/networkserver",
@@ -7244,54 +8702,45 @@
       "file": "observability.go"
     }
   },
-  "event:ns.up.join.forward": {
+  "event:ns.up.join.interop.attempt": {
     "translations": {
-      "en": "forward join-request"
+      "en": "forward join-request to interoperability Join Server"
     },
     "description": {
       "package": "pkg/networkserver",
       "file": "observability.go"
     }
   },
-  "event:ns.up.merge_metadata": {
+  "event:ns.up.join.interop.fail": {
     "translations": {
-      "en": "merge uplink message metadata"
+      "en": "join-request to interoperability Join Server failed"
     },
     "description": {
       "package": "pkg/networkserver",
       "file": "observability.go"
     }
   },
-  "event:ns.up.receive": {
+  "event:ns.up.join.interop.success": {
     "translations": {
-      "en": "receive uplink message"
+      "en": "join-request to interoperability Join Server succeeded"
     },
     "description": {
       "package": "pkg/networkserver",
       "file": "observability.go"
     }
   },
-  "event:ns.up.receive_duplicate": {
+  "event:ns.up.join.process": {
     "translations": {
-      "en": "receive duplicate uplink message"
+      "en": "successfully processed join-request"
     },
     "description": {
       "package": "pkg/networkserver",
       "file": "observability.go"
     }
   },
-  "event:ns.up.rejoin.drop": {
+  "event:ns.up.join.receive": {
     "translations": {
-      "en": "drop rejoin-request"
-    },
-    "description": {
-      "package": "pkg/networkserver",
-      "file": "observability.go"
-    }
-  },
-  "event:ns.up.rejoin.forward": {
-    "translations": {
-      "en": "forward rejoin-request"
+      "en": "receive join-request"
     },
     "description": {
       "package": "pkg/networkserver",

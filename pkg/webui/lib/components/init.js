@@ -18,31 +18,63 @@ import 'focus-visible/dist/focus-visible'
 import { setConfiguration } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
 
-import Spinner from '../../components/spinner'
+import LAYOUT from '@ttn-lw/constants/layout'
+
+import Spinner from '@ttn-lw/components/spinner'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import ErrorMessage from './error-message'
 import Message from './message'
 
-import '../../styles/main.styl'
+import '@ttn-lw/styles/main.styl'
 
 const m = defineMessages({
   initializing: 'Initializing…',
 })
 
-// React grid configuration
-// Keep these in line with styles/variables.less
 setConfiguration({
-  breakpoints: [480, 768, 1080, 1280],
-  containerWidths: [768, 1000, 1140, 1140],
-  gutterWidth: 28,
+  breakpoints: [
+    LAYOUT.BREAKPOINTS.XXS,
+    LAYOUT.BREAKPOINTS.S,
+    LAYOUT.BREAKPOINTS.M,
+    LAYOUT.BREAKPOINTS.L,
+  ],
+  containerWidths: [
+    LAYOUT.CONTAINER_WIDTHS.XS,
+    LAYOUT.CONTAINER_WIDTHS.S,
+    LAYOUT.CONTAINER_WIDTHS.M,
+    LAYOUT.CONTAINER_WIDTHS.L,
+  ],
+  gutterWidth: LAYOUT.GUTTER_WIDTH,
 })
 
-@connect(state => ({
-  initialized: state.init.initialized,
-  error: state.init.error,
-}))
+@connect(
+  state => ({
+    initialized: state.init.initialized,
+    error: state.init.error,
+  }),
+  dispatch => ({
+    initialize: () => dispatch({ type: 'INITIALIZE_REQUEST' }),
+  }),
+)
 export default class Init extends React.PureComponent {
+  static propTypes = {
+    children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
+    error: PropTypes.error,
+    initialize: PropTypes.func.isRequired,
+    initialized: PropTypes.bool,
+  }
+
+  static defaultProps = {
+    initialized: false,
+    error: undefined,
+  }
+
   componentDidMount() {
-    this.props.dispatch({ type: 'INITIALIZE_REQUEST' })
+    const { initialize } = this.props
+
+    initialize()
   }
 
   render() {

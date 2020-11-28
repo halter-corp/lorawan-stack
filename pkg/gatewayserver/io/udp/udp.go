@@ -16,52 +16,24 @@ package udp
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"os"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/scheduling"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	encoding "go.thethings.network/lorawan-stack/pkg/ttnpb/udp"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	encoding "go.thethings.network/lorawan-stack/v3/pkg/ttnpb/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
-
-// Config contains configuration settings for the UDP gateway frontend.
-// Use DefaultConfig for recommended settings.
-type Config struct {
-	// PacketHandlers defines the number of concurrent packet handlers.
-	PacketHandlers int `name:"packet-handlers" description:"Number of concurrent packet handlers"`
-	// PacketBuffer defines how many packets are buffered to handlers before it overflows.
-	PacketBuffer int `name:"packet-buffer" description:"Buffer size of unhandled packets"`
-	// DownlinkPathExpires defines for how long a downlink path is valid. A downlink path is renewed on each pull data and
-	// TX acknowledgement packet.
-	// Gateways typically pull data every 5 seconds.
-	DownlinkPathExpires time.Duration `name:"downlink-path-expires" description:"Time after which a downlink path to a gateway expires"`
-	// ConnectionExpires defines for how long a connection remains valid while no pull data, push data or TX
-	// acknowledgement is received.
-	ConnectionExpires time.Duration `name:"connection-expires" description:"Time after which a connection of a gateway expires"`
-	// ScheduleLateTime defines the time in advance to the actual transmission the downlink message should be scheduled to
-	// the gateway.
-	ScheduleLateTime time.Duration `name:"schedule-late-time" description:"Time in advance to send downlink to the gateway when scheduling late"`
-	// AddrChangeBlock defines the time to block traffic when the address changes.
-	AddrChangeBlock time.Duration `name:"addr-change-block" description:"Time to block traffic when a gateway's address changes"`
-}
-
-// DefaultConfig contains the default configuration.
-var DefaultConfig = Config{
-	PacketHandlers:      10,
-	PacketBuffer:        50,
-	DownlinkPathExpires: 30 * time.Second,
-	ConnectionExpires:   5 * time.Minute,
-	ScheduleLateTime:    800 * time.Millisecond,
-	AddrChangeBlock:     15 * time.Second, // Release source IP address after missing typically 3 PULL_DATA messages.
-}
 
 type srv struct {
 	ctx    context.Context
@@ -77,12 +49,17 @@ type srv struct {
 func (*srv) Protocol() string            { return "udp" }
 func (*srv) SupportsDownlinkClaim() bool { return true }
 
-// Start starts the UDP frontend.
-func Start(ctx context.Context, server io.Server, conn *net.UDPConn, config Config) {
+var errUDPFrontendRecovered = errors.DefineInternal("udp_frontend_recovered", "internal server error")
+
+// Serve serves the UDP frontend.
+func Serve(ctx context.Context, server io.Server, conn *net.UDPConn, config Config) error {
 	ctx = log.NewContextWithField(ctx, "namespace", "gatewayserver/io/udp")
 	var firewall Firewall
 	if config.AddrChangeBlock > 0 {
 		firewall = NewMemoryFirewall(ctx, config.AddrChangeBlock)
+	}
+	if config.RateLimiting.Enable == true {
+		firewall = NewRateLimitingFirewall(firewall, config.RateLimiting.Messages, config.RateLimiting.Threshold)
 	}
 	s := &srv{
 		ctx:      ctx,
@@ -92,7 +69,6 @@ func Start(ctx context.Context, server io.Server, conn *net.UDPConn, config Conf
 		packetCh: make(chan encoding.Packet, config.PacketBuffer),
 		firewall: firewall,
 	}
-	go s.read()
 	go s.gc()
 	go func() {
 		<-ctx.Done()
@@ -101,9 +77,16 @@ func Start(ctx context.Context, server io.Server, conn *net.UDPConn, config Conf
 	for i := 0; i < config.PacketHandlers; i++ {
 		go s.handlePackets()
 	}
+	return s.read()
 }
 
-func (s *srv) read() {
+func (s *srv) read() (err error) {
+	defer func() {
+		retrievedErr := recoverUDPFrontend(s.ctx)
+		if retrievedErr != nil {
+			err = retrievedErr
+		}
+	}()
 	var buf [65507]byte
 	for {
 		n, addr, err := s.conn.ReadFromUDP(buf[:])
@@ -111,7 +94,7 @@ func (s *srv) read() {
 			if s.ctx.Err() == nil {
 				log.FromContext(s.ctx).WithError(err).Warn("Read failed")
 			}
-			return
+			return err
 		}
 		now := time.Now()
 
@@ -147,6 +130,7 @@ func (s *srv) read() {
 }
 
 func (s *srv) handlePackets() {
+	defer recoverUDPFrontend(s.ctx)
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -177,17 +161,22 @@ func (s *srv) handlePackets() {
 				break
 			}
 
-			s.handleUp(cs.io.Context(), cs, packet)
+			if err := s.handleUp(cs.io.Context(), cs, packet); err != nil {
+				logger.WithError(err).Warn("Failed to handle upstream packet")
+			}
 		}
 	}
 }
 
+var errConnectionNotReady = errors.DefineUnavailable("connection_not_ready", "connection is not ready")
+
 func (s *srv) connect(ctx context.Context, eui types.EUI64) (*state, error) {
 	cs := &state{
-		ioWait:          make(chan struct{}),
-		startHandleDown: &sync.Once{},
-		lastSeenPull:    time.Now().UnixNano(),
-		lastSeenPush:    time.Now().UnixNano(),
+		ioWait:           make(chan struct{}),
+		downlinkTaskDone: &sync.WaitGroup{},
+		startHandleDown:  &sync.Once{},
+		lastSeenPull:     time.Now().UnixNano(),
+		lastSeenPush:     time.Now().UnixNano(),
 	}
 	val, loaded := s.connections.LoadOrStore(eui, cs)
 	cs = val.(*state)
@@ -220,7 +209,11 @@ func (s *srv) connect(ctx context.Context, eui types.EUI64) (*state, error) {
 			return nil, err
 		}
 	} else {
-		<-cs.ioWait
+		select {
+		case <-cs.ioWait:
+		default:
+			return nil, errConnectionNotReady.New()
+		}
 		if cs.ioErr != nil {
 			return nil, cs.ioErr
 		}
@@ -245,7 +238,13 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 		})
 		state.startHandleDownMu.RLock()
 		state.startHandleDown.Do(func() {
-			go s.handleDown(ctx, state)
+			state.downlinkTaskDone.Add(1)
+			go func() {
+				defer state.downlinkTaskDone.Done()
+				if err := s.handleDown(ctx, state); err != nil {
+					logger.WithError(err).Warn("Failed to handle downstream packet")
+				}
+			}()
 		})
 		state.startHandleDownMu.RUnlock()
 
@@ -285,7 +284,7 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 			logger.Debug("Received Tx acknowledgement, JIT queue supported")
 		}
 		var msg *ttnpb.GatewayUp
-		if packet.Data != nil {
+		if packet.Data.TxPacketAck != nil {
 			var err error
 			msg, err = encoding.ToGatewayUp(*packet.Data, md)
 			if err != nil {
@@ -308,7 +307,7 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 			logger.WithError(err).Warn("Failed to handle Tx acknowledgement")
 		}
 		if rtt != nil {
-			state.io.RecordRTT(*rtt)
+			state.io.RecordRTT(*rtt, packet.ReceivedAt)
 		}
 		// TODO: Send event to NS (https://github.com/TheThingsNetwork/lorawan-stack/issues/76)
 	}
@@ -322,12 +321,25 @@ var (
 )
 
 func (s *srv) handleDown(ctx context.Context, state *state) error {
+	defer func() {
+		state.lastDownlinkPath.Store(downlinkPath{})
+		state.startHandleDownMu.Lock()
+		state.startHandleDown = &sync.Once{}
+		state.startHandleDownMu.Unlock()
+	}()
 	logger := log.FromContext(ctx)
 	if err := s.server.ClaimDownlink(ctx, state.io.Gateway().GatewayIdentifiers); err != nil {
-		logger.WithError(err).Error("Failed to claim downlink")
+		logger.WithError(err).Error("Failed to claim downlink path")
 		return errClaimDownlinkFailed.WithCause(err)
 	}
-	defer s.server.UnclaimDownlink(ctx, state.io.Gateway().GatewayIdentifiers)
+	logger.Info("Downlink path claimed")
+	defer func() {
+		if err := s.server.UnclaimDownlink(ctx, state.io.Gateway().GatewayIdentifiers); err != nil {
+			logger.WithError(err).Error("Failed to unclaim downlink path")
+			return
+		}
+		logger.Info("Downlink path unclaimed")
+	}()
 	healthCheck := time.NewTicker(s.config.DownlinkPathExpires / 2)
 	defer healthCheck.Stop()
 	for {
@@ -344,7 +356,7 @@ func (s *srv) handleDown(ctx context.Context, state *state) error {
 				break
 			}
 			downlinkPath := state.lastDownlinkPath.Load().(downlinkPath)
-			logger = logger.WithField("remote_addr", downlinkPath.addr.String())
+			logger := logger.WithField("remote_addr", downlinkPath.addr.String())
 			packet := encoding.Packet{
 				GatewayAddr:     &downlinkPath.addr,
 				ProtocolVersion: downlinkPath.version,
@@ -384,12 +396,7 @@ func (s *srv) handleDown(ctx context.Context, state *state) error {
 			lastSeenPull := time.Unix(0, atomic.LoadInt64(&state.lastSeenPull))
 			if time.Since(lastSeenPull) > s.config.DownlinkPathExpires {
 				logger.Debug("Downlink path expired")
-				s.server.UnclaimDownlink(ctx, state.io.Gateway().GatewayIdentifiers)
-				state.lastDownlinkPath.Store(downlinkPath{})
-				state.startHandleDownMu.Lock()
-				state.startHandleDown = &sync.Once{}
-				state.startHandleDownMu.Unlock()
-				return errDownlinkPathExpired
+				return errDownlinkPathExpired.New()
 			}
 		}
 	}
@@ -429,17 +436,27 @@ func (s *srv) gc() {
 			return
 		case <-connectionsTicker.C:
 			s.connections.Range(func(k, v interface{}) bool {
+				logger := logger.WithField("gateway_eui", k.(types.EUI64))
 				state := v.(*state)
-				lastSeenPull := time.Unix(0, atomic.LoadInt64(&state.lastSeenPull))
-				if time.Since(lastSeenPull) > s.config.ConnectionExpires {
-					lastSeenPush := time.Unix(0, atomic.LoadInt64(&state.lastSeenPush))
-					if time.Since(lastSeenPush) > s.config.ConnectionExpires {
-						select {
-						case <-state.ioWait:
-							logger.WithField("gateway_eui", k.(types.EUI64)).Debug("Connection expired")
-							s.connections.Delete(k)
+				select {
+				case <-state.ioWait:
+				default:
+					return true
+				}
+				select {
+				case <-state.io.Context().Done():
+					logger.Debug("Connection context done")
+					state.downlinkTaskDone.Wait()
+					s.connections.Delete(k)
+				default:
+					lastSeenPull := time.Unix(0, atomic.LoadInt64(&state.lastSeenPull))
+					if time.Since(lastSeenPull) > s.config.ConnectionExpires {
+						lastSeenPush := time.Unix(0, atomic.LoadInt64(&state.lastSeenPush))
+						if time.Since(lastSeenPush) > s.config.ConnectionExpires {
+							logger.Debug("Connection expired")
 							state.io.Disconnect(errConnectionExpired)
-						default:
+							state.downlinkTaskDone.Wait()
+							s.connections.Delete(k)
 						}
 					}
 				}
@@ -467,9 +484,26 @@ type state struct {
 	clock   scheduling.RolloverClock
 	clockMu sync.RWMutex
 
+	downlinkTaskDone  *sync.WaitGroup
 	lastDownlinkPath  atomic.Value // downlinkPath
 	startHandleDown   *sync.Once
 	startHandleDownMu sync.RWMutex
 
 	tokens io.DownlinkTokens
+}
+
+func recoverUDPFrontend(ctx context.Context) error {
+	if p := recover(); p != nil {
+		fmt.Fprintln(os.Stderr, p)
+		os.Stderr.Write(debug.Stack())
+		var err error
+		if pErr, ok := p.(error); ok {
+			err = errUDPFrontendRecovered.WithCause(pErr)
+		} else {
+			err = errUDPFrontendRecovered.WithAttributes("panic", p)
+		}
+		log.FromContext(ctx).WithError(err).Error("UDP frontend failed")
+		return err
+	}
+	return nil
 }

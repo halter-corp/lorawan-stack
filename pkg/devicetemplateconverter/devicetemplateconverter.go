@@ -19,18 +19,13 @@ import (
 	"context"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/devicetemplates"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/devicetemplates"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"google.golang.org/grpc"
 )
-
-// Config represents the DeviceTemplateConverter configuration.
-type Config struct {
-	Enabled []string `name:"enabled" description:"Enabled converters"`
-}
 
 // DeviceTemplateConverter implements the Device Template Converter component.
 //
@@ -50,6 +45,9 @@ var errNotFound = errors.DefineNotFound("converter", "converter `{id}` not found
 
 // New returns a new *DeviceTemplateConverter.
 func New(c *component.Component, conf *Config) (*DeviceTemplateConverter, error) {
+	// Always enable the TTS device template converter
+	conf.Enabled = append(conf.Enabled, devicetemplates.TTS)
+
 	converters := make(map[string]devicetemplates.Converter, len(conf.Enabled))
 	for _, id := range conf.Enabled {
 		converter := devicetemplates.GetConverter(id)

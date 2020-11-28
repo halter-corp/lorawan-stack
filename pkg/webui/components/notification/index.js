@@ -15,10 +15,13 @@
 import React from 'react'
 import classnames from 'classnames'
 
-import Button from '../button'
-import Message from '../../lib/components/message'
-import Icon from '../icon'
-import PropTypes from '../../lib/prop-types'
+import Button from '@ttn-lw/components/button'
+import Icon from '@ttn-lw/components/icon'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import Details from './details'
 
 import style from './notification.styl'
@@ -33,11 +36,11 @@ const Notification = function({
   info,
   small,
   success,
-  message,
   messageValues = {},
   action,
   actionMessage,
   buttonIcon,
+  'data-test-id': dataTestId,
 }) {
   const classname = classnames(style.notification, className, {
     [style.error]: error,
@@ -56,7 +59,7 @@ const Notification = function({
   }
 
   return (
-    <div className={classname}>
+    <div className={classname} data-test-id={dataTestId}>
       <div className={style.container}>
         <Icon className={style.icon} icon={icon} large={!small} />
         <div className={style.content}>
@@ -65,7 +68,6 @@ const Notification = function({
             <Message content={content} values={messageValues} />
             {action && (
               <Button
-                naked
                 secondary
                 icon={buttonIcon}
                 onClick={action}
@@ -85,12 +87,13 @@ Notification.propTypes = {
   action: PropTypes.func,
   actionMessage: PropTypes.message,
   buttonIcon: PropTypes.string,
+  className: PropTypes.string,
   content: PropTypes.oneOfType([PropTypes.message, PropTypes.error, PropTypes.string]),
+  'data-test-id': PropTypes.string,
   details: PropTypes.error,
   error: PropTypes.bool,
   info: PropTypes.bool,
-  message: PropTypes.bool,
-  messageValues: PropTypes.object,
+  messageValues: PropTypes.shape({}),
   small: PropTypes.bool,
   success: PropTypes.bool,
   title: PropTypes.message,
@@ -101,10 +104,11 @@ Notification.defaultProps = {
   action: undefined,
   actionMessage: undefined,
   buttonIcon: '',
+  className: undefined,
   content: undefined,
+  'data-test-id': 'notification',
   error: false,
   info: false,
-  message: false,
   small: false,
   title: '',
   warning: false,

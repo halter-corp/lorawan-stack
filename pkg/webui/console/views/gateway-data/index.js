@@ -15,22 +15,28 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { defineMessages } from 'react-intl'
-import { Container, Col, Row } from 'react-grid-system'
 
-import PageTitle from '../../../components/page-title'
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import GatewayEvents from '../../containers/gateway-events'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import { selectSelectedGatewayId } from '../../store/selectors/gateways'
-import { mayViewGatewayEvents } from '../../lib/feature-checks'
+import WithRootClass from '@ttn-lw/lib/components/with-root-class'
 
-import style from './gateway-data.styl'
+import GatewayEvents from '@console/containers/gateway-events'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import style from '@console/views/app/app.styl'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayViewGatewayEvents } from '@console/lib/feature-checks'
+
+import { selectSelectedGatewayId } from '@console/store/selectors/gateways'
 
 const m = defineMessages({
-  gtwData: 'Gateway Data',
+  gtwData: 'Gateway data',
 })
 
 @connect(state => ({ gtwId: selectSelectedGatewayId(state) }))
@@ -38,21 +44,21 @@ const m = defineMessages({
   redirect: ({ gtwId }) => `/gateways/${gtwId}`,
 })
 @withBreadcrumb('gateways.single.data', ({ gtwId }) => (
-  <Breadcrumb path={`/gateways/${gtwId}/data`} icon="data" content={sharedMessages.data} />
+  <Breadcrumb path={`/gateways/${gtwId}/data`} content={sharedMessages.liveData} />
 ))
 export default class Data extends React.Component {
+  static propTypes = {
+    gtwId: PropTypes.string.isRequired,
+  }
+
   render() {
     const { gtwId } = this.props
 
     return (
-      <Container>
+      <WithRootClass className={style.stageFlex} id="stage">
         <PageTitle hideHeading title={m.gtwData} />
-        <Row>
-          <Col className={style.wrapper}>
-            <GatewayEvents gtwId={gtwId} />
-          </Col>
-        </Row>
-      </Container>
+        <GatewayEvents gtwId={gtwId} />
+      </WithRootClass>
     )
   }
 }

@@ -18,12 +18,12 @@ import (
 	"context"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 // appendImplicitPubSubGetPaths appends implicit ttnpb.ApplicationPubSub get paths to paths.
@@ -96,10 +96,10 @@ func (ps *PubSub) Set(ctx context.Context, req *ttnpb.SetApplicationPubSubReques
 		log.FromContext(ctx).WithFields(log.Fields(
 			"application_uid", unique.ID(ctx, req.ApplicationIdentifiers),
 			"pub_sub_id", req.PubSubID,
-		)).WithError(err).Warn("Failed to cancel integration")
+		)).WithError(err).Warn("Failed to cancel pub/sub")
 	}
 	ps.startTask(ps.ctx, req.ApplicationPubSubIdentifiers)
-	events.Publish(evtSetPubSub(ctx, req.ApplicationIdentifiers, req.ApplicationPubSubIdentifiers))
+	events.Publish(evtSetPubSub.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, req.ApplicationPubSubIdentifiers))
 	return pubsub, nil
 }
 
@@ -116,7 +116,7 @@ func (ps *PubSub) Delete(ctx context.Context, ids *ttnpb.ApplicationPubSubIdenti
 		log.FromContext(ctx).WithFields(log.Fields(
 			"application_uid", unique.ID(ctx, ids.ApplicationIdentifiers),
 			"pub_sub_id", ids.PubSubID,
-		)).WithError(err).Warn("Failed to cancel integration")
+		)).WithError(err).Warn("Failed to cancel pub/sub")
 	}
 	_, err := ps.registry.Set(ctx, *ids, nil,
 		func(pubsub *ttnpb.ApplicationPubSub) (*ttnpb.ApplicationPubSub, []string, error) {
@@ -126,6 +126,6 @@ func (ps *PubSub) Delete(ctx context.Context, ids *ttnpb.ApplicationPubSubIdenti
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeletePubSub(ctx, ids.ApplicationIdentifiers, *ids))
+	events.Publish(evtDeletePubSub.NewWithIdentifiersAndData(ctx, ids.ApplicationIdentifiers, *ids))
 	return ttnpb.Empty, nil
 }

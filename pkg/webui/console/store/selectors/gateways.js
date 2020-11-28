@@ -15,19 +15,18 @@
 import {
   GET_GTW_BASE,
   GET_GTWS_LIST_BASE,
-  GET_GTW_API_KEY_BASE,
-  GET_GTW_API_KEYS_LIST_BASE,
   UPDATE_GTW_STATS_BASE,
   GET_GTWS_RIGHTS_LIST_BASE,
   START_GTW_STATS_BASE,
-  GET_GTW_COLLABORATOR_BASE,
-  GET_GTW_COLLABORATORS_LIST_BASE,
-} from '../actions/gateways'
+} from '@console/store/actions/gateways'
 
 import {
   createEventsSelector,
   createEventsErrorSelector,
   createEventsStatusSelector,
+  createEventsInterruptedSelector,
+  createEventsPausedSelector,
+  createEventsTruncatedSelector,
   createLatestEventSelector,
 } from './events'
 import { createRightsSelector, createPseudoRightsSelector } from './rights'
@@ -35,24 +34,12 @@ import {
   createPaginationIdsSelectorByEntity,
   createPaginationTotalCountSelectorByEntity,
 } from './pagination'
-import {
-  createCollaboratorsSelector,
-  createTotalCountSelector as createCollaboratorsTotalCountSelector,
-  createUserCollaboratorSelector,
-  createOrganizationCollaboratorSelector,
-} from './collaborators'
-import { createApiKeySelector } from './api-key'
-import {
-  createApiKeysSelector,
-  createTotalCountSelector as createApiKeysTotalCountSelector,
-} from './api-keys'
 import { createFetchingSelector } from './fetching'
 import { createErrorSelector } from './error'
 
 const ENTITY = 'gateways'
-const ENTITY_SINGLE = 'gateway'
 
-// Gateway Entity
+// Gateway.
 export const selectGatewayStore = state => state.gateways
 export const selectGatewayEntitiesStore = state => selectGatewayStore(state).entities
 export const selectGatewayStatisticsStore = state => selectGatewayStore(state).statistics
@@ -64,7 +51,7 @@ export const selectSelectedGateway = state =>
 export const selectGatewayFetching = createFetchingSelector(GET_GTW_BASE)
 export const selectGatewayError = createErrorSelector(GET_GTW_BASE)
 
-// Gateways
+// Gateways.
 const selectGtwsIds = createPaginationIdsSelectorByEntity(ENTITY)
 const selectGtwsTotalCount = createPaginationTotalCountSelectorByEntity(ENTITY)
 const selectGtwsFetching = createFetchingSelector(GET_GTWS_LIST_BASE)
@@ -75,27 +62,22 @@ export const selectGatewaysTotalCount = state => selectGtwsTotalCount(state)
 export const selectGatewaysFetching = state => selectGtwsFetching(state)
 export const selectGatewaysError = state => selectGtwsError(state)
 
-// Events
+// Events.
 export const selectGatewayEvents = createEventsSelector(ENTITY)
 export const selectGatewayEventsError = createEventsErrorSelector(ENTITY)
 export const selectGatewayEventsStatus = createEventsStatusSelector(ENTITY)
+export const selectGatewayEventsInterrupted = createEventsInterruptedSelector(ENTITY)
+export const selectGatewayEventsPaused = createEventsPausedSelector(ENTITY)
+export const selectGatewayEventsTruncated = createEventsTruncatedSelector(ENTITY)
 export const selectLatestGatewayEvent = createLatestEventSelector(ENTITY)
 
-// Api Keys
-export const selectGatewayApiKeys = createApiKeysSelector(ENTITY)
-export const selectGatewayApiKeysTotalCount = createApiKeysTotalCountSelector(ENTITY)
-export const selectGatewayApiKeysFetching = createFetchingSelector(GET_GTW_API_KEYS_LIST_BASE)
-export const selectGatewayApiKey = createApiKeySelector(ENTITY_SINGLE)
-export const selectGatewayApiKeyFetching = createFetchingSelector(GET_GTW_API_KEY_BASE)
-export const selectGatewayApiKeyError = createErrorSelector(GET_GTW_API_KEY_BASE)
-
-// Rights
+// Rights.
 export const selectGatewayRights = createRightsSelector(ENTITY)
 export const selectGatewayPseudoRights = createPseudoRightsSelector(ENTITY)
 export const selectGatewayRightsError = createErrorSelector(ENTITY)
 export const selectGatewayRightsFetching = createFetchingSelector(GET_GTWS_RIGHTS_LIST_BASE)
 
-// Statistics
+// Statistics.
 export const selectGatewayStatisticsConnectError = createErrorSelector(START_GTW_STATS_BASE)
 export const selectGatewayStatisticsUpdateError = function(state) {
   const statistics = selectGatewayStatisticsStore(state) || {}
@@ -113,16 +95,3 @@ export const selectGatewayStatistics = function(state) {
 
   return statistics.stats
 }
-
-// Collaborators
-export const selectGatewayCollaborators = createCollaboratorsSelector(ENTITY)
-export const selectGatewayCollaboratorsTotalCount = createCollaboratorsTotalCountSelector(ENTITY)
-export const selectGatewayCollaboratorsFetching = createFetchingSelector(
-  GET_GTW_COLLABORATORS_LIST_BASE,
-)
-export const selectGatewayUserCollaborator = createUserCollaboratorSelector(ENTITY_SINGLE)
-export const selectGatewayOrganizationCollaborator = createOrganizationCollaboratorSelector(
-  ENTITY_SINGLE,
-)
-export const selectGatewayCollaboratorFetching = createFetchingSelector(GET_GTW_COLLABORATOR_BASE)
-export const selectGatewayCollaboratorError = createErrorSelector(GET_GTW_COLLABORATOR_BASE)

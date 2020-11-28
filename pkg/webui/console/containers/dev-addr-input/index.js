@@ -15,31 +15,32 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 
-import PropTypes from '../../../lib/prop-types'
+import Field from '@ttn-lw/components/form/field'
 
-import Field from '../../../components/form/field'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import DevAddrInput from './dev-addr-input'
 import connect from './connect'
 
 const m = defineMessages({
-  devAddrFetchingFailure: 'Could not generate device address',
+  devAddrFetchingFailure: 'There was an error and the end device address could not be generated',
 })
 
-const DevAddrField = function(props) {
+const DevAddrField = props => {
   const {
     className,
     title,
     description,
     placeholder,
     name,
-    fetching,
     disabled,
     required,
     autoFocus,
     horizontal,
-    error,
-    onDevAddrGenerate,
-    generatedDevAddr,
+    onGenerate,
+    generatedValue,
+    generatedError,
+    generatedLoading,
   } = props
 
   return (
@@ -49,40 +50,47 @@ const DevAddrField = function(props) {
       description={description}
       placeholder={placeholder}
       name={name}
-      fetching={fetching}
       disabled={disabled}
       required={required}
       autoFocus={autoFocus}
       horizontal={horizontal}
-      warning={Boolean(error) ? m.devAddrFetchingFailure : undefined}
+      warning={generatedError ? m.devAddrFetchingFailure : undefined}
       component={DevAddrInput}
-      onDevAddrGenerate={onDevAddrGenerate}
-      generatedDevAddr={generatedDevAddr}
+      onGenerate={onGenerate}
+      generatedError={generatedError}
+      generatedLoading={generatedLoading}
+      generatedValue={generatedValue}
     />
   )
 }
 
 DevAddrField.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  title: PropTypes.message.isRequired,
-  placeholder: PropTypes.message,
-  description: PropTypes.message,
-  fetching: PropTypes.bool.isRequired,
-  error: PropTypes.error,
-  disabled: PropTypes.bool,
-  required: PropTypes.bool,
   autoFocus: PropTypes.bool,
+  className: PropTypes.string,
+  description: PropTypes.message,
+  disabled: PropTypes.bool,
+  generatedError: PropTypes.bool,
+  generatedLoading: PropTypes.bool,
+  generatedValue: PropTypes.string,
   horizontal: PropTypes.bool,
-  onDevAddrGenerate: PropTypes.func.isRequired,
-  generatedDevAddr: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  onGenerate: PropTypes.func.isRequired,
+  placeholder: PropTypes.message,
+  required: PropTypes.bool,
+  title: PropTypes.message.isRequired,
 }
 
 DevAddrField.defaultProps = {
+  className: undefined,
+  description: undefined,
+  placeholder: undefined,
   disabled: false,
   required: false,
   autoFocus: false,
   horizontal: false,
+  generatedValue: '',
+  generatedError: false,
+  generatedLoading: false,
 }
 
 export default connect(DevAddrField)

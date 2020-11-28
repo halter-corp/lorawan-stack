@@ -13,54 +13,50 @@
 // limitations under the License.
 
 import React from 'react'
-import { connect } from 'react-redux'
 
-import PropTypes from '../../../lib/prop-types'
-import EventsSubscription from '../../containers/events-subscription'
-import { startOrganizationEventsStream } from '../../store/actions/organizations'
-@connect(
-  null,
-  (dispatch, ownProps) => ({
-    onRestart: () => dispatch(startOrganizationEventsStream(ownProps.orgId)),
-  }),
-)
-export default class OrganizationEvents extends React.Component {
-  static propTypes = {
-    errorSelector: PropTypes.func.isRequired,
-    eventsSelector: PropTypes.func.isRequired,
-    onClear: PropTypes.func.isRequired,
-    onRestart: PropTypes.func.isRequired,
-    orgId: PropTypes.string.isRequired,
-    statusSelector: PropTypes.func.isRequired,
-    widget: PropTypes.bool,
-  }
+import Events from '@console/components/events'
 
-  static defaultProps = {
-    widget: false,
-  }
+import PropTypes from '@ttn-lw/lib/prop-types'
 
-  render() {
-    const {
-      orgId,
-      widget,
-      onClear,
-      eventsSelector,
-      errorSelector,
-      statusSelector,
-      onRestart,
-    } = this.props
+const OrganizationEvents = props => {
+  const { orgId, events, widget, paused, onPauseToggle, onClear, truncated } = props
 
+  if (widget) {
     return (
-      <EventsSubscription
-        id={orgId}
-        widget={widget}
-        eventsSelector={eventsSelector}
-        statusSelector={statusSelector}
-        errorSelector={errorSelector}
-        onClear={onClear}
-        onRestart={onRestart}
+      <Events.Widget
+        events={events}
         toAllUrl={`/organizations/${orgId}/data`}
+        entityId={orgId}
+        scoped
       />
     )
   }
+
+  return (
+    <Events
+      events={events}
+      paused={paused}
+      onClear={onClear}
+      onPauseToggle={onPauseToggle}
+      truncated={truncated}
+      entityId={orgId}
+    />
+  )
 }
+
+OrganizationEvents.propTypes = {
+  events: PropTypes.events,
+  onClear: PropTypes.func.isRequired,
+  onPauseToggle: PropTypes.func.isRequired,
+  orgId: PropTypes.string.isRequired,
+  paused: PropTypes.bool.isRequired,
+  truncated: PropTypes.bool.isRequired,
+  widget: PropTypes.bool,
+}
+
+OrganizationEvents.defaultProps = {
+  widget: false,
+  events: [],
+}
+
+export default OrganizationEvents

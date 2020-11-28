@@ -20,16 +20,18 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectClientFlags = util.FieldMaskFlags(&ttnpb.Client{})
 	setClientFlags    = util.FieldFlags(&ttnpb.Client{})
+
+	selectAllClientFlags = util.SelectAllFlagSet("client")
 )
 
 func clientIDFlags() *pflag.FlagSet {
@@ -68,6 +70,7 @@ var (
 		Short:   "List clients",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectClientFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ClientRegistry/List"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -79,6 +82,7 @@ var (
 				FieldMask:    types.FieldMask{Paths: paths},
 				Limit:        limit,
 				Page:         page,
+				Order:        getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -93,6 +97,7 @@ var (
 		Short: "Search for clients",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectClientFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchClients"])
 
 			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
 			req.FieldMask.Paths = paths
@@ -120,6 +125,7 @@ var (
 				return errNoClientID
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectClientFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ClientRegistry/Get"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -187,10 +193,10 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res)
 		}),
 	}
-	clientsUpdateCommand = &cobra.Command{
-		Use:     "update [client-id]",
-		Aliases: []string{"set"},
-		Short:   "Update a client",
+	clientsSetCommand = &cobra.Command{
+		Use:     "set [client-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of a client",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliID := getClientID(cmd.Flags(), args)
 			if cliID == nil {
@@ -225,8 +231,9 @@ var (
 		},
 	}
 	clientsDeleteCommand = &cobra.Command{
-		Use:   "delete [client-id]",
-		Short: "Delete a client",
+		Use:     "delete [client-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete a client",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliID := getClientID(cmd.Flags(), args)
 			if cliID == nil {
@@ -257,13 +264,17 @@ var (
 func init() {
 	clientsListCommand.Flags().AddFlagSet(collaboratorFlags())
 	clientsListCommand.Flags().AddFlagSet(selectClientFlags)
+	clientsListCommand.Flags().AddFlagSet(selectAllClientFlags)
 	clientsListCommand.Flags().AddFlagSet(paginationFlags())
+	clientsListCommand.Flags().AddFlagSet(orderFlags())
 	clientsCommand.AddCommand(clientsListCommand)
 	clientsSearchCommand.Flags().AddFlagSet(searchFlags())
 	clientsSearchCommand.Flags().AddFlagSet(selectClientFlags)
+	clientsSearchCommand.Flags().AddFlagSet(selectAllClientFlags)
 	clientsCommand.AddCommand(clientsSearchCommand)
 	clientsGetCommand.Flags().AddFlagSet(clientIDFlags())
 	clientsGetCommand.Flags().AddFlagSet(selectClientFlags)
+	clientsGetCommand.Flags().AddFlagSet(selectAllClientFlags)
 	clientsCommand.AddCommand(clientsGetCommand)
 	clientsCreateCommand.Flags().AddFlagSet(clientIDFlags())
 	clientsCreateCommand.Flags().AddFlagSet(collaboratorFlags())
@@ -272,10 +283,10 @@ func init() {
 	clientsCreateCommand.Flags().Lookup("state").DefValue = ttnpb.STATE_APPROVED.String()
 	clientsCreateCommand.Flags().Lookup("grants").DefValue = ttnpb.GRANT_AUTHORIZATION_CODE.String()
 	clientsCommand.AddCommand(clientsCreateCommand)
-	clientsUpdateCommand.Flags().AddFlagSet(clientIDFlags())
-	clientsUpdateCommand.Flags().AddFlagSet(setClientFlags)
-	clientsUpdateCommand.Flags().AddFlagSet(attributesFlags())
-	clientsCommand.AddCommand(clientsUpdateCommand)
+	clientsSetCommand.Flags().AddFlagSet(clientIDFlags())
+	clientsSetCommand.Flags().AddFlagSet(setClientFlags)
+	clientsSetCommand.Flags().AddFlagSet(attributesFlags())
+	clientsCommand.AddCommand(clientsSetCommand)
 	clientsDeleteCommand.Flags().AddFlagSet(clientIDFlags())
 	clientsCommand.AddCommand(clientsDeleteCommand)
 	clientsContactInfoCommand.PersistentFlags().AddFlagSet(clientIDFlags())

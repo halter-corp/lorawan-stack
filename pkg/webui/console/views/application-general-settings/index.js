@@ -17,47 +17,67 @@ import bind from 'autobind-decorator'
 import { Col, Row, Container } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
 import { connect } from 'react-redux'
-import * as Yup from 'yup'
 import { replace } from 'connected-react-router'
 import { bindActionCreators } from 'redux'
 
-import PageTitle from '../../../components/page-title'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import sharedMessages from '../../../lib/shared-messages'
-import Message from '../../../lib/components/message'
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import SubmitButton from '../../../components/submit-button'
-import ModalButton from '../../../components/button/modal-button'
-import diff from '../../../lib/diff'
-import toast from '../../../components/toast'
-import SubmitBar from '../../../components/submit-bar'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
-import Require from '../../lib/components/require'
+import PageTitle from '@ttn-lw/components/page-title'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import ModalButton from '@ttn-lw/components/button/modal-button'
+import toast from '@ttn-lw/components/toast'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import KeyValueMap from '@ttn-lw/components/key-value-map'
 
-import { mayEditBasicApplicationInfo, mayDeleteApplication } from '../../lib/feature-checks'
+import Message from '@ttn-lw/lib/components/message'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+import Require from '@console/lib/components/require'
+
+import Yup from '@ttn-lw/lib/yup'
+import diff from '@ttn-lw/lib/diff'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayEditBasicApplicationInfo, mayDeleteApplication } from '@console/lib/feature-checks'
+import { attributeValidCheck, attributeTooShortCheck } from '@console/lib/attributes'
+
+import { attachPromise } from '@console/store/actions/lib'
+import { updateApplication, deleteApplication } from '@console/store/actions/applications'
+
 import {
   selectSelectedApplication,
   selectSelectedApplicationId,
-} from '../../store/selectors/applications'
-import { updateApplication, deleteApplication } from '../../store/actions/applications'
-import { attachPromise } from '../../store/actions/lib'
-import PropTypes from '../../../lib/prop-types'
+} from '@console/store/selectors/applications'
+
+import { mapFormValuesToApplication, mapApplicationToFormValues } from './mapping'
 
 const m = defineMessages({
   basics: 'Basics',
   deleteApp: 'Delete application',
   modalWarning:
-    'Are you sure you want to delete "{appName}"? This action cannot be undone and it will not be possible to reuse the application ID!',
-  updateSuccess: 'Successfully updated application',
+    'Are you sure you want to delete "{appName}"? This action cannot be undone and it will not be possible to reuse the application ID.',
+  updateSuccess: 'Application updated',
 })
 
 const validationSchema = Yup.object().shape({
   name: Yup.string()
-    .min(3, sharedMessages.validateTooShort)
-    .max(50, sharedMessages.validateTooLong),
-  description: Yup.string().max(150, sharedMessages.validateTooLong),
+    .min(3, Yup.passValues(sharedMessages.validateTooShort))
+    .max(50, Yup.passValues(sharedMessages.validateTooLong)),
+  description: Yup.string().max(150, Yup.passValues(sharedMessages.validateTooLong)),
+  attributes: Yup.array()
+    .test(
+      'has no empty string values',
+      sharedMessages.attributesValidateRequired,
+      attributeValidCheck,
+    )
+    .test(
+      'has key length longer than 2',
+      sharedMessages.attributeKeyValidateTooShort,
+      attributeTooShortCheck,
+    ),
 })
 
 @connect(
@@ -85,12 +105,10 @@ const validationSchema = Yup.object().shape({
   return (
     <Breadcrumb
       path={`/applications/${appId}/general-settings`}
-      icon="general_settings"
       content={sharedMessages.generalSettings}
     />
   )
 })
-@bind
 export default class ApplicationGeneralSettings extends React.Component {
   static propTypes = {
     application: PropTypes.application.isRequired,
@@ -104,30 +122,40 @@ export default class ApplicationGeneralSettings extends React.Component {
     error: '',
   }
 
-  async handleSubmit(values, { resetForm }) {
+  @bind
+  async handleSubmit(values, { resetForm, setSubmitting }) {
     const { application, updateApplication } = this.props
 
     await this.setState({ error: '' })
 
-    const changed = diff(application, values)
+    const appValues = mapFormValuesToApplication(values)
+
+    const changed = diff(application, appValues)
+
+    // If there is a change in attributes, copy all attributes so they don't get
+    // overwritten.
+    const update =
+      'attributes' in changed ? { ...changed, attributes: appValues.attributes } : changed
+
     const {
       ids: { application_id },
     } = application
 
     try {
-      await updateApplication(application_id, changed)
-      resetForm(values)
+      await updateApplication(application_id, update)
+      resetForm({ values })
       toast({
         title: application_id,
         message: m.updateSuccess,
         type: toast.types.SUCCESS,
       })
     } catch (error) {
-      resetForm(values)
+      setSubmitting(false)
       await this.setState({ error })
     }
   }
 
+  @bind
   async handleDelete() {
     const { deleteApplication, onDeleteSuccess } = this.props
     const { appId } = this.props.match.params
@@ -145,6 +173,8 @@ export default class ApplicationGeneralSettings extends React.Component {
   render() {
     const { application } = this.props
     const { error } = this.state
+    const initialValues = mapApplicationToFormValues(application)
+
     return (
       <Container>
         <PageTitle title={sharedMessages.generalSettings} />
@@ -154,12 +184,33 @@ export default class ApplicationGeneralSettings extends React.Component {
               error={error}
               horizontal
               onSubmit={this.handleSubmit}
-              initialValues={{ name: application.name, description: application.description }}
+              initialValues={initialValues}
               validationSchema={validationSchema}
             >
               <Message component="h4" content={m.basics} />
+              <Form.Field
+                title={sharedMessages.appId}
+                name="ids.application_id"
+                required
+                component={Input}
+                disabled
+              />
               <Form.Field title={sharedMessages.name} name="name" component={Input} />
-              <Form.Field title={sharedMessages.description} name="description" component={Input} />
+              <Form.Field
+                title={sharedMessages.description}
+                type="textarea"
+                name="description"
+                component={Input}
+              />
+              <Form.Field
+                name="attributes"
+                title={sharedMessages.attributes}
+                keyPlaceholder={sharedMessages.key}
+                valuePlaceholder={sharedMessages.value}
+                addMessage={sharedMessages.addAttributes}
+                component={KeyValueMap}
+                description={sharedMessages.attributeDescription}
+              />
               <SubmitBar>
                 <Form.Submit component={SubmitButton} message={sharedMessages.saveChanges} />
                 <Require featureCheck={mayDeleteApplication}>

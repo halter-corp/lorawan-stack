@@ -19,7 +19,7 @@ import (
 	"regexp"
 
 	"github.com/gotnospirit/messageformat"
-	"go.thethings.network/lorawan-stack/pkg/i18n"
+	"go.thethings.network/lorawan-stack/v3/pkg/i18n"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -150,8 +150,6 @@ nextArg:
 // Errors that are defined in init() funcs will be collected for translation.
 var Definitions = make(map[string]*Definition)
 
-// Canceled - not used for now; should be created by canceling context.
-
 // Define defines a registered error of type Unknown.
 func Define(name, messageFormat string, publicAttributes ...string) Definition {
 	return define(uint32(codes.Unknown), name, messageFormat, publicAttributes...)
@@ -163,7 +161,17 @@ func DefineInvalidArgument(name, messageFormat string, publicAttributes ...strin
 	return def
 }
 
-// DeadlineExceeded - not used for now; should be created by expiring context.
+// DefineDeadlineExceeded defines a registered error of type DeadlineExceeded.
+func DefineDeadlineExceeded(name, messageFormat string, publicAttributes ...string) Definition {
+	def := define(uint32(codes.DeadlineExceeded), name, messageFormat, publicAttributes...)
+	return def
+}
+
+// DefineCanceled defines a registered error of type Canceled.
+func DefineCanceled(name, messageFormat string, publicAttributes ...string) Definition {
+	def := define(uint32(codes.Canceled), name, messageFormat, publicAttributes...)
+	return def
+}
 
 // DefineNotFound defines a registered error of type NotFound.
 func DefineNotFound(name, messageFormat string, publicAttributes ...string) Definition {
@@ -248,4 +256,10 @@ func DefineCorruption(name, messageFormat string, publicAttributes ...string) De
 func DefineUnauthenticated(name, messageFormat string, publicAttributes ...string) Definition {
 	def := define(uint32(codes.Unauthenticated), name, messageFormat, publicAttributes...)
 	return def
+}
+
+// New returns a new error from the definition. This is not required, but will
+// add a stack trace for improved debugging.
+func (d Definition) New() Error {
+	return build(d, 0) // Don't refactor this to build(...).WithCause(...)
 }

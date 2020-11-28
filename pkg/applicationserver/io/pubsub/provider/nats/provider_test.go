@@ -23,10 +23,10 @@ import (
 	nats_test_server "github.com/nats-io/nats-server/v2/test"
 	nats_client "github.com/nats-io/nats.go"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"gocloud.dev/pubsub"
 )
 
@@ -45,6 +45,10 @@ func TestOpenConnection(t *testing.T) {
 	})
 	a.So(natsServer, should.NotBeNil)
 	defer natsServer.Shutdown()
+
+	natsClient, err := nats_client.Connect("nats://localhost:4123")
+	a.So(err, should.BeNil)
+	defer natsClient.Close()
 
 	pb := &ttnpb.ApplicationPubSub{
 		ApplicationPubSubIdentifiers: ttnpb.ApplicationPubSubIdentifiers{
@@ -84,8 +88,14 @@ func TestOpenConnection(t *testing.T) {
 		DownlinkQueued: &ttnpb.ApplicationPubSub_Message{
 			Topic: "downlink.queued",
 		},
+		DownlinkQueueInvalidated: &ttnpb.ApplicationPubSub_Message{
+			Topic: "downlink.invalidated",
+		},
 		LocationSolved: &ttnpb.ApplicationPubSub_Message{
 			Topic: "location.solved",
+		},
+		ServiceData: &ttnpb.ApplicationPubSub_Message{
+			Topic: "service.data",
 		},
 	}
 
@@ -113,8 +123,10 @@ func TestOpenConnection(t *testing.T) {
 		conn, err := impl.OpenConnection(ctx, pb)
 		a.So(conn, should.NotBeNil)
 		a.So(err, should.BeNil)
-
 		defer conn.Shutdown(ctx)
+
+		// Wait for subscriptions to connect, since they are not synchronous.
+		time.Sleep(timeout)
 
 		t.Run("Downstream", func(t *testing.T) {
 			for _, tc := range []struct {
@@ -149,22 +161,18 @@ func TestOpenConnection(t *testing.T) {
 				},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
-					ctx, cancel := context.WithTimeout(ctx, timeout)
-					defer cancel()
-
-					natsClient, err := nats_client.Connect("nats://localhost:4123")
-					a.So(err, should.BeNil)
-					defer natsClient.Close()
-
 					err = natsClient.Publish(tc.subject, []byte("foobar"))
 					a.So(err, should.BeNil)
+
+					ctx, cancel := context.WithTimeout(ctx, timeout)
+					defer cancel()
 
 					msg, err := tc.subscription.Receive(ctx)
 					if tc.expectMessage {
 						a.So(err, should.BeNil)
-						a.So(msg, should.NotBeNil)
-
-						a.So(msg.Body, should.Resemble, []byte("foobar"))
+						if a.So(msg, should.NotBeNil) {
+							a.So(msg.Body, should.Resemble, []byte("foobar"))
+						}
 					} else if err == nil {
 						t.Fatal("Unexpected message received")
 					}
@@ -211,16 +219,22 @@ func TestOpenConnection(t *testing.T) {
 					topic:   conn.Topics.DownlinkQueued,
 				},
 				{
+					name:    "ValidDownlinkQueueInvalidated",
+					subject: "app1.ps1.downlink.invalidated",
+					topic:   conn.Topics.DownlinkQueueInvalidated,
+				},
+				{
 					name:    "ValidLocationSolved",
 					subject: "app1.ps1.location.solved",
 					topic:   conn.Topics.LocationSolved,
 				},
+				{
+					name:    "ValidServiceData",
+					subject: "app1.ps1.service.data",
+					topic:   conn.Topics.ServiceData,
+				},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
-					natsClient, err := nats_client.Connect("nats://localhost:4123")
-					a.So(err, should.BeNil)
-					defer natsClient.Close()
-
 					upCh := make(chan *nats_client.Msg, 10)
 					defer close(upCh)
 
@@ -234,6 +248,9 @@ func TestOpenConnection(t *testing.T) {
 					// was actually opened.
 					time.Sleep(timeout)
 
+					ctx, cancel := context.WithTimeout(ctx, timeout)
+					defer cancel()
+
 					err = tc.topic.Send(ctx, &pubsub.Message{
 						Body: []byte("foobar"),
 					})
@@ -243,8 +260,9 @@ func TestOpenConnection(t *testing.T) {
 					case <-time.After(timeout):
 						t.Fatal("Expected message never arrived")
 					case msg := <-upCh:
-						a.So(msg, should.NotBeNil)
-						a.So(msg.Data, should.Resemble, []byte("foobar"))
+						if a.So(msg, should.NotBeNil) {
+							a.So(msg.Data, should.Resemble, []byte("foobar"))
+						}
 					}
 				})
 			}

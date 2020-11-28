@@ -16,29 +16,33 @@ package io_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestUplinkToken(t *testing.T) {
 	a := assertions.New(t)
 
-	inIDs := ttnpb.GatewayAntennaIdentifiers{
+	ids := ttnpb.GatewayAntennaIdentifiers{
 		GatewayIdentifiers: ttnpb.GatewayIdentifiers{
 			GatewayID: "foo-gateway",
 		},
 		AntennaIndex: 0,
 	}
-	inTimestamp := uint32(12345678)
+	timestamp := uint32(12345678)
+	concentratorTime := scheduling.ConcentratorTime(12345678000)
+	serverTime := time.Now()
 
-	uplinkToken, err := io.UplinkToken(inIDs, inTimestamp)
+	uplinkToken, err := io.UplinkToken(ids, timestamp, concentratorTime, serverTime)
 	a.So(err, should.BeNil)
 
-	outIDs, outTimestamp, err := io.ParseUplinkToken(uplinkToken)
+	token, err := io.ParseUplinkToken(uplinkToken)
 	a.So(err, should.BeNil)
-	a.So(outIDs, should.Resemble, inIDs)
-	a.So(outTimestamp, should.Equal, inTimestamp)
+	a.So(token.GatewayAntennaIdentifiers, should.Resemble, ids)
+	a.So(token.Timestamp, should.Equal, timestamp)
 }

@@ -20,9 +20,9 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc"
 )
 
@@ -125,6 +125,22 @@ func TestApplicationsCRUD(t *testing.T) {
 
 		userID, creds := population.Users[defaultUserIdx].UserIdentifiers, userCreds(defaultUserIdx)
 		credsWithoutRights := userCreds(defaultUserIdx, "key without rights")
+
+		is.config.UserRights.CreateApplications = false
+
+		_, err := reg.Create(ctx, &ttnpb.CreateApplicationRequest{
+			Application: ttnpb.Application{
+				ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "foo"},
+				Name:                   "Foo Application",
+			},
+			Collaborator: *userID.OrganizationOrUserIdentifiers(),
+		}, creds)
+
+		if a.So(err, should.NotBeNil) {
+			a.So(errors.IsPermissionDenied(err), should.BeTrue)
+		}
+
+		is.config.UserRights.CreateApplications = true
 
 		created, err := reg.Create(ctx, &ttnpb.CreateApplicationRequest{
 			Application: ttnpb.Application{

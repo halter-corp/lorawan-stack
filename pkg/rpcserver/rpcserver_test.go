@@ -16,18 +16,20 @@ package rpcserver_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/types"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcclient"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -60,20 +62,15 @@ func TestNewRPCServer(t *testing.T) {
 	defer cancel()
 
 	logHandler := &mockHandler{}
-	logger, err := log.NewLogger(log.WithHandler(logHandler))
+	logger := log.NewLogger(log.WithHandler(logHandler))
 	ctx = log.NewContext(ctx, logger)
 
 	server := rpcserver.New(ctx,
 		rpcserver.WithContextFiller(
 			func(ctx context.Context) context.Context {
 				return context.WithValue(ctx, &mockKey{}, "foo")
-			}),
-		rpcserver.WithFieldExtractor(func(fullMethod string, req interface{}) map[string]interface{} {
-			return map[string]interface{}{
-				"method": fullMethod,
-				"foo":    "bar",
-			}
-		}),
+			},
+		),
 		rpcserver.WithUnaryInterceptors(UnaryServerInterceptor),
 		rpcserver.WithStreamInterceptors(StreamServerInterceptor),
 	)
@@ -99,11 +96,14 @@ func TestNewRPCServer(t *testing.T) {
 		a.So(mock.pushCtx, should.NotBeNil)
 		a.So(mock.pushCtx.Value(&mockKey{}), should.Resemble, "foo")
 		a.So(grpc_ctxtags.Extract(mock.pushCtx).Values(), should.Resemble, map[string]interface{}{
-			"peer.address":        "pipe",
-			"grpc.request.method": "/ttn.lorawan.v3.AppAs/DownlinkQueuePush",
-			"grpc.request.foo":    "bar",
+			"peer.address":                "pipe",
+			"grpc.request.device_id":      "foo",
+			"grpc.request.application_id": "bar",
 		})
 		a.So(mock.pushCtx.Value(&mockKey2{}), should.Resemble, "bar")
+
+		runtime.Gosched()
+		time.Sleep(test.Delay)
 
 		a.So(logHandler.entries, should.HaveLength, 1)
 	})
@@ -124,11 +124,13 @@ func TestNewRPCServer(t *testing.T) {
 
 		a.So(mock.subCtx.Value(&mockKey{}), should.Resemble, "foo")
 		a.So(grpc_ctxtags.Extract(mock.subCtx).Values(), should.Resemble, map[string]interface{}{
-			"peer.address":        "pipe",
-			"grpc.request.method": "/ttn.lorawan.v3.AppAs/Subscribe",
-			"grpc.request.foo":    "bar",
+			"peer.address":                "pipe",
+			"grpc.request.application_id": "bar",
 		})
 		a.So(mock.subCtx.Value(&mockKey2{}), should.Resemble, "foo")
+
+		runtime.Gosched()
+		time.Sleep(test.Delay)
 
 		a.So(logHandler.entries, should.HaveLength, 2)
 	})

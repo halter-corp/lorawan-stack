@@ -14,24 +14,53 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import sharedMessages from '../../../lib/shared-messages'
 
-import Message from '../../../lib/components/message'
-import Link from '../../../components/link'
-import Map from '../../map'
+import LocationMap from '@ttn-lw/components/map'
+import WidgetContainer from '@ttn-lw/components/widget-container'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import style from './widget.styl'
 
 export default class MapWidget extends React.Component {
+  static propTypes = {
+    // Id is a string used to give the map a unique ID.
+    id: PropTypes.string.isRequired,
+    // Markers is an array of objects containing a specific properties.
+    markers: PropTypes.arrayOf(
+      // Position is a object containing two properties latitude and longitude
+      // which are both numbers.
+      PropTypes.shape({
+        position: PropTypes.objectOf(PropTypes.number),
+      }),
+    ).isRequired,
+    // Path is a string that is required to show the link at location form.
+    path: PropTypes.string.isRequired,
+  }
+
   get Map() {
     const { id, markers } = this.props
 
     const leafletConfig = {
       zoomControl: false,
+      zoom: 10,
+      minZoom: 1,
     }
+    const mapCenter =
+      Boolean(markers) && markers.length !== 0
+        ? [markers[0].position.latitude, markers[0].position.longitude]
+        : undefined
 
     return markers.length > 0 ? (
-      <Map id={id} markers={markers} leafletConfig={leafletConfig} widget />
+      <LocationMap
+        id={id}
+        mapCenter={mapCenter}
+        markers={markers}
+        leafletConfig={leafletConfig}
+        widget
+      />
     ) : (
       <div className={style.mapDisabled}>
         <Message component="span" content={sharedMessages.noLocation} />
@@ -43,33 +72,13 @@ export default class MapWidget extends React.Component {
     const { path } = this.props
 
     return (
-      <aside className={style.wrapper}>
-        <div className={style.header}>
-          <Message className={style.titleMessage} content={sharedMessages.location} />
-          <Link to={path}>
-            <Message
-              className={style.changeLocationMessage}
-              content={sharedMessages.changeLocation}
-            />
-            →
-          </Link>
-        </div>
+      <WidgetContainer
+        title={sharedMessages.location}
+        toAllUrl={path}
+        linkMessage={sharedMessages.changeLocation}
+      >
         {this.Map}
-      </aside>
+      </WidgetContainer>
     )
   }
-}
-
-MapWidget.propTypes = {
-  // Id is a string used to give the map a unique ID.
-  id: PropTypes.string.isRequired,
-  // Markers is an array of objects containing a specific properties
-  markers: PropTypes.arrayOf(
-    // Position is a object containing two properties latitude and longitude which are both numbers.
-    PropTypes.shape({
-      position: PropTypes.objectOf(PropTypes.number),
-    }),
-  ).isRequired,
-  // Path is a string that is required to show the link at location form.
-  path: PropTypes.string.isRequired,
 }

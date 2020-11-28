@@ -12,22 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/* eslint-disable react/prop-types */
+
 import React from 'react'
-import * as Yup from 'yup'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { withInfo } from '@storybook/addon-info'
 
-import Input from '../../input'
-import Checkbox from '../../checkbox'
-import Radio from '../../radio-button'
-import Select from '../../select'
-import FileInput from '../../file-input'
+import Input from '@ttn-lw/components/input'
+import Checkbox from '@ttn-lw/components/checkbox'
+import Radio from '@ttn-lw/components/radio-button'
+import Select from '@ttn-lw/components/select'
+import FileInput from '@ttn-lw/components/file-input'
+import UnitInput from '@ttn-lw/components/unit-input'
+
+import Yup from '@ttn-lw/lib/yup'
+
 import Form from '..'
 
 const handleSubmit = function(data, { resetForm }) {
   action('Submit')(data)
-  setTimeout(() => resetForm(data), 1000)
+  setTimeout(() => resetForm({ values: data }), 1000)
 }
 
 const info = {
@@ -575,6 +580,7 @@ storiesOf('Fields/Input', module)
     <FieldsWrapperExample
       initialValues={{
         default: 'something...',
+        required: 'something...',
         description: 'something...',
         warning: 'something...',
         error: 'something...',
@@ -582,6 +588,7 @@ storiesOf('Fields/Input', module)
       }}
     >
       <Form.Field name="default" title="Default" component={Input} />
+      <Form.Field name="required" title="Required" component={Input} required />
       <Form.Field
         name="description"
         title="With Description"
@@ -597,6 +604,7 @@ storiesOf('Fields/Input', module)
     <FieldsWrapperExample
       initialValues={{
         default: 'something...',
+        required: 'something...',
         description: 'something...',
         warning: 'something...',
         error: 'something...',
@@ -605,6 +613,7 @@ storiesOf('Fields/Input', module)
       horizontal={false}
     >
       <Form.Field name="default" title="Default" component={Input} />
+      <Form.Field name="required" title="Required" component={Input} required />
       <Form.Field
         name="description"
         title="With Description"
@@ -821,12 +830,7 @@ storiesOf('Fields/FileInput', module)
         component={FileInput}
       />
       <Form.Field name="withValue" title="With initially attached file" component={FileInput} />
-      <Form.Field
-        name="error"
-        title="With error"
-        component={FileInput}
-        error="There was an error."
-      />
+      <Form.Field name="error" title="With error" component={FileInput} />
       <Form.Field
         name="warning"
         title="With warning"
@@ -853,12 +857,7 @@ storiesOf('Fields/FileInput', module)
         component={FileInput}
       />
       <Form.Field name="withValue" title="With initially attached file" component={FileInput} />
-      <Form.Field
-        name="error"
-        title="With error"
-        component={FileInput}
-        error="There was an error."
-      />
+      <Form.Field name="error" title="With error" component={FileInput} />
       <Form.Field
         name="warning"
         title="With warning"
@@ -866,5 +865,125 @@ storiesOf('Fields/FileInput', module)
         warning="A file input field."
       />
       <Form.Field name="disabled" title="Disabled" component={FileInput} disabled />
+    </FieldsWrapperExample>
+  ))
+
+storiesOf('Fields/UnitInput', module)
+  .addDecorator((story, context) => withInfo(info)(story)(context))
+  .add('Horizontal', () => (
+    <FieldsWrapperExample
+      initialValues={{
+        default: '530ms',
+        description: '530ms',
+        warning: '530ms',
+        error: '530ms',
+        disabled: '530ms',
+      }}
+    >
+      <Form.Field
+        name="default"
+        title="Default"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+      />
+      <Form.Field
+        name="description"
+        title="Description"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+        description="The unit input"
+      />
+      <Form.Field
+        name="warning"
+        title="Warning"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+        warning="The unit input"
+      />
+      <Form.Field
+        name="error"
+        title="Error"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+      />
+    </FieldsWrapperExample>
+  ))
+  .add('Vertical', () => (
+    <FieldsWrapperExample
+      initialValues={{
+        default: '530ms',
+        description: '530ms',
+        warning: '530ms',
+        error: '530ms',
+        disabled: '530ms',
+      }}
+      horizontal={false}
+    >
+      <Form.Field
+        name="default"
+        title="Default"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+      />
+      <Form.Field
+        name="description"
+        title="Description"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+        description="The unit input"
+      />
+      <Form.Field
+        name="warning"
+        title="Warning"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+        warning="The unit input"
+      />
+      <Form.Field
+        name="error"
+        title="Error"
+        units={[
+          { label: 'miliseconds', value: 'ms' },
+          { label: 'seconds', value: 's' },
+          { label: 'minutes', value: 'm' },
+          { label: 'hours', value: 'h' },
+        ]}
+        component={UnitInput}
+      />
     </FieldsWrapperExample>
   ))

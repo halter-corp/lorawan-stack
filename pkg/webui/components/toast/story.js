@@ -16,14 +16,15 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import bind from 'autobind-decorator'
 
-import Button from '../button'
+import Button from '@ttn-lw/components/button'
+
 import toast, { ToastContainer } from '.'
 
 const TOAST_TITLE = 'Toast title'
 const TOAST_CONTENT = 'Toast content'
 
-@bind
 class Example extends React.Component {
+  @bind
   showToast(evt) {
     let type = null
     switch (evt.currentTarget.name) {

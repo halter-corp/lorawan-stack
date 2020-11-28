@@ -19,16 +19,17 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 func (is *IdentityServer) listOAuthClientAuthorizations(ctx context.Context, req *ttnpb.ListOAuthClientAuthorizationsRequest) (authorizations *ttnpb.OAuthClientAuthorizations, err error) {
 	if err := rights.RequireUser(ctx, req.UserIdentifiers, ttnpb.RIGHT_USER_AUTHORIZED_CLIENTS); err != nil {
 		return nil, err
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -58,6 +59,7 @@ func (is *IdentityServer) listOAuthAccessTokens(ctx context.Context, req *ttnpb.
 			return nil, err
 		}
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -113,7 +115,7 @@ func (is *IdentityServer) deleteOAuthAccessToken(ctx context.Context, req *ttnpb
 				return err
 			}
 			if accessToken.UserIDs.UserID != req.UserIDs.UserID || accessToken.ClientIDs.ClientID != req.ClientIDs.ClientID {
-				return errAccessTokenMismatch
+				return errAccessTokenMismatch.New()
 			}
 		}
 		return oauthStore.DeleteAccessToken(ctx, req.ID)

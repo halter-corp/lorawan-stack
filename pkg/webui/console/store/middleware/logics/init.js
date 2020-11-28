@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as user from '../../actions/user'
-import * as init from '../../actions/init'
-import api from '../../../api'
-import * as accessToken from '../../../lib/access-token'
-import { getBackendErrorName } from '../../../../lib/errors/utils'
+import api from '@console/api'
+
+import { clear as clearAccessToken } from '@console/lib/access-token'
+
+import * as user from '@console/store/actions/user'
+import * as init from '@console/store/actions/init'
+
 import createRequestLogic from './lib'
 
 const consoleAppLogic = createRequestLogic({
@@ -24,33 +26,38 @@ const consoleAppLogic = createRequestLogic({
   async process(_, dispatch) {
     dispatch(user.getUserRights())
 
-    let info
+    let info, rights
 
     try {
-      // there is no way to retrieve the current user directly
-      // within the console app, so first get the authentication info
-      // and only afterwards fetch the user
+      // There is no way to retrieve the current user directly within the
+      // console app, so first get the authentication info and only afterwards
+      // fetch the user.
       info = await api.users.authInfo()
-      const rights = info.data.oauth_access_token.rights
+      rights = info.oauth_access_token.rights
       dispatch(user.getUserRightsSuccess(rights))
     } catch (error) {
+      if (error.code === 16) {
+        // The access token was not found, so we can delete it from local
+        // storage to obtain a new one.
+        clearAccessToken()
+      }
       dispatch(user.getUserRightsFailure())
-      accessToken.clear()
+      info = undefined
     }
 
     if (info) {
       try {
         dispatch(user.getUserMe())
-        const userId = info.data.oauth_access_token.user_ids.user_id
-        const result = await api.users.get(userId)
-        dispatch(user.getUserMeSuccess(result.data))
+        const userId = info.oauth_access_token.user_ids.user_id
+        const userResult = await api.users.get(userId, [
+          'state',
+          'name',
+          'primary_email_address_validated_at',
+        ])
+        userResult.isAdmin = info.is_admin || false
+        dispatch(user.getUserMeSuccess(userResult))
       } catch (error) {
-        if (getBackendErrorName(error) === 'user_requested') {
-          // Log unapproved users out automatically, to avoid confusion
-          dispatch(user.logout())
-        }
         dispatch(user.getUserMeFailure(error))
-        accessToken.clear()
       }
     }
 

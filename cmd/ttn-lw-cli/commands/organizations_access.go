@@ -19,9 +19,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
@@ -78,8 +78,9 @@ var (
 		},
 	}
 	organizationCollaboratorsSet = &cobra.Command{
-		Use:   "set",
-		Short: "Set an organization collaborator",
+		Use:     "set",
+		Aliases: []string{"update"},
+		Short:   "Set an organization collaborator",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgID := getOrganizationID(cmd.Flags(), nil)
 			if orgID == nil {
@@ -114,7 +115,7 @@ var (
 	}
 	organizationCollaboratorsDelete = &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{"remove"},
+		Aliases: []string{"del", "remove", "rm"},
 		Short:   "Delete an organization collaborator",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgID := getOrganizationID(cmd.Flags(), nil)

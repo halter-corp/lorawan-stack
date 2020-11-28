@@ -22,13 +22,13 @@ import (
 	"time"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -95,7 +95,7 @@ func (ns *mockNS) LinkApplication(stream ttnpb.AsNs_LinkApplicationServer) error
 		return err
 	}
 	if !ns.validateAuth(md) {
-		return errPermissionDenied
+		return errPermissionDenied.New()
 	}
 
 	select {
@@ -114,12 +114,6 @@ func (ns *mockNS) LinkApplication(stream ttnpb.AsNs_LinkApplicationServer) error
 		case <-stream.Context().Done():
 			return nil
 		case up := <-ns.upCh:
-			if joinAccept := up.GetJoinAccept(); joinAccept != nil && !joinAccept.PendingSession {
-				// Reset the downlink queue on join-accept; it's invalid and AS will replace it.
-				ns.downlinkQueueMu.Lock()
-				ns.downlinkQueue[unique.ID(stream.Context(), up.EndDeviceIdentifiers)] = nil
-				ns.downlinkQueueMu.Unlock()
-			}
 			if err := stream.Send(up); err != nil {
 				return err
 			}
@@ -199,7 +193,7 @@ func (is *mockIS) Get(ctx context.Context, req *ttnpb.GetApplicationRequest) (*t
 	uid := unique.ID(ctx, req.ApplicationIdentifiers)
 	app, ok := is.applications[uid]
 	if !ok {
-		return nil, errNotFound
+		return nil, errNotFound.New()
 	}
 	return app, nil
 }
@@ -258,7 +252,7 @@ func (js *mockJS) add(ctx context.Context, devEUI types.EUI64, sessionKeyID []by
 func (js *mockJS) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error) {
 	key, ok := js.keys[fmt.Sprintf("%v:%v", req.DevEUI, req.SessionKeyID)]
 	if !ok {
-		return nil, errNotFound
+		return nil, errNotFound.New()
 	}
 	return &ttnpb.AppSKeyResponse{
 		AppSKey: key,

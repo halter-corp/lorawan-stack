@@ -22,11 +22,11 @@ import (
 
 	"github.com/TheThingsIndustries/mystique/pkg/topic"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/mqtt/topics"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mqtt/topics"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestV3AcceptedTopic(t *testing.T) {
@@ -111,8 +111,16 @@ func TestV3Topics(t *testing.T) {
 			Expected: fmt.Sprintf("v3/%s/devices/%s/down/queued", appUID, devID),
 		},
 		{
+			Fn:       topics.Default.DownlinkQueueInvalidatedTopic,
+			Expected: fmt.Sprintf("v3/%s/devices/%s/down/invalidated", appUID, devID),
+		},
+		{
 			Fn:       topics.Default.LocationSolvedTopic,
 			Expected: fmt.Sprintf("v3/%s/devices/%s/location/solved", appUID, devID),
+		},
+		{
+			Fn:       topics.Default.ServiceDataTopic,
+			Expected: fmt.Sprintf("v3/%s/devices/%s/service/data", appUID, devID),
 		},
 		{
 			Fn:       topics.Default.DownlinkPushTopic,

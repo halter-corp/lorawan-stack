@@ -19,14 +19,15 @@ import (
 	"time"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/peer"
 )
 
@@ -105,53 +106,53 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 
 	go func() {
 		for {
-			select {
-			case <-conn.Context().Done():
-				return
-			case down := <-conn.Down():
-				msg := &ttnpb.GatewayDown{
-					DownlinkMessage: down,
+			msg, err := link.Recv()
+			if err != nil {
+				if !errors.IsCanceled(err) {
+					logger.WithError(err).Warn("Link failed")
 				}
-				logger.Info("Send downlink message")
-				if err := link.Send(msg); err != nil {
-					logger.WithError(err).Warn("Failed to send message")
-					conn.Disconnect(err)
-					return
+				conn.Disconnect(err)
+				return
+			}
+			now := time.Now()
+
+			logger.WithFields(log.Fields(
+				"has_status", msg.GatewayStatus != nil,
+				"uplink_count", len(msg.UplinkMessages),
+			)).Debug("Received message")
+
+			for _, up := range msg.UplinkMessages {
+				up.ReceivedAt = now
+				if err := conn.HandleUp(up); err != nil {
+					logger.WithError(err).Warn("Failed to handle uplink message")
+				}
+			}
+			if msg.GatewayStatus != nil {
+				if err := conn.HandleStatus(msg.GatewayStatus); err != nil {
+					logger.WithError(err).Warn("Failed to handle status message")
+				}
+			}
+			if msg.TxAcknowledgment != nil {
+				if err := conn.HandleTxAck(msg.TxAcknowledgment); err != nil {
+					logger.WithError(err).Warn("Failed to handle Tx acknowledgement")
 				}
 			}
 		}
 	}()
 
 	for {
-		msg, err := link.Recv()
-		if err != nil {
-			if !errors.IsCanceled(err) {
-				logger.WithError(err).Warn("Link failed")
+		select {
+		case <-conn.Context().Done():
+			return conn.Context().Err()
+		case down := <-conn.Down():
+			msg := &ttnpb.GatewayDown{
+				DownlinkMessage: down,
 			}
-			conn.Disconnect(err)
-			return err
-		}
-		now := time.Now()
-
-		logger.WithFields(log.Fields(
-			"has_status", msg.GatewayStatus != nil,
-			"uplink_count", len(msg.UplinkMessages),
-		)).Debug("Received message")
-
-		for _, up := range msg.UplinkMessages {
-			up.ReceivedAt = now
-			if err := conn.HandleUp(up); err != nil {
-				logger.WithError(err).Warn("Failed to handle uplink message")
-			}
-		}
-		if msg.GatewayStatus != nil {
-			if err := conn.HandleStatus(msg.GatewayStatus); err != nil {
-				logger.WithError(err).Warn("Failed to handle status message")
-			}
-		}
-		if msg.TxAcknowledgment != nil {
-			if err := conn.HandleTxAck(msg.TxAcknowledgment); err != nil {
-				logger.WithError(err).Warn("Failed to handle Tx acknowledgement")
+			logger.Info("Send downlink message")
+			if err := link.Send(msg); err != nil {
+				logger.WithError(err).Warn("Failed to send message")
+				conn.Disconnect(err)
+				return err
 			}
 		}
 	}
@@ -169,9 +170,15 @@ func (s *impl) GetConcentratorConfig(ctx context.Context, _ *pbtypes.Empty) (*tt
 	if err := rights.RequireGateway(ctx, ids, ttnpb.RIGHT_GATEWAY_LINK); err != nil {
 		return nil, err
 	}
-	fp, err := s.server.GetFrequencyPlan(ctx, ids)
+	fps, err := s.server.GetFrequencyPlans(ctx, ids)
 	if err != nil {
 		return nil, err
+	}
+	// TODO: Support multiple frequency plans (https://github.com/TheThingsNetwork/lorawan-stack/issues/1820)
+	var fp *frequencyplans.FrequencyPlan
+	for _, v := range fps {
+		fp = v
+		break
 	}
 	return fp.ToConcentratorConfig()
 }
@@ -183,7 +190,7 @@ func getMQTTConnectionProvider(ctx context.Context, ids *ttnpb.GatewayIdentifier
 		return nil, err
 	}
 	if provider == nil {
-		return nil, errNoMQTTConfigProvider
+		return nil, errNoMQTTConfigProvider.New()
 	}
 	config, err := provider.GetMQTTConfig(ctx)
 	if err != nil {

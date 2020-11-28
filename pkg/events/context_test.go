@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 type testContextMarshaler struct{}
@@ -45,13 +45,14 @@ func TestContextMarshaler(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), "ctx-test", "foo")
 
-	evt := events.New(ctx, "test", nil, nil)
+	evt := events.New(ctx, "test", "test")
 
 	b, err := json.Marshal(evt)
 	a.So(err, should.BeNil)
 
 	unmarshaled, err := events.UnmarshalJSON(b)
 	a.So(err, should.BeNil)
+	a.So(unmarshaled, should.Resemble, evt)
 
 	val, ok := unmarshaled.Context().Value("ctx-test").(string)
 	if a.So(ok, should.BeTrue) {

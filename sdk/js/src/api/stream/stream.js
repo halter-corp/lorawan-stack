@@ -13,15 +13,17 @@
 // limitations under the License.
 
 import ArrayBufferToString from 'arraybuffer-to-string'
+
 import Token from '../../util/token'
+
 import { notify, EVENTS } from './shared'
-import 'web-streams-polyfill/dist/polyfill.js'
+import 'web-streams-polyfill/dist/polyfill'
 
 /**
  * Opens a new stream.
  *
  * @async
- * @param {Object} payload  - The body of the initial request.
+ * @param {object} payload -  - The body of the initial request.
  * @param {string} url - The stream endpoint.
  *
  * @example
@@ -31,18 +33,18 @@ import 'web-streams-polyfill/dist/polyfill.js'
  *      '/api/v3/events',
  *    )
  *
- *    // add listeners to the stream
+ *    // Add listeners to the stream.
  *    stream
- *      .on('start', () => console.log('conn opened'));
- *      .on('chunk', chunk => console.log('received chunk', chunk));
- *      .on('error', error => console.log(error));
+ *      .on('start', () => console.log('conn opened'))
+ *      .on('chunk', chunk => console.log('received chunk', chunk))
+ *      .on('error', error => console.log(error))
  *      .on('close', () => console.log('conn closed'))
  *
- *    // close the stream after 20 s
+ *    // Close the stream after 20 s.
  *    setTimeout(() => stream.close(), 20000)
  * })()
  *
- * @returns {Object} The stream subscription object with the `on` function for
+ * @returns {object} The stream subscription object with the `on` function for
  * attaching listeners and the `close` function to close the stream.
  */
 export default async function(payload, url) {
@@ -56,12 +58,14 @@ export default async function(payload, url) {
     Authorization = `Bearer ${token}`
   }
 
-  let reader = null
+  const abortController = new AbortController()
   const response = await fetch(url, {
     body: JSON.stringify(payload),
     method: 'POST',
+    signal: abortController.signal,
     headers: {
       Authorization,
+      Accept: 'text/event-stream',
     },
   })
 
@@ -71,7 +75,8 @@ export default async function(payload, url) {
     throw 'error' in err ? err.error : err
   }
 
-  reader = response.body.getReader()
+  let buffer = ''
+  const reader = response.body.getReader()
   reader
     .read()
     .then(function(data) {
@@ -87,10 +92,11 @@ export default async function(payload, url) {
       }
 
       const parsed = ArrayBufferToString(value)
-
-      for (const line of parsed.trim().split('\n')) {
-        const result = JSON.parse(line).result
-        notify(listeners[EVENTS.CHUNK], result)
+      buffer += parsed
+      const lines = buffer.split(/\n\n/)
+      buffer = lines.pop()
+      for (const line of lines) {
+        notify(listeners[EVENTS.CHUNK], JSON.parse(line).result)
       }
 
       return reader.read().then(onChunk)
@@ -113,9 +119,9 @@ export default async function(payload, url) {
       return this
     },
     close() {
-      if (reader) {
-        reader.cancel()
-      }
+      reader.cancel().then(() => {
+        abortController.abort()
+      })
     },
   }
 }

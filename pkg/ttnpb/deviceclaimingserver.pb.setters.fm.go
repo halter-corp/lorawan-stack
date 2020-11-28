@@ -5,11 +5,11 @@ package ttnpb
 import (
 	fmt "fmt"
 
-	go_thethings_network_lorawan_stack_pkg_types "go.thethings.network/lorawan-stack/pkg/types"
+	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 func (dst *ClaimEndDeviceRequest) SetFields(src *ClaimEndDeviceRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "target_application_ids":
 			if len(subs) > 0 {
@@ -188,7 +188,7 @@ func (dst *ClaimEndDeviceRequest) SetFields(src *ClaimEndDeviceRequest, paths ..
 }
 
 func (dst *AuthorizeApplicationRequest) SetFields(src *AuthorizeApplicationRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -227,7 +227,7 @@ func (dst *AuthorizeApplicationRequest) SetFields(src *AuthorizeApplicationReque
 }
 
 func (dst *ClaimEndDeviceRequest_AuthenticatedIdentifiers) SetFields(src *ClaimEndDeviceRequest_AuthenticatedIdentifiers, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {
@@ -236,7 +236,7 @@ func (dst *ClaimEndDeviceRequest_AuthenticatedIdentifiers) SetFields(src *ClaimE
 			if src != nil {
 				dst.JoinEUI = src.JoinEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.JoinEUI = zero
 			}
 		case "dev_eui":
@@ -246,7 +246,7 @@ func (dst *ClaimEndDeviceRequest_AuthenticatedIdentifiers) SetFields(src *ClaimE
 			if src != nil {
 				dst.DevEUI = src.DevEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.DevEUI = zero
 			}
 		case "authentication_code":

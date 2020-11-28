@@ -14,7 +14,7 @@
 
 package joinserver
 
-import "go.thethings.network/lorawan-stack/pkg/errors"
+import "go.thethings.network/lorawan-stack/v3/pkg/errors"
 
 var (
 	errCallerNotAuthorized            = errors.DefinePermissionDenied("caller_not_authorized", "caller `{name}` is not authorized for the entity")
@@ -33,6 +33,7 @@ var (
 	errGenerateSessionKeyID           = errors.Define("generate_session_key_id", "failed to generate session key ID")
 	errInvalidIdentifiers             = errors.DefineInvalidArgument("invalid_identifiers", "invalid identifiers")
 	errJoinNonceTooHigh               = errors.Define("join_nonce_too_high", "JoinNonce is too high")
+	errLookupNetID                    = errors.Define("lookup_net_id", "lookup NetID")
 	errMICMismatch                    = errors.DefineInvalidArgument("mic_mismatch", "MIC mismatch")
 	errNetIDMismatch                  = errors.DefineInvalidArgument("net_id_mismatch", "NetID `{net_id}` does not match")
 	errNoAppKey                       = errors.DefineCorruption("no_app_key", "no AppKey specified")
@@ -54,12 +55,13 @@ var (
 	errProvisionerDecode              = errors.Define("provisioner_decode", "failed to decode provisioning data")
 	errProvisionerNotFound            = errors.DefineNotFound("provisioner_not_found", "provisioner `{id}` not found")
 	errProvisioning                   = errors.DefineAborted("provisioning", "provisioning failed")
-	errRegistryOperation              = errors.DefineInternal("registry_operation", "registry operation failed")
+	errRegistryOperation              = errors.Define("registry_operation", "registry operation failed")
 	errReuseDevNonce                  = errors.DefineInvalidArgument("reuse_dev_nonce", "DevNonce has already been used")
 	errUnauthenticated                = errors.DefineUnauthenticated("unauthenticated", "unauthenticated")
 	errUnknownJoinEUI                 = errors.Define("unknown_join_eui", "JoinEUI specified is not known")
 	errUnsupportedLoRaWANMajorVersion = errors.DefineInvalidArgument("lorawan_major_version", "unsupported LoRaWAN major version: `{major}`")
 	errUnsupportedMACVersion          = errors.DefineInvalidArgument("mac_version", "unsupported MAC version: `{version}`")
-	errWrapKey                        = errors.Define("wrap_key", "failed to wrap key")
+	errUnwrapKey                      = errors.Define("unwrap_key", "failed to unwrap key")
+	errWrapKey                        = errors.Define("wrap_key", "failed to wrap key with KEK label `{label}`")
 	errWrongPayloadType               = errors.DefineInvalidArgument("payload_type", "wrong payload type: {type}")
 )

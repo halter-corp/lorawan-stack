@@ -14,59 +14,80 @@
 
 import React from 'react'
 import { connect } from 'react-redux'
-import bind from 'autobind-decorator'
 
-import PropTypes from '../../../lib/prop-types'
-import EventsSubscription from '../../containers/events-subscription'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
-import { mayViewApplicationEvents } from '../../lib/feature-checks'
+import Events from '@console/components/events'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayViewApplicationEvents } from '@console/lib/feature-checks'
 
 import {
   clearApplicationEventsStream,
-  startApplicationEventsStream,
-} from '../../store/actions/applications'
+  pauseApplicationEventsStream,
+  resumeApplicationEventsStream,
+} from '@console/store/actions/applications'
 
 import {
   selectApplicationEvents,
-  selectApplicationEventsStatus,
-  selectApplicationEventsError,
-} from '../../store/selectors/applications'
+  selectApplicationEventsPaused,
+  selectApplicationEventsTruncated,
+} from '@console/store/selectors/applications'
 
-@withFeatureRequirement(mayViewApplicationEvents)
-@connect(
-  null,
-  (dispatch, ownProps) => ({
-    onClear: () => dispatch(clearApplicationEventsStream(ownProps.appId)),
-    onRestart: () => dispatch(startApplicationEventsStream(ownProps.appId)),
-  }),
-)
-@bind
-export default class ApplicationEvents extends React.Component {
-  static propTypes = {
-    appId: PropTypes.string.isRequired,
-    onClear: PropTypes.func.isRequired,
-    onRestart: PropTypes.func.isRequired,
-    widget: PropTypes.bool,
-  }
+const ApplicationEvents = props => {
+  const { appId, events, widget, paused, onClear, onPauseToggle, truncated } = props
 
-  static defaultProps = {
-    widget: false,
-  }
-
-  render() {
-    const { appId, widget, onClear, onRestart } = this.props
-
+  if (widget) {
     return (
-      <EventsSubscription
-        id={appId}
-        widget={widget}
-        eventsSelector={selectApplicationEvents}
-        statusSelector={selectApplicationEventsStatus}
-        errorSelector={selectApplicationEventsError}
-        onClear={onClear}
-        onRestart={onRestart}
-        toAllUrl={`/applications/${appId}/data`}
-      />
+      <Events.Widget entityId={appId} events={events} toAllUrl={`/applications/${appId}/data`} />
     )
   }
+
+  return (
+    <Events
+      entityId={appId}
+      events={events}
+      paused={paused}
+      onClear={onClear}
+      truncated={truncated}
+      onPauseToggle={onPauseToggle}
+    />
+  )
 }
+
+ApplicationEvents.propTypes = {
+  appId: PropTypes.string.isRequired,
+  events: PropTypes.events,
+  onClear: PropTypes.func.isRequired,
+  onPauseToggle: PropTypes.func.isRequired,
+  paused: PropTypes.bool.isRequired,
+  truncated: PropTypes.bool.isRequired,
+  widget: PropTypes.bool,
+}
+
+ApplicationEvents.defaultProps = {
+  widget: false,
+  events: [],
+}
+
+export default withFeatureRequirement(mayViewApplicationEvents)(
+  connect(
+    (state, props) => {
+      const { appId } = props
+
+      return {
+        events: selectApplicationEvents(state, appId),
+        paused: selectApplicationEventsPaused(state, appId),
+        truncated: selectApplicationEventsTruncated(state, appId),
+      }
+    },
+    (dispatch, ownProps) => ({
+      onClear: () => dispatch(clearApplicationEventsStream(ownProps.appId)),
+      onPauseToggle: paused =>
+        paused
+          ? dispatch(resumeApplicationEventsStream(ownProps.appId))
+          : dispatch(pauseApplicationEventsStream(ownProps.appId)),
+    }),
+  )(ApplicationEvents),
+)

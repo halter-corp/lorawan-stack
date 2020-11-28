@@ -21,12 +21,11 @@ import (
 
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	clusterauth "go.thethings.network/lorawan-stack/pkg/auth/cluster"
-	. "go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
+	. "go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -37,7 +36,7 @@ func TestVerifySource(t *testing.T) {
 
 	key := []byte{0x2A, 0x9C, 0x2C, 0x3C, 0x2A, 0x9C, 0x2A, 0x9C, 0x2A, 0x9C, 0x2A, 0x9C, 0x2A, 0x9C, 0x2A, 0x9C}
 
-	c, err := New(ctx, &config.Cluster{
+	c, err := New(ctx, &Config{
 		Keys: []string{
 			hex.EncodeToString(key),
 		},

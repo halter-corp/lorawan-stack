@@ -22,10 +22,10 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
 func TestGatewayStore(t *testing.T) {
@@ -36,10 +36,20 @@ func TestGatewayStore(t *testing.T) {
 		prepareTest(db, &Gateway{}, &GatewayAntenna{}, &Attribute{})
 		store := GetGatewayStore(db)
 
+		eui := &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8}
+		scheduleAnytimeDelay := time.Second
+		secret := &ttnpb.Secret{
+			KeyID: "my-secret-key-id",
+			Value: []byte("my very secret value"),
+		}
+		otherSecret := &ttnpb.Secret{
+			KeyID: "my-secret-key-id",
+			Value: []byte("my other very secret value"),
+		}
 		created, err := store.CreateGateway(ctx, &ttnpb.Gateway{
 			GatewayIdentifiers: ttnpb.GatewayIdentifiers{
 				GatewayID: "foo",
-				EUI:       &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+				EUI:       eui,
 			},
 			Name:        "Foo Gateway",
 			Description: "The Amazing Foo Gateway",
@@ -51,6 +61,9 @@ func TestGatewayStore(t *testing.T) {
 			Antennas: []ttnpb.GatewayAntenna{
 				{Gain: 3, Location: ttnpb.Location{Latitude: 12.345, Longitude: 23.456, Altitude: 1090, Accuracy: 1}},
 			},
+			ScheduleAnytimeDelay:     &scheduleAnytimeDelay,
+			UpdateLocationFromStatus: true,
+			LBSLNSSecret:             secret,
 		})
 
 		a.So(err, should.BeNil)
@@ -64,9 +77,13 @@ func TestGatewayStore(t *testing.T) {
 			}
 			a.So(created.CreatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
 			a.So(created.UpdatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
+			a.So(*created.ScheduleAnytimeDelay, should.Equal, time.Second)
+			a.So(created.UpdateLocationFromStatus, should.BeTrue)
+			a.So(created.LBSLNSSecret, should.NotBeNil)
+			a.So(created.LBSLNSSecret, should.Resemble, secret)
 		}
 
-		got, err := store.GetGateway(ctx, &ttnpb.GatewayIdentifiers{GatewayID: "foo"}, &pbtypes.FieldMask{Paths: []string{"name", "attributes"}})
+		got, err := store.GetGateway(ctx, &ttnpb.GatewayIdentifiers{GatewayID: "foo"}, &pbtypes.FieldMask{Paths: []string{"name", "attributes", "lbs_lns_secret"}})
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
@@ -76,6 +93,7 @@ func TestGatewayStore(t *testing.T) {
 			a.So(got.Attributes, should.HaveLength, 3)
 			a.So(got.CreatedAt, should.Equal, created.CreatedAt)
 			a.So(got.UpdatedAt, should.Equal, created.UpdatedAt)
+			a.So(got.LBSLNSSecret, should.Resemble, created.LBSLNSSecret)
 		}
 
 		byEUI, err := store.GetGateway(ctx, &ttnpb.GatewayIdentifiers{EUI: &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8}}, &pbtypes.FieldMask{Paths: []string{"name"}})
@@ -83,6 +101,7 @@ func TestGatewayStore(t *testing.T) {
 		a.So(err, should.BeNil)
 		if a.So(byEUI, should.NotBeNil) {
 			a.So(byEUI.GatewayID, should.Equal, got.GatewayID)
+			a.So(byEUI.LBSLNSSecret, should.BeNil)
 		}
 
 		_, err = store.UpdateGateway(ctx, &ttnpb.Gateway{
@@ -106,7 +125,10 @@ func TestGatewayStore(t *testing.T) {
 				{Gain: 6, Location: ttnpb.Location{Latitude: 12.345, Longitude: 23.456, Altitude: 1090, Accuracy: 1}, Attributes: map[string]string{"direction": "west"}},
 				{Gain: 6, Location: ttnpb.Location{Latitude: 12.345, Longitude: 23.456, Altitude: 1090, Accuracy: 1}, Attributes: map[string]string{"direction": "east"}},
 			},
-		}, &pbtypes.FieldMask{Paths: []string{"description", "attributes", "antennas"}})
+			ScheduleAnytimeDelay:     nil,
+			UpdateLocationFromStatus: false,
+			LBSLNSSecret:             otherSecret,
+		}, &pbtypes.FieldMask{Paths: []string{"description", "attributes", "antennas", "schedule_anytime_delay", "update_location_from_status", "lbs_lns_secret"}})
 
 		a.So(err, should.BeNil)
 		if a.So(updated, should.NotBeNil) {
@@ -120,6 +142,9 @@ func TestGatewayStore(t *testing.T) {
 			}
 			a.So(updated.CreatedAt, should.Equal, created.CreatedAt)
 			a.So(updated.UpdatedAt, should.HappenAfter, created.CreatedAt)
+			a.So(*updated.ScheduleAnytimeDelay, should.Equal, time.Duration(0))
+			a.So(updated.UpdateLocationFromStatus, should.BeFalse)
+			a.So(updated.LBSLNSSecret, should.Resemble, otherSecret)
 		}
 
 		got, err = store.GetGateway(ctx, &ttnpb.GatewayIdentifiers{GatewayID: "foo"}, nil)
@@ -133,6 +158,7 @@ func TestGatewayStore(t *testing.T) {
 			a.So(got.Antennas, should.HaveLength, len(updated.Antennas))
 			a.So(got.CreatedAt, should.Equal, created.CreatedAt)
 			a.So(got.UpdatedAt, should.Equal, updated.UpdatedAt)
+			a.So(got.LBSLNSSecret, should.Resemble, otherSecret)
 		}
 
 		list, err := store.FindGateways(ctx, nil, &pbtypes.FieldMask{Paths: []string{"name"}})
@@ -166,5 +192,18 @@ func TestGatewayStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		a.So(list, should.BeEmpty)
+
+		got, err = store.CreateGateway(ctx, &ttnpb.Gateway{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{
+				GatewayID: "reuse-foo-eui",
+				EUI:       eui,
+			},
+		})
+
+		a.So(err, should.BeNil)
+		if a.So(got, should.NotBeNil) {
+			a.So(got.GatewayID, should.Equal, "reuse-foo-eui")
+			a.So(got.EUI, should.Resemble, eui)
+		}
 	})
 }

@@ -16,19 +16,23 @@ import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 import bind from 'autobind-decorator'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import CollaboratorsTable from '../../containers/collaborators-table'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import { getApplicationCollaboratorsList } from '../../store/actions/applications'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import CollaboratorsTable from '@console/containers/collaborators-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getCollaboratorsList } from '@console/store/actions/collaborators'
+
 import {
-  selectApplicationCollaborators,
-  selectApplicationCollaboratorsTotalCount,
-  selectApplicationCollaboratorsFetching,
-} from '../../store/selectors/applications'
-
-import PAGE_SIZES from '../../constants/page-sizes'
+  selectCollaborators,
+  selectCollaboratorsTotalCount,
+  selectCollaboratorsFetching,
+  selectCollaboratorsError,
+} from '@console/store/selectors/collaborators'
 
 export default class ApplicationCollaborators extends React.Component {
   static propTypes = {
@@ -39,8 +43,7 @@ export default class ApplicationCollaborators extends React.Component {
     super(props)
 
     const { appId } = props.match.params
-    this.getApplicationCollaboratorsList = filters =>
-      getApplicationCollaboratorsList(appId, filters)
+    this.getCollaboratorsList = filters => getCollaboratorsList('application', appId, filters)
   }
 
   @bind
@@ -49,9 +52,10 @@ export default class ApplicationCollaborators extends React.Component {
     const id = { id: appId }
 
     return {
-      collaborators: selectApplicationCollaborators(state, id),
-      fetching: selectApplicationCollaboratorsFetching(state),
-      totalCount: selectApplicationCollaboratorsTotalCount(state, id),
+      collaborators: selectCollaborators(state, id),
+      fetching: selectCollaboratorsFetching(state),
+      totalCount: selectCollaboratorsTotalCount(state, id),
+      error: selectCollaboratorsError(state),
     }
   }
 
@@ -64,7 +68,7 @@ export default class ApplicationCollaborators extends React.Component {
             <CollaboratorsTable
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={this.baseDataSelector}
-              getItemsAction={this.getApplicationCollaboratorsList}
+              getItemsAction={this.getCollaboratorsList}
             />
           </Col>
         </Row>

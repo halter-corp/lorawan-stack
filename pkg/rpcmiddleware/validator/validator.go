@@ -23,7 +23,7 @@ import (
 	"runtime/trace"
 
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -106,7 +106,7 @@ func validateMessage(ctx context.Context, fullMethod string, msg interface{}) er
 		return nil
 
 	default:
-		return errNoValidator
+		return errNoValidator.New()
 	}
 }
 

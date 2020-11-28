@@ -19,10 +19,10 @@ import (
 	"sync"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/band"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/fetch"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/band"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/fetch"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -197,18 +197,24 @@ func (lsc *LoRaStandardChannel) Clone() *LoRaStandardChannel {
 	return &nlsc
 }
 
+var errInvalidDataRateIndex = errors.DefineInvalidArgument("data_rate_index", "Data rate index is invalid")
+
 // ToConcentratorConfig returns the LoRa standard channel configuration in the protobuf format.
-func (lsc *LoRaStandardChannel) ToConcentratorConfig(band band.Band) *ttnpb.ConcentratorConfig_LoRaStandardChannel {
+func (lsc *LoRaStandardChannel) ToConcentratorConfig(phy band.Band) (*ttnpb.ConcentratorConfig_LoRaStandardChannel, error) {
 	if lsc == nil {
-		return nil
+		return nil, nil
 	}
-	dr := band.DataRates[lsc.DataRate].Rate.GetLoRa()
+	dr, ok := phy.DataRates[ttnpb.DataRateIndex(lsc.DataRate)]
+	if !ok {
+		return nil, errInvalidDataRateIndex.New()
+	}
+	lora := dr.Rate.GetLoRa()
 	return &ttnpb.ConcentratorConfig_LoRaStandardChannel{
 		Frequency:       lsc.Frequency,
 		Radio:           uint32(lsc.Radio),
-		SpreadingFactor: dr.SpreadingFactor,
-		Bandwidth:       dr.Bandwidth,
-	}
+		SpreadingFactor: lora.SpreadingFactor,
+		Bandwidth:       lora.Bandwidth,
+	}, nil
 }
 
 // FSKChannel contains the configuration of an FSK channel.
@@ -422,7 +428,7 @@ func (fp FrequencyPlan) Validate() error {
 	}
 	fpdt := fp.DwellTime
 	if (fpdt.GetUplinks() || fpdt.GetDownlinks()) && fpdt.Duration == nil {
-		return errNoDwellTimeDuration
+		return errNoDwellTimeDuration.New()
 	}
 	for _, channels := range [][]Channel{fp.UplinkChannels, fp.DownlinkChannels} {
 		for i, channel := range channels {
@@ -474,7 +480,7 @@ func (fp *FrequencyPlan) RespectsDwellTime(isDownlink bool, frequency uint64, du
 
 // ToConcentratorConfig returns the frequency plan in the protobuf format.
 func (fp *FrequencyPlan) ToConcentratorConfig() (*ttnpb.ConcentratorConfig, error) {
-	band, err := band.GetByID(fp.BandID)
+	phy, err := band.GetByID(fp.BandID)
 	if err != nil {
 		return nil, err
 	}
@@ -482,7 +488,11 @@ func (fp *FrequencyPlan) ToConcentratorConfig() (*ttnpb.ConcentratorConfig, erro
 	for _, channel := range fp.UplinkChannels {
 		cc.Channels = append(cc.Channels, channel.ToConcentratorConfig())
 	}
-	cc.LoRaStandardChannel = fp.LoRaStandardChannel.ToConcentratorConfig(band)
+	lora, err := fp.LoRaStandardChannel.ToConcentratorConfig(phy)
+	if err != nil {
+		return nil, err
+	}
+	cc.LoRaStandardChannel = lora
 	cc.FSKChannel = fp.FSKChannel.ToConcentratorConfig()
 	cc.LBT = fp.LBT.ToConcentratorConfig()
 	cc.PingSlot = fp.PingSlot.ToConcentratorConfig()
@@ -677,7 +687,7 @@ func (s *Store) getByID(id string) (*FrequencyPlan, error) {
 // GetByID retrieves the frequency plan that has the given ID.
 func (s *Store) GetByID(id string) (*FrequencyPlan, error) {
 	if s == nil {
-		return nil, errNotConfigured
+		return nil, errNotConfigured.New()
 	}
 
 	if id == "" {
@@ -701,7 +711,7 @@ func (s *Store) GetByID(id string) (*FrequencyPlan, error) {
 // GetAllIDs returns the list of IDs of the available frequency plans.
 func (s *Store) GetAllIDs() ([]string, error) {
 	if s == nil {
-		return nil, errNotConfigured
+		return nil, errNotConfigured.New()
 	}
 
 	descriptions, err := s.descriptions()

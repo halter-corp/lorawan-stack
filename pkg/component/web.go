@@ -15,18 +15,18 @@
 package component
 
 import (
-	"crypto/subtle"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"strings"
+	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/heptiolabs/healthcheck"
-	echo "github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/metrics"
-	"go.thethings.network/lorawan-stack/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
+	"go.thethings.network/lorawan-stack/v3/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/webmiddleware"
 )
 
 const (
@@ -38,8 +38,10 @@ const (
 func (c *Component) initWeb() error {
 	webOptions := []web.Option{
 		web.WithContextFiller(c.FillContext),
+		web.WithTrustedProxies(c.config.HTTP.TrustedProxies...),
 		web.WithCookieKeys(c.config.HTTP.Cookie.HashKey, c.config.HTTP.Cookie.BlockKey),
 		web.WithStatic(c.config.HTTP.Static.Mount, c.config.HTTP.Static.SearchPath...),
+		web.WithLogIgnorePaths(c.config.HTTP.LogIgnorePaths),
 	}
 	if c.config.HTTP.RedirectToHost != "" {
 		webOptions = append(webOptions, web.WithRedirectToHost(c.config.HTTP.RedirectToHost))
@@ -65,6 +67,44 @@ func (c *Component) initWeb() error {
 	if err != nil {
 		return err
 	}
+
+	if c.config.HTTP.PProf.Enable {
+		g := web.RootRouter().NewRoute().Subrouter()
+		if c.config.HTTP.PProf.Password != "" {
+			g.Use(mux.MiddlewareFunc(webmiddleware.BasicAuth(
+				"pprof",
+				webmiddleware.AuthUser(pprofUsername, c.config.HTTP.PProf.Password),
+			)))
+		}
+		g.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		g.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		g.PathPrefix("/debug/pprof/").HandlerFunc(pprof.Index)
+		g.Handle("/debug/pprof", http.RedirectHandler("/debug/pprof/", http.StatusMovedPermanently))
+	}
+
+	if c.config.HTTP.Metrics.Enable {
+		g := web.RootRouter().NewRoute().Subrouter()
+		if c.config.HTTP.Metrics.Password != "" {
+			g.Use(mux.MiddlewareFunc(webmiddleware.BasicAuth(
+				"metrics",
+				webmiddleware.AuthUser(metricsUsername, c.config.HTTP.Metrics.Password),
+			)))
+		}
+		g.Handle("/metrics", metrics.Exporter)
+	}
+
+	if c.config.HTTP.Health.Enable {
+		g := web.RootRouter().NewRoute().Subrouter()
+		if c.config.HTTP.Health.Password != "" {
+			g.Use(mux.MiddlewareFunc(webmiddleware.BasicAuth(
+				"health",
+				webmiddleware.AuthUser(healthUsername, c.config.HTTP.Health.Password),
+			)))
+		}
+		g.HandleFunc("/healthz/live", c.healthHandler.LiveEndpoint)
+		g.HandleFunc("/healthz/ready", c.healthHandler.ReadyEndpoint)
+	}
+
 	c.web = web
 	return nil
 }
@@ -85,7 +125,17 @@ func (c *Component) RegisterReadinessCheck(name string, check healthcheck.Check)
 }
 
 func (c *Component) serveWeb(lis net.Listener) error {
-	return http.Serve(lis, c)
+	srv := http.Server{
+		Handler:           c,
+		ReadTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		ErrorLog:          log.New(ioutil.Discard, "", 0),
+	}
+	go func() {
+		<-c.Context().Done()
+		srv.Close()
+	}()
+	return srv.Serve(lis)
 }
 
 func (c *Component) webEndpoints() []Endpoint {
@@ -102,59 +152,5 @@ func (c *Component) listenWeb() (err error) {
 		return
 	}
 
-	if c.config.HTTP.PProf.Enable {
-		var middleware []echo.MiddlewareFunc
-		if c.config.HTTP.PProf.Password != "" {
-			middleware = append(middleware, c.basicAuth(pprofUsername, c.config.HTTP.PProf.Password))
-		}
-		g := c.web.RootGroup("/debug/pprof", middleware...)
-		g.GET("", func(c echo.Context) error { return c.Redirect(http.StatusFound, c.Path()+"/") })
-		g.GET("/*", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
-		g.GET("/profile", echo.WrapHandler(http.HandlerFunc(pprof.Profile)))
-		g.GET("/trace", echo.WrapHandler(http.HandlerFunc(pprof.Trace)))
-	}
-
-	if c.config.HTTP.Metrics.Enable {
-		var middleware []echo.MiddlewareFunc
-		if c.config.HTTP.Metrics.Password != "" {
-			middleware = append(middleware, c.basicAuth(metricsUsername, c.config.HTTP.Metrics.Password))
-		}
-		g := c.web.RootGroup("/metrics", middleware...)
-		g.GET("/", func(c echo.Context) error { return c.Redirect(http.StatusFound, strings.TrimSuffix(c.Path(), "/")) })
-		g.GET("", echo.WrapHandler(metrics.Exporter), func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				c.Request().Header.Del("Accept-Encoding")
-				return next(c)
-			}
-		})
-	}
-
-	if c.config.HTTP.Health.Enable {
-		var middleware []echo.MiddlewareFunc
-		if c.config.HTTP.Health.Password != "" {
-			middleware = append(middleware, c.basicAuth(healthUsername, c.config.HTTP.Health.Password))
-		}
-		g := c.web.RootGroup("/healthz", middleware...)
-		g.GET("/live", echo.WrapHandler(http.HandlerFunc(c.healthHandler.LiveEndpoint)))
-		g.GET("/ready", echo.WrapHandler(http.HandlerFunc(c.healthHandler.ReadyEndpoint)))
-	}
-
 	return nil
-}
-
-func (c *Component) basicAuth(username, password string) echo.MiddlewareFunc {
-	usernameBytes, passwordBytes := []byte(username), []byte(password)
-	return middleware.BasicAuth(func(username string, password string, ctx echo.Context) (bool, error) {
-		usernameCompare := subtle.ConstantTimeCompare([]byte(username), usernameBytes)
-		passwordCompare := subtle.ConstantTimeCompare([]byte(password), passwordBytes)
-		if usernameCompare != 1 || passwordCompare != 1 {
-			c.Logger().WithFields(log.Fields(
-				"namespace", "web",
-				"url", ctx.Path(),
-				"remote_addr", ctx.RealIP(),
-			)).Warn("Basic auth failed")
-			return false, nil
-		}
-		return true, nil
-	})
 }

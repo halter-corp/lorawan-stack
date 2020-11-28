@@ -15,38 +15,40 @@
 import React from 'react'
 import classnames from 'classnames'
 import { defineMessages } from 'react-intl'
-import { Link } from 'react-router-dom'
-import PropTypes from '../../lib/prop-types'
 
-import Message from '../../lib/components/message'
-import Button from '../../components/button'
-import OfflineStatus from '../../containers/offline-status'
+import Button from '@ttn-lw/components/button'
+import Link from '@ttn-lw/components/link'
+import OfflineStatus from '@ttn-lw/components/offline-status'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './footer.styl'
 
 const m = defineMessages({
   footer: "You are the network. Let's build this thing together.",
-  getSupport: 'Get Support',
+  getSupport: 'Get support',
 })
 
-const Footer = function({ className, links, supportLink }) {
+const Footer = function({ className, links, supportLink, isOnline }) {
   return (
     <footer className={classnames(className, style.footer)}>
       <div>
-        <span>
+        <span className={style.claim}>
           <Message content={m.footer} /> –{' '}
         </span>
-        <a className={style.link} href="https://www.thethingsnetwork.org">
+        <Link.Anchor secondary className={style.link} href="https://www.thethingsnetwork.org">
           The Things Network
-        </a>
+        </Link.Anchor>
       </div>
-      <div>
+      <div className={style.right}>
         {links.map((item, key) => (
-          <Link key={key} className={style.link} to={item.link}>
+          <Link.Anchor secondary key={key} className={style.link} href={item.link}>
             <Message content={item.title} />
-          </Link>
+          </Link.Anchor>
         ))}
-        <OfflineStatus showOfflineOnly showWarnings />
+        <OfflineStatus isOnline={isOnline} showOfflineOnly showWarnings />
         <span className={style.version}>v{process.env.VERSION}</span>
         {supportLink && (
           <Button.AnchorLink
@@ -54,6 +56,7 @@ const Footer = function({ className, links, supportLink }) {
             icon="contact_support"
             href={supportLink}
             target="_blank"
+            secondary
           />
         )}
       </div>
@@ -62,12 +65,15 @@ const Footer = function({ className, links, supportLink }) {
 }
 
 Footer.propTypes = {
-  /** The classname to be applied to the footer */
+  /** The classname to be applied to the footer. */
   className: PropTypes.string,
+  /** A flag specifying whether the application is connected to the internet. */
+  isOnline: PropTypes.bool.isRequired,
   /**
-   * A list of links to be displayed in the footer component
-   * @param {(string|Object)} title - The title of the link
-   * @param {string} link - The link url
+   * A list of links to be displayed in the footer component.
+   *
+   * @param {(string|object)} title - The title of the link.
+   * @param {string} link - The link url.
    */
   links: PropTypes.arrayOf(
     PropTypes.shape({
@@ -75,7 +81,7 @@ Footer.propTypes = {
       link: PropTypes.string.isRequired,
     }),
   ),
-  /** Optional link for a support button */
+  /** Optional link for a support button. */
   supportLink: PropTypes.string,
 }
 

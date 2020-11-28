@@ -16,19 +16,21 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { withInfo } from '@storybook/addon-info'
-import * as Yup from 'yup'
 
-import Button from '../button'
-import SubmitBar from '../submit-bar'
-import SubmitButton from '../submit-button'
-import Input from '../input'
-import Form from '../form'
-import Checkbox from '../checkbox'
-import Radio from '../radio-button'
+import Button from '@ttn-lw/components/button'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import Input from '@ttn-lw/components/input'
+import Checkbox from '@ttn-lw/components/checkbox'
+import Radio from '@ttn-lw/components/radio-button'
+
+import Yup from '@ttn-lw/lib/yup'
+
+import Form from '.'
 
 const handleSubmit = function(data, { resetForm }) {
   action('Submit')(data)
-  setTimeout(() => resetForm(data), 1000)
+  setTimeout(() => resetForm({ values: data }), 1000)
 }
 
 const containerStyles = {
@@ -112,14 +114,17 @@ storiesOf('Form', module)
           checkboxes: Yup.object().test('checkboxes', 'Cannot be empty', values =>
             Object.values(values).reduce((acc, curr) => acc || curr, false),
           ),
+          about: Yup.string().max(2000),
         })}
         initialValues={{
           name: '',
           description: '',
           radio: 'radio1',
           checkboxes: {},
+          about: '',
         }}
       >
+        <Form.SubTitle title="General information" />
         <Form.Field
           component={Input}
           type="text"
@@ -127,13 +132,6 @@ storiesOf('Form', module)
           placeholder="Name"
           title="Name"
           required
-        />
-        <Form.Field
-          component={Input}
-          type="text"
-          name="description"
-          placeholder="Description"
-          title="Description"
         />
         <Form.Field
           component={Checkbox.Group}
@@ -151,6 +149,15 @@ storiesOf('Form', module)
           <Radio label="Radio 2" value="radio2" />
           <Radio label="Radio 3" value="radio3" />
         </Form.Field>
+        <Form.CollapseSection title="Optional information" id="optional-section">
+          <Form.Field
+            component={Input}
+            type="textarea"
+            name="about"
+            title="About"
+            description="Tell us about yourself"
+          />
+        </Form.CollapseSection>
         <SubmitBar>
           <Form.Submit message="Submit" component={SubmitButton} />
         </SubmitBar>

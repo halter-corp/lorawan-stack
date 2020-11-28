@@ -14,39 +14,43 @@
 
 import React from 'react'
 
-import PropTypes from '../../lib/prop-types'
-import Button from '../button'
+import Button from '@ttn-lw/components/button'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 class SubmitButton extends React.PureComponent {
-  render() {
-    const { message, icon, isSubmitting, isValidating, disabled, dirty } = this.props
+  static propTypes = {
+    disabled: PropTypes.bool,
+    icon: PropTypes.string,
+    isSubmitting: PropTypes.bool.isRequired,
+    isValidating: PropTypes.bool.isRequired,
+    message: PropTypes.message,
+  }
 
-    const buttonDisabled = disabled || isSubmitting || !dirty
+  static defaultProps = {
+    message: undefined,
+  }
+
+  static defaultProps = {
+    disabled: false,
+    icon: undefined,
+  }
+  render() {
+    const { message, icon, disabled, isSubmitting, isValidating, ...rest } = this.props
+
     const buttonLoading = isSubmitting || isValidating
 
     return (
       <Button
+        {...rest}
         type="submit"
         icon={icon}
         message={message}
-        disabled={buttonDisabled}
+        disabled={disabled}
         busy={buttonLoading}
       />
     )
   }
-}
-
-SubmitButton.propTypes = {
-  message: PropTypes.message.isRequired,
-  isSubmitting: PropTypes.bool.isRequired,
-  isValidating: PropTypes.bool.isRequired,
-  dirty: PropTypes.bool.isRequired,
-  disabled: PropTypes.bool,
-  icon: PropTypes.string,
-}
-
-SubmitButton.defaultProps = {
-  disabled: false,
 }
 
 export default SubmitButton

@@ -16,25 +16,27 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/auth/pbkdf2"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/randutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/pbkdf2"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/randutil"
 )
 
 // NewPopulator returns a new database populator with a population of the given size.
 // It is seeded by the given seed.
 func NewPopulator(size int, seed int64) *Populator {
-	randy := rand.New(randutil.NewLockedSource(rand.NewSource(seed)))
+	randy := randutil.NewLockedRand(rand.NewSource(seed))
 	p := &Populator{
 		APIKeys:     make(map[*ttnpb.EntityIdentifiers][]*ttnpb.APIKey),
 		Memberships: make(map[*ttnpb.EntityIdentifiers][]*ttnpb.Collaborator),
 	}
 	for i := 0; i < size; i++ {
 		application := ttnpb.NewPopulatedApplication(randy, false)
+		application.Description = fmt.Sprintf("Random Application %d", i+1)
 		applicationID := application.EntityIdentifiers()
 		p.Applications = append(p.Applications, application)
 		p.APIKeys[applicationID] = append(
@@ -45,8 +47,10 @@ func NewPopulator(size int, seed int64) *Populator {
 			},
 		)
 		client := ttnpb.NewPopulatedClient(randy, false)
+		client.Description = fmt.Sprintf("Random Client %d", i+1)
 		p.Clients = append(p.Clients, client)
 		gateway := ttnpb.NewPopulatedGateway(randy, false)
+		gateway.Description = fmt.Sprintf("Random Gateway %d", i+1)
 		gatewayID := gateway.EntityIdentifiers()
 		p.Gateways = append(p.Gateways, gateway)
 		p.APIKeys[gatewayID] = append(
@@ -57,6 +61,7 @@ func NewPopulator(size int, seed int64) *Populator {
 			},
 		)
 		organization := ttnpb.NewPopulatedOrganization(randy, false)
+		organization.Description = fmt.Sprintf("Random Organization %d", i+1)
 		organizationID := organization.EntityIdentifiers()
 		p.Organizations = append(p.Organizations, organization)
 		p.APIKeys[organizationID] = append(
@@ -67,6 +72,7 @@ func NewPopulator(size int, seed int64) *Populator {
 			},
 		)
 		user := ttnpb.NewPopulatedUser(randy, false)
+		user.Description = fmt.Sprintf("Random User %d", i+1)
 		userID := user.EntityIdentifiers()
 		p.Users = append(p.Users, user)
 		p.APIKeys[userID] = append(
@@ -170,29 +176,36 @@ type Populator struct {
 
 // Populate the database.
 func (p *Populator) Populate(ctx context.Context, db *gorm.DB) (err error) {
+	tx := db.Begin()
+	defer func() {
+		if commitErr := tx.Commit().Error; err == nil {
+			err = commitErr
+		}
+	}()
+
 	hashValidator := pbkdf2.Default()
 	hashValidator.Iterations = 10
 	ctx = auth.NewContextWithHashValidator(ctx, hashValidator)
-	if err = p.populateApplications(ctx, db); err != nil {
-		return err
+	if err = p.populateApplications(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate applications: %w", err)
 	}
-	if err = p.populateClients(ctx, db); err != nil {
-		return err
+	if err = p.populateClients(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate clients: %w", err)
 	}
-	if err = p.populateGateways(ctx, db); err != nil {
-		return err
+	if err = p.populateGateways(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate gateways: %w", err)
 	}
-	if err = p.populateOrganizations(ctx, db); err != nil {
-		return err
+	if err = p.populateOrganizations(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate organizations: %w", err)
 	}
-	if err = p.populateUsers(ctx, db); err != nil {
-		return err
+	if err = p.populateUsers(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate users: %w", err)
 	}
-	if err = p.populateAPIKeys(ctx, db); err != nil {
-		return err
+	if err = p.populateAPIKeys(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate API keys: %w", err)
 	}
-	if err = p.populateMemberships(ctx, db); err != nil {
-		return err
+	if err = p.populateMemberships(ctx, tx); err != nil {
+		return fmt.Errorf("failed to populate memberships: %w", err)
 	}
 	return nil
 }

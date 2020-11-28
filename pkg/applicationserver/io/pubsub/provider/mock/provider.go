@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package mock implements a mock PubSub provider using the mempubsub driver.
+// Package mock implements a mock pub/sub provider using the mempubsub driver.
 package mock
 
 import (
 	"context"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"gocloud.dev/pubsub"
 	"gocloud.dev/pubsub/mempubsub"
 )
@@ -46,14 +46,16 @@ type Connection struct {
 	Push    *pubsub.Topic
 	Replace *pubsub.Topic
 
-	UplinkMessage  *pubsub.Subscription
-	JoinAccept     *pubsub.Subscription
-	DownlinkAck    *pubsub.Subscription
-	DownlinkNack   *pubsub.Subscription
-	DownlinkSent   *pubsub.Subscription
-	DownlinkFailed *pubsub.Subscription
-	DownlinkQueued *pubsub.Subscription
-	LocationSolved *pubsub.Subscription
+	UplinkMessage            *pubsub.Subscription
+	JoinAccept               *pubsub.Subscription
+	DownlinkAck              *pubsub.Subscription
+	DownlinkNack             *pubsub.Subscription
+	DownlinkSent             *pubsub.Subscription
+	DownlinkFailed           *pubsub.Subscription
+	DownlinkQueued           *pubsub.Subscription
+	DownlinkQueueInvalidated *pubsub.Subscription
+	LocationSolved           *pubsub.Subscription
+	ServiceData              *pubsub.Subscription
 }
 
 func (c *Connection) ApplicationPubSubIdentifiers() *ttnpb.ApplicationPubSubIdentifiers {
@@ -82,7 +84,9 @@ func (c *Connection) Shutdown(ctx context.Context) (err error) {
 		c.DownlinkSent,
 		c.DownlinkFailed,
 		c.DownlinkQueued,
+		c.DownlinkQueueInvalidated,
 		c.LocationSolved,
+		c.ServiceData,
 	} {
 		if topic != nil {
 			if err = topic.Shutdown(ctx); err != nil && !errors.IsCanceled(err) {
@@ -150,8 +154,16 @@ func (i *Impl) OpenConnection(ctx context.Context, target provider.Target) (pc *
 			subscription: &conn.DownlinkQueued,
 		},
 		{
+			topic:        &pc.Topics.DownlinkQueueInvalidated,
+			subscription: &conn.DownlinkQueueInvalidated,
+		},
+		{
 			topic:        &pc.Topics.LocationSolved,
 			subscription: &conn.LocationSolved,
+		},
+		{
+			topic:        &pc.Topics.ServiceData,
+			subscription: &conn.ServiceData,
 		},
 	} {
 		*t.topic = mempubsub.NewTopic()

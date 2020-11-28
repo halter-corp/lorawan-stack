@@ -28,11 +28,12 @@ body
   -moz-osx-font-smoothing: grayscale
   background: white
 
-  & > div
-    height: 100%
+:global(#app)
+  height: 100%
 
 ::-webkit-scrollbar
-  width: .5em
+  width: .5rem
+  height: .5rem
 
 ::-webkit-scrollbar-thumb
   background-color: darker($c-backdrop)
@@ -49,6 +50,9 @@ h2
 h3
   h3()
 
+h4
+  h4()
+
 ul li
   &:not(:last-child)
     margin-bottom: $cs.s
@@ -56,12 +60,6 @@ ul li
   a
     text-decoration: none
     color: $tc-deep-gray
-
-a
-  color: $tc-active
-
-p a:hover
-  color: hoverize($tc-active)
 
 hr
   border-normal()

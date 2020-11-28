@@ -19,26 +19,34 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/email"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/emails"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/email"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/emails"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtUpdateClientCollaborator = events.Define(
 		"client.collaborator.update", "update client collaborator",
-		ttnpb.RIGHT_CLIENT_ALL,
-		ttnpb.RIGHT_USER_CLIENTS_LIST,
+		events.WithVisibility(
+			ttnpb.RIGHT_CLIENT_ALL,
+			ttnpb.RIGHT_USER_CLIENTS_LIST,
+		),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteClientCollaborator = events.Define(
 		"client.collaborator.delete", "delete client collaborator",
-		ttnpb.RIGHT_CLIENT_ALL,
-		ttnpb.RIGHT_USER_CLIENTS_LIST,
+		events.WithVisibility(
+			ttnpb.RIGHT_CLIENT_ALL,
+			ttnpb.RIGHT_USER_CLIENTS_LIST,
+		),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
@@ -116,7 +124,7 @@ func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.
 		return nil, err
 	}
 	if len(req.Collaborator.Rights) > 0 {
-		events.Publish(evtUpdateClientCollaborator(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
+		events.Publish(evtUpdateClientCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
 		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
 			data.SetEntity(req.EntityIdentifiers())
 			return &emails.CollaboratorChanged{Data: data, Collaborator: req.Collaborator}
@@ -125,7 +133,7 @@ func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.
 			log.FromContext(ctx).WithError(err).Error("Could not send collaborator updated notification email")
 		}
 	} else {
-		events.Publish(evtDeleteClientCollaborator(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
+		events.Publish(evtDeleteClientCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
 	}
 	return ttnpb.Empty, nil
 }

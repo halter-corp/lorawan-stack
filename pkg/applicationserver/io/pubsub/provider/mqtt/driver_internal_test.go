@@ -22,9 +22,9 @@ import (
 
 	paho_mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"gocloud.dev/pubsub/driver"
 	"gocloud.dev/pubsub/drivertest"
 )
@@ -34,7 +34,7 @@ type harness struct {
 }
 
 func (h *harness) CreateTopic(ctx context.Context, testName string) (dt driver.Topic, cleanup func(), err error) {
-	dt, err = openDriverTopic(h.client, fmt.Sprintf("test/%s", testName), timeout, 1)
+	dt, err = openDriverTopic(h.client, fmt.Sprintf("test/%s", testName), 1)
 	if err != nil {
 		return nil, func() {}, err
 	}
@@ -46,7 +46,7 @@ func (h *harness) MakeNonexistentTopic(ctx context.Context) (driver.Topic, error
 }
 
 func (h *harness) CreateSubscription(ctx context.Context, t driver.Topic, testName string) (ds driver.Subscription, cleanup func(), err error) {
-	dt, err := openDriverSubscription(h.client, fmt.Sprintf("test/%s", testName), timeout, 1)
+	dt, err := openDriverSubscription(ctx, h.client, fmt.Sprintf("test/%s", testName), 1)
 	if err != nil {
 		return nil, func() {}, err
 	}
@@ -70,8 +70,12 @@ func createHarnessMaker(broker string) func(context.Context, *testing.T) (driver
 		clientOpts := paho_mqtt.NewClientOptions()
 		clientOpts.AddBroker(broker)
 		client := paho_mqtt.NewClient(clientOpts)
-		if token := client.Connect(); !token.WaitTimeout(timeout) {
-			return nil, token.Error()
+		token := client.Connect()
+		if !token.WaitTimeout(timeout) {
+			t.Fatal("Connection timeout")
+		}
+		if err := token.Error(); err != nil {
+			t.Fatal(err)
 		}
 		return &harness{client: client}, nil
 	}

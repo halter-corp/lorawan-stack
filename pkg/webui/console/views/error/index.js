@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,86 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from 'react'
-import { Container, Row, Col } from 'react-grid-system'
+import { FullViewError, FullViewErrorInner } from './error'
+import connect from './connect'
 
-import Button from '../../../components/button'
-import Message from '../../../lib/components/message'
-import ErrorMessage from '../../../lib/components/error-message'
-import { withEnv } from '../../../lib/components/env'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Footer from '../../../components/footer'
-import sharedMessages from '../../../lib/shared-messages'
-import errorMessages from '../../../lib/errors/error-messages'
+const ConnectedFullErrorView = connect(FullViewError)
 
-import Header from '../../containers/header'
-
-import {
-  httpStatusCode,
-  isUnknown as isUnknownError,
-  isNotFoundError,
-} from '../../../lib/errors/utils'
-
-import statusCodeMessages from '../../../lib/errors/status-code-messages'
-
-import style from './error.styl'
-
-const reload = () => location.reload()
-
-const FullViewErrorInner = function({ error, env }) {
-  const isUnknown = isUnknownError(error)
-  const statusCode = httpStatusCode(error)
-  const isNotFound = isNotFoundError(error)
-
-  let errorTitleMessage = errorMessages.unknownErrorTitle
-  let errorMessageMessage = errorMessages.contactAdministrator
-  if (!isUnknown) {
-    errorMessageMessage = error
-  } else if (isNotFound) {
-    errorMessageMessage = errorMessages.genericNotFound
-  }
-  if (statusCode) {
-    errorTitleMessage = statusCodeMessages[statusCode]
-  }
-
-  return (
-    <div className={style.fullViewError}>
-      <Container>
-        <Row>
-          <Col md={6} sm={12}>
-            <IntlHelmet title={errorMessages.error} />
-            <Message
-              className={style.fullViewErrorHeader}
-              component="h2"
-              content={errorTitleMessage}
-            />
-            <ErrorMessage className={style.fullViewErrorSub} content={errorMessageMessage} />
-            {isNotFoundError(error) ? (
-              <Button.AnchorLink
-                icon="keyboard_arrow_left"
-                message={sharedMessages.takeMeBack}
-                href={env.appRoot}
-              />
-            ) : (
-              <Button icon="refresh" message={sharedMessages.refreshPage} onClick={reload} />
-            )}
-          </Col>
-        </Row>
-      </Container>
-    </div>
-  )
-}
-
-const FullViewErrorInnerWithEnv = withEnv(FullViewErrorInner)
-
-const FullViewError = function({ error }) {
-  return (
-    <div className={style.wrapper}>
-      <Header className={style.header} anchored />
-      <FullViewErrorInnerWithEnv error={error} />
-      <Footer />
-    </div>
-  )
-}
-
-export { FullViewError as default, FullViewErrorInnerWithEnv as FullViewErrorInner }
+export { ConnectedFullErrorView as default, FullViewError, FullViewErrorInner }

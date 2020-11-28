@@ -16,36 +16,26 @@ import React from 'react'
 import { Switch, Route } from 'react-router'
 import { connect } from 'react-redux'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import sharedMessages from '../../../lib/shared-messages'
-import { withSideNavigation } from '../../../components/navigation/side/context'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import withRequest from '../../../lib/components/with-request'
-import withEnv from '../../../lib/components/env'
-import BreadcrumbView from '../../../lib/components/breadcrumb-view'
-import NotFoundRoute from '../../../lib/components/not-found-route'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import Breadcrumbs from '@ttn-lw/components/breadcrumbs'
+import SideNavigation from '@ttn-lw/components/navigation/side'
 
-import GatewayOverview from '../gateway-overview'
-import GatewayApiKeys from '../gateway-api-keys'
-import GatewayCollaborators from '../gateway-collaborators'
-import GatewayLocation from '../gateway-location'
-import GatewayData from '../gateway-data'
-import GatewayGeneralSettings from '../gateway-general-settings'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import withRequest from '@ttn-lw/lib/components/with-request'
+import withEnv from '@ttn-lw/lib/components/env'
+import NotFoundRoute from '@ttn-lw/lib/components/not-found-route'
 
-import {
-  getGateway,
-  stopGatewayEventsStream,
-  getGatewaysRightsList,
-} from '../../store/actions/gateways'
-import {
-  selectGatewayFetching,
-  selectGatewayError,
-  selectSelectedGateway,
-  selectGatewayRights,
-  selectGatewayRightsFetching,
-  selectGatewayRightsError,
-} from '../../store/selectors/gateways'
+import GatewayCollaborators from '@console/views/gateway-collaborators'
+import GatewayLocation from '@console/views/gateway-location'
+import GatewayData from '@console/views/gateway-data'
+import GatewayGeneralSettings from '@console/views/gateway-general-settings'
+import GatewayApiKeys from '@console/views/gateway-api-keys'
+import GatewayOverview from '@console/views/gateway-overview'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
 import {
   mayViewGatewayInfo,
   mayViewGatewayEvents,
@@ -53,7 +43,22 @@ import {
   mayViewOrEditGatewayCollaborators,
   mayViewOrEditGatewayApiKeys,
   mayEditBasicGatewayInformation,
-} from '../../lib/feature-checks'
+} from '@console/lib/feature-checks'
+
+import {
+  getGateway,
+  stopGatewayEventsStream,
+  getGatewaysRightsList,
+} from '@console/store/actions/gateways'
+
+import {
+  selectGatewayFetching,
+  selectGatewayError,
+  selectSelectedGateway,
+  selectGatewayRights,
+  selectGatewayRightsFetching,
+  selectGatewayRightsError,
+} from '@console/store/selectors/gateways'
 
 @connect(
   function(state, props) {
@@ -63,8 +68,8 @@ import {
     return {
       gtwId,
       gateway,
-      error: selectGatewayError(state) && selectGatewayRightsError(state),
-      fetching: selectGatewayFetching(state) && selectGatewayRightsFetching(state),
+      error: selectGatewayError(state) || selectGatewayRightsError(state),
+      fetching: selectGatewayFetching(state) || selectGatewayRightsFetching(state),
       rights: selectGatewayRights(state),
     }
   },
@@ -84,78 +89,106 @@ import {
       'enforce_duty_cycle',
       'frequency_plan_id',
       'gateway_server_address',
-      'enforce_duty_cycle',
       'antennas',
+      'location_public',
+      'status_public',
+      'auto_update',
+      'schedule_downlink_late',
+      'update_location_from_status',
+      'update_channel',
+      'schedule_anytime_delay',
+      'attributes',
     ]),
   ({ fetching, gateway }) => fetching || !Boolean(gateway),
 )
-@withSideNavigation(function(props) {
-  const {
-    match: { url: matchedUrl },
-    gtwId,
-    rights,
-  } = props
-
-  return {
-    header: { title: gtwId, icon: 'gateway' },
-    entries: [
-      {
-        title: sharedMessages.overview,
-        path: matchedUrl,
-        icon: 'overview',
-        hidden: !mayViewGatewayInfo.check(rights),
-      },
-      {
-        title: sharedMessages.data,
-        path: `${matchedUrl}/data`,
-        icon: 'data',
-        hidden: !mayViewGatewayEvents.check(rights),
-      },
-      {
-        title: sharedMessages.location,
-        path: `${matchedUrl}/location`,
-        icon: 'location',
-        hidden: !mayViewOrEditGatewayLocation.check(rights),
-      },
-      {
-        title: sharedMessages.collaborators,
-        path: `${matchedUrl}/collaborators`,
-        icon: 'organization',
-        exact: false,
-        hidden: !mayViewOrEditGatewayCollaborators.check(rights),
-      },
-      {
-        title: sharedMessages.apiKeys,
-        path: `${matchedUrl}/api-keys`,
-        icon: 'api_keys',
-        exact: false,
-        hidden: !mayViewOrEditGatewayApiKeys.check(rights),
-      },
-      {
-        title: sharedMessages.generalSettings,
-        path: `${matchedUrl}/general-settings`,
-        icon: 'general_settings',
-        hidden: !mayEditBasicGatewayInformation.check(rights),
-      },
-    ],
-  }
-})
 @withBreadcrumb('gateways.single', function(props) {
   const {
     gtwId,
     gateway: { name },
   } = props
 
-  return <Breadcrumb path={`/gateways/${gtwId}`} icon="gateway" content={name || gtwId} />
+  return <Breadcrumb path={`/gateways/${gtwId}`} content={name || gtwId} />
 })
 @withEnv
 export default class Gateway extends React.Component {
+  static propTypes = {
+    env: PropTypes.env,
+    gateway: PropTypes.gateway.isRequired,
+    gtwId: PropTypes.string.isRequired,
+    match: PropTypes.match.isRequired,
+    rights: PropTypes.rights.isRequired,
+    stopStream: PropTypes.func.isRequired,
+  }
+
+  static defaultProps = {
+    env: undefined,
+  }
+
+  componentWillUnmount() {
+    const { stopStream, gtwId } = this.props
+
+    stopStream(gtwId)
+  }
+
   render() {
-    const { match, gateway, gtwId, env } = this.props
+    const {
+      match: { url: matchedUrl },
+      gateway,
+      gtwId,
+      env,
+      rights,
+      match,
+    } = this.props
 
     return (
-      <BreadcrumbView>
+      <React.Fragment>
+        <Breadcrumbs />
         <IntlHelmet titleTemplate={`%s - ${gateway.name || gtwId} - ${env.siteName}`} />
+        <SideNavigation header={{ icon: 'gateway', title: gateway.name || gtwId, to: matchedUrl }}>
+          {mayViewGatewayInfo.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.overview}
+              path={matchedUrl}
+              icon="overview"
+              exact
+            />
+          )}
+          {mayViewGatewayEvents.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.liveData}
+              path={`${matchedUrl}/data`}
+              icon="data"
+            />
+          )}
+          {mayViewOrEditGatewayLocation.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.location}
+              path={`${matchedUrl}/location`}
+              icon="location"
+            />
+          )}
+          {mayViewOrEditGatewayCollaborators.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.collaborators}
+              path={`${matchedUrl}/collaborators`}
+              icon="organization"
+            />
+          )}
+          {mayViewOrEditGatewayApiKeys.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.apiKeys}
+              path={`${matchedUrl}/api-keys`}
+              icon="api_keys"
+            />
+          )}
+          {mayEditBasicGatewayInformation.check(rights) && (
+            <SideNavigation.Item
+              title={sharedMessages.generalSettings}
+              path={`${matchedUrl}/general-settings`}
+              icon="general_settings"
+            />
+          )}
+        </SideNavigation>
         <Switch>
           <Route exact path={`${match.path}`} component={GatewayOverview} />
           <Route path={`${match.path}/api-keys`} component={GatewayApiKeys} />
@@ -165,7 +198,7 @@ export default class Gateway extends React.Component {
           <Route path={`${match.path}/general-settings`} component={GatewayGeneralSettings} />
           <NotFoundRoute />
         </Switch>
-      </BreadcrumbView>
+      </React.Fragment>
     )
   }
 }

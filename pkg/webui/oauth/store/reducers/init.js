@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { INITIALIZE, INITIALIZE_SUCCESS, INITIALIZE_FAILURE } from '../actions/init'
+import { INITIALIZE, INITIALIZE_SUCCESS, INITIALIZE_FAILURE } from '@oauth/store/actions/init'
 
 const defaultState = {
   initialized: false,
-  error: false,
+  error: undefined,
 }
 
 const init = function(state = defaultState, action) {
@@ -24,13 +24,13 @@ const init = function(state = defaultState, action) {
     case INITIALIZE:
       return {
         ...state,
-        error: false,
+        error: undefined,
         initialized: false,
       }
     case INITIALIZE_SUCCESS:
       return {
         ...state,
-        error: false,
+        error: undefined,
         initialized: true,
       }
     case INITIALIZE_FAILURE:

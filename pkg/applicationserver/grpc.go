@@ -18,15 +18,15 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetLink implements ttnpb.AsServer.
 func (as *ApplicationServer) GetLink(ctx context.Context, req *ttnpb.GetApplicationLinkRequest) (*ttnpb.ApplicationLink, error) {
-	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_LINK); err != nil {
+	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC); err != nil {
 		return nil, err
 	}
 	return as.linkRegistry.Get(ctx, req.ApplicationIdentifiers, req.FieldMask.Paths)
@@ -34,7 +34,7 @@ func (as *ApplicationServer) GetLink(ctx context.Context, req *ttnpb.GetApplicat
 
 // SetLink implements ttnpb.AsServer.
 func (as *ApplicationServer) SetLink(ctx context.Context, req *ttnpb.SetApplicationLinkRequest) (*ttnpb.ApplicationLink, error) {
-	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_LINK); err != nil {
+	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC); err != nil {
 		return nil, err
 	}
 	// Get all the fields here for starting the link task.
@@ -60,7 +60,7 @@ func (as *ApplicationServer) SetLink(ctx context.Context, req *ttnpb.SetApplicat
 
 // DeleteLink implements ttnpb.AsServer.
 func (as *ApplicationServer) DeleteLink(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*types.Empty, error) {
-	if err := rights.RequireApplication(ctx, *ids, ttnpb.RIGHT_APPLICATION_LINK); err != nil {
+	if err := rights.RequireApplication(ctx, *ids, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC); err != nil {
 		return nil, err
 	}
 	if err := as.cancelLink(ctx, *ids); err != nil && !errors.IsNotFound(err) {
@@ -75,7 +75,7 @@ func (as *ApplicationServer) DeleteLink(ctx context.Context, ids *ttnpb.Applicat
 
 // GetLinkStats implements ttnpb.AsServer.
 func (as *ApplicationServer) GetLinkStats(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*ttnpb.ApplicationLinkStats, error) {
-	if err := rights.RequireApplication(ctx, *ids, ttnpb.RIGHT_APPLICATION_LINK); err != nil {
+	if err := rights.RequireApplication(ctx, *ids, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +83,6 @@ func (as *ApplicationServer) GetLinkStats(ctx context.Context, ids *ttnpb.Applic
 	if err != nil {
 		return nil, err
 	}
-	<-link.connReady
 
 	stats := &ttnpb.ApplicationLinkStats{}
 	lt := link.GetLinkTime()

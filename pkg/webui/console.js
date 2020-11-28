@@ -16,20 +16,25 @@ import React from 'react'
 import DOM from 'react-dom'
 import { createBrowserHistory } from 'history'
 import { Provider } from 'react-redux'
+import * as Sentry from '@sentry/browser'
 
-import { EnvProvider } from './lib/components/env'
-import { BreadcrumbsProvider } from './components/breadcrumbs/context'
-import { SideNavigationProvider } from './components/navigation/side/context'
-import Init from './lib/components/init'
-import WithLocale from './lib/components/with-locale'
-import env from './lib/env'
-import { selectApplicationRootPath } from './lib/selectors/env'
-import './lib/yup-extensions'
+import sentryConfig from '@ttn-lw/constants/sentry'
+
+import { BreadcrumbsProvider } from '@ttn-lw/components/breadcrumbs/context'
+
+import { EnvProvider } from '@ttn-lw/lib/components/env'
+import Init from '@ttn-lw/lib/components/init'
+import WithLocale from '@ttn-lw/lib/components/with-locale'
+
+import env from '@ttn-lw/lib/env'
+import { selectApplicationRootPath } from '@ttn-lw/lib/selectors/env'
 
 import createStore from './console/store'
 
 const appRoot = selectApplicationRootPath()
 const history = createBrowserHistory({ basename: `${appRoot}/` })
+// Initialize sentry before creating store.
+if (env.sentryDsn) Sentry.init(sentryConfig)
 const store = createStore(history)
 
 const rootElement = document.getElementById('app')
@@ -43,9 +48,7 @@ const render = () => {
         <WithLocale>
           <Init>
             <BreadcrumbsProvider>
-              <SideNavigationProvider>
-                <App history={history} />
-              </SideNavigationProvider>
+              <App history={history} />
             </BreadcrumbsProvider>
           </Init>
         </WithLocale>

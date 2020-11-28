@@ -23,8 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetUserStore returns an UserStore on the given db (or transaction).
@@ -38,12 +38,12 @@ type userStore struct {
 
 // selectUserFields selects relevant fields (based on fieldMask) and preloads details if needed.
 func selectUserFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	query = query.Preload("Account")
 	if fieldMask == nil || len(fieldMask.Paths) == 0 {
-		return query.Preload("Attributes").Preload("ProfilePicture")
+		return query.Preload("Attributes").Preload("ProfilePicture").Select([]string{"accounts.uid", "users.*"})
 	}
 	var userColumns []string
 	var notFoundPaths []string
+	userColumns = append(userColumns, "accounts.uid")
 	for _, column := range modelColumns {
 		userColumns = append(userColumns, "users."+column)
 	}
@@ -93,12 +93,38 @@ func (s *userStore) FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers,
 	}
 	query := s.query(ctx, User{}, withUserID(idStrings...))
 	query = selectUserFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "users", `"accounts"."uid"`, "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query.Model(User{}))
 		query = query.Limit(limit).Offset(offset)
 	}
-	var userModels []User
-	query = query.Preload("Account").Find(&userModels)
+	var userModels []userWithUID
+	query = query.Find(&userModels)
+	setTotal(ctx, uint64(len(userModels)))
+	if query.Error != nil {
+		return nil, query.Error
+	}
+	userProtos := make([]*ttnpb.User, len(userModels))
+	for i, userModel := range userModels {
+		userProto := &ttnpb.User{}
+		userModel.toPB(userProto, fieldMask)
+		userProtos[i] = userProto
+	}
+	return userProtos, nil
+}
+
+func (s *userStore) ListAdmins(ctx context.Context, fieldMask *types.FieldMask) ([]*ttnpb.User, error) {
+	defer trace.StartRegion(ctx, "list admins").End()
+
+	query := s.query(ctx, User{}, withUserID()).Where(&User{Admin: true})
+	query = selectUserFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "users", `"accounts"."uid"`, "ASC"))
+	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
+		countTotal(ctx, query.Model(User{}))
+		query = query.Limit(limit).Offset(offset)
+	}
+	var userModels []userWithUID
+	query = query.Find(&userModels)
 	setTotal(ctx, uint64(len(userModels)))
 	if query.Error != nil {
 		return nil, query.Error
@@ -116,8 +142,8 @@ func (s *userStore) GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fiel
 	defer trace.StartRegion(ctx, "get user").End()
 	query := s.query(ctx, User{}, withUserID(id.GetUserID()))
 	query = selectUserFields(ctx, query, fieldMask)
-	var userModel User
-	if err := query.Preload("Account").First(&userModel).Error; err != nil {
+	var userModel userWithUID
+	if err := query.First(&userModel).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, errNotFoundForID(id)
 		}
@@ -132,7 +158,7 @@ func (s *userStore) UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *
 	defer trace.StartRegion(ctx, "update user").End()
 	query := s.query(ctx, User{}, withUserID(usr.GetUserID()))
 	query = selectUserFields(ctx, query, fieldMask)
-	var userModel User
+	var userModel userWithUID
 	if err = query.First(&userModel).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, errNotFoundForID(usr.UserIdentifiers)
@@ -159,7 +185,7 @@ func (s *userStore) UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *
 			columns = append(columns, "profile_picture_id")
 		}
 	}
-	if err = s.updateEntity(ctx, &userModel, columns...); err != nil {
+	if err = s.updateEntity(ctx, &userModel.User, columns...); err != nil {
 		return nil, err
 	}
 	if !reflect.DeepEqual(oldAttributes, userModel.Attributes) {

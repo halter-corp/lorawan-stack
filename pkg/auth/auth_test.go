@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestAuth(t *testing.T) {
@@ -32,6 +32,7 @@ func TestAuth(t *testing.T) {
 	tokenType, id, key, err := auth.SplitToken(token)
 	a.So(err, should.BeNil)
 	a.So(tokenType, should.Equal, auth.APIKey)
+	a.So(tokenType.String(), should.Equal, "APIKey")
 
 	a.So(auth.JoinToken(tokenType, id, key), should.Equal, token)
 

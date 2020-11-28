@@ -28,6 +28,7 @@ $c-input-border = #DFDFDF
 $c-success = #24C833
 $c-error = #FF5C5C
 $c-warning = #FFC464
+$tc-warning = #D18100
 $c-info = $c-active-blue
 
 
@@ -35,7 +36,7 @@ $c-info = $c-active-blue
 
 $tc-black = #000
 $tc-deep-gray = #363636
-$tc-subtle-gray = #AAA
+$tc-subtle-gray = #868686
 
 
 
@@ -80,9 +81,9 @@ $font-family-mono = 'IBM Plex Mono', monospace
 
 // ## Size and spacing
 
-$font-size-base = 14px // will be set on root element, so 1rem = 14px
+$font-size-base = 14px // Will be set on root element, so 1rem = 14px.
 $line-height-base = 1.6786 // ~ 23.5px
-$line-height-margin-factor = .3rem // Used for margin calculations on text elements
+$line-height-margin-factor = .3rem // Used for margin calculations on text elements.
 
 
 // ## Font Scale
@@ -97,13 +98,27 @@ $fs = {
   'xl4': 3.428rem // ~48px
 }
 
-// Corresponding default line heights
+// Corresponding default line heights.
 $lh = {
   's': $line-height-base
   'm': $line-height-base
   'l': 1.6
   'xl': 1.4
   'xxl': 1.2
+}
+
+// Font weights for body copy
+$fw = {
+  'normal': 500,
+  'bold': 600, // Prefer this over `bolder`.
+  'bolder': 800,
+}
+
+// Font weights for headings
+$fwh = {
+  'normal': 400,
+  'bold': 600,
+  'bolder': 800,
 }
 
 
@@ -120,7 +135,7 @@ $br = {
 // BREAKPOINTS
 // ===========
 
-// ## Mind the breakpoints also set in lib/components/init.js for the grid
+// ## Mind the breakpoints also set in lib/components/init.js for the grid.
 
 $bp = {
   'xl': 1600px,
@@ -136,7 +151,7 @@ $bp = {
 // ANIMATIONS
 // ==========
 
-// ## Animation durations, only meant as guidance, usage is not enforced
+// ## Animation durations, only meant as guidance, usage is not enforced.
 
 $ad = {
   'xs': .05s
@@ -150,8 +165,10 @@ $ad = {
 // =========
 
 $zi = {
-  'modal': 999
-  'nav': 10
+  'modal': 2020
+  'mobile-menu': 2010
+  'nav': 2000
+  'overlay': 10
   'dropdown': 9
   'slight': 1
 }
@@ -160,4 +177,10 @@ $zi = {
 // =============
 
 $header-height = 7rem
-
+$header-height-mobile = 4rem
+$footer-height = 3rem
+$sidebar-width = 17rem
+$sidebar-width-minimized = 3rem
+$sidebar-mobile-menu-height = 3rem
+$breadcrumbs-bar-height = 3rem
+$default-input-height = 2.3rem

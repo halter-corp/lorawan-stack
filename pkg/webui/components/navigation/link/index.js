@@ -14,12 +14,12 @@
 
 import React from 'react'
 import classnames from 'classnames'
-
 import { NavLink } from 'react-router-dom'
 
-import Link from '../../link'
+import Link from '@ttn-lw/components/link'
 
-import PropTypes from '../../../lib/prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import style from './link.styl'
 
 const NavigationLink = function({
@@ -56,15 +56,33 @@ const NavigationAnchorLink = function({ className, children, path, ...rest }) {
 }
 
 NavigationLink.propTypes = {
-  /** The path for a link */
-  path: PropTypes.string.isRequired,
-  /** The name of a css class to be applied on the active tab */
   activeClassName: PropTypes.string,
-  /**
-   * Boolean flag identifying whether the path should
-   * be matched exactly
-   */
-  exact: PropTypes.bool.isRequired,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  /** Boolean flag identifying whether the path shoul be matched exactly. */
+  exact: PropTypes.bool,
+  onClick: PropTypes.func,
+  /** The path for a link. */
+  path: PropTypes.string.isRequired,
+  /** The name of a css class to be applied on the active tab. */
 }
 
+NavigationLink.defaultProps = {
+  activeClassName: undefined,
+  children: undefined,
+  className: undefined,
+  exact: false,
+  onClick: () => null,
+}
+
+NavigationAnchorLink.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+  path: PropTypes.string.isRequired,
+}
+
+NavigationAnchorLink.defaultProps = {
+  className: undefined,
+  children: undefined,
+}
 export { NavigationLink as default, NavigationAnchorLink }

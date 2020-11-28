@@ -18,8 +18,8 @@ import (
 	"context"
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/auth/pbkdf2"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/pbkdf2"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // HashValidator is a method to hash and validate a secret.
@@ -86,7 +86,7 @@ func Validate(hashed, plain string) (bool, error) {
 	parts := strings.SplitN(hashed, "$", 2)
 
 	if len(parts) < 2 {
-		return false, errInvalidHash
+		return false, errInvalidHash.New()
 	}
 
 	typ := parts[0]

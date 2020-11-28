@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	. "go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	. "go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestTopLevelFields(t *testing.T) {
@@ -167,6 +167,24 @@ func TestExcludeFields(t *testing.T) {
 	a.So(ExcludeFields(paths, excludePaths...), should.HaveSameElementsDeep, []string{"c", "e", "e.f"})
 }
 
+func TestExcludeSubFields(t *testing.T) {
+	a := assertions.New(t)
+	paths := []string{
+		"a.b.c",
+		"c",
+		"c.d.e",
+		"c.d",
+		"c.d.f.g",
+		"e",
+		"e.f",
+	}
+	excludePaths := []string{
+		"a",
+		"c.d",
+	}
+	a.So(ExcludeSubFields(paths, excludePaths...), should.HaveSameElementsDeep, []string{"c", "c.d", "e", "e.f"})
+}
+
 func TestAllFields(t *testing.T) {
 	a := assertions.New(t)
 	paths := []string{
@@ -187,7 +205,6 @@ func TestAllFields(t *testing.T) {
 	a.So(AddFields(paths, addPaths...), should.HaveSameElementsDeep, []string{
 		"a.b.c",
 		"c",
-		"c.d",
 		"e",
 		"f",
 	})

@@ -18,13 +18,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v7"
 	"github.com/gogo/protobuf/proto"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	ttnredis "go.thethings.network/lorawan-stack/pkg/redis"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 var (
@@ -50,7 +50,7 @@ func applyPubSubFieldMask(dst, src *ttnpb.ApplicationPubSub, paths ...string) (*
 	return dst, dst.SetFields(src, paths...)
 }
 
-// PubSubRegistry is a Redis PubSub registry.
+// PubSubRegistry is a Redis pub/sub registry.
 type PubSubRegistry struct {
 	Redis *ttnredis.Client
 }
@@ -222,7 +222,7 @@ func (r PubSubRegistry) Set(ctx context.Context, ids ttnpb.ApplicationPubSubIden
 					return err
 				}
 				if updated.ApplicationID != ids.ApplicationID || updated.PubSubID != ids.PubSubID {
-					return errInvalidIdentifiers
+					return errInvalidIdentifiers.New()
 				}
 			} else {
 				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationID != stored.ApplicationID {
@@ -257,7 +257,7 @@ func (r PubSubRegistry) Set(ctx context.Context, ids ttnpb.ApplicationPubSubIden
 				return err
 			}
 		}
-		_, err = tx.Pipelined(pipelined)
+		_, err = tx.TxPipelined(pipelined)
 		if err != nil {
 			return err
 		}

@@ -18,7 +18,7 @@ import (
 	"crypto/aes"
 	"encoding/binary"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 var iv = [8]byte{0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6}
@@ -128,7 +128,7 @@ func UnwrapKey(ciphertext, kek []byte) ([]byte, error) {
 
 	// Check for corruption
 	if a != iv {
-		return nil, errCorruptKey
+		return nil, errCorruptKey.New()
 	}
 
 	// Build the result

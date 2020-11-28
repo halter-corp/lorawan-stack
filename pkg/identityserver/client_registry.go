@@ -20,32 +20,41 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/email"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/blacklist"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/emails"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/email"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/blacklist"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/emails"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateClient = events.Define(
 		"client.create", "create OAuth client",
-		ttnpb.RIGHT_CLIENT_ALL,
+		events.WithVisibility(ttnpb.RIGHT_CLIENT_ALL),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateClient = events.Define(
 		"client.update", "update OAuth client",
-		ttnpb.RIGHT_CLIENT_ALL,
+		events.WithVisibility(ttnpb.RIGHT_CLIENT_ALL),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteClient = events.Define(
 		"client.delete", "delete OAuth client",
-		ttnpb.RIGHT_CLIENT_ALL,
+		events.WithVisibility(ttnpb.RIGHT_CLIENT_ALL),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
+
+var errAdminsCreateClients = errors.DefinePermissionDenied("admins_create_clients", "OAuth clients may only be created by admins, or in organizations")
 
 func (is *IdentityServer) createClient(ctx context.Context, req *ttnpb.CreateClientRequest) (cli *ttnpb.Client, err error) {
 	createdByAdmin := is.IsAdmin(ctx)
@@ -53,6 +62,9 @@ func (is *IdentityServer) createClient(ctx context.Context, req *ttnpb.CreateCli
 		return nil, err
 	}
 	if usrIDs := req.Collaborator.GetUserIDs(); usrIDs != nil {
+		if !createdByAdmin && !is.configFromContext(ctx).UserRights.CreateClients {
+			return nil, errAdminsCreateClients
+		}
 		if err = rights.RequireUser(ctx, *usrIDs, ttnpb.RIGHT_USER_CLIENTS_CREATE); err != nil {
 			return nil, err
 		}
@@ -113,7 +125,7 @@ func (is *IdentityServer) createClient(ctx context.Context, req *ttnpb.CreateCli
 
 	cli.Secret = secret // Return the unhashed secret, in case it was generated.
 
-	events.Publish(evtCreateClient(ctx, req.ClientIdentifiers, nil))
+	events.Publish(evtCreateClient.NewWithIdentifiersAndData(ctx, req.ClientIdentifiers, nil))
 	return cli, nil
 }
 
@@ -172,6 +184,7 @@ func (is *IdentityServer) listClients(ctx context.Context, req *ttnpb.ListClient
 			return nil, err
 		}
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	paginateCtx := store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -198,16 +211,18 @@ func (is *IdentityServer) listClients(ctx context.Context, req *ttnpb.ListClient
 		if err != nil {
 			return err
 		}
-		for i, cli := range clis.Clients {
-			if rights.RequireClient(ctx, cli.ClientIdentifiers, ttnpb.RIGHT_CLIENT_ALL) != nil {
-				clis.Clients[i] = cli.PublicSafe()
-			}
-		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	for i, cli := range clis.Clients {
+		if rights.RequireClient(ctx, cli.ClientIdentifiers, ttnpb.RIGHT_CLIENT_ALL) != nil {
+			clis.Clients[i] = cli.PublicSafe()
+		}
+	}
+
 	return clis, nil
 }
 
@@ -254,7 +269,7 @@ func (is *IdentityServer) updateClient(ctx context.Context, req *ttnpb.UpdateCli
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateClient(ctx, req.ClientIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateClient.NewWithIdentifiersAndData(ctx, req.ClientIdentifiers, req.FieldMask.Paths))
 	if ttnpb.HasAnyField(req.FieldMask.Paths, "state") {
 		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
 			data.SetEntity(req.EntityIdentifiers())
@@ -277,7 +292,7 @@ func (is *IdentityServer) deleteClient(ctx context.Context, ids *ttnpb.ClientIde
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeleteClient(ctx, ids, nil))
+	events.Publish(evtDeleteClient.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
 }
 

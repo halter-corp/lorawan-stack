@@ -16,34 +16,89 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 
-import PropTypes from '../../../lib/prop-types'
-import sharedMessages from '../../../lib/shared-messages'
-import SubmitBar from '../../../components/submit-bar'
-import ModalButton from '../../../components/button/modal-button'
-import toast from '../../../components/toast'
-import Message from '../../../lib/components/message'
-import FormField from '../../../components/form/field'
-import FormSubmit from '../../../components/form/submit'
-import SubmitButton from '../../../components/submit-button'
-import Input from '../../../components/input'
-import RightsGroup from '../../../console/components/rights-group'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import ModalButton from '@ttn-lw/components/button/modal-button'
+import toast from '@ttn-lw/components/toast'
+import FormField from '@ttn-lw/components/form/field'
+import FormSubmit from '@ttn-lw/components/form/submit'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import Input from '@ttn-lw/components/input'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import RightsGroup from '@console/components/rights-group'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import ApiKeyForm from './form'
 import validationSchema from './validation-schema'
 
 const m = defineMessages({
-  deleteKey: 'Delete Key',
+  deleteKey: 'Delete key',
   modalWarning:
-    'Are you sure you want to delete the {keyName} API Key? Deleting an API Key cannot be undone!',
-  updateSuccess: 'Successfully updated API Key',
-  deleteSuccess: 'Successfully deleted API Key',
+    'Are you sure you want to delete the {keyName} API key? Deleting an API key cannot be undone.',
+  updateSuccess: 'API key updated',
+  deleteSuccess: 'API key deleted',
 })
 
-@bind
 class EditForm extends React.Component {
+  static propTypes = {
+    /** The API key to be edited. */
+    apiKey: PropTypes.apiKey,
+    /**
+     * Called on key deletion. Receives the identifier of the API key as an
+     * argument.
+     */
+    onDelete: PropTypes.func.isRequired,
+    /**
+     * Called after unsuccessful deletion of the API key. Receives the error
+     * object as an argument.
+     */
+    onDeleteFailure: PropTypes.func,
+    /**
+     * Called after successful deletion of the API key. Receives the identifier
+     * of the API key as an argument.
+     */
+    onDeleteSuccess: PropTypes.func.isRequired,
+    /**
+     * Called on form submission. Receives the updated key object as an
+     * argument.
+     */
+    onEdit: PropTypes.func.isRequired,
+    /**
+     * Called after unsuccessful update of the API key. Receives the error
+     * object as an argument.
+     */
+    onEditFailure: PropTypes.func,
+    /**
+     * Called after successful update of the API key. Receives the key object as
+     * an argument.
+     */
+    onEditSuccess: PropTypes.func,
+    /**
+     * The rights that imply all other rights, e.g. 'RIGHT_APPLICATION_ALL',
+     * 'RIGHT_ALL'.
+     */
+    pseudoRights: PropTypes.arrayOf(PropTypes.string),
+    /** The list of rights. */
+    rights: PropTypes.arrayOf(PropTypes.string),
+  }
+
   state = {
     error: null,
   }
 
+  static defaultProps = {
+    apiKey: undefined,
+    rights: [],
+    onEditFailure: () => null,
+    onEditSuccess: () => null,
+    onDeleteFailure: () => null,
+    pseudoRights: [],
+  }
+
+  @bind
   async handleEdit(values) {
     const { name, rights } = values
     const { onEdit } = this.props
@@ -51,6 +106,7 @@ class EditForm extends React.Component {
     return await onEdit({ name, rights })
   }
 
+  @bind
   async handleEditSuccess(key) {
     const { onEditSuccess } = this.props
 
@@ -61,6 +117,7 @@ class EditForm extends React.Component {
     await onEditSuccess(key)
   }
 
+  @bind
   async handleDelete() {
     const { onDelete, apiKey } = this.props
 
@@ -74,6 +131,7 @@ class EditForm extends React.Component {
     }
   }
 
+  @bind
   async handleDeleteSuccess(id) {
     const { onDeleteSuccess } = this.props
 
@@ -84,6 +142,7 @@ class EditForm extends React.Component {
     await onDeleteSuccess(id)
   }
 
+  @bind
   async handleDeleteFailure(error) {
     const { onDeleteFailure } = this.props
 
@@ -154,60 +213,6 @@ class EditForm extends React.Component {
       </ApiKeyForm>
     )
   }
-}
-
-EditForm.propTypes = {
-  /** The API key to be edited */
-  apiKey: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    rights: PropTypes.arrayOf(PropTypes.string).isRequired,
-    name: PropTypes.string,
-  }),
-  /** The list of rights */
-  rights: PropTypes.arrayOf(PropTypes.string),
-  /**
-   * The rights that imply all other rights, e.g. 'RIGHT_APPLICATION_ALL', 'RIGHT_ALL'
-   */
-  pseudoRights: PropTypes.arrayOf(PropTypes.string),
-  /**
-   * Called on form submission.
-   * Receives the updated key object as an argument.
-   */
-  onEdit: PropTypes.func.isRequired,
-  /**
-   * Called after successful update of the API key.
-   * Receives the key object as an argument.
-   */
-  onEditSuccess: PropTypes.func,
-  /**
-   * Called after unsuccessful update of the API key.
-   * Receives the error object as an argument.
-   */
-  onEditFailure: PropTypes.func,
-  /**
-   * Called on key deletion.
-   * Receives the identifier of the API key as an argument.
-   */
-  onDelete: PropTypes.func.isRequired,
-  /**
-   * Called after successful deletion of the API key.
-   * Receives the identifier of the API key as an argument.
-   */
-  onDeleteSuccess: PropTypes.func,
-  /**
-   * Called after unsuccessful deletion of the API key.
-   * Receives the error object as an argument.
-   */
-  onDeleteFailure: PropTypes.func,
-}
-
-EditForm.defaultProps = {
-  rights: [],
-  onEditSuccess: () => null,
-  onEditFailure: () => null,
-  onDeleteSuccess: () => null,
-  onDeleteFailure: () => null,
-  pseudoRights: [],
 }
 
 export default EditForm

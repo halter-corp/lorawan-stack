@@ -19,8 +19,8 @@ import (
 	"math"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Compute computes the time-on-air for the given payload size and the TxSettings.
@@ -37,18 +37,18 @@ func Compute(payloadSize int, settings ttnpb.TxSettings) (d time.Duration, err e
 }
 
 var (
-	errBandwidth       = errors.DefineInvalidArgument("bandwidth", "invalid bandwidth")
-	errSpreadingFactor = errors.DefineInvalidArgument("spreading_factor", "invalid spreading factor")
-	errCodingRate      = errors.DefineInvalidArgument("coding_rate", "invalid coding rate")
-	errFrequency       = errors.DefineInvalidArgument("frequency", "invalid frequency")
+	errBandwidth       = errors.DefineInvalidArgument("bandwidth", "invalid bandwidth `{bandwidth}`")
+	errSpreadingFactor = errors.DefineInvalidArgument("spreading_factor", "invalid spreading factor `{spreading_factor}`")
+	errCodingRate      = errors.DefineInvalidArgument("coding_rate", "invalid coding rate `{coding_rate}`")
+	errFrequency       = errors.DefineInvalidArgument("frequency", "invalid frequency `{frequency}`")
 )
 
 func computeLoRa(payloadSize int, frequency uint64, spreadingFactor uint8, bandwidth uint32, codingRate string, crc bool) (time.Duration, error) {
 	if spreadingFactor < 5 || spreadingFactor > 12 {
-		return 0, errSpreadingFactor
+		return 0, errSpreadingFactor.WithAttributes("spreading_factor", spreadingFactor)
 	}
 	if bandwidth == 0 {
-		return 0, errBandwidth
+		return 0, errBandwidth.WithAttributes("bandwidth", bandwidth)
 	}
 
 	switch {
@@ -65,7 +65,7 @@ func computeLoRa(payloadSize int, frequency uint64, spreadingFactor uint8, bandw
 		case "4/8":
 			cr = 4
 		default:
-			return 0, errCodingRate
+			return 0, errCodingRate.WithAttributes("coding_rate", codingRate)
 		}
 		var de float64
 		if bandwidth == 125000 && (spreadingFactor == 11 || spreadingFactor == 12) {
@@ -80,8 +80,53 @@ func computeLoRa(payloadSize int, frequency uint64, spreadingFactor uint8, bandw
 		timeOnAir := (payloadNb + 12.25) * tSym * 1000000
 		return time.Duration(timeOnAir), nil
 
+	case frequency >= 2400000000 && frequency < 2500000000:
+		// See Semtech SX1280/SX1281/SX1282 Data Sheet Rev 3.0, 7.4.4
+		nBitCRC := 0.0
+		if crc {
+			nBitCRC = 16.0
+		}
+		sf := float64(spreadingFactor)
+		bw := float64(bandwidth) / 1000
+		var cr float64
+		switch codingRate {
+		case "4/5LI":
+			cr = 5
+		case "4/6LI":
+			cr = 6
+		case "4/7LI", "4/8LI": // 4/7LI is wrongly defined; it is in fact 4/8LI.
+			cr = 8
+		default:
+			return 0, errCodingRate.New()
+		}
+		var nBitHeaderSpace float64
+		var denominator float64
+		nPreamble := 8.0
+		if spreadingFactor < 7 {
+			nBitHeaderSpace = math.Floor((sf-5)/2) * 8
+			nPreamble += 6.25
+			denominator = 4 * sf
+		} else if spreadingFactor >= 7 && spreadingFactor <= 10 {
+			nBitHeaderSpace = math.Floor((sf-7)/2) * 8
+			nPreamble += 4.25
+			denominator = 4 * sf
+		} else {
+			nBitHeaderSpace = math.Floor((sf-7)/2) * 8
+			nPreamble += 4.25
+			denominator = 4 * (sf - 2)
+		}
+		var nSymbol float64
+		nBytePayload := float64(payloadSize)
+		if 8.0*nBytePayload+nBitCRC > nBitHeaderSpace {
+			nSymbol = nPreamble + 8.0 + math.Ceil(math.Max(0, 8*nBytePayload+nBitCRC-math.Min(nBitHeaderSpace, 8.0*nBytePayload))/denominator*cr)
+		} else {
+			nSymbol = nPreamble + 8.0 + math.Ceil(math.Max(0, 8*nBytePayload+nBitCRC-nBitHeaderSpace)/denominator*cr)
+		}
+		timeOnAir := math.Pow(2, sf) / bw * nSymbol * 1000000
+		return time.Duration(timeOnAir), nil
+
 	default:
-		return 0, errFrequency
+		return 0, errFrequency.WithAttributes("frequency", frequency)
 	}
 }
 
@@ -92,6 +137,6 @@ func computeFSK(payloadSize int, frequency uint64, bitRate uint32, crc bool) (ti
 		return time.Duration(timeOnAir), nil
 
 	default:
-		return 0, errFrequency
+		return 0, errFrequency.WithAttributes("frequency", frequency)
 	}
 }

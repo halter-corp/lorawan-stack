@@ -13,42 +13,32 @@
 // limitations under the License.
 
 import React, { Component } from 'react'
+import { defineMessages } from 'react-intl'
 import { connect } from 'react-redux'
 import { push } from 'connected-react-router'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import debounce from '../../../lib/debounce'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import sharedMessages from '../../../lib/shared-messages'
-import Tabular from '../../../components/table'
-import Input from '../../../components/input'
-import Button from '../../../components/button'
-import Tabs from '../../../components/tabs'
+import Tabular from '@ttn-lw/components/table'
+import Input from '@ttn-lw/components/input'
+import Button from '@ttn-lw/components/button'
+import Tabs from '@ttn-lw/components/tabs'
+import Overlay from '@ttn-lw/components/overlay'
+import ErrorNotification from '@ttn-lw/components/error-notification'
+
+import debounce from '@ttn-lw/lib/debounce'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import style from './fetch-table.styl'
 
 const DEFAULT_PAGE = 1
-const DEFAULT_TAB = 'all'
-const ALLOWED_TABS = ['all']
-const ALLOWED_ORDERS = ['asc', 'desc', undefined]
 
-const filterValidator = function(filters) {
-  if (!ALLOWED_TABS.includes(filters.tab)) {
-    filters.tab = DEFAULT_TAB
-  }
-
-  if (!ALLOWED_ORDERS.includes(filters.order)) {
+const filterValidator = filters => {
+  if (typeof filters.order === 'string' && filters.order.match(/-?[a-z0-9]/) === null) {
     filters.order = undefined
-    filters.orderBy = undefined
-  }
-
-  if (
-    (Boolean(filters.order) && !Boolean(filters.orderBy)) ||
-    (!Boolean(filters.order) && Boolean(filters.orderBy))
-  ) {
-    filters.order = undefined
-    filters.orderBy = undefined
   }
 
   if (!Boolean(filters.page) || filters.page < 0) {
@@ -58,7 +48,21 @@ const filterValidator = function(filters) {
   return filters
 }
 
-@connect(function(state, props) {
+const m = defineMessages({
+  errorMessage: `There was an error and the list of {entity, select,
+    applications {applications}
+    organizations {organizations}
+    keys {API keys}
+    collaborators {collaborators}
+    devices {end devices}
+    gateways {gateways}
+    users {users}
+    webhooks {webhooks}
+    other {entities}
+  } could not be displayed`,
+})
+
+@connect((state, props) => {
   const base = props.baseDataSelector(state, props)
 
   return {
@@ -68,19 +72,83 @@ const filterValidator = function(filters) {
     fetchingSearch: base.fetchingSearch,
     pathname: state.router.location.pathname,
     mayAdd: 'mayAdd' in base ? base.mayAdd : true,
+    error: base.error,
   }
 })
-@bind
 class FetchTable extends Component {
+  static propTypes = {
+    actionItems: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]),
+    addMessage: PropTypes.message,
+    dispatch: PropTypes.func.isRequired,
+    entity: PropTypes.string.isRequired,
+    error: PropTypes.error,
+    fetching: PropTypes.bool,
+    fetchingSearch: PropTypes.bool,
+    filterValidator: PropTypes.func,
+    getItemPathPrefix: PropTypes.func,
+    getItemsAction: PropTypes.func.isRequired,
+    handlesPagination: PropTypes.bool,
+    headers: PropTypes.arrayOf(
+      PropTypes.shape({
+        displayName: PropTypes.message.isRequired,
+        getValue: PropTypes.func,
+        name: PropTypes.string,
+        render: PropTypes.func,
+        centered: PropTypes.bool,
+        sortable: PropTypes.bool,
+        width: PropTypes.number,
+      }),
+    ),
+    itemPathPrefix: PropTypes.string,
+    items: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string, ids: PropTypes.shape({}) })),
+    mayAdd: PropTypes.bool,
+    pageSize: PropTypes.number,
+    pathname: PropTypes.string.isRequired,
+    searchItemsAction: PropTypes.func,
+    searchable: PropTypes.bool,
+    tableTitle: PropTypes.message,
+    tabs: PropTypes.arrayOf(
+      PropTypes.shape({
+        title: PropTypes.message.isRequired,
+        name: PropTypes.string.isRequired,
+        icon: PropTypes.string,
+        disabled: PropTypes.bool,
+      }),
+    ),
+    totalCount: PropTypes.number,
+  }
+
+  static defaultProps = {
+    getItemPathPrefix: undefined,
+    searchItemsAction: undefined,
+    pageSize: PAGE_SIZES.REGULAR,
+    filterValidator,
+    itemPathPrefix: '',
+    mayAdd: false,
+    searchable: false,
+    handlesPagination: false,
+    fetching: false,
+    totalCount: 0,
+    items: [],
+    headers: [],
+    fetchingSearch: false,
+    addMessage: undefined,
+    tableTitle: undefined,
+    tabs: [],
+    actionItems: null,
+    error: undefined,
+  }
+
   constructor(props) {
     super(props)
+
+    const { tabs } = props
 
     this.state = {
       query: '',
       page: 1,
-      tab: 'all',
+      tab: tabs.length > 0 ? tabs[0].name : undefined,
       order: undefined,
-      orderBy: undefined,
     }
 
     const { debouncedFunction, cancel } = debounce(this.requestSearch, 350)
@@ -97,18 +165,24 @@ class FetchTable extends Component {
     this.debounceCancel()
   }
 
+  @bind
   fetchItems() {
     const { dispatch, pageSize, searchItemsAction, getItemsAction } = this.props
 
     const filters = { ...this.state, limit: pageSize }
 
     if (filters.query) {
-      dispatch(searchItemsAction(filters))
+      if (searchItemsAction) {
+        dispatch(searchItemsAction(filters))
+      } else {
+        dispatch(getItemsAction(filters))
+      }
     } else {
       dispatch(getItemsAction(filters))
     }
   }
 
+  @bind
   async onPageChange(page) {
     await this.setState(
       this.props.filterValidator({
@@ -120,6 +194,7 @@ class FetchTable extends Component {
     this.fetchItems()
   }
 
+  @bind
   async requestSearch() {
     await this.setState(
       this.props.filterValidator({
@@ -131,6 +206,7 @@ class FetchTable extends Component {
     this.fetchItems()
   }
 
+  @bind
   async onQueryChange(query) {
     await this.setState(
       this.props.filterValidator({
@@ -142,28 +218,34 @@ class FetchTable extends Component {
     this.debouncedRequestSearch()
   }
 
+  @bind
   async onOrderChange(order, orderBy) {
+    const filterOrder = `${order === 'desc' ? '-' : ''}${orderBy}`
+
     await this.setState(
       this.props.filterValidator({
         ...this.state,
-        order,
-        orderBy,
+        order: filterOrder,
       }),
     )
 
     this.fetchItems()
   }
 
+  @bind
   async onTabChange(tab) {
     await this.setState(
       this.props.filterValidator({
         ...this.state,
+        query: '',
+        page: 1,
         tab,
       }),
     )
     this.fetchItems()
   }
 
+  @bind
   onItemClick(index) {
     const {
       dispatch,
@@ -179,7 +261,7 @@ class FetchTable extends Component {
 
     let itemIndex = index
     if (handlesPagination) {
-      const pageNr = page - 1 // switch to 0-based pagination
+      const pageNr = page - 1 // Switch to 0-based pagination.
       itemIndex += pageSize * pageNr
     }
 
@@ -212,29 +294,39 @@ class FetchTable extends Component {
       itemPathPrefix,
       pathname,
       actionItems,
+      entity,
+      error,
     } = this.props
-    const { page, query, tab } = this.state
+    const { page, query, tab, order } = this.state
+    let orderDirection, orderBy
 
-    const buttonClassNames = classnames(style.filters, {
-      [style.topRule]: Boolean(tabs || tableTitle),
+    // Parse order string.
+    if (typeof order === 'string') {
+      orderDirection = typeof order === 'string' && order[0] === '-' ? 'desc' : 'asc'
+      orderBy = typeof order === 'string' && order[0] === '-' ? order.substr(1) : order
+    }
+
+    const filtersCls = classnames(style.filters, {
+      [style.topRule]: tabs.length > 0,
     })
 
     return (
       <div>
-        <div className={buttonClassNames}>
+        <div className={filtersCls}>
           <div className={style.filtersLeft}>
-            {tabs && (
+            {tabs.length > 0 ? (
               <Tabs
                 active={tab}
                 className={style.tabs}
                 tabs={tabs}
                 onTabChange={this.onTabChange}
               />
-            )}
-            {tableTitle && (
-              <div className={style.tableTitle}>
-                {tableTitle} ({totalCount})
-              </div>
+            ) : (
+              tableTitle && (
+                <div className={style.tableTitle}>
+                  {tableTitle} ({totalCount})
+                </div>
+              )
             )}
           </div>
           <div className={style.filtersRight}>
@@ -244,6 +336,8 @@ class FetchTable extends Component {
                 icon="search"
                 loading={fetchingSearch}
                 onChange={this.onQueryChange}
+                placeholder={sharedMessages.searchById}
+                className={style.searchBar}
               />
             )}
             {actionItems}
@@ -257,28 +351,33 @@ class FetchTable extends Component {
             )}
           </div>
         </div>
-        <Tabular
-          paginated
-          page={page}
-          totalCount={totalCount}
-          pageSize={pageSize}
-          onRowClick={this.onItemClick}
-          onPageChange={this.onPageChange}
-          loading={fetching}
-          headers={headers}
-          data={items}
-          emptyMessage={sharedMessages.noMatch}
-          handlesPagination={handlesPagination}
-        />
+        <Overlay visible={Boolean(error)}>
+          {Boolean(error) && (
+            <ErrorNotification
+              className={style.errorMessage}
+              content={{ ...m.errorMessage, values: { entity } }}
+            />
+          )}
+          <Tabular
+            paginated
+            page={page}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            onRowClick={this.onItemClick}
+            onPageChange={this.onPageChange}
+            loading={fetching}
+            headers={headers}
+            data={items}
+            emptyMessage={sharedMessages.noMatch}
+            handlesPagination={handlesPagination}
+            onSortRequest={this.onOrderChange}
+            order={orderDirection}
+            orderBy={orderBy}
+          />
+        </Overlay>
       </div>
     )
   }
-}
-
-FetchTable.defaultProps = {
-  pageSize: 20,
-  filterValidator,
-  itemPathPrefix: '',
 }
 
 export default FetchTable

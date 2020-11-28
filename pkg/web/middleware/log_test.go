@@ -22,8 +22,8 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func errorHandler(c echo.Context) error {
@@ -48,8 +48,7 @@ func invalidHandler(c echo.Context) error {
 }
 
 func TestLogging(t *testing.T) {
-
-	logger, _ := log.NewLogger(log.WithHandler(log.NoopHandler))
+	logger := log.NewLogger(log.WithHandler(log.NoopHandler))
 
 	messages := []log.Entry{}
 

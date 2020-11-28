@@ -17,8 +17,8 @@ package ttnpb
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // IsZero returns true if all identifiers have zero-values.
@@ -37,7 +37,7 @@ func (ids EndDeviceIdentifiers) IsZero() bool {
 		ids.GetApplicationID() == "" &&
 		(ids.DevAddr == nil || ids.DevAddr.IsZero()) &&
 		(ids.DevEUI == nil || ids.DevEUI.IsZero()) &&
-		(ids.JoinEUI == nil || ids.JoinEUI.IsZero())
+		ids.JoinEUI == nil
 }
 
 // IsZero returns true if all identifiers have zero-values.
@@ -239,4 +239,53 @@ func (ids *UserIdentifiers) ValidateContext(context.Context) error {
 		return errIdentifiers.WithCause(err)
 	}
 	return nil
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *ApplicationIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["application_id"] = ids.ApplicationID
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *ClientIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["client_id"] = ids.ClientID
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *EndDeviceIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["application_id"] = ids.ApplicationID
+	m["device_id"] = ids.DeviceID
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *GatewayIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["gateway_id"] = ids.GatewayID
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *OrganizationIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["organization_id"] = ids.OrganizationID
+}
+
+// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
+func (ids *UserIdentifiers) ExtractRequestFields(m map[string]interface{}) {
+	if ids == nil {
+		return
+	}
+	m["user_id"] = ids.UserID
 }

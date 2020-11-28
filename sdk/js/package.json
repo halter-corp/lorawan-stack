@@ -1,8 +1,8 @@
 {
   "name": "ttn-lw",
-  "version": "3.3.2",
+  "version": "3.10.2",
   "description": "The Things Stack for LoRaWAN JavaScript SDK",
-  "url": "https://github.com/TheThingsNetwork/lorawan-stack/tree/master/sdk/js",
+  "url": "https://github.com/TheThingsNetwork/lorawan-stack/tree/default/sdk/js",
   "main": "dist/index.js",
   "browser": {
     "./dist/api/stream/stream-node.js": "./dist/api/stream/stream.js",
@@ -24,13 +24,21 @@
     "@babel/core": "^7.7.2",
     "@babel/plugin-transform-runtime": "^7.6.2",
     "@babel/plugin-transform-strict-mode": "^7.2.0",
-    "@babel/preset-env": "^7.7.1",
+    "@babel/preset-env": "^7.11.0",
     "eslint": "^6.2.2",
-    "jest": "^24.9.0",
+    "jest": "^25.2.7",
     "prettier": "^1.18.2"
   },
   "eslintConfig": {
     "extends": "../../config/eslintrc.yaml",
+    "settings": {
+      "import/ignore": [
+        "node_modules"
+      ],
+      "import/resolver": {
+        "webpack": "../../config/webpack.config.babel.js"
+      }
+    },
     "rules": {
       "import/named": "off",
       "no-use-before-define": [

@@ -17,9 +17,9 @@ package rights
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"google.golang.org/grpc"
 )
 
@@ -113,7 +113,7 @@ var errNoISConn = errors.DefineUnavailable("no_identity_server_conn", "no connec
 func (f accessFetcher) ApplicationRights(ctx context.Context, appID ttnpb.ApplicationIdentifiers) (*ttnpb.Rights, error) {
 	cc := f.getConn(ctx)
 	if cc == nil {
-		return nil, errNoISConn
+		return nil, errNoISConn.New()
 	}
 	callOpt, err := rpcmetadata.WithForwardedAuth(ctx, f.allowInsecure)
 	if err != nil {
@@ -130,7 +130,7 @@ func (f accessFetcher) ApplicationRights(ctx context.Context, appID ttnpb.Applic
 func (f accessFetcher) ClientRights(ctx context.Context, clientID ttnpb.ClientIdentifiers) (*ttnpb.Rights, error) {
 	cc := f.getConn(ctx)
 	if cc == nil {
-		return nil, errNoISConn
+		return nil, errNoISConn.New()
 	}
 	callOpt, err := rpcmetadata.WithForwardedAuth(ctx, f.allowInsecure)
 	if err != nil {
@@ -147,7 +147,7 @@ func (f accessFetcher) ClientRights(ctx context.Context, clientID ttnpb.ClientId
 func (f accessFetcher) GatewayRights(ctx context.Context, gtwID ttnpb.GatewayIdentifiers) (*ttnpb.Rights, error) {
 	cc := f.getConn(ctx)
 	if cc == nil {
-		return nil, errNoISConn
+		return nil, errNoISConn.New()
 	}
 	callOpt, err := rpcmetadata.WithForwardedAuth(ctx, f.allowInsecure)
 	if err != nil {
@@ -164,7 +164,7 @@ func (f accessFetcher) GatewayRights(ctx context.Context, gtwID ttnpb.GatewayIde
 func (f accessFetcher) OrganizationRights(ctx context.Context, orgID ttnpb.OrganizationIdentifiers) (*ttnpb.Rights, error) {
 	cc := f.getConn(ctx)
 	if cc == nil {
-		return nil, errNoISConn
+		return nil, errNoISConn.New()
 	}
 	callOpt, err := rpcmetadata.WithForwardedAuth(ctx, f.allowInsecure)
 	if err != nil {
@@ -181,7 +181,7 @@ func (f accessFetcher) OrganizationRights(ctx context.Context, orgID ttnpb.Organ
 func (f accessFetcher) UserRights(ctx context.Context, userID ttnpb.UserIdentifiers) (*ttnpb.Rights, error) {
 	cc := f.getConn(ctx)
 	if cc == nil {
-		return nil, errNoISConn
+		return nil, errNoISConn.New()
 	}
 	callOpt, err := rpcmetadata.WithForwardedAuth(ctx, f.allowInsecure)
 	if err != nil {

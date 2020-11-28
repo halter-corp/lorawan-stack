@@ -18,16 +18,19 @@ import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 import { push } from 'connected-react-router'
 
-import PageTitle from '../../../components/page-title'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import PubsubForm from '../../components/pubsub-form'
+import api from '@console/api'
 
-import sharedMessages from '../../../lib/shared-messages'
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import PubsubForm from '@console/components/pubsub-form'
 
-import api from '../../api'
+import { isNotFoundError } from '@ttn-lw/lib/errors/utils'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 @connect(
   state => ({
@@ -40,21 +43,39 @@ import api from '../../api'
 @withBreadcrumb('apps.single.integrations.add', function(props) {
   const { appId } = props
   return (
-    <Breadcrumb
-      path={`/applications/${appId}/integrations/add`}
-      icon="add"
-      content={sharedMessages.add}
-    />
+    <Breadcrumb path={`/applications/${appId}/integrations/add`} content={sharedMessages.add} />
   )
 })
-@bind
 export default class ApplicationPubsubAdd extends Component {
+  static propTypes = {
+    appId: PropTypes.string.isRequired,
+    navigateToList: PropTypes.func.isRequired,
+  }
+
+  @bind
+  async existCheck(pubsubId) {
+    const { appId } = this.props
+
+    try {
+      await api.application.pubsubs.get(appId, pubsubId, [])
+      return true
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return false
+      }
+
+      throw error
+    }
+  }
+
+  @bind
   async handleSubmit(pubsub) {
     const { appId } = this.props
 
     await api.application.pubsubs.create(appId, pubsub)
   }
 
+  @bind
   handleSubmitSuccess() {
     const { navigateToList, appId } = this.props
 
@@ -74,6 +95,7 @@ export default class ApplicationPubsubAdd extends Component {
               update={false}
               onSubmit={this.handleSubmit}
               onSubmitSuccess={this.handleSubmitSuccess}
+              existCheck={this.existCheck}
             />
           </Col>
         </Row>

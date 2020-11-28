@@ -13,35 +13,53 @@
 // limitations under the License.
 
 import React, { Component } from 'react'
-import * as Yup from 'yup'
 import bind from 'autobind-decorator'
 
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
-import { id as collaboratorIdRegexp } from '../../lib/regexp'
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import Radio from '@ttn-lw/components/radio-button'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import toast from '@ttn-lw/components/toast'
+import ModalButton from '@ttn-lw/components/button/modal-button'
 
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import Radio from '../../../components/radio-button'
-import SubmitBar from '../../../components/submit-bar'
-import SubmitButton from '../../../components/submit-button'
-import Message from '../../../lib/components/message'
-import toast from '../../../components/toast'
-import ModalButton from '../../../components/button/modal-button'
-import RightsGroup from '../../components/rights-group'
+import Message from '@ttn-lw/lib/components/message'
+
+import RightsGroup from '@console/components/rights-group'
+
+import Yup from '@ttn-lw/lib/yup'
+import { getCollaboratorId } from '@ttn-lw/lib/selectors/id'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { id as collaboratorIdRegexp } from '@console/lib/regexp'
 
 const validationSchema = Yup.object().shape({
   collaborator_id: Yup.string()
-    .matches(collaboratorIdRegexp, sharedMessages.validateAlphanum)
+    .matches(collaboratorIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
     .required(sharedMessages.validateRequired),
   collaborator_type: Yup.string().required(sharedMessages.validateRequired),
   rights: Yup.array().min(1, sharedMessages.validateRights),
 })
 
-@bind
+const isUser = collaborator => collaborator.ids && 'user_ids' in collaborator.ids
+
 export default class CollaboratorForm extends Component {
+  static propTypes = {
+    collaborator: PropTypes.collaborator,
+    error: PropTypes.error,
+    onDelete: PropTypes.func,
+    onDeleteFailure: PropTypes.func,
+    onDeleteSuccess: PropTypes.func,
+    onSubmit: PropTypes.func.isRequired,
+    onSubmitFailure: PropTypes.func,
+    onSubmitSuccess: PropTypes.func.isRequired,
+    pseudoRights: PropTypes.rights,
+    rights: PropTypes.rights.isRequired,
+    update: PropTypes.bool,
+  }
+
   static defaultProps = {
-    onSubmitSuccess: () => null,
     onSubmitFailure: () => null,
     onDelete: () => null,
     onDeleteSuccess: () => null,
@@ -52,24 +70,11 @@ export default class CollaboratorForm extends Component {
     update: false,
   }
 
-  static propTypes = {
-    collaborator: PropTypes.collaborator,
-    error: PropTypes.error,
-    onDelete: PropTypes.func,
-    onDeleteFailure: PropTypes.func,
-    onDeleteSuccess: PropTypes.func,
-    onSubmit: PropTypes.func.isRequired,
-    onSubmitFailure: PropTypes.func,
-    onSubmitSuccess: PropTypes.func,
-    rights: PropTypes.rights.isRequired,
-    pseudoRights: PropTypes.rights,
-    update: PropTypes.bool,
-  }
-
   state = {
     error: '',
   }
 
+  @bind
   async handleSubmit(values, { resetForm, setSubmitting }) {
     const { collaborator_id, collaborator_type, rights } = values
     const { onSubmit, onSubmitSuccess, onSubmitFailure } = this.props
@@ -89,7 +94,7 @@ export default class CollaboratorForm extends Component {
 
     try {
       await onSubmit(collaborator)
-      resetForm(values)
+      resetForm({ values })
       onSubmitSuccess()
     } catch (error) {
       setSubmitting(false)
@@ -98,13 +103,14 @@ export default class CollaboratorForm extends Component {
     }
   }
 
+  @bind
   async handleDelete() {
     const { collaborator, onDelete, onDeleteSuccess, onDeleteFailure } = this.props
-    const collaborator_type = collaborator.isUser ? 'user' : 'organization'
+    const collaborator_type = isUser(collaborator) ? 'user' : 'organization'
 
     const collaborator_ids = {
       [`${collaborator_type}_ids`]: {
-        [`${collaborator_type}_id`]: collaborator.id,
+        [`${collaborator_type}_id`]: getCollaboratorId(collaborator),
       },
     }
     const updatedCollaborator = {
@@ -124,6 +130,7 @@ export default class CollaboratorForm extends Component {
     }
   }
 
+  @bind
   computeInitialValues() {
     const { collaborator, pseudoRights } = this.props
 
@@ -136,8 +143,8 @@ export default class CollaboratorForm extends Component {
     }
 
     return {
-      collaborator_id: collaborator.id,
-      collaborator_type: collaborator.isUser ? 'user' : 'organization',
+      collaborator_id: getCollaboratorId(collaborator),
+      collaborator_type: isUser(collaborator) ? 'user' : 'organization',
       rights: [...collaborator.rights],
     }
   }
@@ -201,7 +208,7 @@ export default class CollaboratorForm extends Component {
               message={sharedMessages.removeCollaborator}
               modalData={{
                 message: {
-                  values: { collaboratorId: collaborator.id },
+                  values: { collaboratorId: getCollaboratorId(collaborator) },
                   ...sharedMessages.collaboratorModalWarning,
                 },
               }}

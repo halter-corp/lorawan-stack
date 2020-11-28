@@ -20,19 +20,23 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	ttntypes "go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	ttntypes "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 var (
 	selectGatewayFlags     = util.FieldMaskFlags(&ttnpb.Gateway{})
 	setGatewayFlags        = util.FieldFlags(&ttnpb.Gateway{})
 	setGatewayAntennaFlags = util.FieldFlags(&ttnpb.GatewayAntenna{}, "antenna")
+
+	selectAllGatewayFlags = util.SelectAllFlagSet("gateway")
+
+	gatewayFlattenPaths = []string{"lbs_lns_secret"}
 )
 
 func gatewayIDFlags() *pflag.FlagSet {
@@ -81,6 +85,7 @@ var (
 	}
 	gatewaysListFrequencyPlans = &cobra.Command{
 		Use:               "list-frequency-plans",
+		Aliases:           []string{"get-frequency-plans", "frequency-plans", "fps"},
 		Short:             "List available frequency plans for gateways",
 		PersistentPreRunE: preRun(),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -104,6 +109,7 @@ var (
 		Short:   "List gateways",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectGatewayFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.GatewayRegistry/List"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -115,6 +121,7 @@ var (
 				FieldMask:    types.FieldMask{Paths: paths},
 				Limit:        limit,
 				Page:         page,
+				Order:        getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -129,6 +136,7 @@ var (
 		Short: "Search for gateways",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectGatewayFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchGateways"])
 
 			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
 			req.FieldMask.Paths = paths
@@ -156,6 +164,9 @@ var (
 				return err
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectGatewayFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.GatewayRegistry/Get"])
+
+			paths = append(paths, ttnpb.FlattenPaths(paths, gatewayFlattenPaths)...)
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -194,6 +205,7 @@ var (
 				return err
 			}
 			paths := util.UpdateFieldMask(cmd.Flags(), setGatewayFlags, attributesFlags())
+			paths = append(paths, ttnpb.FlattenPaths(paths, gatewayFlattenPaths)...)
 
 			collaborator := getCollaborator(cmd.Flags())
 			if collaborator == nil {
@@ -261,11 +273,11 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res)
 		}),
 	}
-	errAntennaIndex       = errors.DefineInvalidArgument("antenna_index", "index of antenna to update out of bounds")
-	gatewaysUpdateCommand = &cobra.Command{
-		Use:     "update [gateway-id]",
-		Aliases: []string{"set"},
-		Short:   "Update a gateway",
+	errAntennaIndex    = errors.DefineInvalidArgument("antenna_index", "index of antenna to update out of bounds")
+	gatewaysSetCommand = &cobra.Command{
+		Use:     "set [gateway-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of a gateway",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gtwID, err := getGatewayID(cmd.Flags(), args, true)
 			if err != nil {
@@ -273,6 +285,11 @@ var (
 			}
 			paths := util.UpdateFieldMask(cmd.Flags(), setGatewayFlags, attributesFlags())
 			antennaPaths := util.UpdateFieldMask(cmd.Flags(), setGatewayAntennaFlags)
+			paths = append(paths, ttnpb.FlattenPaths(paths, gatewayFlattenPaths)...)
+
+			if gtwID.EUI != nil {
+				paths = append(paths, "ids.eui")
+			}
 			if len(paths)+len(antennaPaths) == 0 {
 				logger.Warn("No fields selected, won't update anything")
 				return nil
@@ -330,8 +347,9 @@ var (
 		},
 	}
 	gatewaysDeleteCommand = &cobra.Command{
-		Use:   "delete [gateway-id]",
-		Short: "Delete a gateway",
+		Use:     "delete [gateway-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete a gateway",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gtwID, err := getGatewayID(cmd.Flags(), args, true)
 			if err != nil {
@@ -351,8 +369,9 @@ var (
 		},
 	}
 	gatewaysConnectionStats = &cobra.Command{
-		Use:   "connection-stats [gateway-id]",
-		Short: "Get connection stats for a gateway",
+		Use:     "get-connection-stats [gateway-id]",
+		Aliases: []string{"connection-stats", "cnx-stats", "stats"},
+		Short:   "Get connection stats for a gateway",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gtwID, err := getGatewayID(cmd.Flags(), args, true)
 			if err != nil {
@@ -404,12 +423,16 @@ func init() {
 	gatewaysListCommand.Flags().AddFlagSet(collaboratorFlags())
 	gatewaysListCommand.Flags().AddFlagSet(selectGatewayFlags)
 	gatewaysListCommand.Flags().AddFlagSet(paginationFlags())
+	gatewaysListCommand.Flags().AddFlagSet(orderFlags())
+	gatewaysListCommand.Flags().AddFlagSet(selectAllGatewayFlags)
 	gatewaysCommand.AddCommand(gatewaysListCommand)
 	gatewaysSearchCommand.Flags().AddFlagSet(searchFlags())
 	gatewaysSearchCommand.Flags().AddFlagSet(selectGatewayFlags)
+	gatewaysSearchCommand.Flags().AddFlagSet(selectAllGatewayFlags)
 	gatewaysCommand.AddCommand(gatewaysSearchCommand)
 	gatewaysGetCommand.Flags().AddFlagSet(gatewayIDFlags())
 	gatewaysGetCommand.Flags().AddFlagSet(selectGatewayFlags)
+	gatewaysGetCommand.Flags().AddFlagSet(selectAllGatewayFlags)
 	gatewaysCommand.AddCommand(gatewaysGetCommand)
 	gatewaysCreateCommand.Flags().AddFlagSet(gatewayIDFlags())
 	gatewaysCreateCommand.Flags().AddFlagSet(collaboratorFlags())
@@ -418,14 +441,14 @@ func init() {
 	gatewaysCreateCommand.Flags().AddFlagSet(attributesFlags())
 	gatewaysCreateCommand.Flags().Bool("defaults", true, "configure gateway with defaults")
 	gatewaysCommand.AddCommand(gatewaysCreateCommand)
-	gatewaysUpdateCommand.Flags().AddFlagSet(gatewayIDFlags())
-	gatewaysUpdateCommand.Flags().AddFlagSet(setGatewayFlags)
-	gatewaysUpdateCommand.Flags().Int("antenna.index", 0, "index of the antenna to update or remove")
-	gatewaysUpdateCommand.Flags().Bool("antenna.add", false, "add an extra antenna")
-	gatewaysUpdateCommand.Flags().Bool("antenna.remove", false, "remove an antenna")
-	gatewaysUpdateCommand.Flags().AddFlagSet(setGatewayAntennaFlags)
-	gatewaysUpdateCommand.Flags().AddFlagSet(attributesFlags())
-	gatewaysCommand.AddCommand(gatewaysUpdateCommand)
+	gatewaysSetCommand.Flags().AddFlagSet(gatewayIDFlags())
+	gatewaysSetCommand.Flags().AddFlagSet(setGatewayFlags)
+	gatewaysSetCommand.Flags().Int("antenna.index", 0, "index of the antenna to update or remove")
+	gatewaysSetCommand.Flags().Bool("antenna.add", false, "add an extra antenna")
+	gatewaysSetCommand.Flags().Bool("antenna.remove", false, "remove an antenna")
+	gatewaysSetCommand.Flags().AddFlagSet(setGatewayAntennaFlags)
+	gatewaysSetCommand.Flags().AddFlagSet(attributesFlags())
+	gatewaysCommand.AddCommand(gatewaysSetCommand)
 	gatewaysDeleteCommand.Flags().AddFlagSet(gatewayIDFlags())
 	gatewaysCommand.AddCommand(gatewaysDeleteCommand)
 	gatewaysConnectionStats.Flags().AddFlagSet(gatewayIDFlags())

@@ -400,7 +400,14 @@ func (m *ListOAuthClientAuthorizationsRequest) ValidateFields(paths ...string) e
 			}
 
 		case "order":
-			// no validation rules for Order
+
+			if _, ok := _ListOAuthClientAuthorizationsRequest_Order_InLookup[m.GetOrder()]; !ok {
+				return ListOAuthClientAuthorizationsRequestValidationError{
+					field:  "order",
+					reason: "value must be in list [ created_at -created_at]",
+				}
+			}
+
 		case "limit":
 
 			if m.GetLimit() > 1000 {
@@ -479,6 +486,12 @@ var _ interface {
 	ErrorName() string
 } = ListOAuthClientAuthorizationsRequestValidationError{}
 
+var _ListOAuthClientAuthorizationsRequest_Order_InLookup = map[string]struct{}{
+	"":            {},
+	"created_at":  {},
+	"-created_at": {},
+}
+
 // ValidateFields checks the field values on OAuthAuthorizationCode with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -503,6 +516,15 @@ func (m *OAuthAuthorizationCode) ValidateFields(paths ...string) error {
 						reason: "embedded message failed validation",
 						cause:  err,
 					}
+				}
+			}
+
+		case "user_session_id":
+
+			if utf8.RuneCountInString(m.GetUserSessionID()) > 64 {
+				return OAuthAuthorizationCodeValidationError{
+					field:  "user_session_id",
+					reason: "value length must be at most 64 runes",
 				}
 			}
 
@@ -759,6 +781,15 @@ func (m *OAuthAccessToken) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "user_session_id":
+
+			if utf8.RuneCountInString(m.GetUserSessionID()) > 64 {
+				return OAuthAccessTokenValidationError{
+					field:  "user_session_id",
+					reason: "value length must be at most 64 runes",
+				}
+			}
+
 		case "client_ids":
 
 			if v, ok := interface{}(&m.ClientIDs).(interface{ ValidateFields(...string) error }); ok {
@@ -1005,7 +1036,14 @@ func (m *ListOAuthAccessTokensRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "order":
-			// no validation rules for Order
+
+			if _, ok := _ListOAuthAccessTokensRequest_Order_InLookup[m.GetOrder()]; !ok {
+				return ListOAuthAccessTokensRequestValidationError{
+					field:  "order",
+					reason: "value must be in list [ created_at -created_at]",
+				}
+			}
+
 		case "limit":
 
 			if m.GetLimit() > 1000 {
@@ -1083,3 +1121,9 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListOAuthAccessTokensRequestValidationError{}
+
+var _ListOAuthAccessTokensRequest_Order_InLookup = map[string]struct{}{
+	"":            {},
+	"created_at":  {},
+	"-created_at": {},
+}

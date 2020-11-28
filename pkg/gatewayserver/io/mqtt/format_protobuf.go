@@ -15,8 +15,10 @@
 package mqtt
 
 import (
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/mqtt/topics"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"context"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mqtt/topics"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 type protobuf struct {
@@ -54,7 +56,9 @@ func (protobuf) ToTxAck(message []byte, _ ttnpb.GatewayIdentifiers) (*ttnpb.TxAc
 	return ack, nil
 }
 
-// Protobuf is a format that uses Protocol Buffers marshaling and unmarshaling.
-var Protobuf Format = &protobuf{
-	Layout: topics.Default,
+// NewProtobuf returns a format that uses Protocol Buffers marshaling and unmarshaling.
+func NewProtobuf(ctx context.Context) Format {
+	return &protobuf{
+		Layout: topics.New(ctx),
+	}
 }

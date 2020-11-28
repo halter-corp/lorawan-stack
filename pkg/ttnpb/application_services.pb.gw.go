@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +31,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 func request_ApplicationRegistry_Create_0(ctx context.Context, marshaler runtime.Marshaler, client ApplicationRegistryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateApplicationRequest
@@ -231,7 +233,10 @@ func local_request_ApplicationRegistry_Get_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationRegistry_Get_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationRegistry_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -264,7 +269,10 @@ func local_request_ApplicationRegistry_List_0(ctx context.Context, marshaler run
 	var protoReq ListApplicationsRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationRegistry_List_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationRegistry_List_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -333,7 +341,10 @@ func local_request_ApplicationRegistry_List_1(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationRegistry_List_1); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationRegistry_List_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -402,7 +413,10 @@ func local_request_ApplicationRegistry_List_2(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.organization_ids.organization_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationRegistry_List_2); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationRegistry_List_2); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -719,7 +733,10 @@ func local_request_ApplicationAccess_ListAPIKeys_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_ListAPIKeys_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_ListAPIKeys_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -810,7 +827,10 @@ func local_request_ApplicationAccess_GetAPIKey_0(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "key_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_GetAPIKey_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_GetAPIKey_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -912,7 +932,7 @@ func local_request_ApplicationAccess_UpdateAPIKey_0(ctx context.Context, marshal
 }
 
 var (
-	filter_ApplicationAccess_GetCollaborator_0 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+	filter_ApplicationAccess_GetCollaborator_0 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1, "collaborator": 2, "user_ids": 3, "user_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
 )
 
 func request_ApplicationAccess_GetCollaborator_0(ctx context.Context, marshaler runtime.Marshaler, client ApplicationAccessClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -935,6 +955,17 @@ func request_ApplicationAccess_GetCollaborator_0(ctx context.Context, marshaler 
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
+	}
+
+	val, ok = pathParams["collaborator.user_ids.user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -971,7 +1002,21 @@ func local_request_ApplicationAccess_GetCollaborator_0(ctx context.Context, mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_GetCollaborator_0); err != nil {
+	val, ok = pathParams["collaborator.user_ids.user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_GetCollaborator_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -981,7 +1026,7 @@ func local_request_ApplicationAccess_GetCollaborator_0(ctx context.Context, mars
 }
 
 var (
-	filter_ApplicationAccess_GetCollaborator_1 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1, "collaborator": 2, "user_ids": 3, "user_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
+	filter_ApplicationAccess_GetCollaborator_1 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1, "collaborator": 2, "organization_ids": 3, "organization_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
 )
 
 func request_ApplicationAccess_GetCollaborator_1(ctx context.Context, marshaler runtime.Marshaler, client ApplicationAccessClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1006,15 +1051,15 @@ func request_ApplicationAccess_GetCollaborator_1(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	val, ok = pathParams["collaborator.user_ids.user_id"]
+	val, ok = pathParams["collaborator.organization_ids.organization_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.organization_ids.organization_id")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.organization_ids.organization_id", val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.organization_ids.organization_id", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -1051,52 +1096,6 @@ func local_request_ApplicationAccess_GetCollaborator_1(ctx context.Context, mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	val, ok = pathParams["collaborator.user_ids.user_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
-	}
-
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_GetCollaborator_1); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.GetCollaborator(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-var (
-	filter_ApplicationAccess_GetCollaborator_2 = &utilities.DoubleArray{Encoding: map[string]int{"application_ids": 0, "application_id": 1, "collaborator": 2, "organization_ids": 3, "organization_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
-)
-
-func request_ApplicationAccess_GetCollaborator_2(ctx context.Context, marshaler runtime.Marshaler, client ApplicationAccessClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetApplicationCollaboratorRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["application_ids.application_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "application_ids.application_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "application_ids.application_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
-	}
-
 	val, ok = pathParams["collaborator.organization_ids.organization_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.organization_ids.organization_id")
@@ -1111,49 +1110,7 @@ func request_ApplicationAccess_GetCollaborator_2(ctx context.Context, marshaler 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_GetCollaborator_2); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.GetCollaborator(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_ApplicationAccess_GetCollaborator_2(ctx context.Context, marshaler runtime.Marshaler, server ApplicationAccessServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetApplicationCollaboratorRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["application_ids.application_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "application_ids.application_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "application_ids.application_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
-	}
-
-	val, ok = pathParams["collaborator.organization_ids.organization_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.organization_ids.organization_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.organization_ids.organization_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.organization_ids.organization_id", err)
-	}
-
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_GetCollaborator_2); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_GetCollaborator_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -1292,7 +1249,10 @@ func local_request_ApplicationAccess_ListCollaborators_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationAccess_ListCollaborators_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationAccess_ListCollaborators_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -1304,11 +1264,14 @@ func local_request_ApplicationAccess_ListCollaborators_0(ctx context.Context, ma
 // RegisterApplicationRegistryHandlerServer registers the http handlers for service ApplicationRegistry to "mux".
 // UnaryRPC     :call ApplicationRegistryServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterApplicationRegistryHandlerFromEndpoint instead.
 func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ApplicationRegistryServer) error {
 
 	mux.Handle("POST", pattern_ApplicationRegistry_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1316,6 +1279,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_Create_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1329,6 +1293,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("POST", pattern_ApplicationRegistry_Create_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1336,6 +1302,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_Create_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1349,6 +1316,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("GET", pattern_ApplicationRegistry_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1356,6 +1325,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1369,6 +1339,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("GET", pattern_ApplicationRegistry_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1376,6 +1348,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_List_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1389,6 +1362,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("GET", pattern_ApplicationRegistry_List_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1396,6 +1371,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_List_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1409,6 +1385,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("GET", pattern_ApplicationRegistry_List_2, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1416,6 +1394,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_List_2(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1429,6 +1408,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("PUT", pattern_ApplicationRegistry_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1436,6 +1417,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_Update_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1449,6 +1431,8 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("DELETE", pattern_ApplicationRegistry_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1456,6 +1440,7 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_ApplicationRegistry_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1472,11 +1457,14 @@ func RegisterApplicationRegistryHandlerServer(ctx context.Context, mux *runtime.
 // RegisterApplicationAccessHandlerServer registers the http handlers for service ApplicationAccess to "mux".
 // UnaryRPC     :call ApplicationAccessServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterApplicationAccessHandlerFromEndpoint instead.
 func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ApplicationAccessServer) error {
 
 	mux.Handle("GET", pattern_ApplicationAccess_ListRights_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1484,6 +1472,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_ListRights_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1497,6 +1486,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("POST", pattern_ApplicationAccess_CreateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1504,6 +1495,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_CreateAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1517,6 +1509,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("GET", pattern_ApplicationAccess_ListAPIKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1524,6 +1518,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_ListAPIKeys_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1537,6 +1532,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("GET", pattern_ApplicationAccess_GetAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1544,6 +1541,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_GetAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1557,6 +1555,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("PUT", pattern_ApplicationAccess_UpdateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1564,6 +1564,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_UpdateAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1577,6 +1578,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("GET", pattern_ApplicationAccess_GetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1584,6 +1587,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_GetCollaborator_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1597,6 +1601,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("GET", pattern_ApplicationAccess_GetCollaborator_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1604,6 +1610,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_GetCollaborator_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1614,29 +1621,11 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 
 	})
 
-	mux.Handle("GET", pattern_ApplicationAccess_GetCollaborator_2, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_ApplicationAccess_GetCollaborator_2(rctx, inboundMarshaler, server, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_ApplicationAccess_GetCollaborator_2(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("PUT", pattern_ApplicationAccess_SetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1644,6 +1633,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_SetCollaborator_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1657,6 +1647,8 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 	mux.Handle("GET", pattern_ApplicationAccess_ListCollaborators_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1664,6 +1656,7 @@ func RegisterApplicationAccessHandlerServer(ctx context.Context, mux *runtime.Se
 			return
 		}
 		resp, md, err := local_request_ApplicationAccess_ListCollaborators_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2092,26 +2085,6 @@ func RegisterApplicationAccessHandlerClient(ctx context.Context, mux *runtime.Se
 
 	})
 
-	mux.Handle("GET", pattern_ApplicationAccess_GetCollaborator_2, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_ApplicationAccess_GetCollaborator_2(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_ApplicationAccess_GetCollaborator_2(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("PUT", pattern_ApplicationAccess_SetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -2166,11 +2139,9 @@ var (
 
 	pattern_ApplicationAccess_UpdateAPIKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"applications", "application_ids.application_id", "api-keys", "api_key.id"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApplicationAccess_GetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"applications", "application_ids.application_id", "collaborator"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ApplicationAccess_GetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"applications", "application_ids.application_id", "collaborator", "user", "collaborator.user_ids.user_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApplicationAccess_GetCollaborator_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"applications", "application_ids.application_id", "collaborator", "user", "collaborator.user_ids.user_id"}, "", runtime.AssumeColonVerbOpt(true)))
-
-	pattern_ApplicationAccess_GetCollaborator_2 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"applications", "application_ids.application_id", "collaborator", "organization", "collaborator.organization_ids.organization_id"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ApplicationAccess_GetCollaborator_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"applications", "application_ids.application_id", "collaborator", "organization", "collaborator.organization_ids.organization_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_ApplicationAccess_SetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"applications", "application_ids.application_id", "collaborators"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -2191,8 +2162,6 @@ var (
 	forward_ApplicationAccess_GetCollaborator_0 = runtime.ForwardResponseMessage
 
 	forward_ApplicationAccess_GetCollaborator_1 = runtime.ForwardResponseMessage
-
-	forward_ApplicationAccess_GetCollaborator_2 = runtime.ForwardResponseMessage
 
 	forward_ApplicationAccess_SetCollaborator_0 = runtime.ForwardResponseMessage
 

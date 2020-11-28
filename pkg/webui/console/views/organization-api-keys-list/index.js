@@ -16,19 +16,23 @@ import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 import bind from 'autobind-decorator'
 
-import sharedMessages from '../../../lib/shared-messages'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import ApiKeysTable from '../../containers/api-keys-table'
-import { getOrganizationApiKeysList } from '../../store/actions/organizations'
-import PropTypes from '../../../lib/prop-types'
+import PAGE_SIZES from '@console/constants/page-sizes'
+
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import ApiKeysTable from '@console/containers/api-keys-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getApiKeysList } from '@console/store/actions/api-keys'
 
 import {
-  selectOrganizationApiKeys,
-  selectOrganizationApiKeysTotalCount,
-  selectOrganizationApiKeysFetching,
-} from '../../store/selectors/organizations'
-
-import PAGE_SIZES from '../../constants/page-sizes'
+  selectApiKeys,
+  selectApiKeysTotalCount,
+  selectApiKeysFetching,
+  selectApiKeysError,
+} from '@console/store/selectors/api-keys'
 
 class OrganizationApiKeysList extends React.Component {
   static propTypes = {
@@ -39,7 +43,7 @@ class OrganizationApiKeysList extends React.Component {
     super(props)
 
     const { orgId } = props.match.params
-    this.getOrganizationApiKeysList = filters => getOrganizationApiKeysList(orgId, filters)
+    this.getApiKeysList = filters => getApiKeysList('organization', orgId, filters)
   }
 
   @bind
@@ -48,9 +52,10 @@ class OrganizationApiKeysList extends React.Component {
 
     const id = { id: orgId }
     return {
-      keys: selectOrganizationApiKeys(state, id),
-      totalCount: selectOrganizationApiKeysTotalCount(state, id),
-      fetching: selectOrganizationApiKeysFetching(state),
+      keys: selectApiKeys(state, id),
+      totalCount: selectApiKeysTotalCount(state, id),
+      fetching: selectApiKeysFetching(state),
+      error: selectApiKeysError(state),
     }
   }
 
@@ -63,7 +68,7 @@ class OrganizationApiKeysList extends React.Component {
             <ApiKeysTable
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={this.baseDataSelector}
-              getItemsAction={this.getOrganizationApiKeysList}
+              getItemsAction={this.getApiKeysList}
             />
           </Col>
         </Row>

@@ -14,12 +14,15 @@
 
 import React from 'react'
 import { FormattedDate, FormattedTime } from 'react-intl'
-import bind from 'autobind-decorator'
 
-import PropTypes from '../../prop-types'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import { warn } from '@ttn-lw/lib/log'
+
 import RelativeTime from './relative'
 
-@bind
 class DateTime extends React.PureComponent {
   renderDateTime(formattedDate, formattedTime, dateValue) {
     const { className, children, date, time } = this.props
@@ -37,6 +40,15 @@ class DateTime extends React.PureComponent {
       result += formattedTime
     }
 
+    if (isNaN(dateValue)) {
+      warn('Invalid date passed to DateTime component')
+      return (
+        <time className={className}>
+          <Message content={sharedMessages.unknown} firstToLower />
+        </time>
+      )
+    }
+
     return (
       <time className={className} dateTime={dateValue.toISOString()} title={result}>
         {children ? children(result) : result}
@@ -45,7 +57,7 @@ class DateTime extends React.PureComponent {
   }
 
   render() {
-    const { value, dateFormatOptions, timeFormatOptions, dateFormat, timeFormat } = this.props
+    const { value, dateFormatOptions, timeFormatOptions } = this.props
 
     let dateValue = value
     if (!(value instanceof Date)) {
@@ -53,9 +65,9 @@ class DateTime extends React.PureComponent {
     }
 
     return (
-      <FormattedDate value={dateValue} format={dateFormat} {...dateFormatOptions}>
+      <FormattedDate value={dateValue} {...dateFormatOptions}>
         {date => (
-          <FormattedTime value={dateValue} format={timeFormat} {...timeFormatOptions}>
+          <FormattedTime value={dateValue} {...timeFormatOptions}>
             {time => this.renderDateTime(date, time, dateValue)}
           </FormattedTime>
         )}
@@ -67,27 +79,33 @@ class DateTime extends React.PureComponent {
 DateTime.Relative = RelativeTime
 
 DateTime.propTypes = {
-  /** The time to be displayed */
+  children: PropTypes.func,
+  className: PropTypes.string,
+  /** The time to be displayed. */
+  date: PropTypes.bool,
+  /** Whether to show the time. */
+  dateFormatOptions: PropTypes.shape({}),
+  // See https://formatjs.io/docs/react-intl/components/#formatteddate
+  time: PropTypes.bool,
+  // See https://formatjs.io/docs/react-intl/components/#formattedtime
+  timeFormatOptions: PropTypes.shape({}),
   value: PropTypes.oneOfType([
     PropTypes.string,
-    PropTypes.number, // support timestamps
+    PropTypes.number, // Support timestamps.
     PropTypes.instanceOf(Date),
   ]).isRequired,
-  // see https://github.com/yahoo/react-intl/wiki/Components#date-formatting-components
-  dateFormatOptions: PropTypes.object,
-  timeFormatOptions: PropTypes.object,
-  dateFormat: PropTypes.string,
-  timeFormat: PropTypes.string,
-  /** Whether to show the date */
-  date: PropTypes.bool,
-  /** Whether to show the time */
-  time: PropTypes.bool,
 }
 
 DateTime.defaultProps = {
+  className: undefined,
+  children: undefined,
   date: true,
   time: true,
-  dateFormatOptions: {},
+  dateFormatOptions: {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  },
   timeFormatOptions: {
     hour: 'numeric',
     minute: 'numeric',

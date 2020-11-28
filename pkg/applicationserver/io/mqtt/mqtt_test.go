@@ -23,18 +23,19 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/mock"
-	. "go.thethings.network/lorawan-stack/pkg/applicationserver/io/mqtt"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
+	. "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 var (
@@ -65,7 +66,7 @@ func TestAuthentication(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -79,7 +80,7 @@ func TestAuthentication(t *testing.T) {
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
-	Start(c.Context(), as, lis, JSON, "tcp")
+	go Serve(c.Context(), as, lis, JSON, "tcp")
 
 	for _, tc := range []struct {
 		UID string
@@ -111,13 +112,17 @@ func TestAuthentication(t *testing.T) {
 			clientOpts.SetPassword(tc.Key)
 			client := mqtt.NewClient(clientOpts)
 			token := client.Connect()
-			if ok := token.WaitTimeout(timeout); tc.OK {
-				if a.So(ok, should.BeTrue) && a.So(token.Error(), should.BeNil) {
-					client.Disconnect(uint(timeout / time.Millisecond))
+			if tc.OK {
+				if !token.WaitTimeout(timeout) {
+					t.Fatal("Connection timeout")
 				}
-			} else {
-				a.So(ok, should.BeFalse)
+				if !a.So(token.Error(), should.BeNil) {
+					t.FailNow()
+				}
+			} else if token.Wait() && !a.So(token.Error(), should.NotBeNil) {
+				t.FailNow()
 			}
+			client.Disconnect(uint(timeout / time.Millisecond))
 		})
 	}
 }
@@ -138,7 +143,7 @@ func TestTraffic(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
@@ -153,16 +158,18 @@ func TestTraffic(t *testing.T) {
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
-	Start(c.Context(), as, lis, JSON, "tcp")
+	go Serve(c.Context(), as, lis, JSON, "tcp")
 
 	clientOpts := mqtt.NewClientOptions()
 	clientOpts.AddBroker(fmt.Sprintf("tcp://%v", lis.Addr()))
 	clientOpts.SetUsername(registeredApplicationUID)
 	clientOpts.SetPassword(registeredApplicationKey)
 	client := mqtt.NewClient(clientOpts)
-	if token := client.Connect(); !a.So(token.WaitTimeout(timeout), should.BeTrue) {
-		t.FailNow()
-	} else if !a.So(token.Error(), should.BeNil) {
+	token := client.Connect()
+	if !token.WaitTimeout(timeout) {
+		t.Fatal("Connection timeout")
+	}
+	if !a.So(token.Error(), should.BeNil) {
 		t.FailNow()
 	}
 
@@ -241,16 +248,19 @@ func TestTraffic(t *testing.T) {
 					a.So(err, should.BeNil)
 					upCh <- up
 				}
-				if token := client.Subscribe(tc.Topic, 1, handler); !a.So(token.WaitTimeout(timeout), should.BeTrue) {
-					t.FailNow()
-				} else if !a.So(token.Error(), should.BeNil) {
+				token := client.Subscribe(tc.Topic, 1, handler)
+				if !token.WaitTimeout(timeout) {
+					t.Fatal("Subscribe timeout")
+				}
+				if !a.So(token.Error(), should.BeNil) {
 					t.FailNow()
 				}
 				defer func() {
 					token := client.Unsubscribe(tc.Topic)
-					if !a.So(token.WaitTimeout(timeout), should.BeTrue) {
-						t.FailNow()
-					} else if !a.So(token.Error(), should.BeNil) {
+					if !token.WaitTimeout(timeout) {
+						t.Fatal("Unsubscribe timeout")
+					}
+					if !a.So(token.Error(), should.BeNil) {
 						t.FailNow()
 					}
 				}()
@@ -359,7 +369,11 @@ func TestTraffic(t *testing.T) {
 				a := assertions.New(t)
 				buf, err := jsonpb.TTN().Marshal(tc.Message)
 				a.So(err, should.BeNil)
-				if token := client.Publish(tc.Topic, 1, false, buf); !a.So(token.WaitTimeout(timeout), should.BeTrue) {
+				token := client.Publish(tc.Topic, 1, false, buf)
+				if !token.WaitTimeout(timeout) {
+					t.Fatal("Publish timeout")
+				}
+				if !a.So(token.Error(), should.BeNil) {
 					t.FailNow()
 				}
 				res, err := as.DownlinkQueueList(ctx, tc.IDs)

@@ -13,8 +13,11 @@
 // limitations under the License.
 
 import axios from 'axios'
+import { cloneDeep, get, isObject } from 'lodash'
 
-import { URI_PREFIX_STACK_COMPONENT_MAP } from '../util/constants'
+import { URI_PREFIX_STACK_COMPONENT_MAP, STACK_COMPONENTS_MAP } from '../util/constants'
+import EventHandler from '../util/events'
+
 import stream from './stream/stream-node'
 
 /**
@@ -30,9 +33,9 @@ class Http {
       Authorization = `Bearer ${token}`
     }
 
-    const stackComponents = Object.keys(stackConfig)
+    const stackComponents = stackConfig.availableComponents
     const instances = stackComponents.reduce(function(acc, curr) {
-      const componentUrl = stackConfig[curr]
+      const componentUrl = stackConfig.getComponentUrlByName(curr)
       if (componentUrl) {
         acc[curr] = axios.create({
           baseURL: componentUrl,
@@ -69,9 +72,9 @@ class Http {
 
   async handleRequest(method, endpoint, component, payload = {}, isStream) {
     const parsedComponent = component || this._parseStackComponent(endpoint)
-    if (!this._stackConfig[parsedComponent]) {
+    if (!this._stackConfig.isComponentAvailable(parsedComponent)) {
       // If the component has not been defined in The Things Stack config, make no
-      // request and throw an error instead
+      // request and throw an error instead.
       throw new Error(
         `Cannot run "${method.toUpperCase()} ${endpoint}" API call on disabled component: "${parsedComponent}"`,
       )
@@ -79,7 +82,7 @@ class Http {
 
     try {
       if (isStream) {
-        const url = this._stackConfig[parsedComponent] + endpoint
+        const url = this._stackConfig.getComponentUrlByName(parsedComponent) + endpoint
         return stream(payload, url)
       }
 
@@ -90,17 +93,39 @@ class Http {
 
       if (method === 'get' || method === 'delete') {
         // For GETs and DELETEs, convert payload to query params (should usually
-        // be field_mask only)
+        // be field_mask only).
         config.params = this._payloadToQueryParams(payload)
       } else {
-        // Otherwise pass data as request body
+        // Otherwise pass data as request body.
         config.data = payload
       }
 
-      return await this[parsedComponent](config)
+      const response = await this[parsedComponent](config)
+
+      if ('X-Warning' in response.headers || 'x-warning' in response.headers) {
+        // Dispatch a warning event when the server has set a warning header.
+        EventHandler.dispatchEvent(
+          EventHandler.EVENTS.WARNING,
+          response.headers['X-Warning'] || response.headers['x-warning'],
+        )
+      }
+
+      return response
     } catch (err) {
       if ('response' in err && err.response && 'data' in err.response) {
-        throw err.response.data
+        const error = cloneDeep(err.response.data)
+        // Augment the default error with config entries as well as the stack component
+        // abbreviation that threw an error.
+        // TODO: Consider changing this, see https://github.com/TheThingsNetwork/lorawan-stack/issues/3424.
+        if (isObject(error)) {
+          error.request_details = {
+            url: get(err, 'response.config.url'),
+            method: get(err, 'response.config.method'),
+            stack_component: parsedComponent,
+          }
+        }
+
+        throw error
       } else {
         throw err
       }
@@ -110,8 +135,9 @@ class Http {
   /**
    * Converts a payload object to a query parameter object, making sure that the
    * field mask parameter is converted correctly.
-   * @param {Object} payload - The payload object.
-   * @returns {Object} The params object, to be passed to axios config.
+   *
+   * @param {object} payload - The payload object.
+   * @returns {object} The params object, to be passed to axios config.
    */
   _payloadToQueryParams(payload) {
     const res = { ...payload }
@@ -126,15 +152,16 @@ class Http {
 
   /**
    * Extracts The Things Stack component abbreviation from the endpoint.
+   *
    * @param {string} endpoint - The endpoint got for a request method.
-   * @returns {string} One of {is|as|gs|js|ns}.
+   * @returns {string} The stack component abbreviation.
    */
   _parseStackComponent(endpoint) {
     try {
       const component = endpoint.split('/')[1]
       return Boolean(URI_PREFIX_STACK_COMPONENT_MAP[component])
         ? URI_PREFIX_STACK_COMPONENT_MAP[component]
-        : 'is'
+        : STACK_COMPONENTS_MAP.is
     } catch (err) {
       throw new Error('Unable to extract The Things Stack component:', endpoint)
     }

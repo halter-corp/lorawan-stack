@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -31,6 +32,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 func request_ApplicationWebhookRegistry_GetFormats_0(ctx context.Context, marshaler runtime.Marshaler, client ApplicationWebhookRegistryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq types.Empty
@@ -110,7 +112,10 @@ func local_request_ApplicationWebhookRegistry_GetTemplate_0(ctx context.Context,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ids.template_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationWebhookRegistry_GetTemplate_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationWebhookRegistry_GetTemplate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -143,7 +148,10 @@ func local_request_ApplicationWebhookRegistry_ListTemplates_0(ctx context.Contex
 	var protoReq ListApplicationWebhookTemplatesRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationWebhookRegistry_ListTemplates_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationWebhookRegistry_ListTemplates_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -234,7 +242,10 @@ func local_request_ApplicationWebhookRegistry_Get_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ids.webhook_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationWebhookRegistry_Get_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationWebhookRegistry_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -303,7 +314,10 @@ func local_request_ApplicationWebhookRegistry_List_0(ctx context.Context, marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "application_ids.application_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationWebhookRegistry_List_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationWebhookRegistry_List_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -556,7 +570,10 @@ func local_request_ApplicationWebhookRegistry_Delete_0(ctx context.Context, mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "webhook_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ApplicationWebhookRegistry_Delete_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ApplicationWebhookRegistry_Delete_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -568,11 +585,14 @@ func local_request_ApplicationWebhookRegistry_Delete_0(ctx context.Context, mars
 // RegisterApplicationWebhookRegistryHandlerServer registers the http handlers for service ApplicationWebhookRegistry to "mux".
 // UnaryRPC     :call ApplicationWebhookRegistryServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterApplicationWebhookRegistryHandlerFromEndpoint instead.
 func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ApplicationWebhookRegistryServer) error {
 
 	mux.Handle("GET", pattern_ApplicationWebhookRegistry_GetFormats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -580,6 +600,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_GetFormats_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -593,6 +614,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("GET", pattern_ApplicationWebhookRegistry_GetTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -600,6 +623,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_GetTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -613,6 +637,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("GET", pattern_ApplicationWebhookRegistry_ListTemplates_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -620,6 +646,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_ListTemplates_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -633,6 +660,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("GET", pattern_ApplicationWebhookRegistry_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -640,6 +669,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -653,6 +683,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("GET", pattern_ApplicationWebhookRegistry_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -660,6 +692,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_List_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -673,6 +706,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("PUT", pattern_ApplicationWebhookRegistry_Set_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -680,6 +715,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_Set_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -693,6 +729,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("POST", pattern_ApplicationWebhookRegistry_Set_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -700,6 +738,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_Set_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -713,6 +752,8 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 	mux.Handle("DELETE", pattern_ApplicationWebhookRegistry_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -720,6 +761,7 @@ func RegisterApplicationWebhookRegistryHandlerServer(ctx context.Context, mux *r
 			return
 		}
 		resp, md, err := local_request_ApplicationWebhookRegistry_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)

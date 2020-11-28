@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as applications from '../../actions/applications'
-import * as link from '../../actions/link'
-import * as webhooks from '../../actions/webhooks'
-import * as webhook from '../../actions/webhook'
-import * as webhookFormats from '../../actions/webhook-formats'
-import * as pubsubs from '../../actions/pubsubs'
-import * as pubsub from '../../actions/pubsub'
-import * as pubsubFormats from '../../actions/pubsub-formats'
+import api from '@console/api'
 
-import api from '../../../api'
-import { isNotFoundError } from '../../../../lib/errors/utils'
+import { isNotFoundError, isConflictError } from '@ttn-lw/lib/errors/utils'
+
+import * as applications from '@console/store/actions/applications'
+import * as link from '@console/store/actions/link'
+
 import createRequestLogic from './lib'
 import createEventsConnectLogics from './events'
 
@@ -66,23 +62,33 @@ const getApplicationsLogic = createRequestLogic({
   latest: true,
   async process({ action }) {
     const {
-      params: { page, limit, query },
+      params: { page, limit, query, order },
     } = action.payload
-    const { selectors } = action.meta
+    const { selectors, options } = action.meta
 
-    const data = query
+    const data = options.isSearch
       ? await api.applications.search(
           {
             page,
             limit,
             id_contains: query,
-            name_contains: query,
+            order,
           },
           selectors,
         )
-      : await api.applications.list({ page, limit }, selectors)
+      : await api.applications.list({ page, limit, order }, selectors)
 
     return { entities: data.applications, totalCount: data.totalCount }
+  },
+})
+
+const getApplicationDeviceCountLogic = createRequestLogic({
+  type: applications.GET_APP_DEV_COUNT,
+  async process({ action }) {
+    const { id: appId } = action.payload
+    const data = await api.devices.list(appId, { limit: 1 })
+
+    return { applicationDeviceCount: data.totalCount }
   },
 })
 
@@ -92,65 +98,6 @@ const getApplicationsRightsLogic = createRequestLogic({
     const { id } = action.payload
     const result = await api.rights.applications(id)
     return result.rights.sort()
-  },
-})
-
-const getApplicationApiKeysLogic = createRequestLogic({
-  type: applications.GET_APP_API_KEYS_LIST,
-  async process({ getState, action }) {
-    const {
-      id: appId,
-      params: { page, limit },
-    } = action.payload
-    const res = await api.application.apiKeys.list(appId, { limit, page })
-    return { ...res, id: appId }
-  },
-})
-
-const getApplicationApiKeyLogic = createRequestLogic({
-  type: applications.GET_APP_API_KEY,
-  async process({ action }) {
-    const { id: appId, keyId } = action.payload
-    return api.application.apiKeys.get(appId, keyId)
-  },
-})
-
-const getApplicationCollaboratorLogic = createRequestLogic({
-  type: applications.GET_APP_COLLABORATOR,
-  async process({ action }) {
-    const { id: appId, collaboratorId, isUser } = action.payload
-
-    const collaborator = isUser
-      ? await api.application.collaborators.getUser(appId, collaboratorId)
-      : await api.application.collaborators.getOrganization(appId, collaboratorId)
-
-    const { ids, ...rest } = collaborator
-
-    return {
-      id: collaboratorId,
-      isUser,
-      ...rest,
-    }
-  },
-})
-
-const getApplicationCollaboratorsLogic = createRequestLogic({
-  type: applications.GET_APP_COLLABORATORS_LIST,
-  async process({ action }) {
-    const { id: appId, params } = action.payload
-    const res = await api.application.collaborators.list(appId, params)
-    const collaborators = res.collaborators.map(function(collaborator) {
-      const { ids, ...rest } = collaborator
-      const isUser = !!ids.user_ids
-      const collaboratorId = isUser ? ids.user_ids.user_id : ids.organization_ids.organization_id
-
-      return {
-        id: collaboratorId,
-        isUser,
-        ...rest,
-      }
-    })
-    return { id: appId, collaborators, totalCount: res.totalCount }
   },
 })
 
@@ -170,9 +117,15 @@ const getApplicationLinkLogic = createRequestLogic({
 
       return { link: linkResult, stats: statsResult, linked: true }
     } catch (error) {
-      // Consider errors that are not 404, since not found means that the
-      // application is not linked.
-      if (isNotFoundError(error)) {
+      // Ignore 404 error. It means that the application is not linked, but the response can
+      // still hold link data that we have to display to the user.
+      if (isNotFoundError(error) && typeof linkResult !== 'undefined') {
+        return { link: linkResult, stats: statsResult, linked: false }
+      }
+
+      // Ignore 409 error. It means that the application link cannot be established, but
+      // the response can still hold link data that we have to displat to the user.
+      if (isConflictError(error) && typeof linkResult !== 'undefined') {
         return { link: linkResult, stats: statsResult, linked: false }
       }
 
@@ -181,81 +134,16 @@ const getApplicationLinkLogic = createRequestLogic({
   },
 })
 
-const getWebhookLogic = createRequestLogic({
-  type: webhook.GET_WEBHOOK,
-  async process({ action }) {
-    const {
-      payload: { appId, webhookId },
-      meta: { selector },
-    } = action
-    return api.application.webhooks.get(appId, webhookId, selector)
-  },
-})
-
-const getWebhooksLogic = createRequestLogic({
-  type: webhooks.GET_WEBHOOKS_LIST,
-  async process({ action }) {
-    const { appId } = action.payload
-    const res = await api.application.webhooks.list(appId)
-    return { webhooks: res.webhooks, totalCount: res.totalCount }
-  },
-})
-
-const getWebhookFormatsLogic = createRequestLogic({
-  type: webhookFormats.GET_WEBHOOK_FORMATS,
-  async process() {
-    const { formats } = await api.application.webhooks.getFormats()
-    return formats
-  },
-})
-
-const getPubsubLogic = createRequestLogic({
-  type: pubsub.GET_PUBSUB,
-  async process({ action }) {
-    const {
-      payload: { appId, pubsubId },
-      meta: { selector },
-    } = action
-    return api.application.pubsubs.get(appId, pubsubId, selector)
-  },
-})
-
-const getPubsubsLogic = createRequestLogic({
-  type: pubsubs.GET_PUBSUBS_LIST,
-  async process({ action }) {
-    const { appId } = action.payload
-    const res = await api.application.pubsubs.list(appId)
-    return { pubsubs: res.pubsubs, totalCount: res.totalCount }
-  },
-})
-
-const getPubsubFormatsLogic = createRequestLogic({
-  type: pubsubFormats.GET_PUBSUB_FORMATS,
-  async process() {
-    const { formats } = await api.application.pubsubs.getFormats()
-    return formats
-  },
-})
-
 export default [
   getApplicationLogic,
+  getApplicationDeviceCountLogic,
   updateApplicationLogic,
   deleteApplicationLogic,
   getApplicationsLogic,
   getApplicationsRightsLogic,
-  getApplicationApiKeysLogic,
-  getApplicationApiKeyLogic,
-  getApplicationCollaboratorLogic,
-  getApplicationCollaboratorsLogic,
-  getWebhooksLogic,
-  getWebhookLogic,
-  getWebhookFormatsLogic,
-  getPubsubLogic,
-  getPubsubsLogic,
-  getPubsubFormatsLogic,
   getApplicationLinkLogic,
   ...createEventsConnectLogics(
-    applications.SHARED_NAME_SINGLE,
+    applications.SHARED_NAME,
     'applications',
     api.application.eventsSubscribe,
   ),

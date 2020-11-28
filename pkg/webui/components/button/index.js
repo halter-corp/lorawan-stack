@@ -17,11 +17,14 @@ import classnames from 'classnames'
 import bind from 'autobind-decorator'
 import { injectIntl } from 'react-intl'
 
-import Link from '../link'
-import PropTypes from '../../lib/prop-types'
-import Spinner from '../spinner'
-import Message from '../../lib/components/message'
-import Icon from '../icon'
+import Link from '@ttn-lw/components/link'
+import Spinner from '@ttn-lw/components/spinner'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import ButtonIcon from './button-icon'
 
 import style from './button.styl'
 
@@ -31,6 +34,7 @@ function assembleClassnames({
   warning,
   secondary,
   naked,
+  unstyled,
   icon,
   busy,
   large,
@@ -39,6 +43,9 @@ function assembleClassnames({
   raw,
   disabled,
 }) {
+  if (unstyled) {
+    return className
+  }
   return classnames(style.button, className, {
     [style.danger]: danger,
     [style.warning]: warning,
@@ -54,17 +61,29 @@ function assembleClassnames({
   })
 }
 
-const buttonChildren = ({ icon, busy, message }) => (
-  <div className={style.content}>
-    {icon ? <Icon className={style.icon} nudgeUp icon={icon} /> : null}
-    {busy ? <Spinner className={style.spinner} small after={200} /> : null}
-    {message ? <Message content={message} /> : null}
-  </div>
-)
+const buttonChildren = props => {
+  const { icon, busy, message, children } = props
+
+  const content = Boolean(children) ? (
+    children
+  ) : (
+    <>
+      {icon ? <ButtonIcon icon={icon} type="left" /> : null}
+      {message ? <Message content={message} /> : null}
+    </>
+  )
+
+  return (
+    <div className={style.content}>
+      {busy ? <Spinner className={style.spinner} small after={200} /> : null}
+      {content}
+    </div>
+  )
+}
 
 @injectIntl
-@bind
 class Button extends React.PureComponent {
+  @bind
   handleClick(evt) {
     const { busy, disabled, onClick } = this.props
 
@@ -76,20 +95,31 @@ class Button extends React.PureComponent {
   }
 
   render() {
-    const { autoFocus, disabled, name, type, value, title: rawTitle, intl } = this.props
+    const {
+      autoFocus,
+      disabled,
+      name,
+      type,
+      value,
+      title: rawTitle,
+      intl,
+      busy,
+      onBlur,
+    } = this.props
 
     let title = rawTitle
     if (typeof rawTitle === 'object' && rawTitle.id && rawTitle.defaultMessage) {
       title = intl.formatMessage(title)
     }
 
-    const htmlProps = { autoFocus, disabled, name, type, value, title }
+    const htmlProps = { autoFocus, name, type, value, title, onBlur }
     const buttonClassNames = assembleClassnames(this.props)
     return (
       <button
         className={buttonClassNames}
         onClick={this.handleClick}
         children={buttonChildren(this.props)}
+        disabled={busy || disabled}
         {...htmlProps}
       />
     )
@@ -98,6 +128,7 @@ class Button extends React.PureComponent {
 
 Button.defaultProps = {
   onClick: () => null,
+  onBlur: undefined,
 }
 
 Button.Link = function(props) {
@@ -131,42 +162,49 @@ Button.AnchorLink = function(props) {
 }
 Button.AnchorLink.displayName = 'Button.AnchorLink'
 
+Button.Icon = ButtonIcon
+Button.Icon.displayName = 'Button.Icon'
+
 const commonPropTypes = {
-  /** The message to be displayed within the button */
+  /** The message to be displayed within the button. */
   message: PropTypes.message,
   /**
-   * A flag specifying whether the `danger` styling should applied to the button
+   * A flag specifying whether the `danger` styling should applied to the
+   * button.
    */
   danger: PropTypes.bool,
   /**
-   * A flag specifying whether the `warning` styling should applied to the button
+   * A flag specifying whether the `warning` styling should applied to the
+   * button.
    */
   warning: PropTypes.bool,
   /**
-   * A flag specifying whether the `secodnary` styling should applied to the button
+   * A flag specifying whether the `secodnary` styling should applied to the
+   * button.
    */
   secondary: PropTypes.bool,
   /**
-   * A flag specifying whether the `naked` styling should applied to the button
+   * A flag specifying whether the `naked` styling should applied to the
+   * button.
    */
   naked: PropTypes.bool,
   /**
-   * A flag specifying whether the `raw` styling should applied to the button
+   * A flag specifying whether the `raw` styling should applied to the button.
    */
   raw: PropTypes.bool,
   /**
-   * A flag specifying whether the `large` styling should applied to the button
+   * A flag specifying whether the `large` styling should applied to the button.
    */
   large: PropTypes.bool,
   /**
-   * A flag specifying whether the `error` styling should applied to the button
+   * A flag specifying whether the `error` styling should applied to the button.
    */
   error: PropTypes.bool,
-  /** The name of an icon to be displayed within the button*/
+  /** The name of an icon to be displayed within the button. */
   icon: PropTypes.string,
   /**
-   * A flag specifying whether the button in the `busy` state and the appropriate
-   * styling should be applied.
+   * A flag specifying whether the button in the `busy` state and the
+   * appropriate styling should be applied.
    */
   busy: PropTypes.bool,
   /**
@@ -175,19 +213,42 @@ const commonPropTypes = {
    * to the button element.
    */
   disabled: PropTypes.bool,
-  /** The html `name` prop passed to the <button /> element */
+  /** The html `name` prop passed to the <button /> element. */
   name: PropTypes.string,
-  /** The html `type` prop passed to the <button /> element */
+  /** The html `type` prop passed to the <button /> element. */
   type: PropTypes.string,
-  /** The html `value` prop passed to the <button /> element */
+  /** A flag specifying whether no additional styles should be
+   * attached to the button. This can helpful to achieve individual stylings.
+   */
+  unstyled: PropTypes.bool,
+  /** The html `value` prop passed to the <button /> element. */
   value: PropTypes.string,
-  /** The html `autofocus` prop passed to the <button /> element */
+  /** The html `autofocus` prop passed to the <button /> element. */
   autoFocus: PropTypes.bool,
-  /** A message to be evaluated and passed to the <button /> element */
+  /** A message to be evaluated and passed to the <button /> element. */
   title: PropTypes.message,
 }
 
+buttonChildren.propTypes = {
+  /**
+   * Possible children components of the button:
+   * Spinner, Icon, and/or Message.
+   */
+  busy: commonPropTypes.busy,
+  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]),
+  icon: commonPropTypes.icon,
+  message: commonPropTypes.message,
+}
+
+buttonChildren.defaultProps = {
+  busy: undefined,
+  icon: undefined,
+  message: undefined,
+  children: null,
+}
+
 Button.propTypes = {
+  onBlur: PropTypes.func,
   /**
    * A click listener to be called when the button is pressed.
    * Not called if the button is in the `busy` or `disabled` state.
@@ -205,4 +266,5 @@ Button.AnchorLink.propTypes = {
   ...commonPropTypes,
   ...Link.Anchor.propTypes,
 }
+
 export default Button

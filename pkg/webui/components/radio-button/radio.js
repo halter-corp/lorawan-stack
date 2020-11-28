@@ -16,15 +16,46 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import Message from '../../lib/components/message'
-import PropTypes from '../../lib/prop-types'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import { RadioGroupContext } from './group'
 
 import style from './radio-button.styl'
 
-@bind
 class RadioButton extends React.PureComponent {
   static contextType = RadioGroupContext
+
+  static propTypes = {
+    autoFocus: PropTypes.bool,
+    checked: PropTypes.bool,
+    className: PropTypes.string,
+    disabled: PropTypes.bool,
+    id: PropTypes.string,
+    label: PropTypes.message,
+    name: PropTypes.string,
+    onBlur: PropTypes.func,
+    onChange: PropTypes.func,
+    onFocus: PropTypes.func,
+    readOnly: PropTypes.bool,
+    value: PropTypes.string,
+  }
+
+  static defaultProps = {
+    className: undefined,
+    checked: false,
+    disabled: false,
+    label: undefined,
+    name: undefined,
+    readOnly: false,
+    value: undefined,
+    autoFocus: false,
+    id: undefined,
+    onChange: () => null,
+    onBlur: () => null,
+    onFocus: () => null,
+  }
 
   constructor(props) {
     super(props)
@@ -32,6 +63,7 @@ class RadioButton extends React.PureComponent {
     this.input = React.createRef()
   }
 
+  @bind
   handleChange(event) {
     const { onChange } = this.props
 
@@ -43,12 +75,14 @@ class RadioButton extends React.PureComponent {
     onChange(event)
   }
 
+  @bind
   focus() {
     if (this.input && this.input.current) {
       this.input.current.focus()
     }
   }
 
+  @bind
   blur() {
     if (this.input && this.input.current) {
       this.input.current.blur()
@@ -67,6 +101,7 @@ class RadioButton extends React.PureComponent {
       onFocus,
       value,
       checked,
+      id,
     } = this.props
 
     const radioProps = {}
@@ -99,6 +134,7 @@ class RadioButton extends React.PureComponent {
             onFocus={onFocus}
             onChange={this.handleChange}
             value={value}
+            id={id}
             {...radioProps}
           />
           <span className={style.dot} />
@@ -107,29 +143,6 @@ class RadioButton extends React.PureComponent {
       </label>
     )
   }
-}
-
-RadioButton.propTypes = {
-  className: PropTypes.string,
-  label: PropTypes.message,
-  name: PropTypes.string,
-  value: PropTypes.string,
-  checked: PropTypes.bool,
-  disabled: PropTypes.bool,
-  readOnly: PropTypes.bool,
-  autoFocus: PropTypes.bool,
-  onChange: PropTypes.func,
-  onBlur: PropTypes.func,
-  onFocus: PropTypes.func,
-}
-
-RadioButton.defaultProps = {
-  disabled: false,
-  readOnly: false,
-  autoFocus: false,
-  onChange: () => null,
-  onBlur: () => null,
-  onFocus: () => null,
 }
 
 export default RadioButton

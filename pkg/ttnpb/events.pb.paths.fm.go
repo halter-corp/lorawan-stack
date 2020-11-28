@@ -3,25 +3,36 @@
 package ttnpb
 
 var EventFieldPathsNested = []string{
+	"authentication",
+	"authentication.token_id",
+	"authentication.token_type",
+	"authentication.type",
 	"context",
 	"correlation_ids",
 	"data",
 	"identifiers",
 	"name",
 	"origin",
+	"remote_ip",
 	"time",
+	"unique_id",
+	"user_agent",
 	"visibility",
 	"visibility.rights",
 }
 
 var EventFieldPathsTopLevel = []string{
+	"authentication",
 	"context",
 	"correlation_ids",
 	"data",
 	"identifiers",
 	"name",
 	"origin",
+	"remote_ip",
 	"time",
+	"unique_id",
+	"user_agent",
 	"visibility",
 }
 var StreamEventsRequestFieldPathsNested = []string{
@@ -34,4 +45,15 @@ var StreamEventsRequestFieldPathsTopLevel = []string{
 	"after",
 	"identifiers",
 	"tail",
+}
+var Event_AuthenticationFieldPathsNested = []string{
+	"token_id",
+	"token_type",
+	"type",
+}
+
+var Event_AuthenticationFieldPathsTopLevel = []string{
+	"token_id",
+	"token_type",
+	"type",
 }

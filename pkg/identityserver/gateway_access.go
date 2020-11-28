@@ -19,38 +19,52 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/email"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/emails"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/email"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/emails"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateGatewayAPIKey = events.Define(
 		"gateway.api-key.create", "create gateway API key",
-		ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateGatewayAPIKey = events.Define(
 		"gateway.api-key.update", "update gateway API key",
-		ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteGatewayAPIKey = events.Define(
 		"gateway.api-key.delete", "delete gateway API key",
-		ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS,
+		events.WithVisibility(ttnpb.RIGHT_GATEWAY_SETTINGS_API_KEYS),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateGatewayCollaborator = events.Define(
 		"gateway.collaborator.update", "update gateway collaborator",
-		ttnpb.RIGHT_GATEWAY_SETTINGS_COLLABORATORS,
-		ttnpb.RIGHT_USER_GATEWAYS_LIST,
+		events.WithVisibility(
+			ttnpb.RIGHT_GATEWAY_SETTINGS_COLLABORATORS,
+			ttnpb.RIGHT_USER_GATEWAYS_LIST,
+		),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteGatewayCollaborator = events.Define(
 		"gateway.collaborator.delete", "delete gateway collaborator",
-		ttnpb.RIGHT_GATEWAY_SETTINGS_COLLABORATORS,
-		ttnpb.RIGHT_USER_GATEWAYS_LIST,
+		events.WithVisibility(
+			ttnpb.RIGHT_GATEWAY_SETTINGS_COLLABORATORS,
+			ttnpb.RIGHT_USER_GATEWAYS_LIST,
+		),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
@@ -82,7 +96,7 @@ func (is *IdentityServer) createGatewayAPIKey(ctx context.Context, req *ttnpb.Cr
 		return nil, err
 	}
 	key.Key = token
-	events.Publish(evtCreateGatewayAPIKey(ctx, req.GatewayIdentifiers, nil))
+	events.Publish(evtCreateGatewayAPIKey.NewWithIdentifiersAndData(ctx, req.GatewayIdentifiers, nil))
 	err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
 		data.SetEntity(req.EntityIdentifiers())
 		return &emails.APIKeyCreated{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
@@ -170,22 +184,20 @@ func (is *IdentityServer) updateGatewayAPIKey(ctx context.Context, req *ttnpb.Up
 	if err != nil {
 		return nil, err
 	}
-	if key == nil {
+	if key == nil { // API key was deleted.
+		events.Publish(evtDeleteGatewayAPIKey.NewWithIdentifiersAndData(ctx, req.GatewayIdentifiers, nil))
 		return &ttnpb.APIKey{}, nil
 	}
 	key.Key = ""
-	if len(req.Rights) > 0 {
-		events.Publish(evtUpdateGatewayAPIKey(ctx, req.GatewayIdentifiers, nil))
-		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
-			data.SetEntity(req.EntityIdentifiers())
-			return &emails.APIKeyChanged{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
-		})
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("Could not send API key update notification email")
-		}
-	} else {
-		events.Publish(evtDeleteGatewayAPIKey(ctx, req.GatewayIdentifiers, nil))
+	events.Publish(evtUpdateGatewayAPIKey.NewWithIdentifiersAndData(ctx, req.GatewayIdentifiers, nil))
+	err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
+		data.SetEntity(req.EntityIdentifiers())
+		return &emails.APIKeyChanged{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
+	})
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("Could not send API key update notification email")
 	}
+
 	return key, nil
 }
 
@@ -254,7 +266,7 @@ func (is *IdentityServer) setGatewayCollaborator(ctx context.Context, req *ttnpb
 		return nil, err
 	}
 	if len(req.Collaborator.Rights) > 0 {
-		events.Publish(evtUpdateGatewayCollaborator(ctx, ttnpb.CombineIdentifiers(req.GatewayIdentifiers, req.Collaborator), nil))
+		events.Publish(evtUpdateGatewayCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.GatewayIdentifiers, req.Collaborator), nil))
 		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
 			data.SetEntity(req.EntityIdentifiers())
 			return &emails.CollaboratorChanged{Data: data, Collaborator: req.Collaborator}
@@ -263,7 +275,7 @@ func (is *IdentityServer) setGatewayCollaborator(ctx context.Context, req *ttnpb
 			log.FromContext(ctx).WithError(err).Error("Could not send collaborator updated notification email")
 		}
 	} else {
-		events.Publish(evtDeleteGatewayCollaborator(ctx, ttnpb.CombineIdentifiers(req.GatewayIdentifiers, req.Collaborator), nil))
+		events.Publish(evtDeleteGatewayCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.GatewayIdentifiers, req.Collaborator), nil))
 	}
 	return ttnpb.Empty, nil
 }

@@ -18,7 +18,7 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 const unmatchedNetID = "unmatched NetID type"
@@ -77,6 +77,25 @@ func (id *NetID) UnmarshalText(data []byte) error {
 	return unmarshalTextBytes(id[:], data)
 }
 
+// MarshalNumber returns the numeric value.
+func (id NetID) MarshalNumber() uint32 {
+	return uint32(id[0])<<16 | uint32(id[1])<<8 | uint32(id[2])
+}
+
+var errNetIDOverflow = errors.DefineInvalidArgument("net_id_overflow", "NetID overflow")
+
+// UnmarshalNumber unmarshals the NetID from a numeric value.
+func (id *NetID) UnmarshalNumber(netID uint32) error {
+	*id = [3]byte{}
+	if netID > 0xFFFFFF {
+		return errNetIDOverflow.New()
+	}
+	id[0] = byte(netID >> 16)
+	id[1] = byte(netID >> 8)
+	id[2] = byte(netID)
+	return nil
+}
+
 // Type returns NetID type.
 func (id NetID) Type() byte {
 	return id[0] >> 5
@@ -126,14 +145,14 @@ var (
 // NewNetID returns new NetID.
 func NewNetID(typ byte, id []byte) (netID NetID, err error) {
 	if typ > 7 {
-		return NetID{}, errNetIDType
+		return NetID{}, errNetIDType.New()
 	}
 
 	if len(id) < 3 {
 		id = append(make([]byte, 3-len(id)), id...)
 	}
 	if id[0]&0xe0 > 0 {
-		return NetID{}, errNetIDBits
+		return NetID{}, errNetIDBits.New()
 	}
 	copy(netID[:], id)
 	netID[0] = netID[0]&0x1f | typ<<5

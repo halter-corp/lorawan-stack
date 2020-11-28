@@ -15,22 +15,29 @@
 import React from 'react'
 import { Switch, Route } from 'react-router-dom'
 
-import OrganizationsList from '../organizations-list'
-import OrganizationAdd from '../organization-add'
-import Organization from '../organization'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
 
-import { mayViewOrganizationsOfUser } from '../../lib/feature-checks'
+import Organization from '@console/views/organization'
+import OrganizationAdd from '@console/views/organization-add'
+import OrganizationsList from '@console/views/organizations-list'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { mayViewOrganizationsOfUser } from '@console/lib/feature-checks'
 
 @withFeatureRequirement(mayViewOrganizationsOfUser, { redirect: '/' })
 @withBreadcrumb('orgs', function(props) {
   return <Breadcrumb path="/organizations" content={sharedMessages.organizations} />
 })
 class Organizations extends React.Component {
+  static propTypes = {
+    match: PropTypes.match.isRequired,
+  }
+
   render() {
     const { path } = this.props.match
     return (

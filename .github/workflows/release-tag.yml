@@ -1,0 +1,91 @@
+name: Tag release
+
+on:
+  push:
+    tags:
+      - 'v3.[0-9]+.[0-9]+'
+      - 'v3.[0-9]+.[0-9]+-rc[0-9]'
+
+env:
+  NODE_ENV: production
+
+jobs:
+  release:
+    name: Tag release
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: '${{ secrets.DOCKERHUB_USERNAME }}'
+        password: '${{ secrets.DOCKERHUB_PASSWORD }}'
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: '${{ secrets.GHCR_USERNAME }}'
+        password: '${{ secrets.GHCR_PASSWORD }}'
+    - name: Install Snapcraft
+      run: sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft
+    - name: Login to Snapcraft
+      env:
+        SNAPCRAFT_LOGIN: ${{ secrets.SNAPCRAFT_LOGIN }}
+      run: snapcraft login --with <(printf "$SNAPCRAFT_LOGIN")
+    - name: Set up Node
+      uses: actions/setup-node@v2-beta
+      with:
+        node-version: '~14'
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '~1.15'
+    - name: Download Go dependencies
+      run: go mod download
+    - name: Download Go tool dependencies
+      run: |
+        cd tools
+        go mod download
+    - name: Make Mage
+      run: make tools/bin/mage
+    - name: Auto-completion scripts
+      run: tools/bin/mage cli:autocomplete
+    - name: Install JS SDK dependencies
+      run: tools/bin/mage jsSDK:deps
+    - name: Build JS SDK
+      run: tools/bin/mage jsSDK:clean jsSDK:build
+    - name: Install JS dependencies
+      run: tools/bin/mage js:deps
+      timeout-minutes: 5
+    - name: Build frontend
+      run: tools/bin/mage js:clean js:build
+    - name: File versioning
+      run: tools/bin/mage version:files
+    - name: Check for diff
+      run: tools/bin/mage git:diff
+    - name: Determine date
+      id: date
+      run: echo "::set-output name=value::$(date +%Y-%m-%d)"
+    - name: Generate CHANGELOG reference
+      uses: actions/github-script@v2
+      id: changelog_reference
+      with:
+        result-encoding: string
+        script: |
+          const tag = context.ref.slice('refs/rev/v'.length);
+          const tagParts = tag.split('.');
+          require('fs').writeFileSync('/tmp/release-notes.md', `[Release notes](https://github.com/TheThingsNetwork/lorawan-stack/blob/${tag}/CHANGELOG.md#${tagParts[0]}${tagParts[1]}${tagParts[2]}---${{ steps.date.outputs.value }})`);
+    - name: Determine Goreleaser version
+      id: goreleaser_version
+      run: echo "::set-output name=value::$(cat tools/go.mod | grep 'github.com/goreleaser/goreleaser v' | cut -d ' ' -f 2)"
+    - name: Run Goreleaser
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: ${{ steps.goreleaser_version.outputs.value }}
+        args: release --config .goreleaser.release.yml --release-notes /tmp/release-notes.md
+      env:
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}

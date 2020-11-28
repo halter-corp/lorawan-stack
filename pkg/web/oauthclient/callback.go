@@ -15,47 +15,73 @@
 package oauthclient
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
-var errCallback = errors.DefinePermissionDenied("oauth_callback_error", "an error occurred: {error}")
-var errNoStateParam = errors.DefinePermissionDenied("oauth_callback_no_state", "no state parameter present in request")
-var errNoCode = errors.DefinePermissionDenied("oauth_callback_no_code", "no code parameter present in request")
-var errInvalidState = errors.DefinePermissionDenied("oauth_callback_invalid_state", "invalid state parameter")
+var (
+	errRefused      = errors.DefinePermissionDenied("refused", "refused by OAuth server", "reason")
+	errNoStateParam = errors.DefinePermissionDenied("no_state", "no state parameter present in request")
+	errNoCodeParam  = errors.DefinePermissionDenied("no_code", "no code parameter present in request")
+	errInvalidState = errors.DefinePermissionDenied("invalid_state", "invalid state parameter")
+	errExchange     = errors.DefinePermissionDenied("exchange", "token exchange refused")
+)
 
 // HandleCallback is a handler that takes the auth code and exchanges it for the
 // access token.
 func (oc *OAuthClient) HandleCallback(c echo.Context) error {
 	if e := c.QueryParam("error"); e != "" {
-		return errCallback.WithAttributes("error", c.QueryParam("error_description"))
+		return errRefused.WithAttributes("reason", c.QueryParam("error_description"))
 	}
 
 	state := c.QueryParam("state")
 	if state == "" {
-		return errNoStateParam
+		return errNoStateParam.New()
 	}
 
 	code := c.QueryParam("code")
 	if code == "" {
-		return errNoCode
+		return errNoCodeParam.New()
 	}
 
 	stateCookie, err := oc.getStateCookie(c)
 	if err != nil {
+		// Running the callback without state cookie often occurs when re-running
+		// the callback after successful token exchange (e.g. using the browser's
+		// back button after logging in). If there is a valid auth cookie, we just
+		// redirect back to the client mount instead of showing an error.
+		value, err := oc.getAuthCookie(c)
+		if err == nil && value.AccessToken != "" {
+			config := oc.configFromContext(c.Request().Context())
+			return c.Redirect(http.StatusFound, config.RootURL)
+		}
 		return err
 	}
 
 	if stateCookie.Secret != state {
-		return errInvalidState
+		return errInvalidState.New()
 	}
 
 	// Exchange token.
-	token, err := oc.oauth(c).Exchange(c.Request().Context(), code)
+	ctx, err := oc.withTLSClientConfig(c.Request().Context())
 	if err != nil {
 		return err
+	}
+	token, err := oc.oauth(c).Exchange(ctx, code)
+	if err != nil {
+		var retrieveError *oauth2.RetrieveError
+		if stderrors.As(err, &retrieveError) {
+			var ttnErr errors.Error
+			if decErr := json.Unmarshal(retrieveError.Body, &ttnErr); decErr == nil {
+				return errExchange.WithCause(ttnErr)
+			}
+		}
+		return errExchange.WithCause(err)
 	}
 
 	oc.removeStateCookie(c)
@@ -69,6 +95,10 @@ func (oc *OAuthClient) HandleCallback(c echo.Context) error {
 		return err
 	}
 
+	return oc.callback(c, token, stateCookie.Next)
+}
+
+func (oc *OAuthClient) defaultCallback(c echo.Context, _ *oauth2.Token, next string) error {
 	config := oc.configFromContext(c.Request().Context())
-	return c.Redirect(http.StatusFound, config.RootURL+stateCookie.Next)
+	return c.Redirect(http.StatusFound, config.RootURL+next)
 }

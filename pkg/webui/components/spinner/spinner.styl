@@ -18,9 +18,8 @@ $xs = $cs.m
 
 .box
   text-align: center
-  display: inline-block
+  display: block
   opacity: 0
-
   transition: opacity $ad.m
 
   &.visible
@@ -74,7 +73,7 @@ $xs = $cs.m
 
 .center
   position: absolute
-  top: ($l * -1) // visual centering
+  top: ($l * -1) // To achieve visual centering.
   left: 0
   right: 0
   bottom: 0
@@ -83,11 +82,11 @@ $xs = $cs.m
 
   &.small
     height: $s
-    top: ($s * -1) // visual centering
+    top: ($s * -1) // To achieve visual centering.
 
   &.micro
     height: $xs
-    top: ($xs * -1) // visual centering
+    top: ($xs * -1) // To achieve visual centering.
 
 .small .spinner
   width: $s

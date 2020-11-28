@@ -15,12 +15,9 @@
 import {
   GET_ORGS_LIST_BASE,
   GET_ORG_BASE,
-  GET_ORG_COLLABORATORS_LIST_BASE,
   GET_ORGS_RIGHTS_LIST_BASE,
-  GET_ORG_API_KEYS_LIST_BASE,
-  GET_ORG_API_KEY_BASE,
-  GET_ORG_COLLABORATOR_BASE,
-} from '../actions/organizations'
+} from '@console/store/actions/organizations'
+
 import {
   createPaginationIdsSelectorByEntity,
   createPaginationTotalCountSelectorByEntity,
@@ -29,26 +26,17 @@ import {
   createEventsSelector,
   createEventsErrorSelector,
   createEventsStatusSelector,
+  createEventsInterruptedSelector,
+  createEventsPausedSelector,
+  createEventsTruncatedSelector,
 } from './events'
 import { createFetchingSelector } from './fetching'
 import { createErrorSelector } from './error'
 import { createRightsSelector, createPseudoRightsSelector } from './rights'
-import { createApiKeySelector } from './api-key'
-import {
-  createApiKeysSelector,
-  createTotalCountSelector as createApiKeysTotalCountSelector,
-} from './api-keys'
-import {
-  createCollaboratorsSelector,
-  createTotalCountSelector as createCollaboratorsTotalCountSelector,
-  createUserCollaboratorSelector,
-  createOrganizationCollaboratorSelector,
-} from './collaborators'
 
 const ENTITY = 'organizations'
-const ENTITY_SINGLE = 'organization'
 
-// Organization
+// Organization.
 export const selectOrganizationStore = state => state.organizations
 export const selectOrganizationEntitiesStore = state => selectOrganizationStore(state).entities
 export const selectOrganizationById = (state, id) => selectOrganizationEntitiesStore(state)[id]
@@ -59,7 +47,7 @@ export const selectSelectedOrganization = state =>
 export const selectOrganizationFetching = createFetchingSelector(GET_ORG_BASE)
 export const selectOrganizationError = createErrorSelector(GET_ORG_BASE)
 
-// Organizations
+// Organizations.
 const selectOrgsIds = createPaginationIdsSelectorByEntity(ENTITY)
 const selectOrgsTotalCount = createPaginationTotalCountSelectorByEntity(ENTITY)
 const selectOrgsFetching = createFetchingSelector(GET_ORGS_LIST_BASE)
@@ -71,38 +59,16 @@ export const selectOrganizationsTotalCount = state => selectOrgsTotalCount(state
 export const selectOrganizationsFetching = state => selectOrgsFetching(state)
 export const selectOrganizationsError = state => selectOrgsError(state)
 
-// Rights
+// Rights.
 export const selectOrganizationRights = createRightsSelector(ENTITY)
 export const selectOrganizationPseudoRights = createPseudoRightsSelector(ENTITY)
 export const selectOrganizationRightsError = createErrorSelector(GET_ORGS_RIGHTS_LIST_BASE)
 export const selectOrganizationRightsFetching = createFetchingSelector(GET_ORGS_RIGHTS_LIST_BASE)
 
-// Api Keys
-export const selectOrganizationApiKeys = createApiKeysSelector(ENTITY)
-export const selectOrganizationApiKeysTotalCount = createApiKeysTotalCountSelector(ENTITY)
-export const selectOrganizationApiKeysFetching = createFetchingSelector(GET_ORG_API_KEYS_LIST_BASE)
-export const selectOrganizationApiKey = createApiKeySelector(ENTITY_SINGLE)
-export const selectOrganizationApiKeyFetching = createFetchingSelector(GET_ORG_API_KEY_BASE)
-export const selectOrganizationApiKeyError = createErrorSelector(GET_ORG_API_KEY_BASE)
-
-// Events
+// Events.
 export const selectOrganizationEvents = createEventsSelector(ENTITY)
 export const selectOrganizationEventsError = createEventsErrorSelector(ENTITY)
 export const selectOrganizationEventsStatus = createEventsStatusSelector(ENTITY)
-
-// Collaborators
-export const selectOrganizationCollaborators = createCollaboratorsSelector(ENTITY)
-export const selectOrganizationCollaboratorsTotalCount = createCollaboratorsTotalCountSelector(
-  ENTITY,
-)
-export const selectOrganizationCollaboratorsFetching = createFetchingSelector(
-  GET_ORG_COLLABORATORS_LIST_BASE,
-)
-export const selectOrganizationUserCollaborator = createUserCollaboratorSelector(ENTITY_SINGLE)
-export const selectOrganizationOrganizationCollaborator = createOrganizationCollaboratorSelector(
-  ENTITY_SINGLE,
-)
-export const selectOrganizationCollaboratorFetching = createFetchingSelector(
-  GET_ORG_COLLABORATOR_BASE,
-)
-export const selectOrganizationCollaboratorError = createErrorSelector(GET_ORG_COLLABORATOR_BASE)
+export const selectOrganizationEventsInterrupted = createEventsInterruptedSelector(ENTITY)
+export const selectOrganizationEventsPaused = createEventsPausedSelector(ENTITY)
+export const selectOrganizationEventsTruncated = createEventsTruncatedSelector(ENTITY)

@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/random"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/random"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -65,7 +65,7 @@ var errZeroLengthSalt = errors.DefineInternal(
 // Hash hashes a plain text password.
 func (p PBKDF2) Hash(plain string) (string, error) {
 	if p.SaltLength == 0 {
-		return "", errZeroLengthSalt
+		return "", errZeroLengthSalt.New()
 	}
 
 	salt := random.String(p.SaltLength)
@@ -102,7 +102,7 @@ func (PBKDF2) Validate(hashed, plain string) (bool, error) {
 	}
 
 	alg := parts[1]
-	algorithm, err := parseAlgorithm(alg)
+	algorithm, err := ParseAlgorithm(alg)
 	if err != nil {
 		return false, err
 	}

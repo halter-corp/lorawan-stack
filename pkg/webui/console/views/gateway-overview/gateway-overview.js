@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,55 +14,85 @@
 
 import React from 'react'
 import bind from 'autobind-decorator'
+import { defineMessages } from 'react-intl'
 import { Container, Col, Row } from 'react-grid-system'
+import { connect } from 'react-redux'
 
-import DataSheet from '../../../components/data-sheet'
-import GatewayConnection from '../../containers/gateway-connection'
-import GatewayEvents from '../../containers/gateway-events'
-import Tag from '../../../components/tag'
+import api from '@console/api'
 
-import sharedMessages from '../../../lib/shared-messages'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import DateTime from '../../../lib/components/date-time'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
-import GatewayMap from '../../components/gateway-map'
-import EntityTitleSection from '../../components/entity-title-section'
-import KeyValueTag from '../../components/key-value-tag'
-import Spinner from '../../../components/spinner'
-import withRequest from '../../../lib/components/with-request'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import Button from '@ttn-lw/components/button'
+import DataSheet from '@ttn-lw/components/data-sheet'
+import Tag from '@ttn-lw/components/tag'
+import toast from '@ttn-lw/components/toast'
 
-import { mayEditBasicGatewayInformation } from '../../lib/feature-checks'
+import Message from '@ttn-lw/lib/components/message'
+import DateTime from '@ttn-lw/lib/components/date-time'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
-@withRequest(({ gtwId, loadData }) => loadData(gtwId), () => false)
-@withFeatureRequirement(mayEditBasicGatewayInformation, {
+import GatewayMap from '@console/components/gateway-map'
+
+import GatewayEvents from '@console/containers/gateway-events'
+import GatewayTitleSection from '@console/containers/gateway-title-section'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import { composeDataUri, downloadDataUriAsFile } from '@ttn-lw/lib/data-uri'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import {
+  mayViewGatewayInfo,
+  mayViewGatewayConfJson,
+  checkFromState,
+} from '@console/lib/feature-checks'
+
+import style from './gateway-overview.styl'
+
+const m = defineMessages({
+  downloadGlobalConf: 'Download global_conf.json',
+  globalConf: 'Global configuration',
+  globalConfFailed: 'Failed to download global_conf.json',
+  globalConfFailedMessage:
+    'An unknown error occurred and the global_conf.json could not be downloaded',
+  globalConfUnavailable: 'Unavailable for gateways without frequency plan',
+})
+
+@connect(state => ({
+  mayViewGatewayConfJson: checkFromState(mayViewGatewayConfJson, state),
+}))
+@withFeatureRequirement(mayViewGatewayInfo, {
   redirect: '/',
 })
-@bind
 export default class GatewayOverview extends React.Component {
   static propTypes = {
-    apiKeysTotalCount: PropTypes.number,
-    collaboratorsTotalCount: PropTypes.number,
     gateway: PropTypes.gateway.isRequired,
     gtwId: PropTypes.string.isRequired,
-    statusBarFetching: PropTypes.bool.isRequired,
+    mayViewGatewayConfJson: PropTypes.bool.isRequired,
   }
 
-  static defaultProps = {
-    apiKeysTotalCount: undefined,
-    collaboratorsTotalCount: undefined,
+  @bind
+  async handleGlobalConfDownload() {
+    const { gtwId } = this.props
+
+    try {
+      const globalConf = await api.gateway.getGlobalConf(gtwId)
+      const globalConfDataUri = composeDataUri(JSON.stringify(globalConf, undefined, 2))
+      downloadDataUriAsFile(globalConfDataUri, 'global_conf.json')
+    } catch (err) {
+      toast({
+        title: m.globalConfFailed,
+        message: m.globalConfFailedMessage,
+        type: toast.types.ERROR,
+      })
+    }
   }
 
   render() {
     const {
       gtwId,
-      collaboratorsTotalCount,
-      apiKeysTotalCount,
-      statusBarFetching,
+      mayViewGatewayConfJson,
       gateway: {
         ids,
-        name,
         description,
         created_at,
         updated_at,
@@ -107,47 +137,50 @@ export default class GatewayOverview extends React.Component {
           },
         ],
       },
-      {
-        header: sharedMessages.lorawanInformation,
-        items: [
-          {
-            key: sharedMessages.frequencyPlan,
-            value: <Tag content={frequency_plan_id} />,
-          },
-        ],
-      },
     ]
 
+    const lorawanInfo = {
+      header: sharedMessages.lorawanInformation,
+      items: [
+        {
+          key: sharedMessages.frequencyPlan,
+          value: frequency_plan_id ? <Tag content={frequency_plan_id} /> : undefined,
+        },
+      ],
+    }
+
+    if (mayViewGatewayConfJson) {
+      lorawanInfo.items.push({
+        key: m.globalConf,
+        value: Boolean(frequency_plan_id) ? (
+          <Button
+            type="button"
+            icon="get_app"
+            secondary
+            onClick={this.handleGlobalConfDownload}
+            message={m.downloadGlobalConf}
+          />
+        ) : (
+          <Message content={m.globalConfUnavailable} className={style.notAvailable} />
+        ),
+      })
+    }
+
+    sheetData.push(lorawanInfo)
+
     return (
-      <React.Fragment>
-        <EntityTitleSection
-          entityId={gtwId}
-          entityName={name}
-          description={description}
-          creationDate={created_at}
-        >
-          <GatewayConnection gtwId={gtwId} />
-          {statusBarFetching ? (
-            <Spinner after={0} faded micro inline>
-              <Message content={sharedMessages.fetching} />
-            </Spinner>
-          ) : (
-            <React.Fragment>
-              <KeyValueTag
-                icon="collaborators"
-                value={collaboratorsTotalCount}
-                keyMessage={sharedMessages.collaboratorCounted}
-              />
-              <KeyValueTag
-                icon="api_keys"
-                value={apiKeysTotalCount}
-                keyMessage={sharedMessages.apiKeyCounted}
-              />
-            </React.Fragment>
-          )}
-        </EntityTitleSection>
+      <>
+        <div className={style.titleSection}>
+          <Container>
+            <IntlHelmet title={sharedMessages.overview} />
+            <Row>
+              <Col sm={12}>
+                <GatewayTitleSection gtwId={gtwId} />
+              </Col>
+            </Row>
+          </Container>
+        </div>
         <Container>
-          <IntlHelmet title={sharedMessages.overview} />
           <Row>
             <Col sm={12} lg={6}>
               <DataSheet data={sheetData} />
@@ -158,7 +191,7 @@ export default class GatewayOverview extends React.Component {
             </Col>
           </Row>
         </Container>
-      </React.Fragment>
+      </>
     )
   }
 }

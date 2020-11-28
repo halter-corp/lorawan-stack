@@ -19,34 +19,46 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/blacklist"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/blacklist"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateApplication = events.Define(
 		"application.create", "create application",
-		ttnpb.RIGHT_APPLICATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateApplication = events.Define(
 		"application.update", "update application",
-		ttnpb.RIGHT_APPLICATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteApplication = events.Define(
 		"application.delete", "delete application",
-		ttnpb.RIGHT_APPLICATION_INFO,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
+
+var errAdminsCreateApplications = errors.DefinePermissionDenied("admins_create_applications", "applications may only be created by admins, or in organizations")
 
 func (is *IdentityServer) createApplication(ctx context.Context, req *ttnpb.CreateApplicationRequest) (app *ttnpb.Application, err error) {
 	if err = blacklist.Check(ctx, req.ApplicationID); err != nil {
 		return nil, err
 	}
 	if usrIDs := req.Collaborator.GetUserIDs(); usrIDs != nil {
+		if !is.IsAdmin(ctx) && !is.configFromContext(ctx).UserRights.CreateApplications {
+			return nil, errAdminsCreateApplications
+		}
 		if err = rights.RequireUser(ctx, *usrIDs, ttnpb.RIGHT_USER_APPLICATIONS_CREATE); err != nil {
 			return nil, err
 		}
@@ -83,7 +95,7 @@ func (is *IdentityServer) createApplication(ctx context.Context, req *ttnpb.Crea
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtCreateApplication(ctx, req.ApplicationIdentifiers, nil))
+	events.Publish(evtCreateApplication.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, nil))
 	return app, nil
 }
 
@@ -142,6 +154,7 @@ func (is *IdentityServer) listApplications(ctx context.Context, req *ttnpb.ListA
 			return nil, err
 		}
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	paginateCtx := store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -168,16 +181,18 @@ func (is *IdentityServer) listApplications(ctx context.Context, req *ttnpb.ListA
 		if err != nil {
 			return err
 		}
-		for i, app := range apps.Applications {
-			if rights.RequireApplication(ctx, app.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_INFO) != nil {
-				apps.Applications[i] = app.PublicSafe()
-			}
-		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	for i, app := range apps.Applications {
+		if rights.RequireApplication(ctx, app.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_INFO) != nil {
+			apps.Applications[i] = app.PublicSafe()
+		}
+	}
+
 	return apps, nil
 }
 
@@ -211,7 +226,7 @@ func (is *IdentityServer) updateApplication(ctx context.Context, req *ttnpb.Upda
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateApplication(ctx, req.ApplicationIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateApplication.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, req.FieldMask.Paths))
 	return app, nil
 }
 
@@ -234,7 +249,7 @@ func (is *IdentityServer) deleteApplication(ctx context.Context, ids *ttnpb.Appl
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeleteApplication(ctx, ids, nil))
+	events.Publish(evtDeleteApplication.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
 }
 

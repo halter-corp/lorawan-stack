@@ -14,63 +14,99 @@
 
 import React from 'react'
 import { connect } from 'react-redux'
-import bind from 'autobind-decorator'
 
-import PropTypes from '../../../lib/prop-types'
-import { getApplicationId, getDeviceId } from '../../../lib/selectors/id'
-import EventsSubscription from '../../containers/events-subscription'
+import Events from '@console/components/events'
 
-import { clearDeviceEventsStream, startDeviceEventsStream } from '../../store/actions/device'
+import { getApplicationId, getDeviceId, combineDeviceIds } from '@ttn-lw/lib/selectors/id'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import {
+  clearDeviceEventsStream,
+  pauseDeviceEventsStream,
+  resumeDeviceEventsStream,
+} from '@console/store/actions/devices'
 
 import {
   selectDeviceEvents,
-  selectDeviceEventsStatus,
-  selectDeviceEventsError,
-} from '../../store/selectors/device'
+  selectDeviceEventsPaused,
+  selectDeviceEventsTruncated,
+} from '@console/store/selectors/devices'
 
-@connect(
-  null,
-  (dispatch, ownProps) => ({
-    onClear: () => dispatch(clearDeviceEventsStream(ownProps.devIds)),
-    onRestart: () => dispatch(startDeviceEventsStream(ownProps.devIds)),
-  }),
-)
-@bind
-class DeviceEvents extends React.Component {
-  static propTypes = {
-    devIds: PropTypes.shape({
-      device_id: PropTypes.string,
-      application_ids: PropTypes.shape({
-        application_id: PropTypes.string,
-      }),
-    }).isRequired,
-    onClear: PropTypes.func.isRequired,
-    onRestart: PropTypes.func.isRequired,
-    widget: PropTypes.bool,
-  }
+const DeviceEvents = props => {
+  const { appId, devId, events, widget, paused, onClear, onPauseToggle, truncated } = props
 
-  static defaultProps = {
-    widget: false,
-  }
-  render() {
-    const { devIds, widget, onClear, onRestart } = this.props
-
-    const devId = getDeviceId(devIds)
-    const appId = getApplicationId(devIds)
-
+  if (widget) {
     return (
-      <EventsSubscription
-        id={devId}
-        widget={widget}
-        eventsSelector={selectDeviceEvents}
-        statusSelector={selectDeviceEventsStatus}
-        errorSelector={selectDeviceEventsError}
-        onClear={onClear}
-        onRestart={onRestart}
+      <Events.Widget
+        events={events}
+        entityId={devId}
         toAllUrl={`/applications/${appId}/devices/${devId}/data`}
+        scoped
       />
     )
   }
+
+  return (
+    <Events
+      events={events}
+      entityId={devId}
+      paused={paused}
+      onClear={onClear}
+      onPauseToggle={onPauseToggle}
+      truncated={truncated}
+      scoped
+      widget
+    />
+  )
 }
 
-export default DeviceEvents
+DeviceEvents.propTypes = {
+  appId: PropTypes.string.isRequired,
+  devId: PropTypes.string.isRequired,
+  devIds: PropTypes.shape({
+    device_id: PropTypes.string,
+    application_ids: PropTypes.shape({
+      application_id: PropTypes.string,
+    }),
+  }).isRequired,
+  events: PropTypes.events,
+  onClear: PropTypes.func.isRequired,
+  onPauseToggle: PropTypes.func.isRequired,
+  paused: PropTypes.bool.isRequired,
+  truncated: PropTypes.bool.isRequired,
+  widget: PropTypes.bool,
+}
+
+DeviceEvents.defaultProps = {
+  widget: false,
+  events: [],
+}
+
+export default connect(
+  (state, props) => {
+    const { devIds } = props
+
+    const appId = getApplicationId(devIds)
+    const devId = getDeviceId(devIds)
+    const combinedId = combineDeviceIds(appId, devId)
+
+    return {
+      devId,
+      appId,
+      events: selectDeviceEvents(state, combinedId),
+      paused: selectDeviceEventsPaused(state, combinedId),
+      truncated: selectDeviceEventsTruncated(state, combinedId),
+    }
+  },
+  (dispatch, ownProps) => {
+    const { devIds } = ownProps
+
+    return {
+      onClear: () => dispatch(clearDeviceEventsStream(devIds)),
+      onPauseToggle: paused =>
+        paused
+          ? dispatch(resumeDeviceEventsStream(devIds))
+          : dispatch(pauseDeviceEventsStream(devIds)),
+    }
+  },
+)(DeviceEvents)

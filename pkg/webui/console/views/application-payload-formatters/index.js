@@ -18,36 +18,39 @@ import { Switch, Route, Link, Redirect } from 'react-router-dom'
 import { Container, Col, Row } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
 
-import PropTypes from '../../../lib/prop-types'
-import Message from '../../../lib/components/message'
-import Notification from '../../../components/notification'
-import Spinner from '../../../components/spinner'
-import sharedMessages from '../../../lib/shared-messages'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import NotFoundRoute from '../../../lib/components/not-found-route'
+import Notification from '@ttn-lw/components/notification'
+import Spinner from '@ttn-lw/components/spinner'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
 
-import ApplicationUplinkPayloadFormatters from '../../containers/application-payload-formatters/uplink'
-import ApplicationDownlinkPayloadFormatters from '../../containers/application-payload-formatters/downlink'
+import NotFoundRoute from '@ttn-lw/lib/components/not-found-route'
+import Message from '@ttn-lw/lib/components/message'
 
-import { getApplicationLink } from '../../store/actions/link'
+import ApplicationUplinkPayloadFormatters from '@console/containers/application-payload-formatters/uplink'
+import ApplicationDownlinkPayloadFormatters from '@console/containers/application-payload-formatters/downlink'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getApplicationLink } from '@console/store/actions/link'
+
 import {
   selectApplicationIsLinked,
   selectApplicationLink,
   selectApplicationLinkFetching,
   selectSelectedApplicationId,
-} from '../../store/selectors/applications'
+} from '@console/store/selectors/applications'
 
 import style from './application-payload-formatters.styl'
 
 const m = defineMessages({
-  warningTitle: 'Linking Needed',
+  warningTitle: 'Linking needed',
   warningText: 'Please {link}, in order to configure payload formatters',
-  linkApplication: 'link your application',
+  linkApplication: 'Link your application',
 })
 
 @connect(
-  function(state) {
+  state => {
     const link = selectApplicationLink(state)
     const fetching = selectApplicationLinkFetching(state)
 
@@ -61,13 +64,12 @@ const m = defineMessages({
     getLink: (id, selector) => dispatch(getApplicationLink(id, selector)),
   }),
 )
-@withBreadcrumb('apps.single.payload-formatters', function(props) {
+@withBreadcrumb('apps.single.payload-formatters', props => {
   const { appId } = props
 
   return (
     <Breadcrumb
       path={`/applications/${appId}/payload-formatters`}
-      icon="link"
       content={sharedMessages.payloadFormatters}
     />
   )

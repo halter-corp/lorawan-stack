@@ -23,22 +23,21 @@ import (
 	"os/signal"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 
-	"github.com/getsentry/raven-go"
 	"github.com/heptiolabs/healthcheck"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	"go.thethings.network/lorawan-stack/pkg/fillcontext"
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
-	"go.thethings.network/lorawan-stack/pkg/interop"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/log/middleware/sentry"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/version"
-	"go.thethings.network/lorawan-stack/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/fillcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/interop"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/web"
 	"golang.org/x/crypto/acme/autocert"
 	"google.golang.org/grpc"
 )
@@ -60,10 +59,9 @@ type Component struct {
 	acme *autocert.Manager
 
 	logger log.Stack
-	sentry *raven.Client
 
 	cluster    cluster.Cluster
-	clusterNew func(ctx context.Context, config *config.Cluster, options ...cluster.Option) (cluster.Cluster, error)
+	clusterNew func(ctx context.Context, config *cluster.Config, options ...cluster.Option) (cluster.Cluster, error)
 
 	grpc           *rpcserver.Server
 	grpcSubsystems []rpcserver.Registerer
@@ -78,7 +76,8 @@ type Component struct {
 
 	loopback *grpc.ClientConn
 
-	tcpListeners map[string]*listener
+	tcpListeners   map[string]*listener
+	tcpListenersMu sync.Mutex
 
 	fillers []fillcontext.Filler
 
@@ -87,7 +86,8 @@ type Component struct {
 
 	rightsFetcher rights.Fetcher
 
-	tasks []task
+	taskStarter TaskStarter
+	taskConfigs []*TaskConfig
 }
 
 // Option allows extending the component when it is instantiated with New.
@@ -97,9 +97,17 @@ type Option func(*Component)
 // setting up the cluster.
 // This allows extending the cluster configuration with custom logic based on
 // information in the context.
-func WithClusterNew(f func(ctx context.Context, config *config.Cluster, options ...cluster.Option) (cluster.Cluster, error)) Option {
+func WithClusterNew(f func(ctx context.Context, config *cluster.Config, options ...cluster.Option) (cluster.Cluster, error)) Option {
 	return func(c *Component) {
 		c.clusterNew = f
+	}
+}
+
+// WithTaskStarter returns an option that overrides the component's TaskStarter for
+// starting tasks.
+func WithTaskStarter(s TaskStarter) Option {
+	return func(c *Component) {
+		c.taskStarter = s
 	}
 }
 
@@ -141,13 +149,8 @@ func New(logger log.Stack, config *Config, opts ...Option) (c *Component, err er
 		tcpListeners: make(map[string]*listener),
 
 		KeyVault: keyVault,
-	}
 
-	if config.Sentry.DSN != "" {
-		c.sentry, _ = raven.New(config.Sentry.DSN)
-		c.sentry.SetIncludePaths([]string{"go.thethings.network/lorawan-stack"})
-		c.sentry.SetRelease(version.String())
-		c.logger.Use(sentry.New(c.sentry))
+		taskStarter: StartTaskFunc(DefaultStartTask),
 	}
 
 	for _, opt := range opts {
@@ -232,6 +235,12 @@ func (c *Component) AddContextFiller(f fillcontext.Filler) {
 	c.fillers = append(c.fillers, f)
 }
 
+// FromRequestContext returns a derived context from the component context with key values from the request context.
+// This can be used to decouple the lifetime from the request context while keeping security information.
+func (c *Component) FromRequestContext(ctx context.Context) context.Context {
+	return c.ctx
+}
+
 // Start starts the component.
 func (c *Component) Start() (err error) {
 	if c.grpc != nil {
@@ -260,6 +269,7 @@ func (c *Component) Start() (err error) {
 	for _, sub := range c.webSubsystems {
 		sub.RegisterRoutes(c.web)
 	}
+	c.web.RootRouter().PathPrefix("/").Handler(c.web.Router())
 
 	c.logger.Debug("Initializing interop server...")
 	for _, sub := range c.interopSubsystems {
@@ -272,8 +282,9 @@ func (c *Component) Start() (err error) {
 			c.logger.WithError(err).Error("Could not start gRPC server")
 			return err
 		}
+		c.web.Prefix(ttnpb.HTTPAPIPrefix + "/").Handler(http.StripPrefix(ttnpb.HTTPAPIPrefix, c.grpc))
+		c.logger.Debug("Started gRPC server")
 	}
-	c.logger.Debug("Started gRPC server")
 
 	c.logger.Debug("Starting web server...")
 	if err = c.listenWeb(); err != nil {
@@ -285,6 +296,7 @@ func (c *Component) Start() (err error) {
 	c.logger.Debug("Starting interop server")
 	if err = c.listenInterop(); err != nil {
 		c.logger.WithError(err).Error("Could not start interop server")
+		return err
 	}
 	c.logger.Debug("Started interop server")
 
@@ -334,13 +346,15 @@ func (c *Component) Run() error {
 func (c *Component) Close() {
 	c.cancelCtx()
 
+	c.tcpListenersMu.Lock()
+	defer c.tcpListenersMu.Unlock()
 	for _, l := range c.tcpListeners {
-		err := l.lis.Close()
+		err := l.Close()
 		if err != nil && c.ctx.Err() == nil {
-			c.logger.WithError(err).Errorf("Error while stopping to listen on %s", l.lis.Addr())
+			c.logger.WithError(err).Errorf("Error while stopping to listen on %s", l.Addr())
 			continue
 		}
-		c.logger.Debugf("Stopped listening on %s", l.lis.Addr())
+		c.logger.Debugf("Stopped listening on %s", l.Addr())
 	}
 
 	if c.grpc != nil {

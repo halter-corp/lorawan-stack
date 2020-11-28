@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // Interface all types in pkg/types must implement.
@@ -83,7 +83,7 @@ func unmarshalTextBytes(dst, data []byte) error {
 		return err
 	}
 	if n != len(dst) || copy(dst, b) != len(dst) {
-		return errInvalidLength
+		return errInvalidLength.New()
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func marshalBinaryBytes(data []byte) ([]byte, error) {
 
 func marshalBinaryBytesTo(dst, src []byte) (int, error) {
 	if len(dst) < len(src) {
-		return 0, errInvalidLength
+		return 0, errInvalidLength.New()
 	}
 	return copy(dst, src), nil
 }
@@ -106,7 +106,7 @@ func unmarshalBinaryBytes(dst, data []byte) error {
 		return nil
 	}
 	if len(data) != len(dst) || copy(dst[:], data) != len(dst) {
-		return errInvalidLength
+		return errInvalidLength.New()
 	}
 	return nil
 }

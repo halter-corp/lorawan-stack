@@ -16,7 +16,7 @@ package store
 
 import (
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Organization model.
@@ -104,4 +104,16 @@ func (org *Organization) fromPB(pb *ttnpb.Organization, fieldMask *types.FieldMa
 		}
 	}
 	return
+}
+
+type organizationWithUID struct {
+	UID          string
+	Organization `gorm:"embedded"`
+}
+
+func (organizationWithUID) TableName() string { return "organizations" }
+
+func (u organizationWithUID) toPB(pb *ttnpb.Organization, fieldMask *types.FieldMask) {
+	u.Organization.Account.UID = u.UID
+	u.Organization.toPB(pb, fieldMask)
 }

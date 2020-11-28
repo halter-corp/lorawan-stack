@@ -20,7 +20,7 @@ import (
 	"time"
 
 	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/web/cookie"
+	"go.thethings.network/lorawan-stack/v3/pkg/web/cookie"
 )
 
 func init() {
@@ -45,7 +45,7 @@ type authCookie struct {
 
 func (oc *OAuthClient) getAuthCookie(c echo.Context) (authCookie, error) {
 	value := authCookie{}
-	ok, err := oc.AuthCookie().Get(c, &value)
+	ok, err := oc.AuthCookie().Get(c.Response(), c.Request(), &value)
 	if err != nil {
 		return authCookie{}, err
 	}
@@ -56,9 +56,9 @@ func (oc *OAuthClient) getAuthCookie(c echo.Context) (authCookie, error) {
 }
 
 func (oc *OAuthClient) setAuthCookie(c echo.Context, value authCookie) error {
-	return oc.AuthCookie().Set(c, value)
+	return oc.AuthCookie().Set(c.Response(), c.Request(), value)
 }
 
 func (oc *OAuthClient) removeAuthCookie(c echo.Context) {
-	oc.AuthCookie().Remove(c)
+	oc.AuthCookie().Remove(c.Response(), c.Request())
 }

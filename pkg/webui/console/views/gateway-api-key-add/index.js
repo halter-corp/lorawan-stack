@@ -18,12 +18,20 @@ import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 import { replace } from 'connected-react-router'
 
-import PageTitle from '../../../components/page-title'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import sharedMessages from '../../../lib/shared-messages'
-import { ApiKeyCreateForm } from '../../components/api-key-form'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import api from '@console/api'
+
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+
+import { ApiKeyCreateForm } from '@console/components/api-key-form'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayViewOrEditGatewayApiKeys } from '@console/lib/feature-checks'
 
 import {
   selectSelectedGatewayId,
@@ -31,13 +39,10 @@ import {
   selectGatewayRightsError,
   selectGatewayRightsFetching,
   selectGatewayPseudoRights,
-} from '../../store/selectors/gateways'
-import { mayViewOrEditGatewayApiKeys } from '../../lib/feature-checks'
-
-import api from '../../api'
+} from '@console/store/selectors/gateways'
 
 @connect(
-  (state, props) => ({
+  state => ({
     gtwId: selectSelectedGatewayId(state),
     fetching: selectGatewayRightsFetching(state),
     error: selectGatewayRightsError(state),
@@ -54,18 +59,23 @@ import api from '../../api'
 @withBreadcrumb('gtws.single.api-keys.add', function(props) {
   const gtwId = props.gtwId
 
-  return (
-    <Breadcrumb path={`/gateways/${gtwId}/api-keys/add`} icon="add" content={sharedMessages.add} />
-  )
+  return <Breadcrumb path={`/gateways/${gtwId}/api-keys/add`} content={sharedMessages.add} />
 })
-@bind
 export default class GatewayApiKeyAdd extends React.Component {
+  static propTypes = {
+    gtwId: PropTypes.string.isRequired,
+    navigateToList: PropTypes.func.isRequired,
+    pseudoRights: PropTypes.rights.isRequired,
+    rights: PropTypes.rights.isRequired,
+  }
+
   constructor(props) {
     super(props)
 
     this.createGatewayKey = key => api.gateway.apiKeys.create(props.gtwId, key)
   }
 
+  @bind
   handleApprove() {
     const { navigateToList, gtwId } = this.props
 

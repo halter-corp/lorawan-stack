@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,72 +13,7 @@
 // limitations under the License.
 
 import React from 'react'
-import bind from 'autobind-decorator'
 
-const { Provider, Consumer } = React.createContext()
+const SideNavigationContext = React.createContext()
 
-@bind
-class SideNavigationProvider extends React.Component {
-  state = {
-    header: undefined,
-    entries: undefined,
-  }
-
-  set(entries, header) {
-    this.setState({ header, entries })
-  }
-
-  remove() {
-    this.setState({ entries: undefined, header: undefined })
-  }
-
-  render() {
-    const { children } = this.props
-    const { header, entries } = this.state
-    const value = {
-      set: this.set,
-      remove: this.remove,
-      header,
-      entries,
-    }
-
-    return <Provider value={value}>{children}</Provider>
-  }
-}
-
-const withSideNavigation = selectData =>
-  function(Component) {
-    @bind
-    class WithSideNavigation extends React.Component {
-      constructor(props) {
-        super(props)
-
-        const { set } = props
-        const { header, entries } = selectData(props)
-
-        set(entries, header)
-      }
-
-      componentWillUnmount() {
-        const { remove } = this.props
-
-        remove()
-      }
-
-      render() {
-        const { set, remove, ...rest } = this.props
-
-        return <Component {...rest} />
-      }
-    }
-
-    const withSideNavigationWrapper = props => (
-      <Consumer>
-        {({ set, remove }) => <WithSideNavigation {...props} set={set} remove={remove} />}
-      </Consumer>
-    )
-
-    return withSideNavigationWrapper
-  }
-
-export { Consumer as SideNavigationConsumer, SideNavigationProvider, withSideNavigation }
+export default SideNavigationContext

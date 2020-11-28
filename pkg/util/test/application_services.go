@@ -18,7 +18,7 @@ import (
 	"context"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // MockApplicationAccessServer is a mock ttnpb.ApplicationAccessServer used for testing.
@@ -101,6 +101,7 @@ type ApplicationAccessListRightsResponse struct {
 	Response *ttnpb.Rights
 	Error    error
 }
+
 type ApplicationAccessListRightsRequest struct {
 	Context  context.Context
 	Message  *ttnpb.ApplicationIdentifiers
@@ -120,13 +121,13 @@ func MakeApplicationAccessListRightsChFunc(reqCh chan<- ApplicationAccessListRig
 	}
 }
 
-func AssertListRightsRequest(ctx context.Context, reqCh <-chan ApplicationAccessListRightsRequest, assert func(ctx context.Context, ids ttnpb.Identifiers) bool, rights ...ttnpb.Right) bool {
+func AssertListRightsRequest(ctx context.Context, reqCh <-chan ApplicationAccessListRightsRequest, assert func(ctx, reqCtx context.Context, ids ttnpb.Identifiers) bool, rights ...ttnpb.Right) bool {
 	t := MustTFromContext(ctx)
 	t.Helper()
 	select {
 	case req := <-reqCh:
 		t.Log("ApplicationAccess.ListRights called")
-		if !assert(req.Context, req.Message) {
+		if !assert(ctx, req.Context, req.Message) {
 			return false
 		}
 		select {

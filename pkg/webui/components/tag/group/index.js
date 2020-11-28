@@ -13,11 +13,11 @@
 // limitations under the License.
 
 import React from 'react'
-import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import PropTypes from '../../../lib/prop-types'
-import Tag from '../.'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import Tag from '..'
 
 import style from './group.styl'
 
@@ -29,13 +29,22 @@ const measureWidth = function(element) {
   return element.current.clientWidth
 }
 
-// the width in pixels for the left tag
+// The width in pixels for the left tag.
 const LEFT_TAG_WIDTH = 40
-// space between the tags
+// The space between the tags.
 const TAG_SPACE_WIDTH = 3
 
-@bind
 class TagGroup extends React.Component {
+  static propTypes = {
+    className: PropTypes.string,
+    tagMaxWidth: PropTypes.number.isRequired,
+    tags: PropTypes.arrayOf(PropTypes.any).isRequired,
+  }
+
+  static defaultProps = {
+    className: undefined,
+  }
+
   constructor(props) {
     super(props)
 
@@ -55,7 +64,7 @@ class TagGroup extends React.Component {
   componentDidUpdate(prevProps) {
     const props = this.props
 
-    // calculate fit on any props change
+    // Calculate fit on any props change.
     if (prevProps.tags !== props.tags) {
       this.checkTagsFit()
     }
@@ -76,7 +85,7 @@ class TagGroup extends React.Component {
     const totalTagCount = tags.length
     const possibleFitCount = Math.floor(containerWidth / tagMaxWidth) || 1
 
-    // count for the left tag and paddings between tags
+    // Count for the left tag and paddings between tags.
     const leftTagWidth = totalTagCount !== possibleFitCount ? LEFT_TAG_WIDTH : 0
     const spaceWidth = possibleFitCount > 1 ? possibleFitCount * TAG_SPACE_WIDTH : 0
 
@@ -101,11 +110,6 @@ class TagGroup extends React.Component {
       </div>
     )
   }
-}
-
-TagGroup.propTypes = {
-  tagMaxWidth: PropTypes.number.isRequired,
-  tags: PropTypes.arrayOf(PropTypes.any).isRequired,
 }
 
 export default TagGroup

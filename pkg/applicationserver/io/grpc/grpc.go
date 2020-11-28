@@ -18,13 +18,13 @@ import (
 	"context"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/peer"
 )
 
@@ -85,6 +85,8 @@ func (s *impl) Subscribe(ids *ttnpb.ApplicationIdentifiers, stream ttnpb.AppAs_S
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-sub.Context().Done():
+			return sub.Context().Err()
 		case up := <-sub.Up():
 			if err := stream.Send(up.ApplicationUp); err != nil {
 				logger.WithError(err).Warn("Failed to send message")
@@ -135,7 +137,7 @@ func (s *impl) GetMQTTConnectionInfo(ctx context.Context, ids *ttnpb.Application
 		return nil, err
 	}
 	if s.mqttConfigProvider == nil {
-		return nil, errNoMQTTConfigProvider
+		return nil, errNoMQTTConfigProvider.New()
 	}
 	config, err := s.mqttConfigProvider.GetMQTTConfig(ctx)
 	if err != nil {
@@ -146,4 +148,15 @@ func (s *impl) GetMQTTConnectionInfo(ctx context.Context, ids *ttnpb.Application
 		PublicTLSAddress: config.PublicTLSAddress,
 		Username:         unique.ID(ctx, *ids),
 	}, nil
+}
+
+func (s *impl) SimulateUplink(ctx context.Context, up *ttnpb.ApplicationUp) (*pbtypes.Empty, error) {
+	if err := rights.RequireApplication(ctx, up.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_UP_WRITE); err != nil {
+		return nil, err
+	}
+	up.Simulated = true
+	if err := s.server.SendUp(ctx, up); err != nil {
+		return nil, err
+	}
+	return ttnpb.Empty, nil
 }

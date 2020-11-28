@@ -27,13 +27,14 @@ import (
 	"github.com/TheThingsIndustries/mystique/pkg/packet"
 	"github.com/TheThingsIndustries/mystique/pkg/session"
 	"github.com/TheThingsIndustries/mystique/pkg/topic"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/mqtt"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -46,33 +47,37 @@ type srv struct {
 	lis    mqttnet.Listener
 }
 
-// Start starts the MQTT frontend.
-func Start(ctx context.Context, server io.Server, listener net.Listener, format Format, protocol string) {
+// Serve serves the MQTT frontend.
+func Serve(ctx context.Context, server io.Server, listener net.Listener, format Format, protocol string) error {
 	ctx = log.NewContextWithField(ctx, "namespace", "applicationserver/io/mqtt")
 	ctx = mqttlog.NewContext(ctx, mqtt.Logger(log.FromContext(ctx)))
 	s := &srv{ctx, server, format, mqttnet.NewListener(listener, protocol)}
-	go s.accept()
 	go func() {
 		<-ctx.Done()
 		s.lis.Close()
 	}()
+	return s.accept()
 }
 
-func (s *srv) accept() {
+func (s *srv) accept() error {
 	for {
 		mqttConn, err := s.lis.Accept()
 		if err != nil {
 			if s.ctx.Err() == nil {
 				log.FromContext(s.ctx).WithError(err).Warn("Accept failed")
 			}
-			return
+			return err
 		}
 
 		go func() {
 			ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", mqttConn.RemoteAddr().String()))
 			conn := &connection{server: s.server, mqtt: mqttConn, format: s.format}
 			if err := conn.setup(ctx); err != nil {
-				log.FromContext(ctx).WithError(err).Warn("Failed to setup connection")
+				switch err {
+				case stdio.EOF, stdio.ErrUnexpectedEOF:
+				default:
+					log.FromContext(ctx).WithError(err).Warn("Failed to setup connection")
+				}
 				mqttConn.Close()
 				return
 			}
@@ -90,14 +95,15 @@ type connection struct {
 
 func (c *connection) setup(ctx context.Context) error {
 	ctx = auth.NewContextWithInterface(ctx, c)
+	ctx, cancel := errorcontext.New(ctx)
 	c.session = session.New(ctx, c.mqtt, c.deliver)
 	if err := c.session.ReadConnect(); err != nil {
+		cancel(err)
 		return err
 	}
 	ctx = c.io.Context()
 
 	logger := log.FromContext(ctx)
-	errCh := make(chan error)
 	controlCh := make(chan packet.ControlPacket)
 
 	// Read control packets
@@ -108,12 +114,16 @@ func (c *connection) setup(ctx context.Context) error {
 				if err != stdio.EOF {
 					logger.WithError(err).Warn("Error when reading packet")
 				}
-				errCh <- err
+				cancel(err)
 				return
 			}
 			if pkt != nil {
 				logger.Debugf("Schedule %s packet", packet.Name[pkt.PacketType()])
-				controlCh <- pkt
+				select {
+				case <-ctx.Done():
+					return
+				case controlCh <- pkt:
+				}
 			}
 		}
 	}()
@@ -122,8 +132,7 @@ func (c *connection) setup(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case <-c.io.Context().Done():
-				logger.WithError(c.io.Context().Err()).Debug("Done sending upstream messages")
+			case <-ctx.Done():
 				return
 			case up := <-c.io.Up():
 				logger := logger.WithField("device_uid", unique.ID(up.Context, up.EndDeviceIdentifiers))
@@ -143,8 +152,12 @@ func (c *connection) setup(ctx context.Context) error {
 					topicParts = c.format.DownlinkFailedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
 				case *ttnpb.ApplicationUp_DownlinkQueued:
 					topicParts = c.format.DownlinkQueuedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+				case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
+					topicParts = c.format.DownlinkQueueInvalidatedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
 				case *ttnpb.ApplicationUp_LocationSolved:
 					topicParts = c.format.LocationSolvedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+				case *ttnpb.ApplicationUp_ServiceData:
+					topicParts = c.format.ServiceDataTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
 				}
 				if topicParts == nil {
 					continue
@@ -170,12 +183,9 @@ func (c *connection) setup(ctx context.Context) error {
 		for {
 			var err error
 			select {
-			case err = <-errCh:
-			case pkt, ok := <-controlCh:
-				if !ok {
-					controlCh = nil
-					continue
-				}
+			case <-ctx.Done():
+				return
+			case pkt := <-controlCh:
 				err = c.mqtt.Send(pkt)
 			case pkt, ok := <-c.session.PublishChan():
 				if !ok {
@@ -185,15 +195,19 @@ func (c *connection) setup(ctx context.Context) error {
 				err = c.mqtt.Send(pkt)
 			}
 			if err != nil {
-				if err != stdio.EOF {
-					logger.WithError(err).Error("Send failed, closing session")
-				} else {
-					logger.Info("Disconnected")
-				}
-				c.session.Close()
-				c.io.Disconnect(err)
+				cancel(err)
 				return
 			}
+		}
+	}()
+
+	// Close connection on context closure
+	go func() {
+		select {
+		case <-ctx.Done():
+			logger.WithError(ctx.Err()).Info("Disconnected")
+			c.session.Close()
+			c.mqtt.Close()
 		}
 	}()
 
@@ -246,7 +260,9 @@ func (c *connection) Connect(ctx context.Context, info *auth.Info) (context.Cont
 			c.format.DownlinkSentTopic(uid, topic.PartWildcard),
 			c.format.DownlinkFailedTopic(uid, topic.PartWildcard),
 			c.format.DownlinkQueuedTopic(uid, topic.PartWildcard),
+			c.format.DownlinkQueueInvalidatedTopic(uid, topic.PartWildcard),
 			c.format.LocationSolvedTopic(uid, topic.PartWildcard),
+			c.format.ServiceDataTopic(uid, topic.PartWildcard),
 		)
 	}
 	if err := rights.RequireApplication(ctx, ids, ttnpb.RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE); err == nil {
@@ -266,7 +282,7 @@ func (c *connection) Subscribe(info *auth.Info, requestedTopic string, requested
 	access := info.Metadata.(topicAccess)
 	accepted, ok := c.format.AcceptedTopic(access.appUID, topic.Split(requestedTopic))
 	if !ok {
-		return "", 0, errNotAuthorized
+		return "", 0, errNotAuthorized.New()
 	}
 	acceptedTopic = topic.Join(accepted)
 	acceptedQoS = requestedQoS
@@ -316,6 +332,10 @@ func (c *connection) deliver(pkt *packet.PublishPacket) {
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: *c.io.ApplicationIDs(),
 		DeviceID:               deviceID,
+	}
+	if err := ids.ValidateContext(c.io.Context()); err != nil {
+		logger.WithError(err).Warn("Failed to validate message identifiers")
+		return
 	}
 	logger.WithFields(log.Fields(
 		"device_uid", unique.ID(c.io.Context(), ids),

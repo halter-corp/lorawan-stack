@@ -18,34 +18,41 @@ import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 import { push } from 'connected-react-router'
 import { connect } from 'react-redux'
-import * as Yup from 'yup'
 
-import api from '../../api'
-import sharedMessages from '../../../lib/shared-messages'
+import api from '@oauth/api'
 
-import Button from '../../../components/button'
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import SubmitButton from '../../../components/submit-button'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
+import Button from '@ttn-lw/components/button'
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import SubmitButton from '@ttn-lw/components/submit-button'
+
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import Message from '@ttn-lw/lib/components/message'
+
+import Yup from '@ttn-lw/lib/yup'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import { id as userRegexp } from '@ttn-lw/lib/regexp'
 
 import style from './forgot-password.styl'
 
 const m = defineMessages({
-  loginPage: 'Login Page',
-  forgotPassword: 'Forgot Password',
-  passwordRequested: 'You will receive an email with reset instructions shortly.',
-  goToLogin: 'Go to Login',
+  loginPage: 'Login page',
+  forgotPassword: 'Forgot password',
+  passwordRequested: 'You will receive an email with reset instructions shortly',
+  goToLogin: 'Go to login',
   send: 'Send',
   resetPasswordDescription:
     'Please enter your username to receive an email with reset instructions',
-  requestTempPassword: 'Reset Password',
+  requestTempPassword: 'Reset password',
 })
 
 const validationSchema = Yup.object().shape({
-  user_id: Yup.string().required(sharedMessages.validateRequired),
+  user_id: Yup.string()
+    .min(3, Yup.passValues(sharedMessages.validateTooShort))
+    .max(36, Yup.passValues(sharedMessages.validateTooLong))
+    .matches(userRegexp, Yup.passValues(sharedMessages.validateIdFormat))
+    .required(sharedMessages.validateRequired),
 })
 
 const initialValues = { user_id: '' }
@@ -56,7 +63,6 @@ const initialValues = { user_id: '' }
     handleCancel: () => push('/login'),
   },
 )
-@bind
 export default class ForgotPassword extends React.PureComponent {
   static propTypes = {
     handleCancel: PropTypes.func.isRequired,
@@ -68,6 +74,7 @@ export default class ForgotPassword extends React.PureComponent {
     requested: false,
   }
 
+  @bind
   async handleSubmit(values, { setSubmitting }) {
     try {
       await api.users.resetPassword(values.user_id)
@@ -114,6 +121,7 @@ export default class ForgotPassword extends React.PureComponent {
                 title={sharedMessages.userId}
                 name="user_id"
                 component={Input}
+                autoComplete="username"
                 autoFocus
                 required
               />

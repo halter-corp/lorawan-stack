@@ -23,9 +23,9 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetEndDeviceStore returns an EndDeviceStore on the given db (or transaction).
@@ -87,6 +87,7 @@ func (s *deviceStore) CreateEndDevice(ctx context.Context, dev *ttnpb.EndDevice)
 func (s *deviceStore) findEndDevices(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error) {
 	defer trace.StartRegion(ctx, "find end devices").End()
 	query = selectEndDeviceFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "end_devices", "device_id", "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query.Model(EndDevice{}))
 		query = query.Limit(limit).Offset(offset)
@@ -126,7 +127,7 @@ func (s *deviceStore) FindEndDevices(ctx context.Context, ids []*ttnpb.EndDevice
 	var applicationID string
 	for i, id := range ids {
 		if applicationID != "" && applicationID != id.GetApplicationID() {
-			return nil, errMultipleApplicationIDs
+			return nil, errMultipleApplicationIDs.New()
 		}
 		applicationID = id.GetApplicationID()
 		idStrings[i] = id.GetDeviceID()

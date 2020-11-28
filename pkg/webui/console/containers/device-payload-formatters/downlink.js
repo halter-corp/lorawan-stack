@@ -16,26 +16,31 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 
-import PropTypes from '../../../lib/prop-types'
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import PayloadFormattersForm from '../../components/payload-formatters-form'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import PAYLOAD_FORMATTER_TYPES from '../../constants/formatter-types'
-import toast from '../../../components/toast'
+import PAYLOAD_FORMATTER_TYPES from '@console/constants/formatter-types'
 
-import { updateDevice } from '../../store/actions/device'
-import { attachPromise } from '../../store/actions/lib'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import toast from '@ttn-lw/components/toast'
+
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import PayloadFormattersForm from '@console/components/payload-formatters-form'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { updateDevice } from '@console/store/actions/devices'
+import { attachPromise } from '@console/store/actions/lib'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 import {
   selectSelectedDeviceId,
   selectSelectedDeviceFormatters,
-} from '../../store/selectors/device'
+} from '@console/store/selectors/devices'
 
 @connect(
   function(state) {
-    const formatters = selectSelectedDeviceFormatters(state) || {}
+    const formatters = selectSelectedDeviceFormatters(state)
 
     return {
       appId: selectSelectedApplicationId(state),
@@ -51,29 +56,40 @@ import {
   return (
     <Breadcrumb
       path={`/applications/${appId}/devices/${devId}/payload-formatters/downlink`}
-      icon="downlink"
       content={sharedMessages.downlink}
     />
   )
 })
-@bind
 class DevicePayloadFormatters extends React.PureComponent {
   static propTypes = {
     appId: PropTypes.string.isRequired,
     devId: PropTypes.string.isRequired,
-    formatters: PropTypes.object.isRequired,
+    formatters: PropTypes.formatters,
     updateDevice: PropTypes.func.isRequired,
   }
 
+  static defaultProps = {
+    formatters: undefined,
+  }
+
+  @bind
   async onSubmit(values) {
-    const { appId, devId, formatters, updateDevice } = this.props
+    const { appId, devId, formatters: initialFormatters, updateDevice } = this.props
+
+    if (values.type === PAYLOAD_FORMATTER_TYPES.DEFAULT) {
+      return updateDevice(appId, devId, {
+        formatters: null,
+      })
+    }
+
+    const formatters = { ...(initialFormatters || {}) }
 
     await updateDevice(appId, devId, {
       formatters: {
         down_formatter: values.type,
         down_formatter_parameter: values.parameter,
         up_formatter: formatters.up_formatter || PAYLOAD_FORMATTER_TYPES.NONE,
-        up_formatter_parameter: formatters.up_formatter_parameter || '',
+        up_formatter_parameter: formatters.up_formatter_parameter,
       },
     })
 
@@ -87,16 +103,23 @@ class DevicePayloadFormatters extends React.PureComponent {
   render() {
     const { formatters } = this.props
 
+    const formatterType = Boolean(formatters)
+      ? formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE
+      : PAYLOAD_FORMATTER_TYPES.DEFAULT
+    const formatterParameter = Boolean(formatters) ? formatters.down_formatter_parameter : undefined
+
     return (
       <React.Fragment>
         <IntlHelmet title={sharedMessages.payloadFormattersDownlink} />
         <PayloadFormattersForm
           uplink={false}
           linked
+          allowReset
           onSubmit={this.onSubmit}
+          onSubmitSuccess={this.onSubmitSuccess}
           title={sharedMessages.payloadFormattersDownlink}
-          initialType={formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE}
-          initialParameter={formatters.down_formatter_parameter || ''}
+          initialType={formatterType}
+          initialParameter={formatterParameter}
         />
       </React.Fragment>
     )

@@ -19,12 +19,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/band"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/band"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // SX1301Config contains the configuration for the SX1301 concentrator.
@@ -274,7 +277,7 @@ var defaultTxLUTConfigs = []TxLUTConfig{
 
 // BuildSX1301Config builds the SX1301 configuration for the given frequency plan.
 func BuildSX1301Config(frequencyPlan *frequencyplans.FrequencyPlan) (*SX1301Config, error) {
-	band, err := band.GetByID(frequencyPlan.BandID)
+	phy, err := band.GetByID(frequencyPlan.BandID)
 	if err != nil {
 		return nil, err
 	}
@@ -337,26 +340,32 @@ func BuildSX1301Config(frequencyPlan *frequencyplans.FrequencyPlan) (*SX1301Conf
 
 	conf.LoRaStandardChannel = &IFConfig{Enable: false}
 	if channel := frequencyPlan.LoRaStandardChannel; channel != nil {
-		if lora := band.DataRates[channel.DataRate].Rate.GetLoRa(); lora != nil {
-			conf.LoRaStandardChannel = &IFConfig{
-				Enable:       true,
-				Radio:        channel.Radio,
-				IFValue:      int32(int64(channel.Frequency) - int64(conf.Radios[channel.Radio].Frequency)),
-				Bandwidth:    lora.Bandwidth,
-				SpreadFactor: uint8(lora.SpreadingFactor),
+		dr, ok := phy.DataRates[ttnpb.DataRateIndex(channel.DataRate)]
+		if ok {
+			if lora := dr.Rate.GetLoRa(); lora != nil {
+				conf.LoRaStandardChannel = &IFConfig{
+					Enable:       true,
+					Radio:        channel.Radio,
+					IFValue:      int32(int64(channel.Frequency) - int64(conf.Radios[channel.Radio].Frequency)),
+					Bandwidth:    lora.Bandwidth,
+					SpreadFactor: uint8(lora.SpreadingFactor),
+				}
 			}
 		}
 	}
 
 	conf.FSKChannel = &IFConfig{Enable: false}
 	if channel := frequencyPlan.FSKChannel; channel != nil {
-		if fsk := band.DataRates[channel.DataRate].Rate.GetFSK(); fsk != nil {
-			conf.FSKChannel = &IFConfig{
-				Enable:    true,
-				Radio:     channel.Radio,
-				IFValue:   int32(int64(channel.Frequency) - int64(conf.Radios[channel.Radio].Frequency)),
-				Bandwidth: 125000,
-				Datarate:  fsk.BitRate,
+		dr, ok := phy.DataRates[ttnpb.DataRateIndex(channel.DataRate)]
+		if ok {
+			if fsk := dr.Rate.GetFSK(); fsk != nil {
+				conf.FSKChannel = &IFConfig{
+					Enable:    true,
+					Radio:     channel.Radio,
+					IFValue:   int32(int64(channel.Frequency) - int64(conf.Radios[channel.Radio].Frequency)),
+					Bandwidth: 125000,
+					Datarate:  fsk.BitRate,
+				}
 			}
 		}
 	}
@@ -364,4 +373,32 @@ func BuildSX1301Config(frequencyPlan *frequencyplans.FrequencyPlan) (*SX1301Conf
 	conf.TxLUTConfigs = defaultTxLUTConfigs
 
 	return conf, nil
+}
+
+// DefaultGatewayServerUDPPort is the default port used for connecting to Gateway Server.
+const DefaultGatewayServerUDPPort = 1700
+
+var (
+	errEmptyGatewayServerAddress   = errors.DefineInvalidArgument("empty_gateway_server_address", "gateway server address is empty")
+	errInvalidGatewayServerAddress = errors.DefineInvalidArgument("invalid_gateway_server_address", "gateway server address is invalid")
+)
+
+// ParseGatewayServerAddress parses gateway server address s into hostname and port,
+// port is equal to the port contained in s or DefaultGatewayServerUDPPort otherwise.
+func ParseGatewayServerAddress(s string) (string, uint16, error) {
+	host, portStr, err := net.SplitHostPort(s)
+	if err != nil {
+		if host, _, err := net.SplitHostPort(fmt.Sprintf("%s:1700", s)); err == nil && host != "" {
+			return host, 1700, nil
+		}
+		return "", 0, errInvalidGatewayServerAddress.WithCause(err)
+	}
+	if host == "" {
+		return "", 0, errInvalidGatewayServerAddress.WithCause(errEmptyGatewayServerAddress)
+	}
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		return "", 0, errInvalidGatewayServerAddress.WithCause(err)
+	}
+	return host, uint16(port), nil
 }

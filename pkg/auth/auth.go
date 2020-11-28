@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 const (
@@ -44,6 +44,16 @@ var (
 	RefreshToken = TokenType(enc.EncodeToString([]byte("ref")))
 	// AuthorizationCode is used by OAuth clients to exchange AccessTokens.
 	AuthorizationCode = TokenType(enc.EncodeToString([]byte("aut")))
+	// SessionToken is used to authorize actions by user session.
+	SessionToken = TokenType(enc.EncodeToString([]byte("ssn")))
+
+	tokenTypeDescriptions = map[string]string{
+		"key": "APIKey",
+		"acc": "AccessToken",
+		"ref": "RefreshToken",
+		"aut": "AuthorizationCode",
+		"ssn": "SessionToken",
+	}
 )
 
 // TokenType indicates the type of a token.
@@ -65,19 +75,31 @@ func (t TokenType) Generate(ctx context.Context, id string) (token string, err e
 	return JoinToken(t, id, key), nil
 }
 
+// String returns string representation of token type.
+func (t TokenType) String() string {
+	b, err := enc.DecodeString(string(t))
+	if err != nil {
+		return ""
+	}
+	if desc, ok := tokenTypeDescriptions[string(b)]; ok {
+		return desc
+	}
+	return string(b)
+}
+
 var errInvalidToken = errors.DefineInvalidArgument("token", "invalid token")
 
 // SplitToken splits the token from "<prefix>.<id>.<key>".
 func SplitToken(token string) (tokenType TokenType, id, key string, err error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return "", "", "", errInvalidToken
+		return "", "", "", errInvalidToken.New()
 	}
 	switch TokenType(parts[0]) {
-	case APIKey, AccessToken, RefreshToken, AuthorizationCode:
+	case APIKey, AccessToken, RefreshToken, AuthorizationCode, SessionToken:
 		return TokenType(parts[0]), parts[1], parts[2], nil
 	default:
-		return "", "", "", errInvalidToken
+		return "", "", "", errInvalidToken.New()
 	}
 }
 

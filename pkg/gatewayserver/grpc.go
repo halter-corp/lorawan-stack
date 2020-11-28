@@ -17,10 +17,10 @@ package gatewayserver
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 // GetGatewayConnectionStats returns statistics about a gateway connection.
@@ -30,35 +30,21 @@ func (gs *GatewayServer) GetGatewayConnectionStats(ctx context.Context, ids *ttn
 	}
 
 	uid := unique.ID(ctx, ids)
+	if gs.statsRegistry != nil {
+		stats, err := gs.statsRegistry.Get(ctx, *ids)
+		if err != nil || stats == nil {
+			if errors.IsNotFound(err) {
+				return nil, errNotConnected.WithAttributes("gateway_uid", uid).WithCause(err)
+			}
+			return nil, err
+		}
+
+		return stats, nil
+	}
+
 	val, ok := gs.connections.Load(uid)
 	if !ok {
 		return nil, errNotConnected.WithAttributes("gateway_uid", uid)
 	}
-	conn := val.(*io.Connection)
-
-	stats := &ttnpb.GatewayConnectionStats{}
-	ct := conn.ConnectTime()
-	stats.ConnectedAt = &ct
-	stats.Protocol = conn.Frontend().Protocol()
-	if s, t, ok := conn.StatusStats(); ok {
-		stats.LastStatusReceivedAt = &t
-		stats.LastStatus = s
-	}
-	if c, t, ok := conn.UpStats(); ok {
-		stats.LastUplinkReceivedAt = &t
-		stats.UplinkCount = c
-	}
-	if c, t, ok := conn.DownStats(); ok {
-		stats.LastDownlinkReceivedAt = &t
-		stats.DownlinkCount = c
-	}
-	if min, max, median, count := conn.RTTStats(); count > 0 {
-		stats.RoundTripTimes = &ttnpb.GatewayConnectionStats_RoundTripTimes{
-			Min:    min,
-			Max:    max,
-			Median: median,
-			Count:  uint32(count),
-		}
-	}
-	return stats, nil
+	return val.(connectionEntry).Stats(), nil
 }

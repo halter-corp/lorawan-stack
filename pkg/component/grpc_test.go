@@ -20,17 +20,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/smartystreets/assertions"
-	clusterauth "go.thethings.network/lorawan-stack/pkg/auth/cluster"
-	"go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/hooks"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -82,7 +82,7 @@ func TestHooks(t *testing.T) {
 	defer lis.Close()
 
 	config := &component.Config{
-		ServiceBase: config.ServiceBase{Cluster: config.Cluster{
+		ServiceBase: config.ServiceBase{Cluster: cluster.Config{
 			Name:          "test-cluster",
 			NetworkServer: lis.Addr().String(),
 			Keys:          []string{clusterKey},

@@ -16,19 +16,23 @@ import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 import bind from 'autobind-decorator'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import ApiKeysTable from '../../containers/api-keys-table'
-import { getApplicationApiKeysList } from '../../store/actions/applications'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import PAGE_SIZES from '@console/constants/page-sizes'
+
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import ApiKeysTable from '@console/containers/api-keys-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getApiKeysList } from '@console/store/actions/api-keys'
 
 import {
-  selectApplicationApiKeys,
-  selectApplicationApiKeysTotalCount,
-  selectApplicationApiKeysFetching,
-} from '../../store/selectors/applications'
-
-import PAGE_SIZES from '../../constants/page-sizes'
+  selectApiKeys,
+  selectApiKeysTotalCount,
+  selectApiKeysFetching,
+  selectApiKeysError,
+} from '@console/store/selectors/api-keys'
 
 export default class ApplicationApiKeys extends React.Component {
   static propTypes = {
@@ -39,7 +43,7 @@ export default class ApplicationApiKeys extends React.Component {
     super(props)
 
     const { appId } = props.match.params
-    this.getApplicationsApiKeysList = filters => getApplicationApiKeysList(appId, filters)
+    this.getApiKeysList = filters => getApiKeysList('application', appId, filters)
   }
 
   @bind
@@ -48,9 +52,10 @@ export default class ApplicationApiKeys extends React.Component {
 
     const id = { id: appId }
     return {
-      keys: selectApplicationApiKeys(state, id),
-      totalCount: selectApplicationApiKeysTotalCount(state, id),
-      fetching: selectApplicationApiKeysFetching(state),
+      keys: selectApiKeys(state, id),
+      totalCount: selectApiKeysTotalCount(state, id),
+      fetching: selectApiKeysFetching(state),
+      error: selectApiKeysError(state),
     }
   }
 
@@ -63,7 +68,7 @@ export default class ApplicationApiKeys extends React.Component {
             <ApiKeysTable
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={this.baseDataSelector}
-              getItemsAction={this.getApplicationsApiKeysList}
+              getItemsAction={this.getApiKeysList}
             />
           </Col>
         </Row>

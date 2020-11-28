@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import React from 'react'
-import PropTypes from 'prop-types'
 import displayName from 'react-display-name'
 
-import { warn } from '../log'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import { warn } from '@ttn-lw/lib/log'
 
 export const withEnv = function(Component) {
   const Base =
@@ -24,10 +24,9 @@ export const withEnv = function(Component) {
 
   class WithEnv extends Base {
     static displayName = `WithEnv(${displayName(Component)})`
-    static propTypes = Component.propTypes
 
     static contextTypes = {
-      env: PropTypes.object,
+      env: PropTypes.env,
     }
 
     render() {
@@ -37,7 +36,7 @@ export const withEnv = function(Component) {
         warn('No env in context, make sure to use env.Provider')
       }
 
-      return <Component env={this.context.env || {}} {...this.props} />
+      return <Component env={env || {}} {...this.props} />
     }
   }
 
@@ -46,11 +45,12 @@ export const withEnv = function(Component) {
 
 export class EnvProvider extends React.PureComponent {
   static propTypes = {
-    env: PropTypes.object.isRequired,
+    children: PropTypes.node.isRequired,
+    env: PropTypes.env.isRequired,
   }
 
   static childContextTypes = {
-    env: PropTypes.object.isRequired,
+    env: PropTypes.env.isRequired,
   }
 
   getChildContext() {

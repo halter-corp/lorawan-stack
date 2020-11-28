@@ -14,60 +14,64 @@
 
 import React from 'react'
 import { Container, Col, Row } from 'react-grid-system'
-import * as Yup from 'yup'
 import { connect } from 'react-redux'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 import { push } from 'connected-react-router'
 
-import PageTitle from '../../../components/page-title'
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import Checkbox from '../../../components/checkbox'
-import SubmitButton from '../../../components/submit-button'
-import toast from '../../../components/toast'
-import SubmitBar from '../../../components/submit-bar'
-import PropTypes from '../../../lib/prop-types'
-import sharedMessages from '../../../lib/shared-messages'
-import { id as applicationIdRegexp, address } from '../../lib/regexp'
-import { getApplicationId } from '../../../lib/selectors/id'
-import OwnersSelect from '../../containers/owners-select'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import api from '@console/api'
 
-import { selectUserId, selectUserRights } from '../../store/selectors/user'
-import { mayCreateApplications, mayLinkApplication } from '../../lib/feature-checks'
+import PageTitle from '@ttn-lw/components/page-title'
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import Checkbox from '@ttn-lw/components/checkbox'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import toast from '@ttn-lw/components/toast'
+import SubmitBar from '@ttn-lw/components/submit-bar'
 
-import api from '../../api'
+import OwnersSelect from '@console/containers/owners-select'
 
-import style from './application-add.styl'
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import Yup from '@ttn-lw/lib/yup'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import { getApplicationId } from '@ttn-lw/lib/selectors/id'
+
+import { id as applicationIdRegexp, address } from '@console/lib/regexp'
+import { mayCreateApplications, mayLinkApplication } from '@console/lib/feature-checks'
+
+import { selectUserId, selectUserRights } from '@console/store/selectors/user'
 
 const m = defineMessages({
-  applicationName: 'Application Name',
+  applicationName: 'Application name',
   appIdPlaceholder: 'my-new-application',
-  appNamePlaceholder: 'My New Application',
+  appNamePlaceholder: 'My new application',
   appDescPlaceholder: 'Description for my new application',
   appDescDescription:
     'Optional application description; can also be used to save notes about the application',
-  createApplication: 'Create Application',
-  linkAutomatically: 'Link automatically',
-  linkFailure: 'There was a problem while linking the application',
+  createApplication: 'Create application',
+  linking: 'Linking',
+  linkAutomatically: 'Link new application to Network Server automatically',
+  linkFailure: 'There was an error and the application could not be linked',
   linkFailureTitle: 'Application link failed',
 })
 
 const validationSchema = Yup.object().shape({
   owner_id: Yup.string().required(sharedMessages.validateRequired),
   application_id: Yup.string()
-    .matches(applicationIdRegexp, sharedMessages.validateAlphanum)
-    .min(2, sharedMessages.validateTooShort)
-    .max(25, sharedMessages.validateTooLong)
+    .matches(applicationIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
+    .min(2, Yup.passValues(sharedMessages.validateTooShort))
+    .max(25, Yup.passValues(sharedMessages.validateTooLong))
     .required(sharedMessages.validateRequired),
   name: Yup.string()
-    .min(2, sharedMessages.validateTooShort)
-    .max(50, sharedMessages.validateTooLong),
+    .min(2, Yup.passValues(sharedMessages.validateTooShort))
+    .max(2000, Yup.passValues(sharedMessages.validateTooLong)),
+  link: Yup.boolean(),
   description: Yup.string(),
   network_server_address: Yup.string().when('link', {
     is: true,
-    then: Yup.string().matches(address, sharedMessages.validateFormat),
+    then: schema => schema.matches(address, Yup.passValues(sharedMessages.validateAddressFormat)),
   }),
 })
 
@@ -82,6 +86,12 @@ const validationSchema = Yup.object().shape({
   }),
 )
 export default class Add extends React.Component {
+  static propTypes = {
+    navigateToApplication: PropTypes.func.isRequired,
+    rights: PropTypes.rights.isRequired,
+    userId: PropTypes.string.isRequired,
+  }
+
   constructor(props) {
     super(props)
     const { rights } = this.props
@@ -91,14 +101,8 @@ export default class Add extends React.Component {
     }
   }
 
-  static propTypes = {
-    navigateToApplication: PropTypes.func.isRequired,
-    rights: PropTypes.rights.isRequired,
-    userId: PropTypes.string.isRequired,
-  }
-
   @bind
-  async handleSubmit(values, { resetForm }) {
+  async handleSubmit(values, { setSubmitting }) {
     const { userId, navigateToApplication } = this.props
     const { owner_id, application_id, name, description } = values
 
@@ -139,8 +143,7 @@ export default class Add extends React.Component {
 
       navigateToApplication(appId)
     } catch (error) {
-      const { application_id, name, description } = values
-      resetForm({ application_id, name, description })
+      setSubmitting(false)
 
       await this.setState({ error })
     }
@@ -160,8 +163,9 @@ export default class Add extends React.Component {
       <React.Fragment>
         <Form.Field
           onChange={this.handleLinkChange}
-          title={m.linkAutomatically}
+          title={m.linking}
           name="link"
+          label={m.linkAutomatically}
           component={Checkbox}
         />
         <Form.Field
@@ -192,8 +196,8 @@ export default class Add extends React.Component {
     return (
       <Container>
         <PageTitle tall title={sharedMessages.addApplication} />
-        <Row className={style.wrapper}>
-          <Col className={style.form} md={10} lg={9}>
+        <Row>
+          <Col md={10} lg={9}>
             <Form
               error={error}
               onSubmit={this.handleSubmit}

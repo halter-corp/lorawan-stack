@@ -17,32 +17,34 @@ import bind from 'autobind-decorator'
 import { Col, Row, Container } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
 
-import PageTitle from '../../../components/page-title'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import ModalButton from '../../../components/button/modal-button'
-import SubmitBar from '../../../components/submit-bar'
-import SubmitButton from '../../../components/submit-button'
-import toast from '../../../components/toast'
-import Form from '../../../components/form'
-import OrganizationForm from '../../components/organization-form'
+import PageTitle from '@ttn-lw/components/page-title'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import ModalButton from '@ttn-lw/components/button/modal-button'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import toast from '@ttn-lw/components/toast'
+import Form from '@ttn-lw/components/form'
 
-import diff from '../../../lib/diff'
-import PropTypes from '../../../lib/prop-types'
-import sharedMessages from '../../../lib/shared-messages'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
-import Require from '../../lib/components/require'
+import OrganizationForm from '@console/components/organization-form'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+import Require from '@console/lib/components/require'
+
+import diff from '@ttn-lw/lib/diff'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import {
   mayEditBasicOrganizationInformation,
   mayDeleteOrganization,
-} from '../../lib/feature-checks'
+} from '@console/lib/feature-checks'
 
 const m = defineMessages({
   deleteOrg: 'Delete organization',
   modalWarning:
-    'Are you sure you want to delete "{orgName}"? This action cannot be undone and it will not be possible to reuse the organization ID!',
-  updateSuccess: 'Successfully updated organization',
+    'Are you sure you want to delete "{orgName}"? This action cannot be undone and it will not be possible to reuse the organization ID.',
+  updateSuccess: 'Organization updated',
 })
 
 @withFeatureRequirement(mayEditBasicOrganizationInformation, {
@@ -51,7 +53,6 @@ const m = defineMessages({
 @withBreadcrumb('orgs.single.general-settings', ({ orgId }) => (
   <Breadcrumb
     path={`/organizations/${orgId}/general-settings`}
-    icon="general_settings"
     content={sharedMessages.generalSettings}
   />
 ))
@@ -90,7 +91,7 @@ class GeneralSettings extends React.PureComponent {
     const { orgId, organization } = this.props
 
     if (this.formRef && this.formRef.current) {
-      this.formRef.current.resetForm(organization)
+      this.formRef.current.resetForm({ values: organization })
     }
 
     toast({

@@ -15,16 +15,15 @@
 package networkserver_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	. "go.thethings.network/lorawan-stack/pkg/networkserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestGenerateDevAddr(t *testing.T) {
@@ -58,26 +57,27 @@ func TestGenerateDevAddr(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			a := assertions.New(t)
-
-			ns := test.Must(New(
-				componenttest.NewComponent(t, &component.Config{}),
-				&Config{
-					NetID:               tc.NetID,
-					DeduplicationWindow: 42,
-					CooldownWindow:      42,
-					DownlinkTasks: &MockDownlinkTaskQueue{
-						PopFunc: DownlinkTaskPopBlockFunc,
+		tc := tc
+		test.RunSubtest(t, test.SubtestConfig{
+			Name:     tc.Name,
+			Parallel: true,
+			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
+				ns, ctx, _, stop := StartTest(t, TestConfig{
+					Context: ctx,
+					NetworkServer: Config{
+						NetID: tc.NetID,
 					},
-				})).(*NetworkServer)
+					TaskStarter: StartTaskExclude(
+						DownlinkProcessTaskName,
+					),
+				})
+				defer stop()
 
-			componenttest.StartComponent(t, ns.Component)
-			defer ns.Close()
-
-			devAddr, err := ttnpb.NewNsClient(ns.LoopbackConn()).GenerateDevAddr(test.Context(), ttnpb.Empty)
-			a.So(err, should.BeNil)
-			a.So(devAddr.DevAddr.HasPrefix(tc.DevAddrPrefix), should.BeTrue)
+				devAddr, err := ttnpb.NewNsClient(ns.LoopbackConn()).GenerateDevAddr(ctx, ttnpb.Empty)
+				if a.So(err, should.BeNil) {
+					a.So(devAddr.DevAddr.HasPrefix(tc.DevAddrPrefix), should.BeTrue)
+				}
+			},
 		})
 	}
 	for _, tc := range []struct {
@@ -136,43 +136,44 @@ func TestGenerateDevAddr(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			a := assertions.New(t)
-
-			ns := test.Must(New(
-				componenttest.NewComponent(t, &component.Config{}),
-				&Config{
-					NetID:               types.NetID{0x00, 0x00, 0x13},
-					DevAddrPrefixes:     tc.DevAddrPrefixes,
-					DeduplicationWindow: 42,
-					CooldownWindow:      42,
-					DownlinkTasks: &MockDownlinkTaskQueue{
-						PopFunc: DownlinkTaskPopBlockFunc,
+		tc := tc
+		test.RunSubtest(t, test.SubtestConfig{
+			Name:     tc.Name,
+			Parallel: true,
+			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
+				ns, ctx, _, stop := StartTest(t, TestConfig{
+					Context: ctx,
+					NetworkServer: Config{
+						NetID:           types.NetID{0x00, 0x00, 0x13},
+						DevAddrPrefixes: tc.DevAddrPrefixes,
 					},
-				})).(*NetworkServer)
+					TaskStarter: StartTaskExclude(
+						DownlinkProcessTaskName,
+					),
+				})
+				defer stop()
 
-			componenttest.StartComponent(t, ns.Component)
-			defer ns.Close()
+				hasOneOfPrefixes := func(devAddr *types.DevAddr, seen map[types.DevAddrPrefix]int, prefixes ...types.DevAddrPrefix) bool {
+					for i, p := range prefixes {
+						if devAddr.HasPrefix(p) {
+							seen[prefixes[i]]++
+							return true
+						}
+					}
+					return false
+				}
 
-			hasOneOfPrefixes := func(devAddr *types.DevAddr, seen map[types.DevAddrPrefix]int, prefixes ...types.DevAddrPrefix) bool {
-				for i, p := range prefixes {
-					if devAddr.HasPrefix(p) {
-						seen[prefixes[i]]++
-						return true
+				seen := map[types.DevAddrPrefix]int{}
+				for i := 0; i < 100; i++ {
+					devAddr, err := ttnpb.NewNsClient(ns.LoopbackConn()).GenerateDevAddr(ctx, ttnpb.Empty)
+					if a.So(err, should.BeNil) {
+						a.So(hasOneOfPrefixes(devAddr.DevAddr, seen, tc.DevAddrPrefixes[0], tc.DevAddrPrefixes[1], tc.DevAddrPrefixes[2]), should.BeTrue)
 					}
 				}
-				return false
-			}
-
-			seen := map[types.DevAddrPrefix]int{}
-			for i := 0; i < 100; i++ {
-				devAddr, err := ttnpb.NewNsClient(ns.LoopbackConn()).GenerateDevAddr(test.Context(), ttnpb.Empty)
-				a.So(err, should.BeNil)
-				a.So(hasOneOfPrefixes(devAddr.DevAddr, seen, tc.DevAddrPrefixes[0], tc.DevAddrPrefixes[1], tc.DevAddrPrefixes[2]), should.BeTrue)
-			}
-			a.So(seen[tc.DevAddrPrefixes[0]], should.BeGreaterThan, 0)
-			a.So(seen[tc.DevAddrPrefixes[1]], should.BeGreaterThan, 0)
-			a.So(seen[tc.DevAddrPrefixes[2]], should.BeGreaterThan, 0)
+				a.So(seen[tc.DevAddrPrefixes[0]], should.BeGreaterThan, 0)
+				a.So(seen[tc.DevAddrPrefixes[1]], should.BeGreaterThan, 0)
+				a.So(seen[tc.DevAddrPrefixes[2]], should.BeGreaterThan, 0)
+			},
 		})
 	}
 }

@@ -20,8 +20,8 @@ import (
 	"net"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // ProtocolVersion of the forwarder
@@ -109,45 +109,43 @@ func (p Packet) BuildAck() (Packet, error) {
 	case PullData:
 		ack.PacketType = PullAck
 	default:
-		return Packet{}, errInvalidPacketType
+		return Packet{}, errInvalidPacketType.New()
 	}
 
 	return ack, nil
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler
-func (p *Packet) UnmarshalBinary(b []byte) (err error) {
+func (p *Packet) UnmarshalBinary(b []byte) error {
 	if len(b) < 4 {
 		return io.EOF
 	}
 	p.ProtocolVersion = ProtocolVersion(b[0])
 	copy(p.Token[:], b[1:3])
 	p.PacketType = PacketType(b[3])
-
 	i := 4
 
 	if p.PacketType.HasGatewayEUI() {
 		if len(b) < i+8 {
-			return errNoEUI
+			return errNoEUI.New()
 		}
-
 		p.GatewayEUI = new(types.EUI64)
-		err = p.GatewayEUI.UnmarshalBinary(b[i : i+8])
-		if err != nil {
+		if err := p.GatewayEUI.UnmarshalBinary(b[i : i+8]); err != nil {
 			return errEUI.WithCause(err)
 		}
 		i += 8
 	}
 
-	if p.PacketType.HasData() && len(b)-i > 0 {
+	if p.PacketType.HasData() {
 		p.Data = new(Data)
-		err = json.Unmarshal(b[i:], p.Data)
-		if err != nil {
-			return err
+		if len(b)-i > 0 {
+			if err := json.Unmarshal(b[i:], p.Data); err != nil {
+				return err
+			}
 		}
 	}
 
-	return
+	return nil
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler

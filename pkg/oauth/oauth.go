@@ -23,11 +23,20 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	"github.com/openshift/osin"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/pbkdf2"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
+
+var tokenHashSettings auth.HashValidator = pbkdf2.PBKDF2{
+	Iterations: 1000,
+	KeyLength:  32,
+	Algorithm:  pbkdf2.Sha256,
+	SaltLength: 16,
+}
 
 // rightsToScope transforms the list of rights into a string "scope".
 // This function is only used for compatibility with osin.
@@ -77,7 +86,10 @@ func (s *server) Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc {
 		if ar == nil {
 			return s.output(c, resp)
 		}
-		ar.UserData = userData{UserIdentifiers: session.UserIdentifiers}
+		ar.UserData = userData{UserSessionIdentifiers: ttnpb.UserSessionIdentifiers{
+			UserIdentifiers: session.UserIdentifiers,
+			SessionID:       session.SessionID,
+		}}
 		client := ttnpb.Client(ar.Client.(osinClient))
 		if !clientHasGrant(&client, ttnpb.GRANT_AUTHORIZATION_CODE) {
 			resp.InternalError = errClientMissingGrant.WithAttributes("grant", "authorization_code")
@@ -142,7 +154,7 @@ func (s *server) Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 		if ar.Authorized {
-			events.Publish(evtAuthorize(req.Context(), ttnpb.CombineIdentifiers(session.UserIdentifiers, client.ClientIdentifiers), nil))
+			events.Publish(evtAuthorize.NewWithIdentifiersAndData(req.Context(), ttnpb.CombineIdentifiers(session.UserIdentifiers, client.ClientIdentifiers), nil))
 		}
 		oauth2.FinishAuthorizeRequest(resp, req, ar)
 		return s.output(c, resp)
@@ -213,7 +225,7 @@ func (s *server) Token(c echo.Context) error {
 		}
 	}
 	if ar.Authorized {
-		events.Publish(evtTokenExchange(req.Context(), ttnpb.CombineIdentifiers(userIDs, client.ClientIdentifiers), nil))
+		events.Publish(evtTokenExchange.NewWithIdentifiersAndData(req.Context(), ttnpb.CombineIdentifiers(userIDs, client.ClientIdentifiers), nil))
 	}
 	oauth2.FinishAccessRequest(resp, req, ar)
 	delete(resp.Output, "scope")

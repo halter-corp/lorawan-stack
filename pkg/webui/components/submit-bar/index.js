@@ -14,9 +14,10 @@
 
 import React from 'react'
 import classnames from 'classnames'
-import PropTypes from '../../lib/prop-types'
 
-import Message from '../../lib/components/message'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './submit-bar.styl'
 
@@ -34,10 +35,22 @@ const SubmitBarMessage = ({ className, ...rest }) => (
 
 SubmitBar.propTypes = {
   align: PropTypes.oneOf(['start', 'end', 'between', 'around']),
+  children: PropTypes.node,
+  className: PropTypes.string,
 }
 
 SubmitBar.defaultProps = {
   align: 'between',
+  className: undefined,
+  children: undefined,
+}
+
+SubmitBarMessage.propTypes = {
+  className: PropTypes.string,
+}
+
+SubmitBarMessage.defaultProps = {
+  className: undefined,
 }
 
 SubmitBar.Message = SubmitBarMessage

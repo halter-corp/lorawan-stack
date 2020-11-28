@@ -19,13 +19,13 @@ import (
 	"fmt"
 
 	"github.com/mohae/deepcopy"
-	clusterauth "go.thethings.network/lorawan-stack/pkg/auth/cluster"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 var (
@@ -45,7 +45,7 @@ func (gs *GatewayServer) ScheduleDownlink(ctx context.Context, down *ttnpb.Downl
 	}
 	request := down.GetRequest()
 	if request == nil {
-		return nil, errNotTxRequest
+		return nil, errNotTxRequest.New()
 	}
 
 	var pathErrs []errors.ErrorDetails
@@ -56,12 +56,12 @@ func (gs *GatewayServer) ScheduleDownlink(ctx context.Context, down *ttnpb.Downl
 		case *ttnpb.DownlinkPath_Fixed:
 			ids = p.Fixed.GatewayIdentifiers
 		case *ttnpb.DownlinkPath_UplinkToken:
-			antennaIDs, _, err := io.ParseUplinkToken(p.UplinkToken)
+			token, err := io.ParseUplinkToken(p.UplinkToken)
 			if err != nil {
-				pathErrs = append(pathErrs, errUplinkToken) // Hide the cause as uplink tokens are opaque to the Network Server.
+				pathErrs = append(pathErrs, errUplinkToken.New()) // Hide the cause as uplink tokens are opaque to the Network Server.
 				continue
 			}
-			ids = antennaIDs.GatewayIdentifiers
+			ids = token.GatewayIdentifiers
 		default:
 			panic(fmt.Sprintf("proto: unexpected type %T in oneof", path.Path))
 		}
@@ -82,7 +82,7 @@ func (gs *GatewayServer) ScheduleDownlink(ctx context.Context, down *ttnpb.Downl
 		}
 		ctx = events.ContextWithCorrelationID(ctx, events.CorrelationIDsFromContext(conn.Context())...)
 		down.CorrelationIDs = append(down.CorrelationIDs, events.CorrelationIDsFromContext(ctx)...)
-		registerSendDownlink(ctx, conn.Gateway(), down)
+		registerSendDownlink(ctx, conn.Gateway(), down, conn.Frontend().Protocol())
 		return &ttnpb.ScheduleDownlinkResponse{
 			Delay: delay,
 		}, nil

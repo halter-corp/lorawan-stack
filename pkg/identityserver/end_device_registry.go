@@ -20,26 +20,39 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/blacklist"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/blacklist"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateEndDevice = events.Define(
 		"end_device.create", "create end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateEndDevice = events.Define(
 		"end_device.update", "update end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteEndDevice = events.Define(
 		"end_device.delete", "delete end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
+)
+
+var errEndDeviceEUIsTaken = errors.DefineAlreadyExists(
+	"end_device_euis_taken",
+	"an end device with JoinEUI `{join_eui}` and DevEUI `{dev_eui}` is already registered as `{device_id}` in application `{application_id}`",
 )
 
 func (is *IdentityServer) createEndDevice(ctx context.Context, req *ttnpb.CreateEndDeviceRequest) (dev *ttnpb.EndDevice, err error) {
@@ -65,9 +78,22 @@ func (is *IdentityServer) createEndDevice(ctx context.Context, req *ttnpb.Create
 		return nil
 	})
 	if err != nil {
+		if errors.IsAlreadyExists(err) && errors.Resemble(err, store.ErrEUITaken) {
+			if ids, err := is.getEndDeviceIdentifiersForEUIs(ctx, &ttnpb.GetEndDeviceIdentifiersForEUIsRequest{
+				JoinEUI: *req.JoinEUI,
+				DevEUI:  *req.DevEUI,
+			}); err == nil {
+				return nil, errEndDeviceEUIsTaken.WithAttributes(
+					"join_eui", req.JoinEUI.String(),
+					"dev_eui", req.DevEUI.String(),
+					"device_id", ids.GetDeviceID(),
+					"application_id", ids.GetApplicationID(),
+				)
+			}
+		}
 		return nil, err
 	}
-	events.Publish(evtCreateEndDevice(ctx, req.EndDeviceIdentifiers, nil))
+	events.Publish(evtCreateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDeviceIdentifiers, nil))
 	return dev, nil
 }
 
@@ -117,6 +143,7 @@ func (is *IdentityServer) listEndDevices(ctx context.Context, req *ttnpb.ListEnd
 		return nil, err
 	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -181,7 +208,7 @@ func (is *IdentityServer) updateEndDevice(ctx context.Context, req *ttnpb.Update
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateEndDevice(ctx, req.EndDeviceIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDeviceIdentifiers, req.FieldMask.Paths))
 	return dev, nil
 }
 
@@ -195,7 +222,7 @@ func (is *IdentityServer) deleteEndDevice(ctx context.Context, ids *ttnpb.EndDev
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeleteEndDevice(ctx, ids, nil))
+	events.Publish(evtDeleteEndDevice.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
 }
 

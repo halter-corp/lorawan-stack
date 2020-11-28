@@ -20,16 +20,18 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectOrganizationFlags = util.FieldMaskFlags(&ttnpb.Organization{})
 	setOrganizationFlags    = util.FieldFlags(&ttnpb.Organization{})
+
+	selectAllOrganizationFlags = util.SelectAllFlagSet("organization")
 )
 
 func organizationIDFlags() *pflag.FlagSet {
@@ -68,6 +70,7 @@ var (
 		Short:   "List organizations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectOrganizationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.OrganizationRegistry/List"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -79,6 +82,7 @@ var (
 				FieldMask:    types.FieldMask{Paths: paths},
 				Limit:        limit,
 				Page:         page,
+				Order:        getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -93,6 +97,7 @@ var (
 		Short: "Search for organizations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectOrganizationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchOrganizations"])
 
 			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
 			req.FieldMask.Paths = paths
@@ -120,6 +125,7 @@ var (
 				return errNoOrganizationID
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectOrganizationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.OrganizationRegistry/Get"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -179,10 +185,10 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res)
 		}),
 	}
-	organizationsUpdateCommand = &cobra.Command{
-		Use:     "update [organization-id]",
+	organizationsSetCommand = &cobra.Command{
+		Use:     "set [organization-id]",
 		Aliases: []string{"set"},
-		Short:   "Update an organization",
+		Short:   "Set properties of an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgID := getOrganizationID(cmd.Flags(), args)
 			if orgID == nil {
@@ -217,8 +223,9 @@ var (
 		},
 	}
 	organizationsDeleteCommand = &cobra.Command{
-		Use:   "delete [organization-id]",
-		Short: "Delete an organization",
+		Use:     "delete [organization-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgID := getOrganizationID(cmd.Flags(), args)
 			if orgID == nil {
@@ -249,23 +256,27 @@ var (
 func init() {
 	organizationsListCommand.Flags().AddFlagSet(collaboratorFlags())
 	organizationsListCommand.Flags().AddFlagSet(selectOrganizationFlags)
+	organizationsListCommand.Flags().AddFlagSet(selectAllOrganizationFlags)
 	organizationsListCommand.Flags().AddFlagSet(paginationFlags())
+	organizationsListCommand.Flags().AddFlagSet(orderFlags())
 	organizationsCommand.AddCommand(organizationsListCommand)
 	organizationsSearchCommand.Flags().AddFlagSet(searchFlags())
 	organizationsSearchCommand.Flags().AddFlagSet(selectOrganizationFlags)
+	organizationsSearchCommand.Flags().AddFlagSet(selectAllOrganizationFlags)
 	organizationsCommand.AddCommand(organizationsSearchCommand)
 	organizationsGetCommand.Flags().AddFlagSet(organizationIDFlags())
 	organizationsGetCommand.Flags().AddFlagSet(selectOrganizationFlags)
+	organizationsGetCommand.Flags().AddFlagSet(selectAllOrganizationFlags)
 	organizationsCommand.AddCommand(organizationsGetCommand)
 	organizationsCreateCommand.Flags().AddFlagSet(organizationIDFlags())
 	organizationsCreateCommand.Flags().AddFlagSet(collaboratorFlags())
 	organizationsCreateCommand.Flags().AddFlagSet(setOrganizationFlags)
 	organizationsCreateCommand.Flags().AddFlagSet(attributesFlags())
 	organizationsCommand.AddCommand(organizationsCreateCommand)
-	organizationsUpdateCommand.Flags().AddFlagSet(organizationIDFlags())
-	organizationsUpdateCommand.Flags().AddFlagSet(setOrganizationFlags)
-	organizationsUpdateCommand.Flags().AddFlagSet(attributesFlags())
-	organizationsCommand.AddCommand(organizationsUpdateCommand)
+	organizationsSetCommand.Flags().AddFlagSet(organizationIDFlags())
+	organizationsSetCommand.Flags().AddFlagSet(setOrganizationFlags)
+	organizationsSetCommand.Flags().AddFlagSet(attributesFlags())
+	organizationsCommand.AddCommand(organizationsSetCommand)
 	organizationsDeleteCommand.Flags().AddFlagSet(organizationIDFlags())
 	organizationsCommand.AddCommand(organizationsDeleteCommand)
 	organizationsContactInfoCommand.PersistentFlags().AddFlagSet(organizationIDFlags())

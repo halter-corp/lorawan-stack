@@ -15,16 +15,16 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v7"
 	ulid "github.com/oklog/ulid/v2"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	ttnredis "go.thethings.network/lorawan-stack/pkg/redis"
+	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 )
 
 const (
@@ -36,6 +36,45 @@ var defaultNamespace = [...]string{
 	"redistest",
 }
 
+type redisHook struct {
+	testing.TB
+}
+
+func (redisHook) formatCommand(cmd redis.Cmder) string {
+	ss := make([]string, 0, len(cmd.Args()))
+	for _, arg := range cmd.Args() {
+		ss = append(ss, fmt.Sprint(arg))
+	}
+	return strings.Join(ss, " ")
+}
+
+func (h redisHook) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
+	GetLogger(h.TB).Debugf("Executing `%s`", h.formatCommand(cmd))
+	return ctx, nil
+}
+
+func (h redisHook) AfterProcess(context.Context, redis.Cmder) error {
+	return nil
+}
+
+func (h redisHook) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
+	printLog := GetLogger(h.TB).Debug
+	if len(cmds) == 0 {
+		printLog("Executing empty pipeline")
+	} else {
+		s := fmt.Sprintf("Executing %d commands in pipeline:", len(cmds))
+		for _, cmd := range cmds {
+			s += fmt.Sprintf("\n   %s", h.formatCommand(cmd))
+		}
+		printLog(s)
+	}
+	return ctx, nil
+}
+
+func (h redisHook) AfterProcessPipeline(context.Context, []redis.Cmder) error {
+	return nil
+}
+
 // NewRedis returns a new namespaced *redis.Client ready to use
 // and a flush function, which should be called after the client is not needed anymore to clean the namespace.
 // NewRedis respects TEST_REDIS, REDIS_ADDRESS and REDIS_DB environment variables.
@@ -43,24 +82,21 @@ var defaultNamespace = [...]string{
 func NewRedis(t testing.TB, namespace ...string) (*ttnredis.Client, func()) {
 	if os.Getenv("TEST_REDIS") != "1" {
 		t.Skip("TEST_REDIS is not set to `1`, skipping Redis tests")
-		panic("New called outside test")
+		panic("NewRedis called outside test")
 	}
 
-	conf := &ttnredis.Config{
-		Redis: config.Redis{
-			Address:   defaultAddress,
-			Database:  defaultDatabase,
-			Namespace: defaultNamespace[:],
-		},
-		Namespace: append(append([]string{ulid.MustNew(ulid.Now(), Randy).String()}, namespace...), t.Name()),
-	}
+	conf := ttnredis.Config{
+		Address:       defaultAddress,
+		Database:      defaultDatabase,
+		RootNamespace: defaultNamespace[:],
+	}.WithNamespace(append(append([]string{ulid.MustNew(ulid.Now(), Randy).String()}, namespace...), t.Name())...)
 
 	if addr := os.Getenv("REDIS_ADDRESS"); addr != "" {
-		conf.Redis.Address = addr
+		conf.Address = addr
 	}
 	if db := os.Getenv("REDIS_DB"); db != "" {
 		var err error
-		conf.Redis.Database, err = strconv.Atoi(db)
+		conf.Database, err = strconv.Atoi(db)
 		if err != nil {
 			t.Fatalf("Expected REDIS_DB to be an integer, got `%s`", db)
 			return nil, nil
@@ -68,41 +104,12 @@ func NewRedis(t testing.TB, namespace ...string) (*ttnredis.Client, func()) {
 	}
 
 	cl := ttnredis.New(conf)
-
 	if err := cl.Ping().Err(); err != nil {
 		t.Fatalf("Failed to ping Redis: `%s`", err)
 	}
 
-	formatCmd := func(cmd redis.Cmder) string {
-		ss := make([]string, 0, len(cmd.Args()))
-		for _, arg := range cmd.Args() {
-			ss = append(ss, fmt.Sprint(arg))
-		}
-		return strings.Join(ss, " ")
-	}
-
-	cl.Client.WrapProcess(func(p func(redis.Cmder) error) func(redis.Cmder) error {
-		logger := GetLogger(t)
-		return func(cmd redis.Cmder) error {
-			logger.Debugf("Executing `%s`", formatCmd(cmd))
-			return p(cmd)
-		}
-	})
-	cl.Client.WrapProcessPipeline(func(p func([]redis.Cmder) error) func([]redis.Cmder) error {
-		logger := GetLogger(t)
-		return func(cmds []redis.Cmder) error {
-			var s string
-			if len(cmds) == 0 {
-				s = "Executing empty pipeline"
-			} else {
-				s = fmt.Sprintf("Executing %d commands in pipeline:", len(cmds))
-				for _, cmd := range cmds {
-					s += fmt.Sprintf("\n   %s", formatCmd(cmd))
-				}
-			}
-			logger.Debug(s)
-			return p(cmds)
-		}
+	cl.Client.AddHook(redisHook{
+		TB: t,
 	})
 
 	flushNamespace := func() {
@@ -127,8 +134,6 @@ func NewRedis(t testing.TB, namespace ...string) (*ttnredis.Client, func()) {
 			logger.WithField("n", n).Debug("Deleted old keys")
 		}
 	}
-
 	flushNamespace()
-
 	return cl, flushNamespace
 }

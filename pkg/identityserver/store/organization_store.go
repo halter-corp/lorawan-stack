@@ -23,8 +23,8 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetOrganizationStore returns an OrganizationStore on the given db (or transaction).
@@ -38,12 +38,12 @@ type organizationStore struct {
 
 // selectOrganizationFields selects relevant fields (based on fieldMask) and preloads details if needed.
 func selectOrganizationFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	query = query.Preload("Account")
 	if fieldMask == nil || len(fieldMask.Paths) == 0 {
-		return query.Preload("Attributes")
+		return query.Preload("Attributes").Select([]string{"accounts.uid", "organizations.*"})
 	}
 	var organizationColumns []string
 	var notFoundPaths []string
+	organizationColumns = append(organizationColumns, "accounts.uid")
 	for _, column := range modelColumns {
 		organizationColumns = append(organizationColumns, "organizations."+column)
 	}
@@ -89,11 +89,12 @@ func (s *organizationStore) FindOrganizations(ctx context.Context, ids []*ttnpb.
 	}
 	query := s.query(ctx, Organization{}, withOrganizationID(idStrings...))
 	query = selectOrganizationFields(ctx, query, fieldMask)
+	query = query.Order(orderFromContext(ctx, "organizations", `"accounts"."uid"`, "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query.Model(Organization{}))
 		query = query.Limit(limit).Offset(offset)
 	}
-	var orgModels []Organization
+	var orgModels []organizationWithUID
 	query = query.Find(&orgModels)
 	setTotal(ctx, uint64(len(orgModels)))
 	if query.Error != nil {
@@ -112,8 +113,8 @@ func (s *organizationStore) GetOrganization(ctx context.Context, id *ttnpb.Organ
 	defer trace.StartRegion(ctx, "get organization").End()
 	query := s.query(ctx, Organization{}, withOrganizationID(id.GetOrganizationID()))
 	query = selectOrganizationFields(ctx, query, fieldMask)
-	var orgModel Organization
-	if err := query.Preload("Account").First(&orgModel).Error; err != nil {
+	var orgModel organizationWithUID
+	if err := query.First(&orgModel).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, errNotFoundForID(id)
 		}
@@ -128,8 +129,8 @@ func (s *organizationStore) UpdateOrganization(ctx context.Context, org *ttnpb.O
 	defer trace.StartRegion(ctx, "update organization").End()
 	query := s.query(ctx, Organization{}, withOrganizationID(org.GetOrganizationID()))
 	query = selectOrganizationFields(ctx, query, fieldMask)
-	var orgModel Organization
-	if err = query.Preload("Account").First(&orgModel).Error; err != nil {
+	var orgModel organizationWithUID
+	if err = query.First(&orgModel).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, errNotFoundForID(org.OrganizationIdentifiers)
 		}
@@ -140,7 +141,7 @@ func (s *organizationStore) UpdateOrganization(ctx context.Context, org *ttnpb.O
 	}
 	oldAttributes := orgModel.Attributes
 	columns := orgModel.fromPB(org, fieldMask)
-	if err = s.updateEntity(ctx, &orgModel, columns...); err != nil {
+	if err = s.updateEntity(ctx, &orgModel.Organization, columns...); err != nil {
 		return nil, err
 	}
 	if !reflect.DeepEqual(oldAttributes, orgModel.Attributes) {

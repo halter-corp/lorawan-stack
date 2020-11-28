@@ -19,7 +19,6 @@ import { action } from '@storybook/addon-actions'
 
 import Button from '.'
 
-@bind
 class Example extends React.Component {
   state = {
     busy: false,
@@ -47,18 +46,21 @@ class Example extends React.Component {
     )
   }
 
+  @bind
   toggle() {
     this.setState(state => ({
       busy: !state.busy,
     }))
   }
 
+  @bind
   disable() {
     this.setState(state => ({
       disabled: !state.disabled,
     }))
   }
 
+  @bind
   error() {
     this.setState({
       error: true,
@@ -205,6 +207,26 @@ storiesOf('Button', module)
       <br />
       <br />
       <Button icon="check" busy />
+    </div>
+  ))
+  .add('Custom content', () => (
+    <div>
+      <Button>
+        Custom content
+        <Button.Icon icon="keyboard_arrow_right" type="right" />
+      </Button>
+      <br />
+      <br />
+      <Button disabled>
+        Custom content
+        <Button.Icon icon="keyboard_arrow_right" type="right" />
+      </Button>
+      <br />
+      <br />
+      <Button busy>
+        Custom content
+        <Button.Icon icon="keyboard_arrow_right" type="right" />
+      </Button>
     </div>
   ))
   .add('Toggle', () => <Example />)

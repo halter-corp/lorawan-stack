@@ -13,10 +13,16 @@
 // limitations under the License.
 
 import React from 'react'
-import PropTypes from 'prop-types'
-import MapWidget from '../../../components/map/widget/'
+
+import MapWidget from '@ttn-lw/components/map/widget'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 export default class GatewayMap extends React.Component {
+  static propTypes = {
+    gateway: PropTypes.gateway.isRequired,
+  }
+
   render() {
     const { gateway } = this.props
     const { gateway_id } = gateway.ids
@@ -39,19 +45,4 @@ export default class GatewayMap extends React.Component {
       />
     )
   }
-}
-
-GatewayMap.propTypes = {
-  // Gateway is an object.
-  gateway: PropTypes.shape({
-    antennas: PropTypes.Array,
-    // Ids is an object containing gateway_id which is a string.
-    ids: PropTypes.shape({
-      gateway_id: PropTypes.string.isRequired,
-    }).isRequired,
-  }),
-}
-
-GatewayMap.defaultProps = {
-  gateway: {},
 }

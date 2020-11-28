@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +31,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 func request_OrganizationRegistry_Create_0(ctx context.Context, marshaler runtime.Marshaler, client OrganizationRegistryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateOrganizationRequest
@@ -161,7 +163,10 @@ func local_request_OrganizationRegistry_Get_0(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationRegistry_Get_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationRegistry_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -194,7 +199,10 @@ func local_request_OrganizationRegistry_List_0(ctx context.Context, marshaler ru
 	var protoReq ListOrganizationsRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationRegistry_List_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationRegistry_List_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -263,7 +271,10 @@ func local_request_OrganizationRegistry_List_1(ctx context.Context, marshaler ru
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationRegistry_List_1); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationRegistry_List_1); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -580,7 +591,10 @@ func local_request_OrganizationAccess_ListAPIKeys_0(ctx context.Context, marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationAccess_ListAPIKeys_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationAccess_ListAPIKeys_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -671,7 +685,10 @@ func local_request_OrganizationAccess_GetAPIKey_0(ctx context.Context, marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "key_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationAccess_GetAPIKey_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationAccess_GetAPIKey_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -773,7 +790,7 @@ func local_request_OrganizationAccess_UpdateAPIKey_0(ctx context.Context, marsha
 }
 
 var (
-	filter_OrganizationAccess_GetCollaborator_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_ids": 0, "organization_id": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+	filter_OrganizationAccess_GetCollaborator_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_ids": 0, "organization_id": 1, "collaborator": 2, "user_ids": 3, "user_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
 )
 
 func request_OrganizationAccess_GetCollaborator_0(ctx context.Context, marshaler runtime.Marshaler, client OrganizationAccessClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -796,6 +813,17 @@ func request_OrganizationAccess_GetCollaborator_0(ctx context.Context, marshaler
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
+	}
+
+	val, ok = pathParams["collaborator.user_ids.user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
+	}
+
+	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -832,41 +860,6 @@ func local_request_OrganizationAccess_GetCollaborator_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationAccess_GetCollaborator_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.GetCollaborator(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-var (
-	filter_OrganizationAccess_GetCollaborator_1 = &utilities.DoubleArray{Encoding: map[string]int{"organization_ids": 0, "organization_id": 1, "collaborator": 2, "user_ids": 3, "user_id": 4}, Base: []int{1, 1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 1, 4, 5, 3, 6}}
-)
-
-func request_OrganizationAccess_GetCollaborator_1(ctx context.Context, marshaler runtime.Marshaler, client OrganizationAccessClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetOrganizationCollaboratorRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["organization_ids.organization_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_ids.organization_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "organization_ids.organization_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
-	}
-
 	val, ok = pathParams["collaborator.user_ids.user_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
@@ -881,49 +874,7 @@ func request_OrganizationAccess_GetCollaborator_1(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationAccess_GetCollaborator_1); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.GetCollaborator(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_OrganizationAccess_GetCollaborator_1(ctx context.Context, marshaler runtime.Marshaler, server OrganizationAccessServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetOrganizationCollaboratorRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["organization_ids.organization_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_ids.organization_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "organization_ids.organization_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
-	}
-
-	val, ok = pathParams["collaborator.user_ids.user_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "collaborator.user_ids.user_id")
-	}
-
-	err = runtime.PopulateFieldFromPath(&protoReq, "collaborator.user_ids.user_id", val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "collaborator.user_ids.user_id", err)
-	}
-
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationAccess_GetCollaborator_1); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationAccess_GetCollaborator_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -1062,7 +1013,10 @@ func local_request_OrganizationAccess_ListCollaborators_0(ctx context.Context, m
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_ids.organization_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_OrganizationAccess_ListCollaborators_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_OrganizationAccess_ListCollaborators_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -1074,11 +1028,14 @@ func local_request_OrganizationAccess_ListCollaborators_0(ctx context.Context, m
 // RegisterOrganizationRegistryHandlerServer registers the http handlers for service OrganizationRegistry to "mux".
 // UnaryRPC     :call OrganizationRegistryServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterOrganizationRegistryHandlerFromEndpoint instead.
 func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server OrganizationRegistryServer) error {
 
 	mux.Handle("POST", pattern_OrganizationRegistry_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1086,6 +1043,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_Create_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1099,6 +1057,8 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 	mux.Handle("GET", pattern_OrganizationRegistry_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1106,6 +1066,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1119,6 +1080,8 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 	mux.Handle("GET", pattern_OrganizationRegistry_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1126,6 +1089,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_List_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1139,6 +1103,8 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 	mux.Handle("GET", pattern_OrganizationRegistry_List_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1146,6 +1112,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_List_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1159,6 +1126,8 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 	mux.Handle("PUT", pattern_OrganizationRegistry_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1166,6 +1135,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_Update_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1179,6 +1149,8 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 	mux.Handle("DELETE", pattern_OrganizationRegistry_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1186,6 +1158,7 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 		resp, md, err := local_request_OrganizationRegistry_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1202,11 +1175,14 @@ func RegisterOrganizationRegistryHandlerServer(ctx context.Context, mux *runtime
 // RegisterOrganizationAccessHandlerServer registers the http handlers for service OrganizationAccess to "mux".
 // UnaryRPC     :call OrganizationAccessServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterOrganizationAccessHandlerFromEndpoint instead.
 func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.ServeMux, server OrganizationAccessServer) error {
 
 	mux.Handle("GET", pattern_OrganizationAccess_ListRights_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1214,6 +1190,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_ListRights_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1227,6 +1204,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("POST", pattern_OrganizationAccess_CreateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1234,6 +1213,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_CreateAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1247,6 +1227,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("GET", pattern_OrganizationAccess_ListAPIKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1254,6 +1236,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_ListAPIKeys_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1267,6 +1250,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("GET", pattern_OrganizationAccess_GetAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1274,6 +1259,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_GetAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1287,6 +1273,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("PUT", pattern_OrganizationAccess_UpdateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1294,6 +1282,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_UpdateAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1307,6 +1296,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("GET", pattern_OrganizationAccess_GetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1314,6 +1305,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_GetCollaborator_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1324,29 +1316,11 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 
 	})
 
-	mux.Handle("GET", pattern_OrganizationAccess_GetCollaborator_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_OrganizationAccess_GetCollaborator_1(rctx, inboundMarshaler, server, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_OrganizationAccess_GetCollaborator_1(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("PUT", pattern_OrganizationAccess_SetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1354,6 +1328,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_SetCollaborator_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1367,6 +1342,8 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 	mux.Handle("GET", pattern_OrganizationAccess_ListCollaborators_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -1374,6 +1351,7 @@ func RegisterOrganizationAccessHandlerServer(ctx context.Context, mux *runtime.S
 			return
 		}
 		resp, md, err := local_request_OrganizationAccess_ListCollaborators_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1734,26 +1712,6 @@ func RegisterOrganizationAccessHandlerClient(ctx context.Context, mux *runtime.S
 
 	})
 
-	mux.Handle("GET", pattern_OrganizationAccess_GetCollaborator_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_OrganizationAccess_GetCollaborator_1(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_OrganizationAccess_GetCollaborator_1(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
 	mux.Handle("PUT", pattern_OrganizationAccess_SetCollaborator_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1808,9 +1766,7 @@ var (
 
 	pattern_OrganizationAccess_UpdateAPIKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"organizations", "organization_ids.organization_id", "api-keys", "api_key.id"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_OrganizationAccess_GetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"organizations", "organization_ids.organization_id", "collaborator"}, "", runtime.AssumeColonVerbOpt(true)))
-
-	pattern_OrganizationAccess_GetCollaborator_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"organizations", "organization_ids.organization_id", "collaborator", "user", "collaborator.user_ids.user_id"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_OrganizationAccess_GetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"organizations", "organization_ids.organization_id", "collaborator", "user", "collaborator.user_ids.user_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_OrganizationAccess_SetCollaborator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"organizations", "organization_ids.organization_id", "collaborators"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -1829,8 +1785,6 @@ var (
 	forward_OrganizationAccess_UpdateAPIKey_0 = runtime.ForwardResponseMessage
 
 	forward_OrganizationAccess_GetCollaborator_0 = runtime.ForwardResponseMessage
-
-	forward_OrganizationAccess_GetCollaborator_1 = runtime.ForwardResponseMessage
 
 	forward_OrganizationAccess_SetCollaborator_0 = runtime.ForwardResponseMessage
 

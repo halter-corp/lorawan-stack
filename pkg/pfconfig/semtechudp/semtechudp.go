@@ -16,12 +16,9 @@
 package semtechudp
 
 import (
-	"net"
-	"strconv"
-
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
-	"go.thethings.network/lorawan-stack/pkg/pfconfig/shared"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/pfconfig/shared"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Config represents the full configuration for Semtech's UDP Packet Forwarder.
@@ -32,6 +29,7 @@ type Config struct {
 
 // GatewayConf contains the configuration for the gateway's server connection.
 type GatewayConf struct {
+	GatewayID      string        `json:"gateway_ID,omitempty"`
 	ServerAddress  string        `json:"server_address"`
 	ServerPortUp   uint32        `json:"serv_port_up"`
 	ServerPortDown uint32        `json:"serv_port_down"`
@@ -43,14 +41,13 @@ type GatewayConf struct {
 func Build(gateway *ttnpb.Gateway, store *frequencyplans.Store) (*Config, error) {
 	var c Config
 
-	host, portStr, err := net.SplitHostPort(gateway.GatewayServerAddress)
-	if err != nil {
-		host = gateway.GatewayServerAddress
-		portStr = "1700"
-	}
-	port, err := strconv.Atoi(portStr)
+	host, port, err := shared.ParseGatewayServerAddress(gateway.GatewayServerAddress)
 	if err != nil {
 		return nil, err
+	}
+
+	if gateway.EUI != nil {
+		c.GatewayConf.GatewayID = gateway.EUI.String()
 	}
 	c.GatewayConf.ServerAddress, c.GatewayConf.ServerPortUp, c.GatewayConf.ServerPortDown = host, uint32(port), uint32(port)
 	server := c.GatewayConf

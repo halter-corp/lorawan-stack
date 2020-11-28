@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,21 +16,23 @@ import React from 'react'
 import { Col, Row } from 'react-grid-system'
 import classnames from 'classnames'
 
-import PropTypes from '../../lib/prop-types'
-import IntlHelmet from '../../lib/components/intl-helmet'
-import Message from '../../lib/components/message'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './page-title.styl'
 
 const PageTitle = ({ title, values, tall, className, hideHeading, children }) => {
-  const containerClass = classnames(className, style.container, {
-    [style.hideHeading]: hideHeading,
-  })
   const titleClass = classnames(style.title, { [style.tall]: tall })
-  return (
-    <Row className={containerClass}>
+  const pageTitle = <IntlHelmet title={title} values={values} />
+
+  return hideHeading ? (
+    pageTitle
+  ) : (
+    <Row>
       <Col>
-        <IntlHelmet title={title} values={values} />
+        {pageTitle}
         {!hideHeading && (
           <Message component="h1" className={titleClass} content={title} values={values} />
         )}

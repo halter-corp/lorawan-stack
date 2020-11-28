@@ -13,26 +13,37 @@
 // limitations under the License.
 
 import React from 'react'
-import classnames from 'classnames'
 import bind from 'autobind-decorator'
+import classnames from 'classnames'
 import PropTypes from 'prop-types'
 
-import from from '../../lib/from'
+import from from '@ttn-lw/lib/from'
+
 import style from './spinner.styl'
 
 const id = () => `grad-${Math.round(Math.random() * 10000)}`
 
-@bind
 export default class Spinner extends React.PureComponent {
   static propTypes = {
-    center: PropTypes.bool,
-    small: PropTypes.bool,
-    faded: PropTypes.bool,
     after: PropTypes.number,
+    center: PropTypes.bool,
+    children: PropTypes.node,
+    className: PropTypes.string,
+    faded: PropTypes.bool,
+    inline: PropTypes.bool,
+    micro: PropTypes.bool,
+    small: PropTypes.bool,
   }
 
   static defaultProps = {
     after: 350,
+    center: false,
+    children: undefined,
+    className: undefined,
+    faded: false,
+    inline: false,
+    micro: false,
+    small: false,
   }
 
   constructor(props) {
@@ -50,6 +61,7 @@ export default class Spinner extends React.PureComponent {
     clearTimeout(this.timer)
   }
 
+  @bind
   show() {
     this.setState({
       visible: true,
@@ -59,8 +71,8 @@ export default class Spinner extends React.PureComponent {
   render() {
     const {
       className,
-      center = false,
-      small = false,
+      center,
+      small,
       micro = false,
       faded = false,
       children,

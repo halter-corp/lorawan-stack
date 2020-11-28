@@ -17,12 +17,13 @@ package events_test
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func ExampleHandlerFunc() {
@@ -65,9 +66,11 @@ func TestChannelReceive(t *testing.T) {
 	a := assertions.New(t)
 
 	eventChan := make(events.Channel, 2)
-	eventChan.Notify(events.New(test.Context(), "evt", nil, nil))
-	eventChan.Notify(events.New(test.Context(), "evt", nil, nil))
-	eventChan.Notify(events.New(test.Context(), "overflow", nil, nil))
+	eventChan.Notify(events.New(test.Context(), "evt", "event"))
+	eventChan.Notify(events.New(test.Context(), "evt", "event"))
+	eventChan.Notify(events.New(test.Context(), "overflow", "this overflows the channel"))
+
+	runtime.Gosched()
 
 	ctx, cancel := context.WithCancel(test.Context())
 

@@ -22,18 +22,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.thethings.network/lorawan-stack/cmd/internal/commands"
-	"go.thethings.network/lorawan-stack/cmd/internal/shared/version"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	conf "go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/commands"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared/version"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	cmdio "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	conf "go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/io"
 	"golang.org/x/oauth2"
 )
 
@@ -83,8 +85,8 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 		}
 
 		// create input decoder on Stdin
-		if io.IsPipe(os.Stdin) {
-			inputDecoder, err = getInputDecoder(os.Stdin)
+		if rd, ok := cmdio.BufferedPipe(os.Stdin); ok {
+			inputDecoder, err = getInputDecoder(rd)
 			if err != nil {
 				return err
 			}
@@ -98,13 +100,11 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 		cache = cache.ForID(config.CredentialsID)
 
 		// create logger
-		logger, err = log.NewLogger(
+		logger = log.NewLogger(
 			log.WithLevel(config.Log.Level),
 			log.WithHandler(log.NewCLI(os.Stderr)),
 		)
-		if err != nil {
-			return err
-		}
+
 		ctx = log.NewContext(ctx, logger)
 
 		// prepare the API
@@ -112,6 +112,9 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 		api.SetLogger(logger)
 		if config.Insecure {
 			api.SetInsecure(true)
+		}
+		if config.DumpRequests {
+			api.SetDumpRequests(true)
 		}
 		if config.CA != "" {
 			pemBytes, err := ioutil.ReadFile(config.CA)
@@ -129,6 +132,14 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 			if err = api.AddCA(pemBytes); err != nil {
 				return err
 			}
+		}
+
+		// Drop default HTTP port numbers from OAuth server address if present.
+		// Causes issues with `--http.redirect-to-tls` stack option.
+		u, err := url.Parse(config.OAuthServerAddress)
+		if u.Port() == "443" && u.Scheme == "https" || u.Port() == "80" && u.Scheme == "http" {
+			u.Host = u.Hostname()
+			config.OAuthServerAddress = u.String()
 		}
 
 		// OAuth
@@ -211,7 +222,6 @@ func requireAuth() error {
 		}
 		logger.Warnf("Access token expired at %s", friendlyExpiry)
 	}
-	logger.Error("Please login with the login command")
 	return errUnauthenticated
 }
 
@@ -220,6 +230,7 @@ var (
 	genManPagesCommand = commands.GenManPages(Root)
 	genMDDocCommand    = commands.GenMDDoc(Root)
 	ganYAMLDocCommand  = commands.GenYAMLDoc(Root)
+	completeCommand    = commands.Complete()
 )
 
 func init() {
@@ -233,4 +244,6 @@ func init() {
 	Root.AddCommand(genMDDocCommand)
 	ganYAMLDocCommand.PersistentPreRunE = preRun()
 	Root.AddCommand(ganYAMLDocCommand)
+	completeCommand.PersistentPreRunE = preRun()
+	Root.AddCommand(completeCommand)
 }

@@ -14,17 +14,19 @@
 
 import { defineMessages } from 'react-intl'
 
-import CreateFetchSelect from '../fetch-select'
+import CreateFetchSelect from '@console/containers/fetch-select'
+
+import { getPubsubFormats } from '@console/store/actions/pubsub-formats'
+
 import {
   selectPubsubFormats,
   selectPubsubFormatsError,
   selectPubsubFormatsFetching,
-} from '../../store/selectors/pubsub-formats'
-import { getPubsubFormats } from '../../store/actions/pubsub-formats'
+} from '@console/store/selectors/pubsub-formats'
 
 const m = defineMessages({
-  title: 'PubSub Format',
-  warning: 'Could not fetch the list of available PubSub formats',
+  title: 'Pub/Sub format',
+  warning: 'Pub/Sub formats unavailable',
 })
 
 export default CreateFetchSelect({

@@ -23,20 +23,22 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	componenttest "go.thethings.network/lorawan-stack/pkg/component/test"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io"
-	. "go.thethings.network/lorawan-stack/pkg/gatewayserver/io/grpc"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/mock"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	. "go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/grpc"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mock"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc"
 )
 
@@ -62,11 +64,12 @@ func TestAuthentication(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
 	})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 	srv := New(gs)
 	c.RegisterGRPC(&mockRegisterer{ctx, srv})
@@ -157,11 +160,12 @@ func TestTraffic(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
 	})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 	srv := New(gs)
 	c.RegisterGRPC(&mockRegisterer{ctx, srv})
@@ -350,7 +354,7 @@ func TestTraffic(t *testing.T) {
 						expected := tc.UplinkMessages[ups]
 						up.ReceivedAt = expected.ReceivedAt
 						up.RxMetadata[0].UplinkToken = expected.RxMetadata[0].UplinkToken
-						a.So(up, should.Resemble, expected)
+						a.So(up.UplinkMessage, should.Resemble, expected)
 						ups++
 					case status := <-conn.Status():
 						a.So(needStatus, should.BeTrue)
@@ -377,7 +381,12 @@ func TestTraffic(t *testing.T) {
 			{
 				Path: &ttnpb.DownlinkPath{
 					Path: &ttnpb.DownlinkPath_UplinkToken{
-						UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID}, 100),
+						UplinkToken: io.MustUplinkToken(
+							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
+							100,
+							100000,
+							time.Unix(0, 100*1000),
+						),
 					},
 				},
 				Message: &ttnpb.DownlinkMessage{
@@ -391,6 +400,7 @@ func TestTraffic(t *testing.T) {
 							Rx1Frequency:     868100000,
 							Rx2DataRateIndex: 0,
 							Rx2Frequency:     869525000,
+							FrequencyPlanID:  test.EUFrequencyPlanID,
 						},
 					},
 				},
@@ -398,7 +408,12 @@ func TestTraffic(t *testing.T) {
 			{
 				Path: &ttnpb.DownlinkPath{
 					Path: &ttnpb.DownlinkPath_UplinkToken{
-						UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID}, 100),
+						UplinkToken: io.MustUplinkToken(
+							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
+							100,
+							100000,
+							time.Unix(0, 100*1000),
+						),
 					},
 				},
 				Message: &ttnpb.DownlinkMessage{
@@ -423,7 +438,12 @@ func TestTraffic(t *testing.T) {
 			{
 				Path: &ttnpb.DownlinkPath{
 					Path: &ttnpb.DownlinkPath_UplinkToken{
-						UplinkToken: io.MustUplinkToken(ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID}, 100),
+						UplinkToken: io.MustUplinkToken(
+							ttnpb.GatewayAntennaIdentifiers{GatewayIdentifiers: registeredGatewayID},
+							100,
+							100000,
+							time.Unix(0, 100*1000),
+						),
 					},
 				},
 				Message: &ttnpb.DownlinkMessage{
@@ -474,11 +494,12 @@ func TestConcentratorConfig(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
 	})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 	srv := New(gs)
 	c.RegisterGRPC(&mockRegisterer{ctx, srv})
@@ -526,11 +547,12 @@ func TestMQTTConfig(t *testing.T) {
 				Listen:                      ":0",
 				AllowInsecureForCredentials: true,
 			},
-			Cluster: config.Cluster{
+			Cluster: cluster.Config{
 				IdentityServer: isAddr,
 			},
 		},
 	})
+	c.FrequencyPlans = frequencyplans.NewStore(test.FrequencyPlansFetcher)
 	gs := mock.NewServer(c)
 	srv := New(gs,
 		WithMQTTConfigProvider(&mockMQTTConfigProvider{

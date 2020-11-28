@@ -17,8 +17,11 @@ package shared
 import (
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"golang.org/x/crypto/acme"
 )
 
@@ -33,21 +36,24 @@ var DefaultLogConfig = config.Log{
 }
 
 // DefaultTLSConfig is the default TLS config.
-var DefaultTLSConfig = config.TLS{
-	Certificate: "cert.pem",
-	Key:         "key.pem",
-	ACME: config.ACME{
-		Endpoint: acme.LetsEncryptURL,
+var DefaultTLSConfig = tlsconfig.Config{
+	ServerAuth: tlsconfig.ServerAuth{
+		Certificate: "cert.pem",
+		Key:         "key.pem",
+		ACME: tlsconfig.ACME{
+			Endpoint: acme.LetsEncryptURL,
+		},
 	},
 }
 
 // DefaultClusterConfig is the default cluster configuration.
-var DefaultClusterConfig = config.Cluster{}
+var DefaultClusterConfig = cluster.Config{}
 
 // DefaultHTTPConfig is the default HTTP config.
 var DefaultHTTPConfig = config.HTTP{
-	Listen:    ":1885",
-	ListenTLS: ":8885",
+	Listen:         ":1885",
+	ListenTLS:      ":8885",
+	TrustedProxies: []string{"127.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "172.16.0.0/12", "192.168.0.0/16"},
 	Static: config.HTTPStaticConfig{
 		Mount:      "/assets",
 		SearchPath: []string{"public", "/srv/ttn-lorawan/public"},
@@ -70,15 +76,16 @@ var DefaultInteropServerConfig = config.InteropServer{
 
 // DefaultGRPCConfig is the default config for GRPC.
 var DefaultGRPCConfig = config.GRPC{
-	Listen:    ":1884",
-	ListenTLS: ":8884",
+	Listen:         ":1884",
+	ListenTLS:      ":8884",
+	TrustedProxies: []string{"127.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "172.16.0.0/12", "192.168.0.0/16"},
 }
 
 // DefaultRedisConfig is the default config for Redis.
-var DefaultRedisConfig = config.Redis{
-	Address:   "localhost:6379",
-	Database:  0,
-	Namespace: []string{"ttn", "v3"},
+var DefaultRedisConfig = redis.Config{
+	Address:       "localhost:6379",
+	Database:      0,
+	RootNamespace: []string{"ttn", "v3"},
 }
 
 // DefaultEventsConfig is the default config for Events.

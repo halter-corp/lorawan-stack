@@ -17,40 +17,25 @@ import { connect } from 'react-redux'
 import { Col, Row, Container } from 'react-grid-system'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
-import * as Yup from 'yup'
 
-import sharedMessages from '../../../lib/shared-messages'
-import { getDeviceId } from '../../../lib/selectors/id'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import LocationForm from '../../../components/location-form'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import IntlHelmet from '../../../lib/components/intl-helmet'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
-import { updateDevice } from '../../store/actions/device'
-import { attachPromise } from '../../store/actions/lib'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import LocationForm from '@console/components/location-form'
 
-import {
-  latitude as latitudeRegexp,
-  longitude as longitudeRegexp,
-  int32 as int32Regexp,
-} from '../../lib/regexp'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { updateDevice } from '@console/store/actions/devices'
+import { attachPromise } from '@console/store/actions/lib'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
+import { selectSelectedDevice, selectSelectedDeviceId } from '@console/store/selectors/devices'
 
 const m = defineMessages({
-  setDeviceLocation: 'Set Device Location',
-})
-
-const validationSchema = Yup.object().shape({
-  latitude: Yup.string()
-    .required(sharedMessages.validateRequired)
-    .matches(latitudeRegexp, sharedMessages.validateLatLong),
-  longitude: Yup.string()
-    .required(sharedMessages.validateRequired)
-    .matches(longitudeRegexp, sharedMessages.validateLatLong),
-  altitude: Yup.string()
-    .matches(int32Regexp, sharedMessages.validateInt32)
-    .required(sharedMessages.validateRequired),
+  setDeviceLocation: 'Set end device location',
 })
 
 const getRegistryLocation = function(locations) {
@@ -68,9 +53,9 @@ const getRegistryLocation = function(locations) {
 
 @connect(
   state => ({
-    device: state.device.device,
+    device: selectSelectedDevice(state),
     appId: selectSelectedApplicationId(state),
-    devId: getDeviceId(state.device.device),
+    devId: selectSelectedDeviceId(state),
   }),
   { updateDevice: attachPromise(updateDevice) },
 )
@@ -79,13 +64,19 @@ const getRegistryLocation = function(locations) {
   return (
     <Breadcrumb
       path={`/applications/${appId}/devices/${devId}/location`}
-      icon="location"
       content={sharedMessages.location}
     />
   )
 })
-@bind
 export default class DeviceGeneralSettings extends React.Component {
+  static propTypes = {
+    appId: PropTypes.string.isRequired,
+    devId: PropTypes.string.isRequired,
+    device: PropTypes.device.isRequired,
+    updateDevice: PropTypes.func.isRequired,
+  }
+
+  @bind
   async handleSubmit(values) {
     const { device, appId, devId, updateDevice } = this.props
 
@@ -97,13 +88,13 @@ export default class DeviceGeneralSettings extends React.Component {
 
     const registryLocation = getRegistryLocation(device.locations)
     if (registryLocation) {
-      // Update old location value
+      // Update old location value.
       patch.locations[registryLocation.key] = {
         ...registryLocation.location,
         ...values,
       }
     } else {
-      // Create new location value
+      // Create new location value.
       patch.locations.user = {
         ...values,
         accuracy: 0,
@@ -114,6 +105,7 @@ export default class DeviceGeneralSettings extends React.Component {
     await updateDevice(appId, devId, patch)
   }
 
+  @bind
   async handleDelete() {
     const { device, devId, appId, updateDevice } = this.props
     const registryLocation = getRegistryLocation(device.locations)
@@ -123,7 +115,7 @@ export default class DeviceGeneralSettings extends React.Component {
     }
     delete patch.locations[registryLocation.key]
 
-    await updateDevice(appId, devId, patch)
+    return updateDevice(appId, devId, patch)
   }
 
   render() {
@@ -138,7 +130,6 @@ export default class DeviceGeneralSettings extends React.Component {
             <LocationForm
               entityId={devId}
               formTitle={m.setDeviceLocation}
-              validationSchema={validationSchema}
               initialValues={registryLocation ? registryLocation.location : undefined}
               onSubmit={this.handleSubmit}
               onDelete={this.handleDelete}

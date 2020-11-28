@@ -17,16 +17,21 @@ package mqtt
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
+	"net/url"
 	"time"
 
 	mqtt_topic "github.com/TheThingsIndustries/mystique/pkg/topic"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"go.thethings.network/lorawan-stack/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"gocloud.dev/pubsub"
 )
 
-var timeout = (1 << 3) * time.Second
+var shutdownTimeout = (1 << 3) * time.Second
 
 type impl struct {
 }
@@ -37,31 +42,124 @@ type connection struct {
 
 // Shutdown implements provider.Shutdowner.
 func (c *connection) Shutdown(_ context.Context) error {
-	c.Disconnect(uint(timeout / time.Millisecond))
+	c.Disconnect(uint(shutdownTimeout / time.Millisecond))
 	return nil
 }
 
-// OpenConnection implements provider.Provider using the mqtt driver.
+var errConnectFailed = errors.Define("connect_failed", "connection to MQTT server failed")
+
+// OpenConnection implements provider.Provider using the MQTT driver.
 func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *provider.Connection, err error) {
-	settings, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_MQTT)
+	provider, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_MQTT)
 	if !ok {
 		panic("wrong provider type provided to OpenConnection")
 	}
-	clientOpts := mqtt.NewClientOptions()
-	clientOpts.AddBroker(settings.MQTT.ServerURL)
-	clientOpts.SetClientID(settings.MQTT.ClientID)
-	clientOpts.SetUsername(settings.MQTT.Username)
-	clientOpts.SetPassword(settings.MQTT.Password)
-	if settings.MQTT.UseTLS {
-		config, err := createTLSConfig(settings.MQTT.TLSCA, settings.MQTT.TLSClientCert, settings.MQTT.TLSClientKey)
+
+	var tlsConfig *tls.Config
+	if provider.MQTT.UseTLS {
+		var err error
+		tlsConfig, err = createTLSConfig(provider.MQTT.TLSCA, provider.MQTT.TLSClientCert, provider.MQTT.TLSClientKey)
 		if err != nil {
 			return nil, err
 		}
-		clientOpts.SetTLSConfig(config)
 	}
+
+	headers := make(http.Header, len(provider.MQTT.Headers))
+	for k, v := range provider.MQTT.Headers {
+		headers.Set(k, v)
+	}
+	settings := Settings{
+		URL:      provider.MQTT.ServerURL,
+		ClientID: provider.MQTT.ClientID,
+		Username: provider.MQTT.Username,
+		Password: provider.MQTT.Password,
+		TLS:      tlsConfig,
+		HTTPHeadersProvider: func(ctx context.Context) (http.Header, error) {
+			return headers, nil
+		},
+		PublishQoS:   byte(provider.MQTT.PublishQoS),
+		SubscribeQoS: byte(provider.MQTT.SubscribeQoS),
+	}
+	return OpenConnection(ctx, settings, target)
+}
+
+// HTTPHeadersProvider provides HTTP headers as they are needed by the MQTT client.
+type HTTPHeadersProvider func(context.Context) (headers http.Header, err error)
+
+// Settings configure the MQTT client.
+type Settings struct {
+	URL,
+	ClientID,
+	Username,
+	Password string
+	TLS                 *tls.Config
+	HTTPHeadersProvider HTTPHeadersProvider
+	PublishQoS,
+	SubscribeQoS byte
+	WebSocketReadBufferSize,
+	WebSocketWriteBufferSize int
+}
+
+var errConfigureHTTPHeaders = errors.Define("configure_http_headers", "configure HTTP headers")
+
+// OpenConnection opens a MQTT connection using the given settings.
+func OpenConnection(ctx context.Context, settings Settings, topics provider.Topics) (pc *provider.Connection, err error) {
+	serverURL, err := adaptURLScheme(settings.URL)
+	if err != nil {
+		return nil, err
+	}
+	logger := log.FromContext(ctx).WithFields(log.Fields(
+		"url", serverURL,
+		"client_id", settings.ClientID,
+		"username", settings.Username,
+	))
+
+	clientOpts := mqtt.NewClientOptions()
+	clientOpts.AddBroker(serverURL)
+	clientOpts.SetClientID(settings.ClientID)
+	clientOpts.SetUsername(settings.Username)
+	clientOpts.SetPassword(settings.Password)
+	clientOpts.SetTLSConfig(settings.TLS)
+	clientOpts.SetKeepAlive(time.Minute)
+	clientOpts.SetWebsocketOptions(&mqtt.WebsocketOptions{
+		ReadBufferSize:  settings.WebSocketReadBufferSize,
+		WriteBufferSize: settings.WebSocketWriteBufferSize,
+	})
+
+	if settings.HTTPHeadersProvider != nil {
+		headers, err := settings.HTTPHeadersProvider(ctx)
+		if err != nil {
+			return nil, errConfigureHTTPHeaders.WithCause(err)
+		}
+		clientOpts.SetHTTPHeaders(headers)
+	}
+	clientOpts.SetOnConnectHandler(func(_ mqtt.Client) {
+		logger.Info("Connected to MQTT server")
+	})
+	clientOpts.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
+		logger.WithError(err).Info("Disconnected from MQTT server")
+	})
+	clientOpts.SetReconnectingHandler(func(_ mqtt.Client, clientOpts *mqtt.ClientOptions) {
+		logger.Info("Reconnect to MQTT server")
+		if settings.HTTPHeadersProvider != nil {
+			headers, err := settings.HTTPHeadersProvider(ctx)
+			if err != nil {
+				logger.WithError(err).Warn("Failed to configure HTTP headers on MQTT reconnect")
+				return
+			}
+			clientOpts.SetHTTPHeaders(headers)
+		}
+	})
+
 	client := mqtt.NewClient(clientOpts)
-	if token := client.Connect(); !token.WaitTimeout(timeout) {
-		return nil, convertToCancelled(token.Error())
+	token := client.Connect()
+	defer func() {
+		if err != nil {
+			client.Disconnect(uint(shutdownTimeout / time.Millisecond))
+		}
+	}()
+	if err := waitToken(ctx, token); err != nil {
+		return nil, errConnectFailed.WithCause(err)
 	}
 	pc = &provider.Connection{
 		ProviderConnection: &connection{
@@ -74,35 +172,43 @@ func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *pro
 	}{
 		{
 			topic:   &pc.Topics.UplinkMessage,
-			message: target.GetUplinkMessage(),
+			message: topics.GetUplinkMessage(),
 		},
 		{
 			topic:   &pc.Topics.JoinAccept,
-			message: target.GetJoinAccept(),
+			message: topics.GetJoinAccept(),
 		},
 		{
 			topic:   &pc.Topics.DownlinkAck,
-			message: target.GetDownlinkAck(),
+			message: topics.GetDownlinkAck(),
 		},
 		{
 			topic:   &pc.Topics.DownlinkNack,
-			message: target.GetDownlinkNack(),
+			message: topics.GetDownlinkNack(),
 		},
 		{
 			topic:   &pc.Topics.DownlinkSent,
-			message: target.GetDownlinkSent(),
+			message: topics.GetDownlinkSent(),
 		},
 		{
 			topic:   &pc.Topics.DownlinkFailed,
-			message: target.GetDownlinkFailed(),
+			message: topics.GetDownlinkFailed(),
 		},
 		{
 			topic:   &pc.Topics.DownlinkQueued,
-			message: target.GetDownlinkQueued(),
+			message: topics.GetDownlinkQueued(),
+		},
+		{
+			topic:   &pc.Topics.DownlinkQueueInvalidated,
+			message: topics.GetDownlinkQueueInvalidated(),
 		},
 		{
 			topic:   &pc.Topics.LocationSolved,
-			message: target.GetLocationSolved(),
+			message: topics.GetLocationSolved(),
+		},
+		{
+			topic:   &pc.Topics.ServiceData,
+			message: topics.GetServiceData(),
 		},
 	} {
 		if t.message == nil {
@@ -110,11 +216,9 @@ func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *pro
 		}
 		if *t.topic, err = OpenTopic(
 			client,
-			mqtt_topic.Join(append(mqtt_topic.Split(target.GetBaseTopic()), mqtt_topic.Split(t.message.GetTopic())...)),
-			timeout,
-			byte(settings.MQTT.PublishQoS),
+			mqtt_topic.Join(append(mqtt_topic.Split(topics.GetBaseTopic()), mqtt_topic.Split(t.message.GetTopic())...)),
+			settings.PublishQoS,
 		); err != nil {
-			client.Disconnect(uint(timeout / time.Millisecond))
 			return nil, err
 		}
 	}
@@ -124,27 +228,40 @@ func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *pro
 	}{
 		{
 			subscription: &pc.Subscriptions.Push,
-			message:      target.GetDownlinkPush(),
+			message:      topics.GetDownlinkPush(),
 		},
 		{
 			subscription: &pc.Subscriptions.Replace,
-			message:      target.GetDownlinkReplace(),
+			message:      topics.GetDownlinkReplace(),
 		},
 	} {
 		if s.message == nil {
 			continue
 		}
 		if *s.subscription, err = OpenSubscription(
+			ctx,
 			client,
-			mqtt_topic.Join(append(mqtt_topic.Split(target.GetBaseTopic()), mqtt_topic.Split(s.message.GetTopic())...)),
-			timeout,
-			byte(settings.MQTT.SubscribeQoS),
+			mqtt_topic.Join(append(mqtt_topic.Split(topics.GetBaseTopic()), mqtt_topic.Split(s.message.GetTopic())...)),
+			settings.SubscribeQoS,
 		); err != nil {
-			client.Disconnect(uint(timeout / time.Millisecond))
 			return nil, err
 		}
 	}
 	return pc, nil
+}
+
+func adaptURLScheme(initial string) (string, error) {
+	u, err := url.Parse(initial)
+	if err != nil {
+		return "", err
+	}
+	switch u.Scheme {
+	case "mqtt":
+		u.Scheme = "tcp"
+	case "mqtts":
+		u.Scheme = "ssl"
+	}
+	return u.String(), nil
 }
 
 func init() {

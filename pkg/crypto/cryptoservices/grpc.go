@@ -17,11 +17,11 @@ package cryptoservices
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoutil"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"google.golang.org/grpc"
 )
 
@@ -116,15 +116,15 @@ func (s *networkRPCClient) DeriveNwkSKeys(ctx context.Context, dev *ttnpb.EndDev
 		return NwkSKeys{}, err
 	}
 	var res NwkSKeys
-	res.FNwkSIntKey, err = cryptoutil.UnwrapAES128Key(ctx, keys.FNwkSIntKey, s.KeyVault)
+	res.FNwkSIntKey, err = cryptoutil.UnwrapAES128Key(ctx, &keys.FNwkSIntKey, s.KeyVault)
 	if err != nil {
 		return NwkSKeys{}, err
 	}
-	res.SNwkSIntKey, err = cryptoutil.UnwrapAES128Key(ctx, keys.SNwkSIntKey, s.KeyVault)
+	res.SNwkSIntKey, err = cryptoutil.UnwrapAES128Key(ctx, &keys.SNwkSIntKey, s.KeyVault)
 	if err != nil {
 		return NwkSKeys{}, err
 	}
-	res.NwkSEncKey, err = cryptoutil.UnwrapAES128Key(ctx, keys.NwkSEncKey, s.KeyVault)
+	res.NwkSEncKey, err = cryptoutil.UnwrapAES128Key(ctx, &keys.NwkSEncKey, s.KeyVault)
 	if err != nil {
 		return NwkSKeys{}, err
 	}
@@ -132,7 +132,7 @@ func (s *networkRPCClient) DeriveNwkSKeys(ctx context.Context, dev *ttnpb.EndDev
 }
 
 func (s *networkRPCClient) GetNwkKey(ctx context.Context, dev *ttnpb.EndDevice) (*types.AES128Key, error) {
-	key, err := s.Client.GetNwkKey(ctx, &ttnpb.GetRootKeysRequest{
+	ke, err := s.Client.GetNwkKey(ctx, &ttnpb.GetRootKeysRequest{
 		EndDeviceIdentifiers: dev.EndDeviceIdentifiers,
 		ProvisionerID:        dev.ProvisionerID,
 		ProvisioningData:     dev.ProvisioningData,
@@ -143,7 +143,7 @@ func (s *networkRPCClient) GetNwkKey(ctx context.Context, dev *ttnpb.EndDevice) 
 		}
 		return nil, err
 	}
-	plain, err := cryptoutil.UnwrapAES128Key(ctx, *key, s.KeyVault)
+	plain, err := cryptoutil.UnwrapAES128Key(ctx, ke, s.KeyVault)
 	if err != nil {
 		return nil, err
 	}
@@ -178,11 +178,11 @@ func (s *applicationRPCClient) DeriveAppSKey(ctx context.Context, dev *ttnpb.End
 	if err != nil {
 		return types.AES128Key{}, err
 	}
-	return cryptoutil.UnwrapAES128Key(ctx, res.AppSKey, s.KeyVault)
+	return cryptoutil.UnwrapAES128Key(ctx, &res.AppSKey, s.KeyVault)
 }
 
 func (s *applicationRPCClient) GetAppKey(ctx context.Context, dev *ttnpb.EndDevice) (*types.AES128Key, error) {
-	key, err := s.Client.GetAppKey(ctx, &ttnpb.GetRootKeysRequest{
+	ke, err := s.Client.GetAppKey(ctx, &ttnpb.GetRootKeysRequest{
 		EndDeviceIdentifiers: dev.EndDeviceIdentifiers,
 		ProvisionerID:        dev.ProvisionerID,
 		ProvisioningData:     dev.ProvisioningData,
@@ -193,7 +193,7 @@ func (s *applicationRPCClient) GetAppKey(ctx context.Context, dev *ttnpb.EndDevi
 		}
 		return nil, err
 	}
-	plain, err := cryptoutil.UnwrapAES128Key(ctx, *key, s.KeyVault)
+	plain, err := cryptoutil.UnwrapAES128Key(ctx, ke, s.KeyVault)
 	if err != nil {
 		return nil, err
 	}

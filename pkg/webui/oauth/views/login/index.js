@@ -19,20 +19,24 @@ import Query from 'query-string'
 import { defineMessages } from 'react-intl'
 import { replace } from 'connected-react-router'
 import { connect } from 'react-redux'
-import * as Yup from 'yup'
 
-import api from '../../api'
-import sharedMessages from '../../../lib/shared-messages'
-import { selectApplicationRootPath, selectApplicationSiteName } from '../../../lib/selectors/env'
-import PropTypes from '../../../lib/prop-types'
+import api from '@oauth/api'
 
-import Button from '../../../components/button'
-import Form from '../../../components/form'
-import Input from '../../../components/input'
-import SubmitButton from '../../../components/submit-button'
-import Logo from '../../../containers/logo'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Message from '../../../lib/components/message'
+import Button from '@ttn-lw/components/button'
+import Form from '@ttn-lw/components/form'
+import Input from '@ttn-lw/components/input'
+import SubmitButton from '@ttn-lw/components/submit-button'
+
+import Logo from '@ttn-lw/containers/logo'
+
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import Message from '@ttn-lw/lib/components/message'
+
+import Yup from '@ttn-lw/lib/yup'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import { selectApplicationRootPath, selectApplicationSiteName } from '@ttn-lw/lib/selectors/env'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import { id as userRegexp } from '@ttn-lw/lib/regexp'
 
 import style from './login.styl'
 
@@ -43,7 +47,11 @@ const m = defineMessages({
 })
 
 const validationSchema = Yup.object().shape({
-  user_id: Yup.string().required(sharedMessages.validateRequired),
+  user_id: Yup.string()
+    .min(3, Yup.passValues(sharedMessages.validateTooShort))
+    .max(36, Yup.passValues(sharedMessages.validateTooLong))
+    .matches(userRegexp, Yup.passValues(sharedMessages.validateIdFormat))
+    .required(sharedMessages.validateRequired),
   password: Yup.string().required(sharedMessages.validateRequired),
 })
 
@@ -56,7 +64,6 @@ const validationSchema = Yup.object().shape({
     replace,
   },
 )
-@bind
 export default class OAuth extends React.PureComponent {
   static propTypes = {
     location: PropTypes.location.isRequired,
@@ -71,6 +78,7 @@ export default class OAuth extends React.PureComponent {
     }
   }
 
+  @bind
   async handleSubmit(values, { setSubmitting, setErrors }) {
     try {
       await api.oauth.login(values)
@@ -80,11 +88,11 @@ export default class OAuth extends React.PureComponent {
       this.setState({
         error: error.response.data,
       })
-    } finally {
       setSubmitting(false)
     }
   }
 
+  @bind
   navigateToRegister() {
     const { replace, location } = this.props
     replace('/register', {
@@ -92,6 +100,7 @@ export default class OAuth extends React.PureComponent {
     })
   }
 
+  @bind
   navigateToResetPassword() {
     const { replace, location } = this.props
     replace('/forgot-password', {
@@ -132,6 +141,7 @@ export default class OAuth extends React.PureComponent {
                 title={sharedMessages.userId}
                 name="user_id"
                 component={Input}
+                autoComplete="username"
                 autoFocus
                 required
               />
@@ -140,6 +150,7 @@ export default class OAuth extends React.PureComponent {
                 component={Input}
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
               />
               <Form.Submit component={SubmitButton} message={sharedMessages.login} />

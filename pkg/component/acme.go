@@ -14,37 +14,15 @@
 
 package component
 
-import (
-	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
-)
-
-var (
-	errMissingACMEDir      = errors.Define("missing_acme_dir", "missing ACME storage directory")
-	errMissingACMEEndpoint = errors.Define("missing_acme_endpoint", "missing ACME endpoint")
-)
-
 func (c *Component) initACME() error {
 	if c.config.TLS.Source != "acme" && !c.config.TLS.ACME.Enable {
 		return nil
 	}
-	if c.config.TLS.ACME.Endpoint == "" {
-		return errMissingACMEEndpoint
+	var err error
+	c.acme, err = c.config.TLS.ACME.Initialize()
+	if err != nil {
+		return err
 	}
-	if c.config.TLS.ACME.Dir == "" {
-		return errMissingACMEDir
-	}
-	c.acme = &autocert.Manager{
-		Cache:      autocert.DirCache(c.config.TLS.ACME.Dir),
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(c.config.TLS.ACME.Hosts...),
-		Client: &acme.Client{
-			DirectoryURL: c.config.TLS.ACME.Endpoint,
-		},
-		Email: c.config.TLS.ACME.Email,
-	}
-	c.web.Any(".well-known/acme-challenge/*", echo.WrapHandler(c.acme.HTTPHandler(nil)))
+	c.web.Prefix("/.well-known/acme-challenge/").Handler(c.acme.HTTPHandler(nil))
 	return nil
 }

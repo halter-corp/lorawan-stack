@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export const configSelector = () => window
+export const configSelector = () => window.__ttn_config__
 
 export const selectApplicationRootPath = () => configSelector().APP_ROOT
 
@@ -28,6 +28,10 @@ export const selectApplicationSiteTitle = () => configSelector().SITE_TITLE
 
 export const selectApplicationSiteSubTitle = () => configSelector().SITE_SUB_TITLE
 
+export const selectSentryDsnConfig = () => configSelector().SENTRY_DSN
+
+export const selectCSRFToken = () => configSelector().CSRF_TOKEN
+
 export const selectStackConfig = () => selectApplicationConfig().stack_config
 
 export const selectGsConfig = () => selectStackConfig().gs
@@ -40,8 +44,12 @@ export const selectJsConfig = () => selectStackConfig().js
 
 export const selectAsConfig = () => selectStackConfig().as
 
+export const selectGcsConfig = () => selectStackConfig().gcs
+
 export const selectLanguageConfig = () => selectApplicationConfig().language
 
 export const selectSupportLinkConfig = () => selectApplicationConfig().support_link
+
+export const selectDocumentationUrlConfig = () => selectApplicationConfig().documentation_base_url
 
 export const selectPageData = () => configSelector().PAGE_DATA

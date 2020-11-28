@@ -15,26 +15,33 @@
 import React from 'react'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
-import * as Yup from 'yup'
 
-import Form from '../../../components/form'
-import Radio from '../../../components/radio-button'
-import SubmitButton from '../../../components/submit-button'
-import SubmitBar from '../../../components/submit-bar'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
-import { address as addressRegexp } from '../../lib/regexp'
-import Input from '../../../components/input'
-import CodeEditor from '../../../components/code-editor'
-import TYPES from '../../constants/formatter-types'
+import TYPES from '@console/constants/formatter-types'
+
+import Form from '@ttn-lw/components/form'
+import Radio from '@ttn-lw/components/radio-button'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import SubmitBar from '@ttn-lw/components/submit-bar'
+import Input from '@ttn-lw/components/input'
+import CodeEditor from '@ttn-lw/components/code-editor'
+
+import Yup from '@ttn-lw/lib/yup'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { address as addressRegexp } from '@console/lib/regexp'
+
 import { getDefaultGrpcServiceFormatter, getDefaultJavascriptFormatter } from './formatter-values'
 
 const m = defineMessages({
-  grpc: 'GRPC Service',
+  grpc: 'GRPC service',
   repository: 'Repository',
-  formatterType: 'Formatter Type',
-  formatterParameter: 'Formatter Parameter',
-  grpcDescription: 'The address of the service to connect to',
+  formatterType: 'Formatter type',
+  formatterParameter: 'Formatter parameter',
+  grpcFieldDescription: 'The address of the service to connect to',
+  appFormatter: 'Use application payload formatter',
+  appFormatterWarning:
+    'This option sets both uplink and downlink formatters to application link defaults',
 })
 
 const FIELD_NAMES = {
@@ -44,20 +51,21 @@ const FIELD_NAMES = {
 }
 
 const validationSchema = Yup.object().shape({
-  [FIELD_NAMES.RADIO]: Yup.string().oneOf(Object.values(TYPES)),
+  [FIELD_NAMES.RADIO]: Yup.string()
+    .oneOf(Object.values(TYPES))
+    .required(sharedMessages.validateRequired),
   [FIELD_NAMES.JAVASCRIPT]: Yup.string().when('types-radio', {
     is: TYPES.JAVASCRIPT,
     then: Yup.string().required(sharedMessages.validateRequired),
   }),
   [FIELD_NAMES.GRPC]: Yup.string()
-    .matches(addressRegexp, sharedMessages.validateAddressFormat)
+    .matches(addressRegexp, Yup.passValues(sharedMessages.validateAddressFormat))
     .when(FIELD_NAMES.RADIO, {
       is: TYPES.GRPC,
       then: Yup.string().required(sharedMessages.validateRequired),
     }),
 })
 
-@bind
 class PayloadFormattersForm extends React.Component {
   constructor(props) {
     super(props)
@@ -68,12 +76,16 @@ class PayloadFormattersForm extends React.Component {
     }
   }
 
+  @bind
   onTypeChange(type) {
     this.setState({ type })
   }
 
+  @bind
   async handleSubmit(values, { resetForm }) {
-    const { onSubmit, onSubmitSuccess, onSubmitFailure } = this.props
+    const { onSubmit, onSubmitSuccess, onSubmitFailure, uplink } = this.props
+
+    this.setState({ error: '' })
 
     const {
       [FIELD_NAMES.RADIO]: type,
@@ -85,28 +97,32 @@ class PayloadFormattersForm extends React.Component {
       [FIELD_NAMES.RADIO]: type,
     }
 
-    let parameter = ''
+    let parameter
     switch (type) {
       case TYPES.JAVASCRIPT:
         parameter = javascriptParameter
         resetValues[FIELD_NAMES.JAVASCRIPT] = javascriptParameter
+        resetValues[FIELD_NAMES.GRPC] = getDefaultGrpcServiceFormatter(uplink)
         break
       case TYPES.GRPC:
         parameter = grpcParameter
+        resetValues[FIELD_NAMES.JAVASCRIPT] = getDefaultJavascriptFormatter(uplink)
         resetValues[FIELD_NAMES.GRPC] = grpcParameter
         break
       default:
-        parameter = undefined
+        resetValues[FIELD_NAMES.GRPC] = getDefaultGrpcServiceFormatter(uplink)
+        resetValues[FIELD_NAMES.JAVASCRIPT] = getDefaultJavascriptFormatter(uplink)
+        break
     }
 
     try {
       const result = await onSubmit({ type, parameter })
-      resetForm(resetValues)
+      resetForm({ values: resetValues })
       await onSubmitSuccess(result)
     } catch (error) {
-      resetForm(resetValues)
+      resetForm({ values: resetValues })
 
-      await this.setState({ error })
+      this.setState({ error })
       await onSubmitFailure(error)
     }
   }
@@ -144,7 +160,8 @@ class PayloadFormattersForm extends React.Component {
             name={FIELD_NAMES.GRPC}
             type="text"
             placeholder={sharedMessages.addressPlaceholder}
-            description={m.grpcDescription}
+            description={m.grpcFieldDescription}
+            autoComplete="on"
           />
         )
       default:
@@ -153,10 +170,11 @@ class PayloadFormattersForm extends React.Component {
   }
 
   render() {
-    const { initialType, initialParameter, linked, uplink } = this.props
+    const { initialType, initialParameter, linked, uplink, allowReset } = this.props
+    const { error, type } = this.state
 
     const initialValues = {
-      [FIELD_NAMES.RADIO]: initialType,
+      [FIELD_NAMES.RADIO]: type,
       [FIELD_NAMES.JAVASCRIPT]:
         initialType === TYPES.JAVASCRIPT ? initialParameter : getDefaultJavascriptFormatter(uplink),
       [FIELD_NAMES.GRPC]:
@@ -172,13 +190,16 @@ class PayloadFormattersForm extends React.Component {
           onSubmit={this.handleSubmit}
           initialValues={initialValues}
           validationSchema={validationSchema}
+          error={error}
         >
           <Form.Field
             name={FIELD_NAMES.RADIO}
             title={m.formatterType}
             component={Radio.Group}
             onChange={this.onTypeChange}
+            warning={type === TYPES.DEFAULT ? m.appFormatterWarning : undefined}
           >
+            {allowReset && <Radio label={m.appFormatter} value={TYPES.DEFAULT} />}
             <Radio label={sharedMessages.none} value={TYPES.NONE} />
             <Radio label="Javascript" value={TYPES.JAVASCRIPT} />
             <Radio label={m.grpc} value={TYPES.GRPC} />
@@ -196,12 +217,13 @@ class PayloadFormattersForm extends React.Component {
 }
 
 PayloadFormattersForm.propTypes = {
-  initialType: PropTypes.oneOf(Object.values(TYPES)).isRequired,
+  allowReset: PropTypes.bool,
   initialParameter: PropTypes.string,
-  onSubmit: PropTypes.func.isRequired,
-  onSubmitSuccess: PropTypes.func,
-  onSubmitFailure: PropTypes.func,
+  initialType: PropTypes.oneOf(Object.values(TYPES)).isRequired,
   linked: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onSubmitFailure: PropTypes.func,
+  onSubmitSuccess: PropTypes.func,
   uplink: PropTypes.bool.isRequired,
 }
 
@@ -209,6 +231,7 @@ PayloadFormattersForm.defaultProps = {
   initialParameter: '',
   onSubmitSuccess: () => null,
   onSubmitFailure: () => null,
+  allowReset: false,
 }
 
 export default PayloadFormattersForm

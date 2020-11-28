@@ -15,16 +15,17 @@
 package console
 
 import (
-	"go.thethings.network/lorawan-stack/cmd/internal/shared"
-	"go.thethings.network/lorawan-stack/pkg/console"
-	"go.thethings.network/lorawan-stack/pkg/web/oauthclient"
-	"go.thethings.network/lorawan-stack/pkg/webui"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
+	"go.thethings.network/lorawan-stack/v3/pkg/console"
+	"go.thethings.network/lorawan-stack/v3/pkg/web/oauthclient"
+	"go.thethings.network/lorawan-stack/v3/pkg/webui"
 )
 
 // DefaultConsoleConfig is the default configuration for the Console.
 var DefaultConsoleConfig = console.Config{
 	OAuth: oauthclient.Config{
 		AuthorizeURL: shared.DefaultOAuthPublicURL + "/authorize",
+		LogoutURL:    shared.DefaultOAuthPublicURL + "/logout",
 		TokenURL:     shared.DefaultOAuthPublicURL + "/token",
 		ClientID:     "console",
 		ClientSecret: "console",
@@ -42,6 +43,7 @@ var DefaultConsoleConfig = console.Config{
 			JSFiles:       []string{"console.js"},
 		},
 		FrontendConfig: console.FrontendConfig{
+			DocumentationBaseURL: "https://thethingsstack.io",
 			StackConfig: console.StackConfig{
 				IS:   webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
 				GS:   webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
@@ -50,6 +52,7 @@ var DefaultConsoleConfig = console.Config{
 				JS:   webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
 				EDTC: webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
 				QRG:  webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
+				GCS:  webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
 			},
 		},
 	},

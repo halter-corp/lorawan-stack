@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,67 +15,40 @@
 import React from 'react'
 import { Col, Row, Container } from 'react-grid-system'
 
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
-import PAGE_SIZES from '../../constants/page-sizes'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import DateTime from '../../../lib/components/date-time'
-import DevicesTable from '../../containers/devices-table'
-import DataSheet from '../../../components/data-sheet'
-import ApplicationEvents from '../../containers/application-events'
-import EntityTitleSection from '../../components/entity-title-section'
-import KeyValueTag from '../../components/key-value-tag'
-import Status from '../../../components/status'
-import Spinner from '../../../components/spinner'
-import Message from '../../../lib/components/message'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
-import withRequest from '../../../lib/components/with-request'
+import DataSheet from '@ttn-lw/components/data-sheet'
 
-import { mayViewApplicationInfo } from '../../lib/feature-checks'
+import DateTime from '@ttn-lw/lib/components/date-time'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import DevicesTable from '@console/containers/devices-table'
+import ApplicationEvents from '@console/containers/application-events'
+import ApplicationTitleSection from '@console/containers/application-title-section'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { mayViewApplicationInfo } from '@console/lib/feature-checks'
 
 import style from './application-overview.styl'
 
-@withRequest(({ appId, loadData }) => loadData(appId), () => false)
 @withFeatureRequirement(mayViewApplicationInfo, {
   redirect: '/',
 })
 class ApplicationOverview extends React.Component {
   static propTypes = {
-    apiKeysTotalCount: PropTypes.number,
     appId: PropTypes.string.isRequired,
     application: PropTypes.application.isRequired,
-    collaboratorsTotalCount: PropTypes.number,
-    devicesTotalCount: PropTypes.number,
-    link: PropTypes.bool,
-    statusBarFetching: PropTypes.bool.isRequired,
-  }
-
-  static defaultProps = {
-    collaboratorsTotalCount: undefined,
-    apiKeysTotalCount: undefined,
-    devicesTotalCount: undefined,
-    link: undefined,
   }
 
   render() {
     const {
       appId,
-      collaboratorsTotalCount,
-      apiKeysTotalCount,
-      devicesTotalCount,
-      statusBarFetching,
-      link,
-      application: { name, description, created_at, updated_at },
+      application: { created_at, updated_at },
     } = this.props
-
-    const linkStatus = typeof link === 'boolean' ? (link ? 'good' : 'bad') : 'mediocre'
-    const linkLabel =
-      typeof link === 'boolean'
-        ? link
-          ? sharedMessages.linked
-          : sharedMessages.notLinked
-        : sharedMessages.fetching
 
     const sheetData = [
       {
@@ -89,43 +62,21 @@ class ApplicationOverview extends React.Component {
     ]
 
     return (
-      <React.Fragment>
-        <EntityTitleSection
-          entityId={appId}
-          entityName={name}
-          description={description}
-          creationDate={created_at}
-        >
-          {statusBarFetching ? (
-            <Spinner after={0} faded micro inline>
-              <Message content={sharedMessages.fetching} />
-            </Spinner>
-          ) : (
-            <React.Fragment>
-              <Status className={style.status} label={linkLabel} status={linkStatus} flipped />
-              <KeyValueTag
-                icon="devices"
-                value={devicesTotalCount}
-                keyMessage={sharedMessages.deviceCounted}
-              />
-              <KeyValueTag
-                icon="collaborators"
-                value={collaboratorsTotalCount}
-                keyMessage={sharedMessages.collaboratorCounted}
-              />
-              <KeyValueTag
-                icon="api_keys"
-                value={apiKeysTotalCount}
-                keyMessage={sharedMessages.apiKeyCounted}
-              />
-            </React.Fragment>
-          )}
-        </EntityTitleSection>
+      <>
+        <div className={style.titleSection}>
+          <Container>
+            <IntlHelmet title={sharedMessages.overview} />
+            <Row>
+              <Col sm={12}>
+                <ApplicationTitleSection appId={appId} />
+              </Col>
+            </Row>
+          </Container>
+        </div>
         <Container>
-          <IntlHelmet title={sharedMessages.overview} />
           <Row>
             <Col sm={12} lg={6}>
-              <DataSheet data={sheetData} />
+              <DataSheet data={sheetData} className={style.generalInformation} />
             </Col>
             <Col sm={12} lg={6}>
               <ApplicationEvents appId={appId} widget />
@@ -137,7 +88,7 @@ class ApplicationOverview extends React.Component {
             </Col>
           </Row>
         </Container>
-      </React.Fragment>
+      </>
     )
   }
 }

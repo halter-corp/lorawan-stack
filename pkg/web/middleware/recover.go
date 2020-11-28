@@ -20,7 +20,7 @@ import (
 	"runtime/debug"
 
 	echo "github.com/labstack/echo/v4"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // ErrHTTPRecovered is returned when a panic is caught from an HTTP handler.
@@ -34,7 +34,11 @@ func Recover() echo.MiddlewareFunc {
 				if p := recover(); p != nil {
 					fmt.Fprintln(os.Stderr, p)
 					os.Stderr.Write(debug.Stack())
-					err = ErrHTTPRecovered.WithAttributes("panic", p)
+					if pErr, ok := p.(error); ok {
+						err = ErrHTTPRecovered.WithCause(pErr)
+					} else {
+						err = ErrHTTPRecovered.WithAttributes("panic", p)
+					}
 				}
 			}()
 			return next(c)

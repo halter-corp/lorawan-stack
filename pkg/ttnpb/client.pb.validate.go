@@ -147,6 +147,8 @@ func (m *Client) ValidateFields(paths ...string) error {
 			// no validation rules for Secret
 		case "redirect_uris":
 
+		case "logout_redirect_uris":
+
 		case "state":
 
 			if _, ok := State_name[int32(m.GetState())]; !ok {
@@ -493,7 +495,14 @@ func (m *ListClientsRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "order":
-			// no validation rules for Order
+
+			if _, ok := _ListClientsRequest_Order_InLookup[m.GetOrder()]; !ok {
+				return ListClientsRequestValidationError{
+					field:  "order",
+					reason: "value must be in list [ client_id -client_id name -name created_at -created_at]",
+				}
+			}
+
 		case "limit":
 
 			if m.GetLimit() > 1000 {
@@ -570,6 +579,16 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListClientsRequestValidationError{}
+
+var _ListClientsRequest_Order_InLookup = map[string]struct{}{
+	"":            {},
+	"client_id":   {},
+	"-client_id":  {},
+	"name":        {},
+	"-name":       {},
+	"created_at":  {},
+	"-created_at": {},
+}
 
 // ValidateFields checks the field values on CreateClientRequest with the rules
 // defined in the proto definition for this message. If any rules are

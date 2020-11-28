@@ -15,12 +15,17 @@
 package oauthclient
 
 import (
+	"encoding/json"
+	stderrors "errors"
 	"net/http"
 	"time"
 
 	echo "github.com/labstack/echo/v4"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"golang.org/x/oauth2"
 )
+
+var errRefresh = errors.DefinePermissionDenied("refresh", "token refresh refused")
 
 func (oc *OAuthClient) freshToken(c echo.Context) (*oauth2.Token, error) {
 	value, err := oc.getAuthCookie(c)
@@ -31,12 +36,23 @@ func (oc *OAuthClient) freshToken(c echo.Context) (*oauth2.Token, error) {
 	token := &oauth2.Token{
 		AccessToken:  value.AccessToken,
 		RefreshToken: value.RefreshToken,
-		Expiry:       value.Expiry,
+		Expiry:       time.Now(),
 	}
 
-	freshToken, err := oc.oauth(c).TokenSource(c.Request().Context(), token).Token()
+	ctx, err := oc.withTLSClientConfig(c.Request().Context())
 	if err != nil {
 		return nil, err
+	}
+	freshToken, err := oc.oauth(c).TokenSource(ctx, token).Token()
+	if err != nil {
+		var retrieveError *oauth2.RetrieveError
+		if stderrors.As(err, &retrieveError) {
+			var ttnErr errors.Error
+			if decErr := json.Unmarshal(retrieveError.Body, &ttnErr); decErr == nil {
+				return nil, errRefresh.WithCause(ttnErr)
+			}
+		}
+		return nil, errRefresh.WithCause(err)
 	}
 
 	if freshToken.AccessToken != token.AccessToken {

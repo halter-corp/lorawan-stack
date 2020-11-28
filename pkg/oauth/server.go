@@ -21,14 +21,15 @@ import (
 	"time"
 
 	echo "github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/openshift/osin"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	web_errors "go.thethings.network/lorawan-stack/pkg/errors/web"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/web"
-	"go.thethings.network/lorawan-stack/pkg/webui"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	web_errors "go.thethings.network/lorawan-stack/v3/pkg/errors/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/web/middleware"
+	"go.thethings.network/lorawan-stack/v3/pkg/webui"
 )
 
 // Server is the interface for the OAuth server.
@@ -43,7 +44,7 @@ type Server interface {
 }
 
 type server struct {
-	ctx        context.Context
+	c          *component.Component
 	config     Config
 	osinConfig *osin.ServerConfig
 	store      Store
@@ -60,33 +61,10 @@ type Store interface {
 	store.OAuthStore
 }
 
-// UIConfig is the combined configuration for the OAuth UI.
-type UIConfig struct {
-	webui.TemplateData `name:",squash"`
-	FrontendConfig     `name:",squash"`
-}
-
-// StackConfig is the configuration of the stack components.
-type StackConfig struct {
-	IS webui.APIConfig `json:"is" name:"is"`
-}
-
-// FrontendConfig is the configuration for the OAuth frontend.
-type FrontendConfig struct {
-	Language    string `json:"language" name:"-"`
-	StackConfig `json:"stack_config" name:",squash"`
-}
-
-// Config is the configuration for the OAuth server.
-type Config struct {
-	Mount string   `name:"mount" description:"Path on the server where the OAuth server will be served"`
-	UI    UIConfig `name:"ui"`
-}
-
 // NewServer returns a new OAuth server on top of the given store.
-func NewServer(ctx context.Context, store Store, config Config) Server {
+func NewServer(c *component.Component, store Store, config Config) (Server, error) {
 	s := &server{
-		ctx:    ctx,
+		c:      c,
 		config: config,
 		store:  store,
 	}
@@ -113,7 +91,7 @@ func NewServer(ctx context.Context, store Store, config Config) Server {
 		RetainTokenAfterRefresh:   false,
 	}
 
-	return s
+	return s, nil
 }
 
 type ctxKeyType struct{}
@@ -143,7 +121,7 @@ func (s *server) oauth2(ctx context.Context) *osin.Server {
 }
 
 func (s *server) Printf(format string, v ...interface{}) {
-	log.FromContext(s.ctx).Warnf(format, v...)
+	log.FromContext(s.c.Context()).Warnf(format, v...)
 }
 
 // These errors map to errors in the osin library.
@@ -222,7 +200,7 @@ func (s *server) output(c echo.Context, resp *osin.Response) error {
 }
 
 func (s *server) RegisterRoutes(server *web.Server) {
-	group := server.Group(
+	root := server.Group(
 		s.config.Mount,
 		func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
@@ -243,25 +221,23 @@ func (s *server) RegisterRoutes(server *web.Server) {
 		}),
 	)
 
-	api := group.Group("/api", middleware.CSRF())
+	csrfMiddleware := middleware.CSRF("_csrf", "/", s.config.CSRFAuthKey)
+
+	api := root.Group("/api", csrfMiddleware)
 	api.POST("/auth/login", s.Login)
 	api.POST("/auth/logout", s.Logout, s.requireLogin)
 	api.GET("/me", s.CurrentUser, s.requireLogin)
 
-	page := group.Group("", middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup: "form:csrf",
-	}))
+	page := root.Group("", csrfMiddleware)
 	page.GET("/login", webui.Template.Handler, s.redirectToNext)
+	page.GET("/logout", s.ClientLogout)
 	page.GET("/authorize", s.Authorize(webui.Template.Handler), s.redirectToLogin)
 	page.POST("/authorize", s.Authorize(webui.Template.Handler), s.redirectToLogin)
+	page.GET("/", webui.Template.Handler, s.redirectToLogin)
+	page.GET("/*", webui.Template.Handler)
 
-	if s.config.Mount != "" && s.config.Mount != "/" {
-		group.GET("", webui.Template.Handler, middleware.CSRF())
-	}
-	group.GET("/*", webui.Template.Handler, middleware.CSRF())
+	root.GET("/local-callback", s.redirectToLocal)
 
 	// No CSRF here:
-	group.GET("/code", webui.Template.Handler)
-	group.GET("/local-callback", s.redirectToLocal)
-	group.POST("/token", s.Token)
+	root.POST("/token", s.Token)
 }

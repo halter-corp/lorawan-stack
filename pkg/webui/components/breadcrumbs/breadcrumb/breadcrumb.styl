@@ -24,29 +24,15 @@
     content: 'keyboard_arrow_right'
     color: $tc-subtle-gray
 
-  &:hover
-    text-decoration: underline
-    color: $tc-deep-gray
-
   +focus-visible()
     text-decoration: underline
     color: $tc-deep-gray
 
-  +media-query($bp.s)
-    &:not(:last-child):not(:first-child):not(:nth-child(2))
-      display: none
-
-    &:nth-child(2):after
-      nudge('down')
-      content: 'more_horiz'
 
 .last
   one-liner()
   color: $tc-deep-gray
   min-height: 18px
-
-.icon
-  nudge('up')
-  margin-right: $cs.xxs
-  +media-query($bp.m)
-    display: none
+  +media-query($bp.s)
+    &:last-child
+      padding-right: $ls.xxs

@@ -8,7 +8,7 @@ import (
 )
 
 func (dst *Event) SetFields(src *Event, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "name":
 			if len(subs) > 0 {
@@ -101,6 +101,61 @@ func (dst *Event) SetFields(src *Event, paths ...string) error {
 					dst.Visibility = nil
 				}
 			}
+		case "authentication":
+			if len(subs) > 0 {
+				var newDst, newSrc *Event_Authentication
+				if (src == nil || src.Authentication == nil) && dst.Authentication == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.Authentication
+				}
+				if dst.Authentication != nil {
+					newDst = dst.Authentication
+				} else {
+					newDst = &Event_Authentication{}
+					dst.Authentication = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.Authentication = src.Authentication
+				} else {
+					dst.Authentication = nil
+				}
+			}
+		case "remote_ip":
+			if len(subs) > 0 {
+				return fmt.Errorf("'remote_ip' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RemoteIP = src.RemoteIP
+			} else {
+				var zero string
+				dst.RemoteIP = zero
+			}
+		case "user_agent":
+			if len(subs) > 0 {
+				return fmt.Errorf("'user_agent' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.UserAgent = src.UserAgent
+			} else {
+				var zero string
+				dst.UserAgent = zero
+			}
+		case "unique_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'unique_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.UniqueID = src.UniqueID
+			} else {
+				var zero string
+				dst.UniqueID = zero
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -110,7 +165,7 @@ func (dst *Event) SetFields(src *Event, paths ...string) error {
 }
 
 func (dst *StreamEventsRequest) SetFields(src *StreamEventsRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "identifiers":
 			if len(subs) > 0 {
@@ -139,6 +194,47 @@ func (dst *StreamEventsRequest) SetFields(src *StreamEventsRequest, paths ...str
 				dst.After = src.After
 			} else {
 				dst.After = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *Event_Authentication) SetFields(src *Event_Authentication, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "type":
+			if len(subs) > 0 {
+				return fmt.Errorf("'type' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Type = src.Type
+			} else {
+				var zero string
+				dst.Type = zero
+			}
+		case "token_type":
+			if len(subs) > 0 {
+				return fmt.Errorf("'token_type' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.TokenType = src.TokenType
+			} else {
+				var zero string
+				dst.TokenType = zero
+			}
+		case "token_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'token_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.TokenID = src.TokenID
+			} else {
+				var zero string
+				dst.TokenID = zero
 			}
 
 		default:

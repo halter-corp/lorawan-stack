@@ -17,20 +17,24 @@ import { Container, Row, Col } from 'react-grid-system'
 import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import CollaboratorsTable from '../../containers/collaborators-table'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import { getGatewayCollaboratorsList } from '../../store/actions/gateways'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import CollaboratorsTable from '@console/containers/collaborators-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getCollaboratorsList } from '@console/store/actions/collaborators'
+
+import { selectSelectedGatewayId } from '@console/store/selectors/gateways'
 import {
-  selectSelectedGatewayId,
-  selectGatewayCollaborators,
-  selectGatewayCollaboratorsTotalCount,
-  selectGatewayCollaboratorsFetching,
-} from '../../store/selectors/gateways'
-
-import PAGE_SIZES from '../../constants/page-sizes'
+  selectCollaborators,
+  selectCollaboratorsTotalCount,
+  selectCollaboratorsFetching,
+  selectCollaboratorsError,
+} from '@console/store/selectors/collaborators'
 
 @connect(state => ({
   gtwId: selectSelectedGatewayId(state),
@@ -44,7 +48,7 @@ export default class GatewayCollaborators extends React.Component {
     super(props)
 
     const { gtwId } = this.props
-    this.getGatewayCollaboratorsList = filters => getGatewayCollaboratorsList(gtwId, filters)
+    this.getCollaboratorsList = filters => getCollaboratorsList('gateway', gtwId, filters)
   }
 
   @bind
@@ -53,9 +57,10 @@ export default class GatewayCollaborators extends React.Component {
     const id = { id: gtwId }
 
     return {
-      collaborators: selectGatewayCollaborators(state, id),
-      fetching: selectGatewayCollaboratorsFetching(state),
-      totalCount: selectGatewayCollaboratorsTotalCount(state, id),
+      collaborators: selectCollaborators(state, id),
+      fetching: selectCollaboratorsFetching(state),
+      totalCount: selectCollaboratorsTotalCount(state, id),
+      error: selectCollaboratorsError(state),
     }
   }
 
@@ -68,7 +73,7 @@ export default class GatewayCollaborators extends React.Component {
             <CollaboratorsTable
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={this.baseDataSelector}
-              getItemsAction={this.getGatewayCollaboratorsList}
+              getItemsAction={this.getCollaboratorsList}
             />
           </Col>
         </Row>

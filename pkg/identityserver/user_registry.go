@@ -23,36 +23,45 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/email"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/blacklist"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/emails"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/validate"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/email"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/blacklist"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/emails"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/validate"
 )
 
 var (
 	evtCreateUser = events.Define(
 		"user.create", "create user",
-		ttnpb.RIGHT_USER_INFO,
+		events.WithVisibility(ttnpb.RIGHT_USER_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateUser = events.Define(
 		"user.update", "update user",
-		ttnpb.RIGHT_USER_INFO,
+		events.WithVisibility(ttnpb.RIGHT_USER_INFO),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteUser = events.Define(
 		"user.delete", "delete user",
-		ttnpb.RIGHT_USER_INFO,
+		events.WithVisibility(ttnpb.RIGHT_USER_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateUserIncorrectPassword = events.Define(
 		"user.update.incorrect_password", "update user failure: incorrect password",
-		ttnpb.RIGHT_USER_INFO,
+		events.WithVisibility(ttnpb.RIGHT_USER_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
@@ -104,7 +113,7 @@ func (is *IdentityServer) createUser(ctx context.Context, req *ttnpb.CreateUserR
 		return nil, err
 	}
 	if req.InvitationToken == "" && is.configFromContext(ctx).UserRegistration.Invitation.Required && !createdByAdmin {
-		return nil, errInvitationTokenRequired
+		return nil, errInvitationTokenRequired.New()
 	}
 
 	if err := validate.Email(req.User.PrimaryEmailAddress); err != nil {
@@ -172,7 +181,7 @@ func (is *IdentityServer) createUser(ctx context.Context, req *ttnpb.CreateUserR
 				return err
 			}
 			if !invitationToken.ExpiresAt.IsZero() && invitationToken.ExpiresAt.Before(time.Now()) {
-				return errInvitationTokenExpired
+				return errInvitationTokenExpired.New()
 			}
 		}
 
@@ -200,6 +209,18 @@ func (is *IdentityServer) createUser(ctx context.Context, req *ttnpb.CreateUserR
 		return nil, err
 	}
 
+	if usr.State == ttnpb.STATE_REQUESTED {
+		err = is.SendAdminsEmail(ctx, func(data emails.Data) email.MessageData {
+			data.Entity.Type, data.Entity.ID = "user", usr.UserID
+			return &emails.UserRequested{
+				Data: data,
+			}
+		})
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("Could not send user requested email")
+		}
+	}
+
 	// TODO: Send welcome email (https://github.com/TheThingsNetwork/lorawan-stack/issues/72).
 
 	if _, err := is.requestContactInfoValidation(ctx, req.UserIdentifiers.EntityIdentifiers()); err != nil {
@@ -207,16 +228,16 @@ func (is *IdentityServer) createUser(ctx context.Context, req *ttnpb.CreateUserR
 	}
 
 	usr.Password = "" // Create doesn't have a FieldMask, so we need to manually remove the password.
-	events.Publish(evtCreateUser(ctx, req.UserIdentifiers, nil))
+	events.Publish(evtCreateUser.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
 	return usr, nil
 }
 
 func (is *IdentityServer) getUser(ctx context.Context, req *ttnpb.GetUserRequest) (usr *ttnpb.User, err error) {
-	if err = is.RequireAuthenticated(ctx); err != nil {
-		return nil, err
-	}
 	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.UserFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
 	if err = rights.RequireUser(ctx, req.UserIdentifiers, ttnpb.RIGHT_USER_INFO); err != nil {
+		if err := is.RequireAuthenticated(ctx); err != nil {
+			return nil, err
+		}
 		if ttnpb.HasOnlyAllowedFields(req.FieldMask.Paths, ttnpb.PublicUserFields...) {
 			defer func() { usr = usr.PublicSafe() }()
 		} else {
@@ -263,6 +284,7 @@ func (is *IdentityServer) listUsers(ctx context.Context, req *ttnpb.ListUsersReq
 	if err = is.RequireAdmin(ctx); err != nil {
 		return nil, err
 	}
+	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	paginateCtx := store.WithPagination(ctx, req.Limit, req.Page, &total)
 	defer func() {
@@ -333,6 +355,7 @@ func (is *IdentityServer) updateUser(ctx context.Context, req *ttnpb.UpdateUserR
 				return nil, errUpdateUserAdminField.WithAttributes("field", path)
 			}
 		}
+		req.PrimaryEmailAddressValidatedAt = nil
 		cleanContactInfo(req.User.ContactInfo)
 	}
 
@@ -376,7 +399,6 @@ func (is *IdentityServer) updateUser(ctx context.Context, req *ttnpb.UpdateUserR
 				if err != nil {
 					return err
 				}
-				contactInfo = usr.ContactInfo
 			}
 			if updatingPrimaryEmailAddress {
 				if !updatingContactInfo {
@@ -385,14 +407,13 @@ func (is *IdentityServer) updateUser(ctx context.Context, req *ttnpb.UpdateUserR
 						return err
 					}
 				}
-				req.PrimaryEmailAddressValidatedAt = nil
 				if !ttnpb.HasAnyField(req.FieldMask.Paths, "primary_email_address_validated_at") {
-					req.FieldMask.Paths = append(req.FieldMask.Paths, "primary_email_address_validated_at")
-				}
-				for _, contactInfo := range contactInfo {
-					if contactInfo.ContactMethod == ttnpb.CONTACT_METHOD_EMAIL && contactInfo.Value == req.User.PrimaryEmailAddress {
-						req.PrimaryEmailAddressValidatedAt = contactInfo.ValidatedAt
-						break
+					for _, contactInfo := range contactInfo {
+						if contactInfo.ContactMethod == ttnpb.CONTACT_METHOD_EMAIL && contactInfo.Value == req.User.PrimaryEmailAddress {
+							req.PrimaryEmailAddressValidatedAt = contactInfo.ValidatedAt
+							req.FieldMask.Paths = append(req.FieldMask.Paths, "primary_email_address_validated_at")
+							break
+						}
 					}
 				}
 			}
@@ -409,7 +430,7 @@ func (is *IdentityServer) updateUser(ctx context.Context, req *ttnpb.UpdateUserR
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateUser(ctx, req.UserIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateUser.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, req.FieldMask.Paths))
 
 	// TODO: Send emails (https://github.com/TheThingsNetwork/lorawan-stack/issues/72).
 	// - If primary email address changed
@@ -471,8 +492,8 @@ func (is *IdentityServer) updateUserPassword(ctx context.Context, req *ttnpb.Upd
 			// }
 		} else {
 			if usr.TemporaryPassword == "" {
-				events.Publish(evtUpdateUserIncorrectPassword(ctx, req.UserIdentifiers, nil))
-				return errIncorrectPassword
+				events.Publish(evtUpdateUserIncorrectPassword.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
+				return errIncorrectPassword.New()
 			}
 			region := trace.StartRegion(ctx, "validate temporary password")
 			valid, err = auth.Validate(usr.TemporaryPassword, req.Old)
@@ -481,11 +502,11 @@ func (is *IdentityServer) updateUserPassword(ctx context.Context, req *ttnpb.Upd
 			case err != nil:
 				return err
 			case !valid:
-				events.Publish(evtUpdateUserIncorrectPassword(ctx, req.UserIdentifiers, nil))
-				return errIncorrectPassword
+				events.Publish(evtUpdateUserIncorrectPassword.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
+				return errIncorrectPassword.New()
 			case usr.TemporaryPasswordExpiresAt.Before(time.Now()):
-				events.Publish(evtUpdateUserIncorrectPassword(ctx, req.UserIdentifiers, nil))
-				return errTemporaryPasswordExpired
+				events.Publish(evtUpdateUserIncorrectPassword.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, nil))
+				return errTemporaryPasswordExpired.New()
 			}
 			usr.TemporaryPassword, usr.TemporaryPasswordCreatedAt, usr.TemporaryPasswordExpiresAt = "", nil, nil
 			updateMask = temporaryPasswordFieldMask
@@ -528,7 +549,7 @@ func (is *IdentityServer) updateUserPassword(ctx context.Context, req *ttnpb.Upd
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateUser(ctx, req.UserIdentifiers, updateMask))
+	events.Publish(evtUpdateUser.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, updateMask))
 	err = is.SendUserEmail(ctx, &req.UserIdentifiers, func(data emails.Data) email.MessageData {
 		return &emails.PasswordChanged{Data: data}
 	})
@@ -556,7 +577,7 @@ func (is *IdentityServer) createTemporaryPassword(ctx context.Context, req *ttnp
 			return err
 		}
 		if usr.TemporaryPasswordExpiresAt != nil && usr.TemporaryPasswordExpiresAt.After(time.Now()) {
-			return errTemporaryPasswordStillValid
+			return errTemporaryPasswordStillValid.New()
 		}
 		usr.TemporaryPassword = hashedTemporaryPassword
 		expires := now.Add(time.Hour)
@@ -571,7 +592,7 @@ func (is *IdentityServer) createTemporaryPassword(ctx context.Context, req *ttnp
 		"user_uid", unique.ID(ctx, req.UserIdentifiers),
 		"temporary_password", temporaryPassword,
 	)).Info("Created temporary password")
-	events.Publish(evtUpdateUser(ctx, req.UserIdentifiers, updateTemporaryPasswordFieldMask))
+	events.Publish(evtUpdateUser.NewWithIdentifiersAndData(ctx, req.UserIdentifiers, updateTemporaryPasswordFieldMask))
 	err = is.SendUserEmail(ctx, &req.UserIdentifiers, func(data emails.Data) email.MessageData {
 		return &emails.TemporaryPassword{
 			Data:              data,
@@ -594,7 +615,7 @@ func (is *IdentityServer) deleteUser(ctx context.Context, ids *ttnpb.UserIdentif
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeleteUser(ctx, ids, nil))
+	events.Publish(evtDeleteUser.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
 }
 

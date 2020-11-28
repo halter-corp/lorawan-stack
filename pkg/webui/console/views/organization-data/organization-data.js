@@ -14,29 +14,27 @@
 
 import React from 'react'
 import { defineMessages } from 'react-intl'
-import { Container, Col, Row } from 'react-grid-system'
 
-import PageTitle from '../../../components/page-title'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import OrganizationEvents from '../../containers/organization-events'
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import WithRootClass from '@ttn-lw/lib/components/with-root-class'
 
-import style from './organization-data.styl'
+import OrganizationEvents from '@console/containers/organization-events'
+
+import style from '@console/views/app/app.styl'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 const m = defineMessages({
-  orgData: 'Organization Data',
+  orgData: 'Organization data',
 })
 
 @withBreadcrumb('orgs.single.data', function(props) {
   return (
-    <Breadcrumb
-      path={`/organizations/${props.orgId}/data`}
-      icon="data"
-      content={sharedMessages.data}
-    />
+    <Breadcrumb path={`/organizations/${props.orgId}/data`} content={sharedMessages.liveData} />
   )
 })
 export default class Data extends React.Component {
@@ -48,14 +46,10 @@ export default class Data extends React.Component {
     const { orgId } = this.props
 
     return (
-      <Container>
+      <WithRootClass className={style.stageFlex} id="stage">
         <PageTitle hideHeading title={m.orgData} />
-        <Row>
-          <Col className={style.wrapper}>
-            <OrganizationEvents orgId={orgId} />
-          </Col>
-        </Row>
-      </Container>
+        <OrganizationEvents orgId={orgId} />
+      </WithRootClass>
     )
   }
 }

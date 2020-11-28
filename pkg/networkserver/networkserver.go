@@ -18,21 +18,21 @@ package networkserver
 import (
 	"context"
 	"crypto/tls"
-	"hash/fnv"
+	"fmt"
 	"sync"
 	"time"
 
-	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"go.thethings.network/lorawan-stack/pkg/cluster"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/interop"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/hooks"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/interop"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/random"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"google.golang.org/grpc"
 )
 
@@ -42,33 +42,39 @@ const (
 
 	// fOptsCapacity is the maximum length of FOpts in bytes.
 	fOptsCapacity = 15
+
+	// infrastructureDelay represents a time interval Network Server uses as a buffer to account for infrastructure delay.
+	infrastructureDelay = time.Second
+
+	// peeringScheduleDelay is the schedule delay used for scheduling downlink via peering.
+	// The schedule delay is used to estimate the transmission time, which is used as the minimum time for a subsequent transmission.
+	//
+	// When scheduling downlink to a cluster Gateway Server, the schedule delay is reported by the Gateway Server and is accurate.
+	// When scheduling downlink via peering, the schedule delay is unknown, and should be sufficiently high to avoid conflicts.
+	peeringScheduleDelay = infrastructureDelay + 4*time.Second
+
+	// networkInitiatedDownlinkInterval is the minimum time.Duration passed before a network-initiated(e.g. Class B or C) downlink following an arbitrary downlink.
+	networkInitiatedDownlinkInterval = time.Second
 )
 
-// WindowEndFunc is a function, which is used by Network Server to determine the end of deduplication and cooldown windows.
-type WindowEndFunc func(ctx context.Context, up *ttnpb.UplinkMessage) <-chan time.Time
+// windowDurationFunc is a function, which is used by Network Server to determine the duration of deduplication and cooldown windows.
+type windowDurationFunc func(ctx context.Context) time.Duration
 
-// NewWindowEndAfterFunc returns a WindowEndFunc, which closes
-// the returned channel after at least duration d after up.ServerTime or if the context is done.
-func NewWindowEndAfterFunc(d time.Duration) WindowEndFunc {
-	return func(ctx context.Context, up *ttnpb.UplinkMessage) <-chan time.Time {
-		ch := make(chan time.Time, 1)
+// makeWindowEndAfterFunc returns a windowDurationFunc, which always returns d.
+func makeWindowDurationFunc(d time.Duration) windowDurationFunc {
+	return func(ctx context.Context) time.Duration { return d }
+}
 
-		now := timeNow()
-		if up.ReceivedAt.IsZero() {
-			up.ReceivedAt = now
-		}
+// newDevAddrFunc is a function, which is used by Network Server to derive new DevAddrs.
+type newDevAddrFunc func(ctx context.Context, dev *ttnpb.EndDevice) types.DevAddr
 
-		end := up.ReceivedAt.Add(d)
-		if end.Before(now) {
-			ch <- end
-			return ch
-		}
-
-		go func() {
-			time.Sleep(timeUntil(up.ReceivedAt.Add(d)))
-			ch <- end
-		}()
-		return ch
+// makeNewDevAddrFunc returns a newDevAddrFunc, which derives DevAddrs using specified prefixes.
+func makeNewDevAddrFunc(ps ...types.DevAddrPrefix) newDevAddrFunc {
+	return func(ctx context.Context, dev *ttnpb.EndDevice) types.DevAddr {
+		var devAddr types.DevAddr
+		random.Read(devAddr[:])
+		p := ps[random.Intn(len(ps))]
+		return devAddr.WithPrefix(p)
 	}
 }
 
@@ -98,51 +104,59 @@ type NetworkServer struct {
 
 	devices DeviceRegistry
 
-	netID           types.NetID
-	devAddrPrefixes []types.DevAddrPrefix
+	netID      types.NetID
+	newDevAddr newDevAddrFunc
 
 	applicationServers *sync.Map // string -> *applicationUpStream
 	applicationUplinks ApplicationUplinkQueue
 
-	metadataAccumulators *sync.Map // uint64 -> *metadataAccumulator
-
-	metadataAccumulatorPool *sync.Pool
-	hashPool                *sync.Pool
-
 	downlinkTasks      DownlinkTaskQueue
 	downlinkPriorities DownlinkPriorities
 
-	deduplicationDone WindowEndFunc
-	collectionDone    WindowEndFunc
+	deduplicationWindow windowDurationFunc
+	collectionWindow    windowDurationFunc
 
 	defaultMACSettings ttnpb.MACSettings
 
 	interopClient InteropClient
 
-	deviceKEKLabel string
+	uplinkDeduplicator UplinkDeduplicator
+
+	deviceKEKLabel        string
+	downlinkQueueCapacity int
 }
 
 // Option configures the NetworkServer.
 type Option func(ns *NetworkServer)
 
-// WithDeduplicationDoneFunc overrides the default WindowEndFunc, which
-// is used to determine the end of uplink metadata deduplication.
-func WithDeduplicationDoneFunc(f WindowEndFunc) Option {
-	return func(ns *NetworkServer) {
-		ns.deduplicationDone = f
-	}
-}
+var DefaultOptions []Option
 
-// WithCollectionDoneFunc overrides the default WindowEndFunc, which
-// is used to determine the end of uplink duplicate collection.
-func WithCollectionDoneFunc(f WindowEndFunc) Option {
-	return func(ns *NetworkServer) {
-		ns.collectionDone = f
-	}
-}
+const (
+	downlinkProcessTaskName = "process_downlink"
+	maxInt                  = int(^uint(0) >> 1)
+)
 
 // New returns new NetworkServer.
 func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, error) {
+	ctx := log.NewContextWithField(c.Context(), "namespace", "networkserver")
+
+	switch {
+	case conf.DeduplicationWindow == 0:
+		return nil, errInvalidConfiguration.WithCause(errors.New("DeduplicationWindow must be greater than 0"))
+	case conf.CooldownWindow == 0:
+		return nil, errInvalidConfiguration.WithCause(errors.New("CooldownWindow must be greater than 0"))
+	case conf.Devices == nil:
+		panic(errInvalidConfiguration.WithCause(errors.New("Devices is not specified")))
+	case conf.DownlinkTasks == nil:
+		panic(errInvalidConfiguration.WithCause(errors.New("DownlinkTasks is not specified")))
+	case conf.UplinkDeduplicator == nil:
+		panic(errInvalidConfiguration.WithCause(errors.New("UplinkDeduplicator is not specified")))
+	case conf.DownlinkQueueCapacity < 0:
+		return nil, errInvalidConfiguration.WithCause(errors.New("Downlink queue capacity must be greater than or equal to 0"))
+	case conf.DownlinkQueueCapacity > maxInt/2:
+		return nil, errInvalidConfiguration.WithCause(errors.New(fmt.Sprintf("Downlink queue capacity must be below %d", maxInt/2)))
+	}
+
 	devAddrPrefixes := conf.DevAddrPrefixes
 	if len(devAddrPrefixes) == 0 {
 		devAddr, err := types.NewDevAddr(conf.NetID, nil)
@@ -161,8 +175,6 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 		return nil, err
 	}
 
-	ctx := log.NewContextWithField(c.Context(), "namespace", "networkserver")
-
 	var interopCl InteropClient
 	if !conf.Interop.IsZero() {
 		interopConf := conf.Interop
@@ -178,74 +190,29 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 	}
 
 	ns := &NetworkServer{
-		Component:               c,
-		ctx:                     ctx,
-		netID:                   conf.NetID,
-		devAddrPrefixes:         devAddrPrefixes,
-		applicationServers:      &sync.Map{},
-		applicationUplinks:      conf.ApplicationUplinks,
-		devices:                 conf.Devices,
-		downlinkTasks:           conf.DownlinkTasks,
-		metadataAccumulators:    &sync.Map{},
-		metadataAccumulatorPool: &sync.Pool{},
-		hashPool:                &sync.Pool{},
-		downlinkPriorities:      downlinkPriorities,
-		defaultMACSettings: ttnpb.MACSettings{
-			ClassBTimeout:         conf.DefaultMACSettings.ClassBTimeout,
-			ClassCTimeout:         conf.DefaultMACSettings.ClassCTimeout,
-			StatusTimePeriodicity: conf.DefaultMACSettings.StatusTimePeriodicity,
-		},
-		interopClient:  interopCl,
-		deviceKEKLabel: conf.DeviceKEKLabel,
-	}
-	ns.hashPool.New = func() interface{} {
-		return fnv.New64a()
-	}
-	ns.metadataAccumulatorPool.New = func() interface{} {
-		return &metadataAccumulator{}
+		Component:             c,
+		ctx:                   ctx,
+		netID:                 conf.NetID,
+		newDevAddr:            makeNewDevAddrFunc(devAddrPrefixes...),
+		applicationServers:    &sync.Map{},
+		applicationUplinks:    conf.ApplicationUplinkQueue.Queue,
+		deduplicationWindow:   makeWindowDurationFunc(conf.DeduplicationWindow),
+		collectionWindow:      makeWindowDurationFunc(conf.DeduplicationWindow + conf.CooldownWindow),
+		devices:               wrapEndDeviceRegistryWithReplacedFields(conf.Devices, replacedEndDeviceFields...),
+		downlinkTasks:         conf.DownlinkTasks,
+		downlinkPriorities:    downlinkPriorities,
+		defaultMACSettings:    conf.DefaultMACSettings.Parse(),
+		interopClient:         interopCl,
+		uplinkDeduplicator:    conf.UplinkDeduplicator,
+		deviceKEKLabel:        conf.DeviceKEKLabel,
+		downlinkQueueCapacity: conf.DownlinkQueueCapacity,
 	}
 
-	if conf.DefaultMACSettings.ADRMargin != nil {
-		ns.defaultMACSettings.ADRMargin = &pbtypes.FloatValue{Value: *conf.DefaultMACSettings.ADRMargin}
+	if len(opts) == 0 {
+		opts = DefaultOptions
 	}
-	if conf.DefaultMACSettings.DesiredRx1Delay != nil {
-		ns.defaultMACSettings.DesiredRx1Delay = &ttnpb.RxDelayValue{Value: *conf.DefaultMACSettings.DesiredRx1Delay}
-	}
-	if conf.DefaultMACSettings.DesiredMaxDutyCycle != nil {
-		ns.defaultMACSettings.DesiredMaxDutyCycle = &ttnpb.AggregatedDutyCycleValue{Value: *conf.DefaultMACSettings.DesiredMaxDutyCycle}
-	}
-	if conf.DefaultMACSettings.DesiredADRAckLimitExponent != nil {
-		ns.defaultMACSettings.DesiredADRAckLimitExponent = &ttnpb.ADRAckLimitExponentValue{Value: *conf.DefaultMACSettings.DesiredADRAckLimitExponent}
-	}
-	if conf.DefaultMACSettings.DesiredADRAckDelayExponent != nil {
-		ns.defaultMACSettings.DesiredADRAckDelayExponent = &ttnpb.ADRAckDelayExponentValue{Value: *conf.DefaultMACSettings.DesiredADRAckDelayExponent}
-	}
-	if conf.DefaultMACSettings.StatusCountPeriodicity != nil {
-		ns.defaultMACSettings.StatusCountPeriodicity = &pbtypes.UInt32Value{Value: *conf.DefaultMACSettings.StatusCountPeriodicity}
-	}
-
 	for _, opt := range opts {
 		opt(ns)
-	}
-
-	switch {
-	case ns.deduplicationDone == nil && conf.DeduplicationWindow == 0:
-		return nil, errInvalidConfiguration.WithCause(errors.New("DeduplicationWindow is zero and WithDeduplicationDoneFunc not specified"))
-	case ns.collectionDone == nil && conf.DeduplicationWindow == 0:
-		return nil, errInvalidConfiguration.WithCause(errors.New("DeduplicationWindow is zero and WithCollectionDoneFunc not specified"))
-	case ns.collectionDone == nil && conf.CooldownWindow == 0:
-		return nil, errInvalidConfiguration.WithCause(errors.New("CooldownWindow is zero and WithCollectionDoneFunc not specified"))
-	}
-
-	if ns.downlinkTasks == nil {
-		return nil, errInvalidConfiguration.WithCause(errors.New("DownlinkTasks is not specified"))
-	}
-
-	if ns.deduplicationDone == nil {
-		ns.deduplicationDone = NewWindowEndAfterFunc(conf.DeduplicationWindow)
-	}
-	if ns.collectionDone == nil {
-		ns.collectionDone = NewWindowEndAfterFunc(conf.DeduplicationWindow + conf.CooldownWindow)
 	}
 
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.GsNs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("networkserver"))
@@ -257,20 +224,16 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.AsNs", cluster.HookName, c.ClusterAuthUnaryHook())
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.Ns", cluster.HookName, c.ClusterAuthUnaryHook())
 
-	ns.RegisterTask(ns.Context(), "process_downlink", func(ctx context.Context) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-			}
-
-			if err := ns.processDownlinkTask(ctx); err != nil {
-				return err
-			}
-		}
-	}, component.TaskRestartOnFailure)
-
+	ns.RegisterTask(&component.TaskConfig{
+		Context: ns.Context(),
+		ID:      downlinkProcessTaskName,
+		Func:    ns.processDownlinkTask,
+		Restart: component.TaskRestartAlways,
+		Backoff: &component.TaskBackoffConfig{
+			Jitter:       component.DefaultTaskBackoffConfig.Jitter,
+			IntervalFunc: component.MakeTaskBackoffIntervalFunc(true, component.DefaultTaskBackoffResetDuration, component.DefaultTaskBackoffIntervals[:]...),
+		},
+	})
 	c.RegisterGRPC(ns)
 	return ns, nil
 }

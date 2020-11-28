@@ -19,25 +19,29 @@ import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
 import { connect } from 'react-redux'
 import { replace, push } from 'connected-react-router'
-import * as Yup from 'yup'
 import queryString from 'query-string'
 
-import api from '../../api'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
-import Button from '../../../components/button'
-import Input from '../../../components/input'
-import Form from '../../../components/form'
-import SubmitButton from '../../../components/submit-button'
-import Message from '../../../lib/components/message'
-import { selectApplicationSiteName } from '../../../lib/selectors/env'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Spinner from '../../../components/spinner'
+import api from '@oauth/api'
+
+import Button from '@ttn-lw/components/button'
+import Input from '@ttn-lw/components/input'
+import Form from '@ttn-lw/components/form'
+import SubmitButton from '@ttn-lw/components/submit-button'
+import Spinner from '@ttn-lw/components/spinner'
+
+import Message from '@ttn-lw/lib/components/message'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import Yup from '@ttn-lw/lib/yup'
+import { selectApplicationSiteName } from '@ttn-lw/lib/selectors/env'
+import { id as userRegexp } from '@ttn-lw/lib/regexp'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import style from './create-account.styl'
 
 const m = defineMessages({
-  createAccount: 'Create a new {siteName} Account',
+  createAccount: 'Create a new {siteName} account',
   register: 'Register',
   registrationApproved: 'You have successfully registered and can login now',
   registrationPending:
@@ -46,21 +50,21 @@ const m = defineMessages({
 
 const validationSchema = Yup.object().shape({
   user_id: Yup.string()
-    .min(2)
-    .max(36)
+    .min(3, Yup.passValues(sharedMessages.validateTooShort))
+    .max(36, Yup.passValues(sharedMessages.validateTooLong))
+    .matches(userRegexp, Yup.passValues(sharedMessages.validateIdFormat))
     .required(sharedMessages.validateRequired),
   name: Yup.string()
-    .min(3, sharedMessages.validateTooShort)
-    .max(50, sharedMessages.validateTooLong),
+    .min(3, Yup.passValues(sharedMessages.validateTooShort))
+    .max(50, Yup.passValues(sharedMessages.validateTooLong)),
   password: Yup.string()
-    .min(8)
+    .min(8, Yup.passValues(sharedMessages.validateTooShort))
     .required(sharedMessages.validateRequired),
   primary_email_address: Yup.string()
     .email(sharedMessages.validateEmail)
     .required(sharedMessages.validateRequired),
   password_confirm: Yup.string()
     .oneOf([Yup.ref('password'), null], sharedMessages.validatePasswordMatch)
-    .min(8)
     .required(sharedMessages.validateRequired),
 })
 
@@ -72,7 +76,7 @@ const initialValues = {
   password_confirm: '',
 }
 
-const getSuccessMessage = function(state) {
+const getSuccessMessage = state => {
   switch (state) {
     case 'STATE_REQUESTED':
       return m.registrationPending
@@ -95,7 +99,6 @@ const getSuccessMessage = function(state) {
     replace,
   },
 )
-@bind
 export default class CreateAccount extends React.PureComponent {
   static propTypes = {
     fetching: PropTypes.bool.isRequired,
@@ -117,6 +120,7 @@ export default class CreateAccount extends React.PureComponent {
     }
   }
 
+  @bind
   async handleSubmit(values, { setSubmitting, setErrors }) {
     try {
       const { user_id, ...rest } = values
@@ -139,6 +143,7 @@ export default class CreateAccount extends React.PureComponent {
     }
   }
 
+  @bind
   handleCancel() {
     const { replace, location } = this.props
     const state = location.state || {}

@@ -18,9 +18,16 @@
     justify-content: space-between
     flex-wrap: nowrap
 
+    &.horizontal
+      .label-container, .info-area
+        padding-top: $cs.xxs
+
+    &.required
+      .label::after
+        padding-top: $cs.xxs
+
     .title
-      font-weight: normal
-      padding-top: 0
+      font-weight: $fw.normal
 
     .component-area
       display: flex
@@ -31,7 +38,7 @@
     .label
       display: flex
       width: 14rem
-      font-weight: normal
+      font-weight: $fw.normal
 
 .field
   margin-bottom: $cs.l
@@ -39,33 +46,33 @@
   flex-wrap: wrap
   width: 100%
 
-  .label
-    font-weight: 600
+  .title
+    font-weight: $fw.bold
 
-  &.horizontal
-    .title
-      padding-top: $cs.xxs
+    &::after
+      display: none
 
-    .info-area
-      padding-top: $cs.xxs
-
-.reqicon
-  display: none
-  margin-left: $cs.xxs
-  color: $c-active-blue
-  font-weight: 800
-
-  .required &
-    display: inline
+  &.required
+    .label::after
+      content: '·'
+      display: inline
+      margin-left: $cs.xxs
+      color: $c-active-blue
+      font-weight: 800
 
 .label
-  display: block
+  display: flex
+  align-items: flex-start
   width:  100%
   flex-shrink: 0
   user-select: none
 
+.label-container
+  display: flex
+  align-items: center
+
 .description
-  font-weight: normal
+  font-weight: $fw.normal
   color: $tc-subtle-gray
 
 .component-area
@@ -93,7 +100,7 @@
     display: inline-block
 
   .name
-    font-weight: bold
+    font-weight: $fw.bold
 
   &.show
     height: auto
@@ -107,11 +114,15 @@
     flex-grow: 0
     flex-shrink: 0
 
+.glossary-link
+  display: block
+  text-decoration: none
+
 .err
   color: $c-error
 
 .warn
-  color: $c-warning
+  color: $tc-warning
 
 .disabled .info-area
     opacity: .4

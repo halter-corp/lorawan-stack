@@ -16,7 +16,7 @@ import React from 'react'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import PropTypes from '../../../lib/prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './group.styl'
 
@@ -36,7 +36,6 @@ function findCheckedRadio(children) {
   return value
 }
 
-@bind
 class RadioGroup extends React.Component {
   constructor(props) {
     super(props)
@@ -66,6 +65,7 @@ class RadioGroup extends React.Component {
     return null
   }
 
+  @bind
   handleRadioChange(event) {
     const { onChange } = this.props
     const { target } = event
@@ -102,17 +102,21 @@ class RadioGroup extends React.Component {
 }
 
 RadioGroup.propTypes = {
-  name: PropTypes.string.isRequired,
+  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
+  className: PropTypes.string,
   disabled: PropTypes.bool,
   horizontal: PropTypes.bool,
-  value: PropTypes.string,
   initialValue: PropTypes.string,
+  name: PropTypes.string.isRequired,
   onChange: PropTypes.func,
-  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.node), PropTypes.node]).isRequired,
+  value: PropTypes.string,
 }
 
 RadioGroup.defaultProps = {
+  className: undefined,
   disabled: false,
+  initialValue: undefined,
+  value: undefined,
   horizontal: false,
   onChange: () => null,
 }

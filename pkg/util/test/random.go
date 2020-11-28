@@ -17,12 +17,11 @@ package test
 import (
 	"math/rand"
 
-	"go.thethings.network/lorawan-stack/pkg/util/randutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/randutil"
 )
 
-// Randy is global rand, which is (mostly) safe for concurrent use.
-// Read and Seed should not be called concurrently.
-var Randy = rand.New(randutil.NewLockedSource(rand.NewSource(42)))
+// Randy is global rand, which is safe for concurrent use.
+var Randy = randutil.NewLockedRand(rand.NewSource(42))
 
 func init() {
 	rand.Seed(42)

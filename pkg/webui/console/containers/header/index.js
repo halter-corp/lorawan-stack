@@ -15,20 +15,25 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router-dom'
-import bind from 'autobind-decorator'
 
-import PropTypes from '../../../lib/prop-types'
-import sharedMessages from '../../../lib/shared-messages'
-import HeaderComponent from '../../../components/header'
+import HeaderComponent from '@ttn-lw/components/header'
+import NavigationBar from '@ttn-lw/components/navigation/bar'
+import Dropdown from '@ttn-lw/components/dropdown'
 
-import { logout } from '../../store/actions/user'
-import { selectUser } from '../../store/selectors/user'
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
 import {
   checkFromState,
   mayViewApplications,
   mayViewGateways,
   mayViewOrganizationsOfUser,
-} from '../../lib/feature-checks'
+  mayManageUsers,
+} from '@console/lib/feature-checks'
+
+import { logout } from '@console/store/actions/user'
+
+import { selectUser } from '@console/store/selectors/user'
 
 @withRouter
 @connect(
@@ -40,50 +45,61 @@ import {
         mayViewApplications: checkFromState(mayViewApplications, state),
         mayViewGateways: checkFromState(mayViewGateways, state),
         mayViewOrganizations: checkFromState(mayViewOrganizationsOfUser, state),
+        mayManageUsers: checkFromState(mayManageUsers, state),
       }
     }
     return { user }
   },
   { handleLogout: logout },
 )
-@bind
 class Header extends Component {
   static propTypes = {
+    /** A handler for when the user clicks the logout button. */
+    handleLogout: PropTypes.func.isRequired,
+    /** A handler for when the user used the search input. */
+    handleSearchRequest: PropTypes.func,
+    mayManageUsers: PropTypes.bool,
+    mayViewApplications: PropTypes.bool,
+    mayViewGateways: PropTypes.bool,
+    mayViewOrganizations: PropTypes.bool,
+    /** A flag identifying whether the header should display the search input. */
+    searchable: PropTypes.bool,
     /**
      * The User object, retrieved from the API. If it is `undefined`, then the
-     * guest header is rendered
+     * guest header is rendered.
      */
-    anchored: PropTypes.bool,
-    /** Flag identifying whether links should be rendered as plain anchor link */
-    handleLogout: PropTypes.func.isRequired,
-    /** A handler for when the user used the search input */
-    handleSearchRequest: PropTypes.func,
-    /** A handler for when the user clicks the logout button */
-    searchable: PropTypes.bool,
-    /** A flag identifying whether the header should display the search input */
-    user: PropTypes.object,
-    /** The rights of the current user */
-    rights: PropTypes.rights,
+    user: PropTypes.user,
+  }
+
+  static defaultProps = {
+    handleSearchRequest: () => null,
+    searchable: false,
+    user: undefined,
+    mayManageUsers: false,
+    mayViewApplications: false,
+    mayViewGateways: false,
+    mayViewOrganizations: false,
   }
 
   render() {
     const {
       user,
-      anchored,
       handleSearchRequest,
       handleLogout,
       searchable,
       mayViewApplications,
       mayViewGateways,
       mayViewOrganizations,
+      mayManageUsers,
     } = this.props
 
-    const navigationEntries = [
+    const navigation = [
       {
         title: sharedMessages.overview,
         icon: 'overview',
         path: '/',
         exact: true,
+        hidden: !mayViewApplications && !mayViewGateways,
       },
       {
         title: sharedMessages.applications,
@@ -105,22 +121,54 @@ class Header extends Component {
       },
     ]
 
-    const dropdownItems = [
-      {
-        title: sharedMessages.logout,
-        icon: 'power_settings_new',
-        action: handleLogout,
-      },
-    ]
+    const navigationEntries = (
+      <React.Fragment>
+        {navigation.map(
+          ({ hidden, ...rest }) => !hidden && <NavigationBar.Item {...rest} key={rest.title.id} />,
+        )}
+      </React.Fragment>
+    )
+
+    const dropdownItems = (
+      <React.Fragment>
+        {mayManageUsers && (
+          <Dropdown.Item
+            title={sharedMessages.userManagement}
+            icon="user_management"
+            path="/admin/user-management"
+          />
+        )}
+        <Dropdown.Item title={sharedMessages.logout} icon="logout" action={handleLogout} />
+      </React.Fragment>
+    )
+
+    const mobileDropdownItems = (
+      <React.Fragment>
+        {navigation.map(
+          ({ hidden, ...rest }) => !hidden && <Dropdown.Item {...rest} key={rest.title.id} />,
+        )}
+        {mayManageUsers && (
+          <React.Fragment>
+            <hr />
+            <Dropdown.Item
+              title={sharedMessages.userManagement}
+              icon="user_management"
+              path="/admin/user-management"
+            />
+          </React.Fragment>
+        )}
+      </React.Fragment>
+    )
 
     return (
       <HeaderComponent
         user={user}
         dropdownItems={dropdownItems}
+        mobileDropdownItems={mobileDropdownItems}
         navigationEntries={navigationEntries}
-        anchored={anchored}
         searchable={searchable}
-        handleSearchRequest={handleSearchRequest}
+        onSearchRequest={handleSearchRequest}
+        onLogout={handleLogout}
       />
     )
   }

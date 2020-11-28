@@ -15,45 +15,17 @@
 import { connect } from 'react-redux'
 
 import {
-  getOrganizationCollaboratorsList,
-  getOrganizationApiKeysList,
-} from '../../store/actions/organizations'
-import {
   selectSelectedOrganization,
   selectSelectedOrganizationId,
-  selectOrganizationCollaboratorsTotalCount,
-  selectOrganizationApiKeysTotalCount,
-  selectOrganizationApiKeysFetching,
-  selectOrganizationCollaboratorsFetching,
-} from '../../store/selectors/organizations'
+} from '@console/store/selectors/organizations'
 
 const mapStateToProps = state => {
   const orgId = selectSelectedOrganizationId(state)
-  const collaboratorsTotalCount = selectOrganizationCollaboratorsTotalCount(state, { id: orgId })
-  const apiKeysTotalCount = selectOrganizationApiKeysTotalCount(state, { id: orgId })
 
   return {
     orgId,
     organization: selectSelectedOrganization(state),
-    collaboratorsTotalCount,
-    apiKeysTotalCount,
-    statusBarFetching:
-      collaboratorsTotalCount === undefined ||
-      apiKeysTotalCount === undefined ||
-      selectOrganizationApiKeysFetching(state) ||
-      selectOrganizationCollaboratorsFetching(state),
   }
 }
 
-const mapDispatchToProps = dispatch => ({
-  loadData(orgId) {
-    dispatch(getOrganizationCollaboratorsList(orgId))
-    dispatch(getOrganizationApiKeysList(orgId))
-  },
-})
-
-export default Overview =>
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Overview)
+export default Overview => connect(mapStateToProps)(Overview)

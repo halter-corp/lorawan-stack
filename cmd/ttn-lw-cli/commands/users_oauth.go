@@ -19,10 +19,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 func getUserAndClientID(flagSet *pflag.FlagSet, args []string) (*ttnpb.UserIdentifiers, *ttnpb.ClientIdentifiers) {
@@ -78,7 +78,7 @@ var (
 			}
 			limit, page, opt, getTotal := withPagination(cmd.Flags())
 			res, err := ttnpb.NewOAuthAuthorizationRegistryClient(is).List(ctx, &ttnpb.ListOAuthClientAuthorizationsRequest{
-				UserIdentifiers: *usrID, Limit: limit, Page: page,
+				UserIdentifiers: *usrID, Limit: limit, Page: page, Order: getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -89,8 +89,9 @@ var (
 		},
 	}
 	oauthAuthorizationsDeleteCommand = &cobra.Command{
-		Use:   "delete [user-id] [client-id]",
-		Short: "Delete an OAuth authorization and all access tokens",
+		Use:     "delete [user-id] [client-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an OAuth authorization and all access tokens",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			usrID, cliID := getUserAndClientID(cmd.Flags(), args)
 			if usrID == nil {
@@ -156,6 +157,7 @@ var (
 				ClientIDs: *cliID,
 				Limit:     limit,
 				Page:      page,
+				Order:     getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -166,8 +168,9 @@ var (
 		},
 	}
 	oauthAccessTokensDeleteCommand = &cobra.Command{
-		Use:   "delete [user-id] [client-id]",
-		Short: "Delete an OAuth access token",
+		Use:     "delete [user-id] [client-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an OAuth access token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			usrID, cliID := getUserAndClientID(cmd.Flags(), args)
 			if usrID == nil {

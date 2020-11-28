@@ -84,6 +84,23 @@ func (m *Session) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "queued_application_downlinks":
+
+			for idx, item := range m.GetQueuedApplicationDownlinks() {
+				_, _ = idx, item
+
+				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return SessionValidationError{
+							field:  fmt.Sprintf("queued_application_downlinks[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
+			}
+
 		default:
 			return SessionValidationError{
 				field:  name,
@@ -269,14 +286,7 @@ func (m *MACParameters) ValidateFields(paths ...string) error {
 			}
 
 		case "ping_slot_data_rate_index":
-
-			if _, ok := DataRateIndex_name[int32(m.GetPingSlotDataRateIndex())]; !ok {
-				return MACParametersValidationError{
-					field:  "ping_slot_data_rate_index",
-					reason: "value must be one of the defined enum values",
-				}
-			}
-
+			// no validation rules for PingSlotDataRateIndex
 		case "beacon_frequency":
 
 			if val := m.GetBeaconFrequency(); val > 0 && val < 100000 {
@@ -352,6 +362,18 @@ func (m *MACParameters) ValidateFields(paths ...string) error {
 				if err := v.ValidateFields(subs...); err != nil {
 					return MACParametersValidationError{
 						field:  "adr_ack_delay_exponent",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "ping_slot_data_rate_index_value":
+
+			if v, ok := interface{}(m.GetPingSlotDataRateIndexValue()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return MACParametersValidationError{
+						field:  "ping_slot_data_rate_index_value",
 						reason: "embedded message failed validation",
 						cause:  err,
 					}
@@ -968,6 +990,19 @@ func (m *MACSettings) ValidateFields(paths ...string) error {
 
 			}
 
+		case "beacon_frequency":
+
+			if wrapper := m.GetBeaconFrequency(); wrapper != nil {
+
+				if wrapper.GetValue() < 100000 {
+					return MACSettingsValidationError{
+						field:  "beacon_frequency",
+						reason: "value must be greater than or equal to 100000",
+					}
+				}
+
+			}
+
 		case "class_c_timeout":
 
 			if v, ok := interface{}(m.GetClassCTimeout()).(interface{ ValidateFields(...string) error }); ok {
@@ -1201,6 +1236,44 @@ func (m *MACSettings) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "desired_ping_slot_data_rate_index":
+
+			if v, ok := interface{}(m.GetDesiredPingSlotDataRateIndex()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return MACSettingsValidationError{
+						field:  "desired_ping_slot_data_rate_index",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "desired_ping_slot_frequency":
+
+			if wrapper := m.GetDesiredPingSlotFrequency(); wrapper != nil {
+
+				if wrapper.GetValue() < 100000 {
+					return MACSettingsValidationError{
+						field:  "desired_ping_slot_frequency",
+						reason: "value must be greater than or equal to 100000",
+					}
+				}
+
+			}
+
+		case "desired_beacon_frequency":
+
+			if wrapper := m.GetDesiredBeaconFrequency(); wrapper != nil {
+
+				if wrapper.GetValue() < 100000 {
+					return MACSettingsValidationError{
+						field:  "desired_beacon_frequency",
+						reason: "value must be greater than or equal to 100000",
+					}
+				}
+
+			}
+
 		default:
 			return MACSettingsValidationError{
 				field:  name,
@@ -1338,10 +1411,13 @@ func (m *MACState) ValidateFields(paths ...string) error {
 			// no validation rules for LastDevStatusFCntUp
 		case "ping_slot_periodicity":
 
-			if _, ok := PingSlotPeriod_name[int32(m.GetPingSlotPeriodicity())]; !ok {
-				return MACStateValidationError{
-					field:  "ping_slot_periodicity",
-					reason: "value must be one of the defined enum values",
+			if v, ok := interface{}(m.GetPingSlotPeriodicity()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return MACStateValidationError{
+						field:  "ping_slot_periodicity",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
 				}
 			}
 
@@ -1443,6 +1519,105 @@ func (m *MACState) ValidateFields(paths ...string) error {
 					if err := v.ValidateFields(subs...); err != nil {
 						return MACStateValidationError{
 							field:  fmt.Sprintf("recent_downlinks[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
+			}
+
+		case "last_network_initiated_downlink_at":
+
+			if v, ok := interface{}(m.GetLastNetworkInitiatedDownlinkAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return MACStateValidationError{
+						field:  "last_network_initiated_downlink_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "rejected_adr_data_rate_indexes":
+
+			if len(m.GetRejectedADRDataRateIndexes()) > 15 {
+				return MACStateValidationError{
+					field:  "rejected_adr_data_rate_indexes",
+					reason: "value must contain no more than 15 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetRejectedADRDataRateIndexes() {
+				_, _ = idx, item
+
+				if _, ok := DataRateIndex_name[int32(item)]; !ok {
+					return MACStateValidationError{
+						field:  fmt.Sprintf("rejected_adr_data_rate_indexes[%v]", idx),
+						reason: "value must be one of the defined enum values",
+					}
+				}
+
+			}
+
+		case "rejected_adr_tx_power_indexes":
+
+			if len(m.GetRejectedADRTxPowerIndexes()) > 15 {
+				return MACStateValidationError{
+					field:  "rejected_adr_tx_power_indexes",
+					reason: "value must contain no more than 15 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetRejectedADRTxPowerIndexes() {
+				_, _ = idx, item
+
+				if item > 15 {
+					return MACStateValidationError{
+						field:  fmt.Sprintf("rejected_adr_tx_power_indexes[%v]", idx),
+						reason: "value must be less than or equal to 15",
+					}
+				}
+
+			}
+
+		case "rejected_frequencies":
+
+			for idx, item := range m.GetRejectedFrequencies() {
+				_, _ = idx, item
+
+				if item < 100000 {
+					return MACStateValidationError{
+						field:  fmt.Sprintf("rejected_frequencies[%v]", idx),
+						reason: "value must be greater than or equal to 100000",
+					}
+				}
+
+			}
+
+		case "last_downlink_at":
+
+			if v, ok := interface{}(m.GetLastDownlinkAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return MACStateValidationError{
+						field:  "last_downlink_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "rejected_data_rate_ranges":
+
+			for key, val := range m.GetRejectedDataRateRanges() {
+				_ = val
+
+				// no validation rules for RejectedDataRateRanges[key]
+
+				if v, ok := interface{}(val).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return MACStateValidationError{
+							field:  fmt.Sprintf("rejected_data_rate_ranges[%v]", key),
 							reason: "embedded message failed validation",
 							cause:  err,
 						}
@@ -2122,6 +2297,20 @@ func (m *EndDevice) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "skip_payload_crypto":
+			// no validation rules for SkipPayloadCrypto
+		case "skip_payload_crypto_override":
+
+			if v, ok := interface{}(m.GetSkipPayloadCryptoOverride()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EndDeviceValidationError{
+						field:  "skip_payload_crypto_override",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		default:
 			return EndDeviceValidationError{
 				field:  name,
@@ -2723,7 +2912,14 @@ func (m *ListEndDevicesRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "order":
-			// no validation rules for Order
+
+			if _, ok := _ListEndDevicesRequest_Order_InLookup[m.GetOrder()]; !ok {
+				return ListEndDevicesRequestValidationError{
+					field:  "order",
+					reason: "value must be in list [ device_id -device_id join_eui -join_eui dev_eui -dev_eui name -name description -description created_at -created_at]",
+				}
+			}
+
 		case "limit":
 
 			if m.GetLimit() > 1000 {
@@ -2800,6 +2996,22 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListEndDevicesRequestValidationError{}
+
+var _ListEndDevicesRequest_Order_InLookup = map[string]struct{}{
+	"":             {},
+	"device_id":    {},
+	"-device_id":   {},
+	"join_eui":     {},
+	"-join_eui":    {},
+	"dev_eui":      {},
+	"-dev_eui":     {},
+	"name":         {},
+	"-name":        {},
+	"description":  {},
+	"-description": {},
+	"created_at":   {},
+	"-created_at":  {},
+}
 
 // ValidateFields checks the field values on SetEndDeviceRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3537,6 +3749,20 @@ func (m *MACState_JoinAccept) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "correlation_ids":
+
+			for idx, item := range m.GetCorrelationIDs() {
+				_, _ = idx, item
+
+				if utf8.RuneCountInString(item) > 100 {
+					return MACState_JoinAcceptValidationError{
+						field:  fmt.Sprintf("correlation_ids[%v]", idx),
+						reason: "value length must be at most 100 runes",
+					}
+				}
+
+			}
+
 		default:
 			return MACState_JoinAcceptValidationError{
 				field:  name,
@@ -3602,3 +3828,207 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MACState_JoinAcceptValidationError{}
+
+// ValidateFields checks the field values on MACState_DataRateRange with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *MACState_DataRateRange) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = MACState_DataRateRangeFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "min_data_rate_index":
+
+			if _, ok := DataRateIndex_name[int32(m.GetMinDataRateIndex())]; !ok {
+				return MACState_DataRateRangeValidationError{
+					field:  "min_data_rate_index",
+					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "max_data_rate_index":
+
+			if _, ok := DataRateIndex_name[int32(m.GetMaxDataRateIndex())]; !ok {
+				return MACState_DataRateRangeValidationError{
+					field:  "max_data_rate_index",
+					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		default:
+			return MACState_DataRateRangeValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// MACState_DataRateRangeValidationError is the validation error returned by
+// MACState_DataRateRange.ValidateFields if the designated constraints aren't met.
+type MACState_DataRateRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MACState_DataRateRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MACState_DataRateRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MACState_DataRateRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MACState_DataRateRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MACState_DataRateRangeValidationError) ErrorName() string {
+	return "MACState_DataRateRangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MACState_DataRateRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMACState_DataRateRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MACState_DataRateRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MACState_DataRateRangeValidationError{}
+
+// ValidateFields checks the field values on MACState_DataRateRanges with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *MACState_DataRateRanges) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = MACState_DataRateRangesFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "ranges":
+
+			if len(m.GetRanges()) < 1 {
+				return MACState_DataRateRangesValidationError{
+					field:  "ranges",
+					reason: "value must contain at least 1 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetRanges() {
+				_, _ = idx, item
+
+				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return MACState_DataRateRangesValidationError{
+							field:  fmt.Sprintf("ranges[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
+			}
+
+		default:
+			return MACState_DataRateRangesValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// MACState_DataRateRangesValidationError is the validation error returned by
+// MACState_DataRateRanges.ValidateFields if the designated constraints aren't met.
+type MACState_DataRateRangesValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MACState_DataRateRangesValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MACState_DataRateRangesValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MACState_DataRateRangesValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MACState_DataRateRangesValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MACState_DataRateRangesValidationError) ErrorName() string {
+	return "MACState_DataRateRangesValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MACState_DataRateRangesValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMACState_DataRateRanges.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MACState_DataRateRangesValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MACState_DataRateRangesValidationError{}

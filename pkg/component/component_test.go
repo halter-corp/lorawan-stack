@@ -26,13 +26,13 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/log/handler/memory"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/log/handler/memory"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/web"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -54,8 +54,7 @@ func TestLogger(t *testing.T) {
 
 	mem := memory.New()
 
-	logger, err := log.NewLogger(log.WithHandler(mem))
-	a.So(err, should.BeNil)
+	logger := log.NewLogger(log.WithHandler(mem))
 
 	// Component logger
 	{
@@ -148,8 +147,10 @@ func TestHTTP(t *testing.T) {
 		certContent, err := ioutil.ReadFile("testdata/serverca.pem")
 		a.So(err, should.BeNil)
 		certPool.AppendCertsFromPEM(certContent)
-		client := http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{RootCAs: certPool}},
+		client := http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{RootCAs: certPool},
+			},
 		}
 
 		{

@@ -13,8 +13,17 @@
 // limitations under the License.
 
 import { createLogic } from 'redux-logic'
-import * as user from '../../actions/user'
-import { isUnauthenticatedError } from '../../../../lib/errors/utils'
+import * as Sentry from '@sentry/browser'
+
+import { error } from '@ttn-lw/lib/log'
+import {
+  isUnauthenticatedError,
+  isInvalidArgumentError,
+  getBackendErrorId,
+  isUnknown,
+} from '@ttn-lw/lib/errors/utils'
+
+import { clear as clearAccessToken } from '@console/lib/access-token'
 
 const getResultActionFromType = function(typeString, status) {
   if (typeString instanceof Array) {
@@ -29,11 +38,12 @@ const getResultActionFromType = function(typeString, status) {
 
 /**
  * Logic creator for request logics, it will handle promise resolution, as well
- * as result action dispatch automatically
- * @param {Object} options - The logic options (to be passed to `createLogic()`)
- * @param {(string\|function)} successType - The success action type or action creator
- * @param {(string\|function)} failType - The fail action type or action creator
- * @returns {Object} The `redux-logic` (decorated) logic
+ * as result action dispatch automatically.
+ *
+ * @param {object} options - The logic options (to be passed to `createLogic()`).
+ * @param {(string|Function)} successType - The success action type or action creator.
+ * @param {(string|Function)} failType - The fail action type or action creator.
+ * @returns {object} The `redux-logic` (decorated) logic.
  */
 const createRequestLogic = function(
   options,
@@ -62,10 +72,10 @@ const createRequestLogic = function(
       try {
         const res = await options.process(deps, dispatch)
 
-        // After successful request, dispatch success action
+        // After successful request, dispatch success action.
         dispatch(successAction(res))
 
-        // If we have a promise attached, resolve it
+        // If we have a promise attached, resolve it.
         if (promiseAttached) {
           const {
             meta: { _resolve },
@@ -73,15 +83,33 @@ const createRequestLogic = function(
           _resolve(res)
         }
       } catch (e) {
+        error(e) // Log the error if in development mode.
+
         if (isUnauthenticatedError(e)) {
-          // If there was an unauthenticated error, log the user out
-          dispatch(user.logoutSuccess())
+          // If there was an unauthenticated error, the access token is not
+          // valid and we can delete it. Reloading will then initiate the auth
+          // flow.
+          clearAccessToken()
+          window.location.reload()
         } else {
-          // Otherweise, dispatch the fail action
+          // Otherwise, dispatch the fail action and report it to Sentry.
+          if (isInvalidArgumentError(e)) {
+            Sentry.withScope(scope => {
+              scope.setExtras(e)
+              const fingerprint = getBackendErrorId(e)
+              scope.setFingerprint(fingerprint)
+              Sentry.captureException(new Error(fingerprint))
+            })
+          } else if (isUnknown(e)) {
+            Sentry.withScope(scope => {
+              scope.setExtras(e)
+              Sentry.captureException(e)
+            })
+          }
           dispatch(failAction(e))
         }
 
-        // If we have a promise attached, reject it
+        // If we have a promise attached, reject it.
         if (promiseAttached) {
           const {
             meta: { _reject },

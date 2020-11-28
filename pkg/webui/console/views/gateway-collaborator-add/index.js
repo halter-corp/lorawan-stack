@@ -18,11 +18,18 @@ import bind from 'autobind-decorator'
 import { connect } from 'react-redux'
 import { push } from 'connected-react-router'
 
-import PageTitle from '../../../components/page-title'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import sharedMessages from '../../../lib/shared-messages'
-import CollaboratorForm from '../../components/collaborator-form'
+import api from '@console/api'
+
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
+
+import CollaboratorForm from '@console/components/collaborator-form'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getGatewaysRightsList } from '@console/store/actions/gateways'
 
 import {
   selectSelectedGatewayId,
@@ -30,25 +37,19 @@ import {
   selectGatewayPseudoRights,
   selectGatewayRightsFetching,
   selectGatewayRightsError,
-} from '../../store/selectors/gateways'
-
-import { getGatewaysRightsList } from '../../store/actions/gateways'
-import api from '../../api'
+} from '@console/store/selectors/gateways'
+import { selectSelectedCollaborator } from '@console/store/selectors/collaborators'
 
 @connect(
-  function(state, props) {
-    const { collaborators } = state
-
-    return {
-      gtwId: selectSelectedGatewayId(state),
-      collaborators: collaborators.gateways.collaborators,
-      fetching: selectGatewayRightsFetching(state),
-      error: selectGatewayRightsError(state),
-      rights: selectGatewayRights(state),
-      pseudoRights: selectGatewayPseudoRights(state),
-    }
-  },
-  (dispatch, ownProps) => ({
+  state => ({
+    gtwId: selectSelectedGatewayId(state),
+    collaborators: selectSelectedCollaborator(state),
+    fetching: selectGatewayRightsFetching(state),
+    error: selectGatewayRightsError(state),
+    rights: selectGatewayRights(state),
+    pseudoRights: selectGatewayPseudoRights(state),
+  }),
+  dispatch => ({
     getGatewaysRightsList: gtwId => dispatch(getGatewaysRightsList(gtwId)),
     redirectToList: gtwId => dispatch(push(`/gateways/${gtwId}/collaborators`)),
   }),
@@ -60,22 +61,23 @@ import api from '../../api'
     redirectToList: () => dispatchProps.redirectToList(stateProps.gtwId),
   }),
 )
-@withBreadcrumb('gtws.single.collaborators.add', function(props) {
+@withBreadcrumb('gtws.single.collaborators.add', props => {
   const gtwId = props.gtwId
-  return (
-    <Breadcrumb
-      path={`/gateways/${gtwId}/collaborators/add`}
-      icon="add"
-      content={sharedMessages.add}
-    />
-  )
+  return <Breadcrumb path={`/gateways/${gtwId}/collaborators/add`} content={sharedMessages.add} />
 })
-@bind
 export default class GatewayCollaboratorAdd extends React.Component {
+  static propTypes = {
+    gtwId: PropTypes.string.isRequired,
+    pseudoRights: PropTypes.rights.isRequired,
+    redirectToList: PropTypes.func.isRequired,
+    rights: PropTypes.rights.isRequired,
+  }
+
   state = {
     error: '',
   }
 
+  @bind
   handleSubmit(collaborator) {
     const { gtwId } = this.props
 

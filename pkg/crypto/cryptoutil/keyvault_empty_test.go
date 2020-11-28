@@ -19,10 +19,10 @@ import (
 
 	"github.com/smartystreets/assertions"
 
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoutil"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestEmptyKeyVault(t *testing.T) {
@@ -32,6 +32,12 @@ func TestEmptyKeyVault(t *testing.T) {
 	a.So(errors.IsNotFound(err), should.BeTrue)
 
 	_, err = cryptoutil.EmptyKeyVault.Unwrap(test.Context(), []byte{0x1, 0x2}, "test")
+	a.So(errors.IsNotFound(err), should.BeTrue)
+
+	_, err = cryptoutil.EmptyKeyVault.Encrypt(test.Context(), []byte{0x1, 0x2}, "test")
+	a.So(errors.IsNotFound(err), should.BeTrue)
+
+	_, err = cryptoutil.EmptyKeyVault.Decrypt(test.Context(), []byte{0x1, 0x2}, "test")
 	a.So(errors.IsNotFound(err), should.BeTrue)
 
 	_, err = cryptoutil.EmptyKeyVault.GetCertificate(test.Context(), "test")

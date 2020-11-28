@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // ApplicationStore interface for storing Applications.
@@ -90,6 +90,7 @@ type OrganizationStore interface {
 type UserStore interface {
 	CreateUser(ctx context.Context, usr *ttnpb.User) (*ttnpb.User, error)
 	FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.User, error)
+	ListAdmins(ctx context.Context, fieldMask *types.FieldMask) ([]*ttnpb.User, error)
 	GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fieldMask *types.FieldMask) (*ttnpb.User, error)
 	UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *types.FieldMask) (*ttnpb.User, error)
 	DeleteUser(ctx context.Context, id *ttnpb.UserIdentifiers) error
@@ -102,6 +103,7 @@ type UserSessionStore interface {
 	CreateSession(ctx context.Context, sess *ttnpb.UserSession) (*ttnpb.UserSession, error)
 	FindSessions(ctx context.Context, userIDs *ttnpb.UserIdentifiers) ([]*ttnpb.UserSession, error)
 	GetSession(ctx context.Context, userIDs *ttnpb.UserIdentifiers, sessionID string) (*ttnpb.UserSession, error)
+	GetSessionByID(ctx context.Context, tokenID string) (*ttnpb.UserSession, error)
 	UpdateSession(ctx context.Context, sess *ttnpb.UserSession) (*ttnpb.UserSession, error)
 	DeleteSession(ctx context.Context, userIDs *ttnpb.UserIdentifiers, sessionID string) error
 }
@@ -180,4 +182,12 @@ type ContactInfoStore interface {
 	CreateValidation(ctx context.Context, validation *ttnpb.ContactInfoValidation) (*ttnpb.ContactInfoValidation, error)
 	// Confirm a validation. Only the ID and Token need to be set.
 	Validate(ctx context.Context, validation *ttnpb.ContactInfoValidation) error
+}
+
+// MigrationStore interface for migration history.
+type MigrationStore interface {
+	CreateMigration(ctx context.Context, migration *Migration) error
+	FindMigrations(ctx context.Context) ([]*Migration, error)
+	GetMigration(ctx context.Context, id string) (*Migration, error)
+	DeleteMigration(ctx context.Context, id string) error
 }

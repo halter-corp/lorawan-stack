@@ -22,19 +22,15 @@
 .tab-item
   display: flex
   white-space: nowrap
-  padding: $cs.s $cs.l
+  padding: $cs.m $cs.l
   text-align: center
   position: relative
   cursor: pointer
   user-select: none
-  color: $tc-subtle-gray
   transition: color $ad.xs
 
-  &:not(.tab-item-active):hover
-    color: $tc-deep-gray
-
   &-narrow
-    padding: $cs.l $cs.m
+    padding: $cs.s $cs.m
 
   &-disabled
     cursor: not-allowed
@@ -45,4 +41,4 @@
 
   &-active
     pseudo-border(3px, $c-active-blue)
-    color: $c-active-blue
+    color: $tc-active

@@ -13,32 +13,40 @@
 // limitations under the License.
 
 import React, { Component } from 'react'
+import { connect } from 'react-redux'
 
-import sharedMessages from '../../../lib/shared-messages'
-import Message from '../../../lib/components/message'
-import PropTypes from '../../../lib/prop-types'
+import Message from '@ttn-lw/lib/components/message'
 
-import FetchTable from '../fetch-table'
+import FetchTable from '@console/containers/fetch-table'
 
-import { getOrganizationsList } from '../../../console/store/actions/organizations'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { checkFromState, mayCreateOrganizations } from '@console/lib/feature-checks'
+
+import { getOrganizationsList } from '@console/store/actions/organizations'
+
+import { selectUserIsAdmin } from '@console/store/selectors/user'
 import {
   selectOrganizations,
   selectOrganizationsTotalCount,
   selectOrganizationsFetching,
   selectOrganizationsError,
-} from '../../store/selectors/organizations'
-import { checkFromState, mayCreateOrganizations } from '../../lib/feature-checks'
+} from '@console/store/selectors/organizations'
 
 const headers = [
   {
     name: 'ids.organization_id',
     displayName: sharedMessages.id,
     width: 25,
+    sortable: true,
+    sortKey: 'organization_id',
   },
   {
     name: 'name',
     displayName: sharedMessages.name,
     width: 25,
+    sortable: true,
   },
   {
     name: 'description',
@@ -47,15 +55,35 @@ const headers = [
   },
 ]
 
-export default class OrganizationsTable extends Component {
+const OWNED_TAB = 'owned'
+const ALL_TAB = 'all'
+const tabs = [
+  {
+    title: sharedMessages.organizations,
+    name: OWNED_TAB,
+  },
+  {
+    title: sharedMessages.allAdmin,
+    name: ALL_TAB,
+  },
+]
+
+class OrganizationsTable extends Component {
   static propTypes = {
+    isAdmin: PropTypes.bool.isRequired,
     pageSize: PropTypes.number.isRequired,
   }
 
   constructor(props) {
     super(props)
 
-    this.getOrganizationsList = params => getOrganizationsList(params, ['name', 'description'])
+    this.getOrganizationsList = params => {
+      const { tab, query } = params
+
+      return getOrganizationsList(params, ['name', 'description'], {
+        isSearch: tab === ALL_TAB || query.length > 0,
+      })
+    }
   }
 
   baseDataSelector(state) {
@@ -69,7 +97,7 @@ export default class OrganizationsTable extends Component {
   }
 
   render() {
-    const { pageSize } = this.props
+    const { pageSize, isAdmin } = this.props
 
     return (
       <FetchTable
@@ -78,10 +106,15 @@ export default class OrganizationsTable extends Component {
         addMessage={sharedMessages.addOrganization}
         tableTitle={<Message content={sharedMessages.organizations} />}
         getItemsAction={this.getOrganizationsList}
-        searchItemsAction={this.getOrganizationsList}
         baseDataSelector={this.baseDataSelector}
         pageSize={pageSize}
+        searchable
+        tabs={isAdmin ? tabs : []}
       />
     )
   }
 }
+
+export default connect(state => ({
+  isAdmin: selectUserIsAdmin(state),
+}))(OrganizationsTable)

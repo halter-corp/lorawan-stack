@@ -20,9 +20,9 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc"
 )
 
@@ -160,6 +160,18 @@ func TestOrganizationsCRUD(t *testing.T) {
 
 		userID, creds := population.Users[defaultUserIdx].UserIdentifiers, userCreds(defaultUserIdx)
 		credsWithoutRights := userCreds(defaultUserIdx, "key without rights")
+
+		is.config.UserRights.CreateOrganizations = false
+
+		_, err := reg.Create(ctx, &ttnpb.CreateOrganizationRequest{
+			Organization: ttnpb.Organization{
+				OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationID: "foo"},
+				Name:                    "Foo Organization",
+			},
+			Collaborator: *userID.OrganizationOrUserIdentifiers(),
+		}, creds)
+
+		is.config.UserRights.CreateOrganizations = true
 
 		created, err := reg.Create(ctx, &ttnpb.CreateOrganizationRequest{
 			Organization: ttnpb.Organization{

@@ -16,19 +16,23 @@ import React from 'react'
 import { Container, Row, Col } from 'react-grid-system'
 import bind from 'autobind-decorator'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import ApiKeysTable from '../../containers/api-keys-table'
-import sharedMessages from '../../../lib/shared-messages'
-import PropTypes from '../../../lib/prop-types'
+import PAGE_SIZES from '@console/constants/page-sizes'
 
-import { getGatewayApiKeysList } from '../../store/actions/gateways'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+
+import ApiKeysTable from '@console/containers/api-keys-table'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { getApiKeysList } from '@console/store/actions/api-keys'
+
 import {
-  selectGatewayApiKeys,
-  selectGatewayApiKeysTotalCount,
-  selectGatewayApiKeysFetching,
-} from '../../store/selectors/gateways'
-
-import PAGE_SIZES from '../../constants/page-sizes'
+  selectApiKeys,
+  selectApiKeysTotalCount,
+  selectApiKeysFetching,
+  selectApiKeysError,
+} from '@console/store/selectors/api-keys'
 
 export default class GatewayApiKeys extends React.Component {
   static propTypes = {
@@ -39,7 +43,7 @@ export default class GatewayApiKeys extends React.Component {
     super(props)
 
     const { gtwId } = props.match.params
-    this.getGatewayApiKeysList = filters => getGatewayApiKeysList(gtwId, filters)
+    this.getApiKeysList = filters => getApiKeysList('gateway', gtwId, filters)
   }
 
   @bind
@@ -48,9 +52,10 @@ export default class GatewayApiKeys extends React.Component {
 
     const id = { id: gtwId }
     return {
-      keys: selectGatewayApiKeys(state, id),
-      totalCount: selectGatewayApiKeysTotalCount(state, id),
-      fetching: selectGatewayApiKeysFetching(state),
+      keys: selectApiKeys(state, id),
+      totalCount: selectApiKeysTotalCount(state, id),
+      fetching: selectApiKeysFetching(state),
+      error: selectApiKeysError(state),
     }
   }
 
@@ -66,7 +71,7 @@ export default class GatewayApiKeys extends React.Component {
               entityId={gtwId}
               pageSize={PAGE_SIZES.REGULAR}
               baseDataSelector={this.baseDataSelector}
-              getItemsAction={this.getGatewayApiKeysList}
+              getItemsAction={this.getApiKeysList}
             />
           </Col>
         </Row>

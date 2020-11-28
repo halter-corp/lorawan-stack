@@ -13,10 +13,12 @@
 // limitations under the License.
 
 import React from 'react'
-import bind from 'autobind-decorator'
 import classnames from 'classnames'
 
-import Message from '../../../lib/components/message'
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import Section from '../section'
 import SortButton from '../sort-button'
 import Row from '../row'
@@ -24,7 +26,7 @@ import { HeadCell, DataCell } from '../cell'
 
 import style from './table.styl'
 
-/* Empty message to render when no entries provided */
+/* Empty message to render when no entries provided. */
 const Empty = ({ className, colSpan, message }) => (
   <Row className={classnames(className, style.emptyMessageRow)} clickable={false}>
     <DataCell colSpan={colSpan}>
@@ -33,7 +35,18 @@ const Empty = ({ className, colSpan, message }) => (
   </Row>
 )
 
-@bind
+Empty.propTypes = {
+  className: PropTypes.string,
+  colSpan: PropTypes.number,
+  message: PropTypes.message,
+}
+
+Empty.defaultProps = {
+  className: undefined,
+  colSpan: 1,
+  message: undefined,
+}
+
 class Table extends React.Component {
   static Head = props => <Section component="thead" {...props} />
   static Body = props => <Section component="tbody" {...props} />
@@ -45,14 +58,27 @@ class Table extends React.Component {
   static Empty = Empty
 
   render() {
-    const { className, children, ...rest } = this.props
+    const { className, children, minWidth, ...rest } = this.props
     const tableClassNames = classnames(className, style.table)
+    const minWidthProp = Boolean(minWidth) ? { style: { minWidth } } : {}
     return (
-      <table className={tableClassNames} {...rest}>
+      <table className={tableClassNames} {...minWidthProp} {...rest}>
         {children}
       </table>
     )
   }
+}
+
+Table.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+  minWidth: PropTypes.string,
+}
+
+Table.defaultProps = {
+  className: undefined,
+  children: undefined,
+  minWidth: undefined,
 }
 
 export default Table

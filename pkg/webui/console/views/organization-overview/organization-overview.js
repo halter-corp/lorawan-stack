@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,46 +15,36 @@
 import React from 'react'
 import { Col, Row, Container } from 'react-grid-system'
 
-import sharedMessages from '../../../lib/shared-messages'
-import DateTime from '../../../lib/components/date-time'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import PropTypes from '../../../lib/prop-types'
-import OrganizationEvents from '../../containers/organization-events'
-import DataSheet from '../../../components/data-sheet'
-import EntityTitleSection from '../../components/entity-title-section'
-import KeyValueTag from '../../components/key-value-tag'
-import Spinner from '../../../components/spinner'
-import Message from '../../../lib/components/message'
-import withRequest from '../../../lib/components/with-request'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import DataSheet from '@ttn-lw/components/data-sheet'
 
-import { mayViewOrganizationInformation } from '../../lib/feature-checks'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import DateTime from '@ttn-lw/lib/components/date-time'
+
+import OrganizationTitleSection from '@console/containers/organization-title-section'
+import OrganizationEvents from '@console/containers/organization-events'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { mayViewOrganizationInformation } from '@console/lib/feature-checks'
+
+import style from './organization-overview.styl'
 
 @withFeatureRequirement(mayViewOrganizationInformation, {
   redirect: '/',
 })
-@withRequest(({ orgId, loadData }) => loadData(orgId), () => false)
 class Overview extends React.Component {
   static propTypes = {
-    apiKeysTotalCount: PropTypes.number,
-    collaboratorsTotalCount: PropTypes.number,
     orgId: PropTypes.string.isRequired,
     organization: PropTypes.organization.isRequired,
-    statusBarFetching: PropTypes.bool.isRequired,
-  }
-
-  static defaultProps = {
-    collaboratorsTotalCount: undefined,
-    apiKeysTotalCount: undefined,
   }
 
   render() {
     const {
       orgId,
-      organization: { ids, name, description, created_at, updated_at },
-      collaboratorsTotalCount,
-      apiKeysTotalCount,
-      statusBarFetching,
+      organization: { ids, created_at, updated_at },
     } = this.props
 
     const sheetData = [
@@ -74,32 +64,16 @@ class Overview extends React.Component {
     ]
 
     return (
-      <React.Fragment>
-        <EntityTitleSection
-          entityId={orgId}
-          entityName={name}
-          description={description}
-          creationDate={created_at}
-        >
-          {statusBarFetching ? (
-            <Spinner after={0} faded micro inline>
-              <Message content={sharedMessages.fetching} />
-            </Spinner>
-          ) : (
-            <React.Fragment>
-              <KeyValueTag
-                icon="collaborators"
-                value={collaboratorsTotalCount}
-                keyMessage={sharedMessages.collaboratorCounted}
-              />
-              <KeyValueTag
-                icon="api_keys"
-                value={apiKeysTotalCount}
-                keyMessage={sharedMessages.apiKeyCounted}
-              />
-            </React.Fragment>
-          )}
-        </EntityTitleSection>
+      <>
+        <div className={style.titleSection}>
+          <Container>
+            <Row>
+              <Col sm={12}>
+                <OrganizationTitleSection orgId={ids.organization_id} />
+              </Col>
+            </Row>
+          </Container>
+        </div>
         <Container>
           <IntlHelmet title={sharedMessages.overview} />
           <Row>
@@ -111,7 +85,7 @@ class Overview extends React.Component {
             </Col>
           </Row>
         </Container>
-      </React.Fragment>
+      </>
     )
   }
 }

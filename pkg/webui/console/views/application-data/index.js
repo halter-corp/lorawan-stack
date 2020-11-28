@@ -15,22 +15,28 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { defineMessages } from 'react-intl'
-import { Container, Col, Row } from 'react-grid-system'
 
-import PageTitle from '../../../components/page-title'
-import sharedMessages from '../../../lib/shared-messages'
-import Breadcrumb from '../../../components/breadcrumbs/breadcrumb'
-import { withBreadcrumb } from '../../../components/breadcrumbs/context'
-import ApplicationEvents from '../../containers/application-events'
-import withFeatureRequirement from '../../lib/components/with-feature-requirement'
+import PageTitle from '@ttn-lw/components/page-title'
+import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
+import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 
-import { mayViewApplicationEvents } from '../../lib/feature-checks'
-import { selectSelectedApplicationId } from '../../store/selectors/applications'
+import WithRootClass from '@ttn-lw/lib/components/with-root-class'
 
-import style from './application-data.styl'
+import ApplicationEvents from '@console/containers/application-events'
+
+import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
+
+import style from '@console/views/app/app.styl'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { mayViewApplicationEvents } from '@console/lib/feature-checks'
+
+import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 const m = defineMessages({
-  appData: 'Application Data',
+  appData: 'Application data',
 })
 
 @connect(state => ({ appId: selectSelectedApplicationId(state) }))
@@ -38,27 +44,21 @@ const m = defineMessages({
   redirect: ({ appId }) => `/applications/${appId}`,
 })
 @withBreadcrumb('apps.single.data', function(props) {
-  return (
-    <Breadcrumb
-      path={`/applications/${props.appId}/data`}
-      icon="data"
-      content={sharedMessages.data}
-    />
-  )
+  return <Breadcrumb path={`/applications/${props.appId}/data`} content={sharedMessages.liveData} />
 })
 export default class Data extends React.Component {
+  static propTypes = {
+    appId: PropTypes.string.isRequired,
+  }
+
   render() {
     const { appId } = this.props
 
     return (
-      <Container>
+      <WithRootClass className={style.stageFlex} id="stage">
         <PageTitle hideHeading title={m.appData} />
-        <Row>
-          <Col className={style.wrapper}>
-            <ApplicationEvents appId={appId} />
-          </Col>
-        </Row>
-      </Container>
+        <ApplicationEvents appId={appId} />
+      </WithRootClass>
     )
   }
 }

@@ -21,17 +21,19 @@ import (
 	"github.com/howeyc/gopass"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectUserFlags     = util.FieldMaskFlags(&ttnpb.User{})
 	setUserFlags        = util.FieldFlags(&ttnpb.User{})
 	profilePictureFlags = &pflag.FlagSet{}
+
+	selectAllUserFlags = util.SelectAllFlagSet("user")
 )
 
 func userIDFlags() *pflag.FlagSet {
@@ -58,6 +60,28 @@ func getUserID(flagSet *pflag.FlagSet, args []string) *ttnpb.UserIdentifiers {
 	return &ttnpb.UserIdentifiers{UserID: userID}
 }
 
+func printPasswordRequirements(msg *ttnpb.IsConfiguration_UserRegistration_PasswordRequirements) {
+	if msg == nil {
+		return
+	}
+	logger.Info("Password Requirements:")
+	if v := msg.GetMinLength().GetValue(); v > 0 {
+		logger.Infof("Minimum length: %d", v)
+	}
+	if v := msg.GetMaxLength().GetValue(); v > 0 {
+		logger.Infof("Maximum length: %d", v)
+	}
+	if v := msg.GetMinUppercase().GetValue(); v > 0 {
+		logger.Infof("Minimum uppercase: %d", v)
+	}
+	if v := msg.GetMinDigits().GetValue(); v > 0 {
+		logger.Infof("Minimum digits: %d", v)
+	}
+	if v := msg.GetMinSpecial().GetValue(); v > 0 {
+		logger.Infof("Minimum special characters: %d", v)
+	}
+}
+
 var errPasswordMismatch = errors.DefineInvalidArgument("password_mismatch", "password did not match")
 
 var (
@@ -66,11 +90,39 @@ var (
 		Aliases: []string{"user", "usr", "u"},
 		Short:   "User commands",
 	}
+	usersListCommand = &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List users",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.UserRegistry/List"])
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			limit, page, opt, getTotal := withPagination(cmd.Flags())
+			res, err := ttnpb.NewUserRegistryClient(is).List(ctx, &ttnpb.ListUsersRequest{
+				FieldMask: types.FieldMask{Paths: paths},
+				Limit:     limit,
+				Page:      page,
+				Order:     getOrder(cmd.Flags()),
+			}, opt)
+			if err != nil {
+				return err
+			}
+			getTotal()
+
+			return io.Write(os.Stdout, config.OutputFormat, res.Users)
+		},
+	}
 	usersSearchCommand = &cobra.Command{
 		Use:   "search",
 		Short: "Search for users",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchUsers"])
 
 			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
 			req.FieldMask.Paths = paths
@@ -98,6 +150,7 @@ var (
 				return errNoUserID
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.UserRegistry/Get"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -140,7 +193,23 @@ var (
 				return errNoUserID
 			}
 
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+
+			isConfig, err := ttnpb.NewIsClient(is).GetConfiguration(ctx, &ttnpb.GetIsConfigurationRequest{})
+			if err != nil {
+				if errors.IsUnimplemented(err) {
+					logger.Warn("Could not get user registration configuration from the server, but we can continue without it")
+				} else {
+					return err
+				}
+			}
+			registrationConfig := isConfig.GetConfiguration().GetUserRegistration()
+
 			if user.Password == "" {
+				printPasswordRequirements(registrationConfig.GetPasswordRequirements())
 				pw, err := gopass.GetPasswdPrompt("Please enter password:", true, os.Stdin, os.Stderr)
 				if err != nil {
 					return err
@@ -155,19 +224,17 @@ var (
 				}
 			}
 
-			if profilePicture, err := cmd.Flags().GetString("profile_picture"); err == nil && profilePicture != "" {
-				user.ProfilePicture, err = readPicture(profilePicture)
-				if err != nil {
-					return err
+			if !isConfig.GetConfiguration().GetProfilePicture().GetDisableUpload().GetValue() {
+				if profilePicture, err := cmd.Flags().GetString("profile_picture"); err == nil && profilePicture != "" {
+					user.ProfilePicture, err = readPicture(profilePicture)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
 			invitationToken, _ := cmd.Flags().GetString("invitation-token")
 
-			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
-			if err != nil {
-				return err
-			}
 			res, err := ttnpb.NewUserRegistryClient(is).Create(ctx, &ttnpb.CreateUserRequest{
 				User:            user,
 				InvitationToken: invitationToken,
@@ -176,13 +243,24 @@ var (
 				return err
 			}
 
-			return io.Write(os.Stdout, config.OutputFormat, res)
+			if err = io.Write(os.Stdout, config.OutputFormat, res); err != nil {
+				return err
+			}
+
+			if registrationConfig.GetContactInfoValidation().GetRequired().GetValue() {
+				logger.Warn("You need to confirm your email address before you can use your user account")
+			}
+			if registrationConfig.GetAdminApproval().GetRequired().GetValue() {
+				logger.Warn("Your user account needs to be approved by an admin before you can use it")
+			}
+
+			return nil
 		}),
 	}
-	usersUpdateCommand = &cobra.Command{
-		Use:     "update [user-id]",
-		Aliases: []string{"set"},
-		Short:   "Update a user",
+	usersSetCommand = &cobra.Command{
+		Use:     "set [user-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			usrID := getUserID(cmd.Flags(), args)
 			if usrID == nil {
@@ -192,6 +270,13 @@ var (
 			if len(paths) == 0 {
 				logger.Warn("No fields selected, won't update anything")
 				return nil
+			}
+			if ttnpb.ContainsField("password", paths) {
+				logger.Warn("Most servers do not allow changing the password of a user like this.")
+				logger.Warnf("Use \"%s [user-id]\" to change your password.", usersUpdatePasswordCommand.CommandPath())
+				logger.Warnf("Use \"%s [user-id]\" if you forgot your password and want to request a temporary password.", usersForgotPasswordCommand.CommandPath())
+				logger.Warnf("Alternatively, admins may use \"%s [user-id] --temporary-password [pass]\" to set a temporary password for a user.", cmd.CommandPath())
+				logger.Warn("The user can then use this temporary password when changing their password.")
 			}
 			var user ttnpb.User
 			if err := util.SetFields(&user, setUserFlags); err != nil {
@@ -260,6 +345,20 @@ var (
 				return errNoUserID
 			}
 
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+
+			isConfig, err := ttnpb.NewIsClient(is).GetConfiguration(ctx, &ttnpb.GetIsConfigurationRequest{})
+			if err != nil {
+				if errors.IsUnimplemented(err) {
+					logger.Warn("Could not get password requirements from the server, but we can continue without knowing those")
+				} else {
+					return err
+				}
+			}
+
 			old, _ := cmd.Flags().GetString("old")
 			if old == "" {
 				pw, err := gopass.GetPasswdPrompt("Please enter old password:", true, os.Stdin, os.Stderr)
@@ -271,6 +370,7 @@ var (
 
 			new, _ := cmd.Flags().GetString("new")
 			if new == "" {
+				printPasswordRequirements(isConfig.GetConfiguration().GetUserRegistration().GetPasswordRequirements())
 				pw, err := gopass.GetPasswdPrompt("Please enter new password:", true, os.Stdin, os.Stderr)
 				if err != nil {
 					return err
@@ -279,10 +379,7 @@ var (
 			}
 
 			revokeAllAccess, _ := cmd.Flags().GetBool("revoke-all-access")
-			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
-			if err != nil {
-				return err
-			}
+
 			res, err := ttnpb.NewUserRegistryClient(is).UpdatePassword(ctx, &ttnpb.UpdateUserPasswordRequest{
 				UserIdentifiers: *usrID,
 				Old:             old,
@@ -297,8 +394,9 @@ var (
 		},
 	}
 	usersDeleteCommand = &cobra.Command{
-		Use:   "delete [user-id]",
-		Short: "Delete a user",
+		Use:     "delete [user-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			usrID := getUserID(cmd.Flags(), args)
 			if usrID == nil {
@@ -329,11 +427,18 @@ var (
 func init() {
 	profilePictureFlags.String("profile_picture", "", "upload the profile picture from this file")
 
+	usersListCommand.Flags().AddFlagSet(selectUserFlags)
+	usersListCommand.Flags().AddFlagSet(selectAllUserFlags)
+	usersListCommand.Flags().AddFlagSet(paginationFlags())
+	usersListCommand.Flags().AddFlagSet(orderFlags())
+	usersCommand.AddCommand(usersListCommand)
 	usersSearchCommand.Flags().AddFlagSet(searchFlags())
+	usersSearchCommand.Flags().AddFlagSet(selectAllUserFlags)
 	usersSearchCommand.Flags().AddFlagSet(selectUserFlags)
 	usersCommand.AddCommand(usersSearchCommand)
 	usersGetCommand.Flags().AddFlagSet(userIDFlags())
 	usersGetCommand.Flags().AddFlagSet(selectUserFlags)
+	usersGetCommand.Flags().AddFlagSet(selectAllUserFlags)
 	usersCommand.AddCommand(usersGetCommand)
 	usersCreateCommand.Flags().AddFlagSet(userIDFlags())
 	usersCreateCommand.Flags().AddFlagSet(setUserFlags)
@@ -342,11 +447,11 @@ func init() {
 	usersCreateCommand.Flags().Lookup("state").DefValue = ttnpb.STATE_APPROVED.String()
 	usersCreateCommand.Flags().String("invitation-token", "", "")
 	usersCommand.AddCommand(usersCreateCommand)
-	usersUpdateCommand.Flags().AddFlagSet(userIDFlags())
-	usersUpdateCommand.Flags().AddFlagSet(setUserFlags)
-	usersUpdateCommand.Flags().AddFlagSet(attributesFlags())
-	usersUpdateCommand.Flags().AddFlagSet(profilePictureFlags)
-	usersCommand.AddCommand(usersUpdateCommand)
+	usersSetCommand.Flags().AddFlagSet(userIDFlags())
+	usersSetCommand.Flags().AddFlagSet(setUserFlags)
+	usersSetCommand.Flags().AddFlagSet(attributesFlags())
+	usersSetCommand.Flags().AddFlagSet(profilePictureFlags)
+	usersCommand.AddCommand(usersSetCommand)
 	usersForgotPasswordCommand.Flags().AddFlagSet(userIDFlags())
 	usersForgotPasswordCommand.Flags().String("email", "", "")
 	usersCommand.AddCommand(usersForgotPasswordCommand)

@@ -21,11 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/band"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/frequencyplans"
-	"go.thethings.network/lorawan-stack/pkg/toa"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/band"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/toa"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
@@ -42,7 +43,15 @@ var (
 	// ScheduleTimeLong is a long time to send a downlink message to the gateway before it has to be transmitted.
 	// This time is comprised of a higher network latency and QueueDelay. This delay is used for pseudo-immediate
 	// scheduling, see ScheduleAnytime.
-	ScheduleTimeLong = 300*time.Millisecond + QueueDelay
+	ScheduleTimeLong = 500*time.Millisecond + QueueDelay
+
+	// scheduleMinRTTCount is the minimum number of observed round-trip times that are taken into account before using
+	// using their statistics for calculating an absolute time or determining whether scheduling is too late.
+	scheduleMinRTTCount = 5
+
+	// scheduleLateRTTPercentile is the percentile of round-trip times that is considered for determining whether
+	// scheduling is too late.
+	scheduleLateRTTPercentile = 90
 )
 
 // TimeSource is a source for getting a current time.
@@ -61,49 +70,101 @@ var SystemTimeSource = &systemTimeSource{}
 
 // RTTs provides round-trip times.
 type RTTs interface {
-	Stats() (min, max, median time.Duration, count int)
+	Stats(percentile int, ref time.Time) (min, max, median, np time.Duration, count int)
 }
+
+var (
+	errFrequencyPlansTimeOffAir     = errors.DefineInvalidArgument("frequency_plans_time_off_air", "frequency plans must have the same time off air value")
+	errFrequencyPlansOverlapSubBand = errors.DefineInvalidArgument("frequency_plans_overlap_sub_band", "frequency plans must not have overlapping sub bands")
+)
 
 // NewScheduler instantiates a new Scheduler for the given frequency plan.
 // If no time source is specified, the system time is used.
-func NewScheduler(ctx context.Context, fp *frequencyplans.FrequencyPlan, enforceDutyCycle bool, timeSource TimeSource) (*Scheduler, error) {
+func NewScheduler(ctx context.Context, fps map[string]*frequencyplans.FrequencyPlan, enforceDutyCycle bool, scheduleAnytimeDelay *time.Duration, timeSource TimeSource) (*Scheduler, error) {
+	logger := log.FromContext(ctx)
 	if timeSource == nil {
 		timeSource = SystemTimeSource
 	}
-	toa := fp.TimeOffAir
+
+	if scheduleAnytimeDelay == nil || *scheduleAnytimeDelay == 0 {
+		scheduleAnytimeDelay = &ScheduleTimeLong
+	} else if *scheduleAnytimeDelay < ScheduleTimeShort {
+		logger.WithFields(log.Fields(
+			"minimum", ScheduleTimeShort,
+			"requested", *scheduleAnytimeDelay,
+		)).Info("Requested scheduling delay is too small")
+		scheduleAnytimeDelay = &ScheduleTimeShort
+	}
+
+	var toa *frequencyplans.TimeOffAir
+	for _, fp := range fps {
+		if toa != nil && fp.TimeOffAir != *toa {
+			return nil, errFrequencyPlansTimeOffAir.New()
+		}
+		toa = &fp.TimeOffAir
+	}
+
 	if toa.Duration < QueueDelay {
 		toa.Duration = QueueDelay
 	}
+
 	s := &Scheduler{
-		clock:             &RolloverClock{},
-		respectsDwellTime: fp.RespectsDwellTime,
-		timeOffAir:        toa,
-		timeSource:        timeSource,
+		clock:                &RolloverClock{},
+		timeOffAir:           *toa,
+		fps:                  fps,
+		timeSource:           timeSource,
+		scheduleAnytimeDelay: *scheduleAnytimeDelay,
 	}
 	if enforceDutyCycle {
-		if subBands := fp.SubBands; len(subBands) > 0 {
-			for _, subBand := range subBands {
-				params := SubBandParameters{
-					MinFrequency: subBand.MinFrequency,
-					MaxFrequency: subBand.MaxFrequency,
-					DutyCycle:    subBand.DutyCycle,
+		for _, fp := range fps {
+			if subBands := fp.SubBands; len(subBands) > 0 {
+				for _, subBand := range subBands {
+					params := SubBandParameters{
+						MinFrequency: subBand.MinFrequency,
+						MaxFrequency: subBand.MaxFrequency,
+						DutyCycle:    subBand.DutyCycle,
+					}
+					sb := NewSubBand(params, s.clock, nil)
+					var isIdentical bool
+					for _, subBand := range s.subBands {
+						if subBand.IsIdentical(sb) {
+							isIdentical = true
+							break
+						}
+						if subBand.HasOverlap(sb) {
+							return nil, errFrequencyPlansOverlapSubBand.New()
+						}
+					}
+					if !isIdentical {
+						s.subBands = append(s.subBands, sb)
+					}
 				}
-				sb := NewSubBand(ctx, params, s.clock, nil)
-				s.subBands = append(s.subBands, sb)
-			}
-		} else {
-			band, err := band.GetByID(fp.BandID)
-			if err != nil {
-				return nil, err
-			}
-			for _, subBand := range band.SubBands {
-				params := SubBandParameters{
-					MinFrequency: subBand.MinFrequency,
-					MaxFrequency: subBand.MaxFrequency,
-					DutyCycle:    subBand.DutyCycle,
+			} else {
+				band, err := band.GetByID(fp.BandID)
+				if err != nil {
+					return nil, err
 				}
-				sb := NewSubBand(ctx, params, s.clock, nil)
-				s.subBands = append(s.subBands, sb)
+				for _, subBand := range band.SubBands {
+					params := SubBandParameters{
+						MinFrequency: subBand.MinFrequency,
+						MaxFrequency: subBand.MaxFrequency,
+						DutyCycle:    subBand.DutyCycle,
+					}
+					sb := NewSubBand(params, s.clock, nil)
+					var isIdentical bool
+					for _, subBand := range s.subBands {
+						if subBand.IsIdentical(sb) {
+							isIdentical = true
+							break
+						}
+						if subBand.HasOverlap(sb) {
+							return nil, errFrequencyPlansOverlapSubBand.New()
+						}
+					}
+					if !isIdentical {
+						s.subBands = append(s.subBands, sb)
+					}
+				}
 			}
 		}
 	} else {
@@ -111,21 +172,23 @@ func NewScheduler(ctx context.Context, fp *frequencyplans.FrequencyPlan, enforce
 			MinFrequency: 0,
 			MaxFrequency: math.MaxUint64,
 		}
-		sb := NewSubBand(ctx, noDutyCycleParams, s.clock, nil)
+		sb := NewSubBand(noDutyCycleParams, s.clock, nil)
 		s.subBands = append(s.subBands, sb)
 	}
+	go s.gc(ctx)
 	return s, nil
 }
 
 // Scheduler is a packet scheduler that takes time conflicts and sub-band restrictions into account.
 type Scheduler struct {
-	clock             *RolloverClock
-	respectsDwellTime func(isDownlink bool, frequency uint64, duration time.Duration) bool
-	timeOffAir        frequencyplans.TimeOffAir
-	timeSource        TimeSource
-	subBands          []*SubBand
-	mu                sync.RWMutex
-	emissions         Emissions
+	clock                *RolloverClock
+	fps                  map[string]*frequencyplans.FrequencyPlan
+	timeOffAir           frequencyplans.TimeOffAir
+	timeSource           TimeSource
+	subBands             []*SubBand
+	mu                   sync.RWMutex
+	emissions            Emissions
+	scheduleAnytimeDelay time.Duration
 }
 
 var errSubBandNotFound = errors.DefineFailedPrecondition("sub_band_not_found", "sub-band not found for frequency `{frequency}` Hz")
@@ -139,19 +202,60 @@ func (s *Scheduler) findSubBand(frequency uint64) (*SubBand, error) {
 	return nil, errSubBandNotFound.WithAttributes("frequency", frequency)
 }
 
-var (
-	errDwellTime = errors.DefineFailedPrecondition("dwell_time", "packet exceeds dwell time restriction")
-)
+func (s *Scheduler) gc(ctx context.Context) error {
+	ticker := time.NewTicker(DutyCycleWindow / 2)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			s.mu.RLock()
+			serverTime, ok := s.clock.FromServerTime(time.Now())
+			s.mu.RUnlock()
+			if !ok {
+				continue
+			}
+			to := serverTime - ConcentratorTime(DutyCycleWindow)
+			for _, subBand := range s.subBands {
+				subBand.gc(to)
+			}
+		}
+	}
+}
+
+var errDwellTime = errors.DefineFailedPrecondition("dwell_time", "packet exceeds dwell time restriction")
 
 func (s *Scheduler) newEmission(payloadSize int, settings ttnpb.TxSettings, starts ConcentratorTime) (Emission, error) {
 	d, err := toa.Compute(payloadSize, settings)
 	if err != nil {
 		return Emission{}, err
 	}
-	if !s.respectsDwellTime(true, settings.Frequency, d) {
-		return Emission{}, errDwellTime
+	for _, fp := range s.fps {
+		if fp.RespectsDwellTime(true, settings.Frequency, d) {
+			return NewEmission(starts, d), nil
+		}
 	}
-	return NewEmission(starts, d), nil
+	return Emission{}, errDwellTime.New()
+}
+
+// SubBandCount returns the number of sub bands in the scheduler.
+func (s *Scheduler) SubBandCount() int {
+	return len(s.subBands)
+}
+
+// syncWithUplinkToken synchronizes the clock using the given token.
+// If the given token does not provide enough information or if the latest clock sync is more recent, this method returns false.
+// This method assumes that the mutex is held.
+func (s *Scheduler) syncWithUplinkToken(token *ttnpb.UplinkToken) bool {
+	if token.GetServerTime().IsZero() || token.GetConcentratorTime() == 0 {
+		return false
+	}
+	if lastSync, ok := s.clock.SyncTime(); ok && lastSync.After(token.ServerTime) {
+		return false
+	}
+	s.clock.SyncWithGatewayConcentrator(token.Timestamp, token.ServerTime, ConcentratorTime(token.ConcentratorTime))
+	return true
 }
 
 var (
@@ -159,64 +263,83 @@ var (
 	errTooLate               = errors.DefineFailedPrecondition("too_late", "too late to transmission scheduled time (delta is `{delta}`)")
 	errNoClockSync           = errors.DefineUnavailable("no_clock_sync", "no clock sync")
 	errNoAbsoluteGatewayTime = errors.DefineAborted("no_absolute_gateway_time", "no absolute gateway time")
+	errNoServerTime          = errors.DefineAborted("no_server_time", "no server time")
 )
 
+// Options define options for scheduling downlink.
+type Options struct {
+	PayloadSize int
+	ttnpb.TxSettings
+	RTTs        RTTs
+	Priority    ttnpb.TxSchedulePriority
+	UplinkToken *ttnpb.UplinkToken
+}
+
 // ScheduleAt attempts to schedule the given Tx settings with the given priority.
-// If there are round-trip times available, the maximum value will be used instead of ScheduleTimeShort.
-func (s *Scheduler) ScheduleAt(ctx context.Context, payloadSize int, settings ttnpb.TxSettings, rtts RTTs, priority ttnpb.TxSchedulePriority) (Emission, error) {
+// If there are round-trip times available, the nth percentile (n = scheduleLateRTTPercentile) value will be used instead of ScheduleTimeShort.
+func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, error) {
 	defer trace.StartRegion(ctx, "schedule transmission").End()
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if !s.clock.IsSynced() {
-		return Emission{}, errNoClockSync
+	if opts.UplinkToken != nil {
+		s.syncWithUplinkToken(opts.UplinkToken)
 	}
-	var minScheduleTime = ScheduleTimeShort
+	if !s.clock.IsSynced() {
+		return Emission{}, errNoClockSync.New()
+	}
+	minScheduleTime := ScheduleTimeShort
 	var medianRTT *time.Duration
-	if rtts != nil {
-		if _, max, median, n := rtts.Stats(); n > 0 {
-			minScheduleTime = max + QueueDelay
+	if opts.RTTs != nil {
+		if _, _, median, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now()); n >= scheduleMinRTTCount {
+			minScheduleTime = np/2 + QueueDelay
 			medianRTT = &median
 		}
 	}
 	var starts ConcentratorTime
-	now := s.clock.FromServerTime(s.timeSource.Now())
-	if settings.Time != nil {
+	now, ok := s.clock.FromServerTime(s.timeSource.Now())
+	if opts.Time != nil {
 		var ok bool
-		starts, ok = s.clock.FromGatewayTime(*settings.Time)
+		starts, ok = s.clock.FromGatewayTime(*opts.Time)
 		if !ok {
 			if medianRTT != nil {
-				starts = s.clock.FromServerTime(*settings.Time) - ConcentratorTime(*medianRTT/2)
+				serverTime, ok := s.clock.FromServerTime(*opts.Time)
+				if !ok {
+					return Emission{}, errNoServerTime.New()
+				}
+				starts = serverTime - ConcentratorTime(*medianRTT/2)
 			} else {
-				return Emission{}, errNoAbsoluteGatewayTime
+				return Emission{}, errNoAbsoluteGatewayTime.New()
 			}
 		}
 		// Assume that the absolute time is the time of arrival, not time of transmission.
-		toa, err := toa.Compute(payloadSize, settings)
+		toa, err := toa.Compute(opts.PayloadSize, opts.TxSettings)
 		if err != nil {
 			return Emission{}, err
 		}
 		starts -= ConcentratorTime(toa)
 	} else {
-		starts = s.clock.FromTimestampTime(settings.Timestamp)
+		starts = s.clock.FromTimestampTime(opts.Timestamp)
 	}
-	if delta := time.Duration(starts - now); delta < minScheduleTime {
-		return Emission{}, errTooLate.WithAttributes("delta", delta)
+	if ok {
+		if delta := time.Duration(starts - now); delta < minScheduleTime {
+			return Emission{}, errTooLate.WithAttributes("delta", delta)
+		}
 	}
-	sb, err := s.findSubBand(settings.Frequency)
+	sb, err := s.findSubBand(opts.Frequency)
 	if err != nil {
 		return Emission{}, err
 	}
-	em, err := s.newEmission(payloadSize, settings, starts)
+	em, err := s.newEmission(opts.PayloadSize, opts.TxSettings, starts)
 	if err != nil {
 		return Emission{}, err
 	}
 	for _, other := range s.emissions {
 		if em.OverlapsWithOffAir(other, s.timeOffAir) {
-			return Emission{}, errConflict
+			return Emission{}, errConflict.New()
 		}
 	}
-	if err := sb.Schedule(em, priority); err != nil {
+	if err := sb.Schedule(em, opts.Priority); err != nil {
 		return Emission{}, err
 	}
 	s.emissions = s.emissions.Insert(em)
@@ -231,37 +354,43 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, payloadSize int, settings tt
 // immediately. The reason for this is that this scheduler cannot determine conflicts or enforce duty-cycle when the
 // emission time is unknown. Therefore, when the time is set to Immediate, the estimated current concentrator time plus
 // ScheduleDelayLong will be used.
-func (s *Scheduler) ScheduleAnytime(ctx context.Context, payloadSize int, settings ttnpb.TxSettings, rtts RTTs, priority ttnpb.TxSchedulePriority) (Emission, error) {
+func (s *Scheduler) ScheduleAnytime(ctx context.Context, opts Options) (Emission, error) {
 	defer trace.StartRegion(ctx, "schedule transmission at any time").End()
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if !s.clock.IsSynced() {
-		return Emission{}, errNoClockSync
+	if opts.UplinkToken != nil {
+		s.syncWithUplinkToken(opts.UplinkToken)
 	}
-	var minScheduleTime = ScheduleTimeShort
-	if rtts != nil {
-		if _, max, _, n := rtts.Stats(); n > 0 {
-			minScheduleTime = max + QueueDelay
+	if !s.clock.IsSynced() {
+		return Emission{}, errNoClockSync.New()
+	}
+	minScheduleTime := ScheduleTimeShort
+	if opts.RTTs != nil {
+		if _, _, _, np, n := opts.RTTs.Stats(scheduleLateRTTPercentile, s.timeSource.Now()); n >= scheduleMinRTTCount {
+			minScheduleTime = np + QueueDelay
 		}
 	}
 	var starts ConcentratorTime
-	now := s.clock.FromServerTime(s.timeSource.Now())
-	if settings.Timestamp == 0 {
-		starts = now + ConcentratorTime(ScheduleTimeLong)
-		settings.Timestamp = uint32(time.Duration(starts) / time.Microsecond)
+	now, ok := s.clock.FromServerTime(s.timeSource.Now())
+	if !ok {
+		return Emission{}, errNoServerTime.New()
+	}
+	if opts.Timestamp == 0 {
+		starts = now + ConcentratorTime(s.scheduleAnytimeDelay)
+		opts.Timestamp = uint32(time.Duration(starts) / time.Microsecond)
 	} else {
-		starts = s.clock.FromTimestampTime(settings.Timestamp)
+		starts = s.clock.FromTimestampTime(opts.Timestamp)
 		if delta := minScheduleTime - time.Duration(starts-now); delta > 0 {
 			starts += ConcentratorTime(delta)
-			settings.Timestamp += uint32(delta / time.Microsecond)
+			opts.Timestamp += uint32(delta / time.Microsecond)
 		}
 	}
-	sb, err := s.findSubBand(settings.Frequency)
+	sb, err := s.findSubBand(opts.Frequency)
 	if err != nil {
 		return Emission{}, err
 	}
-	em, err := s.newEmission(payloadSize, settings, starts)
+	em, err := s.newEmission(opts.PayloadSize, opts.TxSettings, starts)
 	if err != nil {
 		return Emission{}, err
 	}
@@ -295,7 +424,7 @@ func (s *Scheduler) ScheduleAnytime(ctx context.Context, payloadSize int, settin
 		}
 		return em.t
 	}
-	em, err = sb.ScheduleAnytime(em.d, next, priority)
+	em, err = sb.ScheduleAnytime(em.d, next, opts.Priority)
 	if err != nil {
 		return Emission{}, err
 	}
@@ -304,18 +433,34 @@ func (s *Scheduler) ScheduleAnytime(ctx context.Context, payloadSize int, settin
 }
 
 // Sync synchronizes the clock with the given concentrator time v and the server time.
-func (s *Scheduler) Sync(v uint32, server time.Time) {
+func (s *Scheduler) Sync(v uint32, server time.Time) ConcentratorTime {
 	s.mu.Lock()
-	s.clock.Sync(v, server)
-	s.mu.Unlock()
+	defer s.mu.Unlock()
+	return s.clock.Sync(v, server)
 }
 
-// SyncWithGateway synchronizes the clock with the given concentrator time v, the server time and the gateway time that
-// corresponds to the given v.
-func (s *Scheduler) SyncWithGateway(v uint32, server, gateway time.Time) {
+// SyncWithGatewayAbsolute synchronizes the clock with the given concentrator timestamp, the server time and the
+// absolute gateway time that corresponds to the given timestamp.
+func (s *Scheduler) SyncWithGatewayAbsolute(timestamp uint32, server, gateway time.Time) ConcentratorTime {
 	s.mu.Lock()
-	s.clock.SyncWithGateway(v, server, gateway)
-	s.mu.Unlock()
+	defer s.mu.Unlock()
+	return s.clock.SyncWithGatewayAbsolute(timestamp, server, gateway)
+}
+
+// SyncWithGatewayConcentrator synchronizes the clock with the given concentrator timestamp, the server time and the
+// relative gateway time that corresponds to the given timestamp.
+func (s *Scheduler) SyncWithGatewayConcentrator(timestamp uint32, server time.Time, concentrator ConcentratorTime) ConcentratorTime {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.clock.SyncWithGatewayConcentrator(timestamp, server, concentrator)
+}
+
+// IsGatewayTimeSynced reports whether scheduler clock is synchronized with gateway time.
+func (s *Scheduler) IsGatewayTimeSynced() bool {
+	s.mu.RLock()
+	ret := s.clock.IsSynced() && s.clock.gateway != nil
+	s.mu.RUnlock()
+	return ret
 }
 
 // Now returns an indication of the current concentrator time.
@@ -326,7 +471,7 @@ func (s *Scheduler) Now() (ConcentratorTime, bool) {
 	if !s.clock.IsSynced() {
 		return 0, false
 	}
-	return s.clock.FromServerTime(s.timeSource.Now()), true
+	return s.clock.FromServerTime(s.timeSource.Now())
 }
 
 // TimeFromTimestampTime returns the concentrator time by the given timestamp.
@@ -338,4 +483,20 @@ func (s *Scheduler) TimeFromTimestampTime(t uint32) (ConcentratorTime, bool) {
 		return 0, false
 	}
 	return s.clock.FromTimestampTime(t), true
+}
+
+// SubBandStats returns a map with the usage stats of each sub band.
+func (s *Scheduler) SubBandStats() []*ttnpb.GatewayConnectionStats_SubBand {
+	var res []*ttnpb.GatewayConnectionStats_SubBand
+
+	for _, sb := range s.subBands {
+		res = append(res, &ttnpb.GatewayConnectionStats_SubBand{
+			MaxFrequency:             sb.MaxFrequency,
+			MinFrequency:             sb.MinFrequency,
+			DownlinkUtilizationLimit: sb.DutyCycle,
+			DownlinkUtilization:      sb.DutyCycleUtilization(),
+		})
+	}
+
+	return res
 }

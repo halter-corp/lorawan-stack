@@ -15,8 +15,10 @@
 import React from 'react'
 import classnames from 'classnames'
 import { defineMessages, injectIntl } from 'react-intl'
-import Message from '../../lib/components/message'
-import PropTypes from '../../lib/prop-types'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './status.styl'
 
@@ -54,15 +56,17 @@ const Status = function({
       className: classnames(label.props.className, style.statusLabel, { [style.flipped]: flipped }),
     })
   } else {
-    statusLabel = <Message className={style.statusLabel} content={label} values={labelValues} />
+    statusLabel = label && (
+      <Message className={style.statusLabel} content={label} values={labelValues} />
+    )
   }
 
   let translatedTitle
 
   if (title) {
-    translatedTitle = intl.formatMessage(title)
+    translatedTitle = typeof title === 'string' ? title : intl.formatMessage(title)
   } else if (label) {
-    translatedTitle = intl.formatMessage(label)
+    translatedTitle = typeof label === 'string' ? label : intl.formatMessage(label)
   } else {
     translatedTitle = intl.formatMessage(m[status])
   }
@@ -81,6 +85,9 @@ Status.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
   flipped: PropTypes.bool,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func,
+  }).isRequired,
   label: PropTypes.message,
   labelValues: PropTypes.shape({}),
   pulse: PropTypes.bool,

@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -79,7 +79,7 @@ func (is *mockIS) Get(ctx context.Context, req *ttnpb.GetApplicationRequest) (*t
 	uid := unique.ID(ctx, req.ApplicationIdentifiers)
 	app, ok := is.applications[uid]
 	if !ok {
-		return nil, errNotFound
+		return nil, errNotFound.New()
 	}
 	return app, nil
 }
@@ -109,7 +109,7 @@ func (is *mockIS) ListRights(ctx context.Context, ids *ttnpb.ApplicationIdentifi
 }
 
 type mockPackageHandler struct {
-	HandleUpFunc func(context.Context, *ttnpb.ApplicationPackageAssociation, *ttnpb.ApplicationUp) error
+	HandleUpFunc func(context.Context, *ttnpb.ApplicationPackageDefaultAssociation, *ttnpb.ApplicationPackageAssociation, *ttnpb.ApplicationUp) error
 }
 
 func (h *mockPackageHandler) Roles() []ttnpb.ClusterRole {
@@ -120,11 +120,18 @@ func (h *mockPackageHandler) RegisterServices(s *grpc.Server) {}
 
 func (h *mockPackageHandler) RegisterHandlers(s *runtime.ServeMux, conn *grpc.ClientConn) {}
 
-func (h *mockPackageHandler) HandleUp(ctx context.Context, assoc *ttnpb.ApplicationPackageAssociation, up *ttnpb.ApplicationUp) error {
+func (h *mockPackageHandler) HandleUp(ctx context.Context, defaultAssoc *ttnpb.ApplicationPackageDefaultAssociation, assoc *ttnpb.ApplicationPackageAssociation, up *ttnpb.ApplicationUp) error {
 	if h.HandleUpFunc == nil {
 		panic("HandleUp called but HandleUpFunc is nil")
 	}
-	return h.HandleUpFunc(ctx, assoc, up)
+	return h.HandleUpFunc(ctx, defaultAssoc, assoc, up)
+}
+
+func (h *mockPackageHandler) Package() *ttnpb.ApplicationPackage {
+	return &ttnpb.ApplicationPackage{
+		Name:         "test-package",
+		DefaultFPort: 123,
+	}
 }
 
 type handleUpRequest struct {
@@ -135,7 +142,7 @@ type handleUpRequest struct {
 
 func createMockPackageHandler(ch chan<- *handleUpRequest) *mockPackageHandler {
 	return &mockPackageHandler{
-		HandleUpFunc: func(ctx context.Context, assoc *ttnpb.ApplicationPackageAssociation, up *ttnpb.ApplicationUp) error {
+		HandleUpFunc: func(ctx context.Context, defaultAssoc *ttnpb.ApplicationPackageDefaultAssociation, assoc *ttnpb.ApplicationPackageAssociation, up *ttnpb.ApplicationUp) error {
 			ch <- &handleUpRequest{ctx, assoc, up}
 			return nil
 		},

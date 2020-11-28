@@ -19,8 +19,8 @@ import (
 	"reflect"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // IsZeroer is an interface, which reports whether it represents a zero value.
@@ -189,7 +189,7 @@ var errFieldSet = errors.DefineInvalidArgument("field_set", "field is set")
 // It uses IsZero, if v implements IsZeroer interface.
 func Empty(v interface{}) error {
 	if !isZero(v) {
-		return errFieldSet
+		return errFieldSet.New()
 	}
 	return nil
 }
@@ -213,7 +213,7 @@ func NotRequired(v interface{}) error {
 // It uses IsZero, if v implements IsZeroer interface.
 func Required(v interface{}) error {
 	if isZero(v) {
-		return errRequired
+		return errRequired.New()
 	}
 	return nil
 }

@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	. "go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	. "go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestIdentifiersIsZero(t *testing.T) {
@@ -132,8 +132,9 @@ func TestCombinedIdentifiers(t *testing.T) {
 		NewPopulatedGetApplicationLinkRequest(test.Randy, true),
 		NewPopulatedSetApplicationLinkRequest(test.Randy, true),
 
-		NewPopulatedProcessDownlinkMessageRequest(test.Randy, true),
-		NewPopulatedProcessUplinkMessageRequest(test.Randy, true),
+		NewPopulatedEncodeDownlinkMessageRequest(test.Randy, true),
+		NewPopulatedDecodeUplinkMessageRequest(test.Randy, true),
+		NewPopulatedDecodeDownlinkMessageRequest(test.Randy, true),
 
 		NewPopulatedListOAuthAccessTokensRequest(test.Randy, true),
 		NewPopulatedListOAuthClientAuthorizationsRequest(test.Randy, true),

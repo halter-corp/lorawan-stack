@@ -14,42 +14,11 @@
 
 import { connect } from 'react-redux'
 
-import { getGatewayCollaboratorsList, getGatewayApiKeysList } from '../../store/actions/gateways'
-import {
-  selectSelectedGateway,
-  selectSelectedGatewayId,
-  selectGatewayCollaboratorsTotalCount,
-  selectGatewayCollaboratorsFetching,
-  selectGatewayApiKeysTotalCount,
-  selectGatewayApiKeysFetching,
-} from '../../store/selectors/gateways'
+import { selectSelectedGateway, selectSelectedGatewayId } from '@console/store/selectors/gateways'
 
-const mapStateToProps = state => {
-  const gtwId = selectSelectedGatewayId(state)
-  const collaboratorsTotalCount = selectGatewayCollaboratorsTotalCount(state, { id: gtwId })
-  const apiKeysTotalCount = selectGatewayApiKeysTotalCount(state, { id: gtwId })
-
-  return {
-    gtwId,
-    gateway: selectSelectedGateway(state),
-    collaboratorsTotalCount,
-    apiKeysTotalCount,
-    statusBarFetching:
-      collaboratorsTotalCount === undefined ||
-      apiKeysTotalCount === undefined ||
-      selectGatewayCollaboratorsFetching(state) ||
-      selectGatewayApiKeysFetching(state),
-  }
-}
-const mapDispatchToProps = dispatch => ({
-  loadData(gtwId) {
-    dispatch(getGatewayCollaboratorsList(gtwId))
-    dispatch(getGatewayApiKeysList(gtwId))
-  },
+const mapStateToProps = state => ({
+  gtwId: selectSelectedGatewayId(state),
+  gateway: selectSelectedGateway(state),
 })
 
-export default GatewayOverview =>
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(GatewayOverview)
+export default GatewayOverview => connect(mapStateToProps)(GatewayOverview)

@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	. "go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	. "go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -34,10 +34,9 @@ func TestMD(t *testing.T) {
 		ServiceType:    "component",
 		ServiceVersion: "1.2.3-dev",
 		NetAddress:     "localhost",
-		Limit:          12,
-		Page:           34,
 		Host:           "hostfoo",
 		URI:            "fooURI",
+		XForwardedFor:  "remote-ip",
 	}
 
 	ctx := md1.ToOutgoingContext(test.Context())
@@ -51,10 +50,9 @@ func TestMD(t *testing.T) {
 	a.So(md2.ServiceType, should.Equal, md1.ServiceType)
 	a.So(md2.ServiceVersion, should.Equal, md1.ServiceVersion)
 	a.So(md2.NetAddress, should.Equal, md1.NetAddress)
-	a.So(md2.Limit, should.Equal, md1.Limit)
-	a.So(md2.Page, should.Equal, md1.Page)
 	a.So(md2.Host, should.Equal, md1.Host)
 	a.So(md2.URI, should.Equal, md1.URI)
+	a.So(md2.XForwardedFor, should.Equal, md1.XForwardedFor)
 
 	a.So(md1.RequireTransportSecurity(), should.BeTrue)
 	a.So(md2.RequireTransportSecurity(), should.BeFalse)

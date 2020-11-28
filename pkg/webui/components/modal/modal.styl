@@ -32,7 +32,7 @@
       max-width: 780px
 
     +media-query($bp.s)
-      full-screen()
+      full-screen($ls.xxs)
       border: 0
       border-radius: 0
       justify-content: space-between
@@ -49,14 +49,15 @@
 
   +media-query($bp.s)
     flex-wrap: wrap-reverse
+    padding: $ls.s $ls.s
 
   & > div:first-child
     flex-shrink: 1
     margin-right: $cs.m
 
     span
+      eat-text-margins()
       display: block
-      text-margin-bottom()
 
   h1
     line-height: $lh.xxl
@@ -66,7 +67,16 @@
       text-margin-bottom()
 
     &:not(:last-child)
-      text-margin-bottom($cs.s)
+      text-margin-bottom($cs.l)
+
+  .logo
+    width: 170px
+    flex-shrink: 0
+    margin-bottom: 0
+
+    +media-query($bp.s)
+      margin-bottom: $ls.s
+      align-items: flex-start
 
 .line
   height: 1px
@@ -74,7 +84,10 @@
   background-color: $c-divider-dark
   margin-left: $cs.xxl
   flex-shrink: 0
-  margin-bottom: -4px // compensate for own visual height
+  margin-bottom: -4px // Compensate for own visual height.
+
+  +media-query($bp.s)
+    margin-left: $cs.xl
 
 .body
   padding: $ls.m $ls.l
@@ -83,6 +96,9 @@
 
   +media-query-min($bp.s)
     horizontalize()
+
+  +media-query($bp.s)
+    padding: $ls.s $ls.s
 
 .message
   eat-text-margins()
@@ -100,6 +116,9 @@
     display: flex
     color: $tc-subtle-gray
 
+    +media-query($bp.s)
+      text-align: center
+
     div > span
       display: block
 
@@ -110,21 +129,17 @@
   & > div:last-child
     display: flex
     align-items: center
-    +media-query($bp.xxs)
-      flex-direction: column
-      justify-content: flex-end
+    +media-query($bp.s)
+      margin-bottom: $cs.s
+      flex-direction: row
       align-items: stretch
 
       button:not(:last-child)
         margin-right: 0
-        margin-bottom: $cs.s
-
-.logo
-  width: 170px
-  flex-shrink: 0
+        margin-right: $cs.s
 
   +media-query($bp.s)
-    margin-bottom: $ls.s
+    flex-direction: column-reverse
 
 .shadow
   position: fixed

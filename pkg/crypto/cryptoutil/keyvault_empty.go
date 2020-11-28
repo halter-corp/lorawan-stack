@@ -19,7 +19,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"go.thethings.network/lorawan-stack/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
 )
 
 type emptyKeyVault struct {
@@ -35,6 +35,14 @@ func (emptyKeyVault) Wrap(ctx context.Context, plaintext []byte, kekLabel string
 
 func (emptyKeyVault) Unwrap(ctx context.Context, ciphertext []byte, kekLabel string) ([]byte, error) {
 	return nil, errKEKNotFound.WithAttributes("label", kekLabel)
+}
+
+func (emptyKeyVault) Encrypt(ctx context.Context, plaintext []byte, id string) ([]byte, error) {
+	return nil, errKeyNotFound.WithAttributes("id", id)
+}
+
+func (emptyKeyVault) Decrypt(ctx context.Context, ciphertext []byte, id string) ([]byte, error) {
+	return nil, errKeyNotFound.WithAttributes("id", id)
 }
 
 func (emptyKeyVault) GetCertificate(ctx context.Context, id string) (*x509.Certificate, error) {

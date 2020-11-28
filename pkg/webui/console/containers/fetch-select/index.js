@@ -16,12 +16,15 @@ import React from 'react'
 import { connect as storeConnect } from 'react-redux'
 import bind from 'autobind-decorator'
 
-import PropTypes from '../../../lib/prop-types'
-import Field from '../../../components/form/field'
-import Select from '../../../components/select'
+import Field from '@ttn-lw/components/form/field'
+import Select from '@ttn-lw/components/select'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 const formatOptions = options =>
   Object.keys(options).map(key => ({ value: key, label: options[key] }))
+
+const { component, ...fieldPropTypes } = Field.propTypes
 
 export default function({
   optionsSelector,
@@ -31,6 +34,7 @@ export default function({
   defaultWarning,
   defaultTitle,
   optionsFormatter = formatOptions,
+  defaultDescription,
 }) {
   @storeConnect(
     function(state) {
@@ -44,29 +48,24 @@ export default function({
   )
   class FetchSelect extends React.PureComponent {
     static propTypes = {
-      autoFocus: PropTypes.bool,
-      error: PropTypes.error,
+      ...fieldPropTypes,
+      ...Select.propTypes,
+      description: PropTypes.message,
       fetchOptions: PropTypes.func.isRequired,
-      fetching: PropTypes.bool,
       menuPlacement: PropTypes.oneOf(['top', 'bottom', 'auto']),
-      name: PropTypes.string.isRequired,
       onChange: PropTypes.func,
       options: PropTypes.arrayOf(
         PropTypes.shape({ value: PropTypes.string, label: PropTypes.message }),
       ),
-      required: PropTypes.bool,
       title: PropTypes.message,
       warning: PropTypes.message,
     }
 
     static defaultProps = {
-      autoFocus: false,
+      description: defaultDescription,
       menuPlacement: 'auto',
-      error: undefined,
-      fetching: false,
       onChange: () => null,
       options: [],
-      required: false,
       title: defaultTitle,
       warning: defaultWarning,
     }
@@ -85,30 +84,14 @@ export default function({
     }
 
     render() {
-      const {
-        name,
-        required,
-        autoFocus,
-        error,
-        fetching,
-        menuPlacement,
-        warning,
-        title,
-        options,
-      } = this.props
+      const { error, fetching, warning, ...rest } = this.props
 
       return (
         <Field
+          {...rest}
           component={Select}
-          type="select"
-          options={options}
-          name={name}
-          required={required}
-          title={title}
-          autoFocus={autoFocus}
           isLoading={fetching}
           warning={Boolean(error) ? warning : undefined}
-          menuPlacement={menuPlacement}
           onChange={this.handleChange}
         />
       )

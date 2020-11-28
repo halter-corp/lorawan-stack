@@ -8,7 +8,7 @@ import (
 )
 
 func (dst *UplinkMessage) SetFields(src *UplinkMessage, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "raw_payload":
 			if len(subs) > 0 {
@@ -100,6 +100,15 @@ func (dst *UplinkMessage) SetFields(src *UplinkMessage, paths ...string) error {
 				var zero uint32
 				dst.DeviceChannelIndex = zero
 			}
+		case "consumed_airtime":
+			if len(subs) > 0 {
+				return fmt.Errorf("'consumed_airtime' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ConsumedAirtime = src.ConsumedAirtime
+			} else {
+				dst.ConsumedAirtime = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -109,7 +118,7 @@ func (dst *UplinkMessage) SetFields(src *UplinkMessage, paths ...string) error {
 }
 
 func (dst *DownlinkMessage) SetFields(src *DownlinkMessage, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "raw_payload":
 			if len(subs) > 0 {
@@ -275,7 +284,7 @@ func (dst *DownlinkMessage) SetFields(src *DownlinkMessage, paths ...string) err
 }
 
 func (dst *TxAcknowledgment) SetFields(src *TxAcknowledgment, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "correlation_ids":
 			if len(subs) > 0 {
@@ -304,8 +313,54 @@ func (dst *TxAcknowledgment) SetFields(src *TxAcknowledgment, paths ...string) e
 	return nil
 }
 
+func (dst *GatewayUplinkMessage) SetFields(src *GatewayUplinkMessage, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "message":
+			if len(subs) > 0 {
+				var newDst, newSrc *UplinkMessage
+				if (src == nil || src.UplinkMessage == nil) && dst.UplinkMessage == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.UplinkMessage
+				}
+				if dst.UplinkMessage != nil {
+					newDst = dst.UplinkMessage
+				} else {
+					newDst = &UplinkMessage{}
+					dst.UplinkMessage = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.UplinkMessage = src.UplinkMessage
+				} else {
+					dst.UplinkMessage = nil
+				}
+			}
+		case "band_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'band_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.BandID = src.BandID
+			} else {
+				var zero string
+				dst.BandID = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "session_key_id":
 			if len(subs) > 0 {
@@ -354,6 +409,15 @@ func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string)
 			} else {
 				dst.DecodedPayload = nil
 			}
+		case "decoded_payload_warnings":
+			if len(subs) > 0 {
+				return fmt.Errorf("'decoded_payload_warnings' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DecodedPayloadWarnings = src.DecodedPayloadWarnings
+			} else {
+				dst.DecodedPayloadWarnings = nil
+			}
 		case "rx_metadata":
 			if len(subs) > 0 {
 				return fmt.Errorf("'rx_metadata' has no subfields, but %s were specified", subs)
@@ -391,6 +455,69 @@ func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string)
 				var zero time.Time
 				dst.ReceivedAt = zero
 			}
+		case "app_s_key":
+			if len(subs) > 0 {
+				var newDst, newSrc *KeyEnvelope
+				if (src == nil || src.AppSKey == nil) && dst.AppSKey == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.AppSKey
+				}
+				if dst.AppSKey != nil {
+					newDst = dst.AppSKey
+				} else {
+					newDst = &KeyEnvelope{}
+					dst.AppSKey = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.AppSKey = src.AppSKey
+				} else {
+					dst.AppSKey = nil
+				}
+			}
+		case "last_a_f_cnt_down":
+			if len(subs) > 0 {
+				return fmt.Errorf("'last_a_f_cnt_down' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.LastAFCntDown = src.LastAFCntDown
+			} else {
+				var zero uint32
+				dst.LastAFCntDown = zero
+			}
+		case "confirmed":
+			if len(subs) > 0 {
+				return fmt.Errorf("'confirmed' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Confirmed = src.Confirmed
+			} else {
+				var zero bool
+				dst.Confirmed = zero
+			}
+		case "consumed_airtime":
+			if len(subs) > 0 {
+				return fmt.Errorf("'consumed_airtime' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ConsumedAirtime = src.ConsumedAirtime
+			} else {
+				dst.ConsumedAirtime = nil
+			}
+		case "locations":
+			if len(subs) > 0 {
+				return fmt.Errorf("'locations' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Locations = src.Locations
+			} else {
+				dst.Locations = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -400,7 +527,7 @@ func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string)
 }
 
 func (dst *ApplicationLocation) SetFields(src *ApplicationLocation, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "service":
 			if len(subs) > 0 {
@@ -448,7 +575,7 @@ func (dst *ApplicationLocation) SetFields(src *ApplicationLocation, paths ...str
 }
 
 func (dst *ApplicationJoinAccept) SetFields(src *ApplicationJoinAccept, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "session_key_id":
 			if len(subs) > 0 {
@@ -522,7 +649,7 @@ func (dst *ApplicationJoinAccept) SetFields(src *ApplicationJoinAccept, paths ..
 }
 
 func (dst *ApplicationDownlink) SetFields(src *ApplicationDownlink, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "session_key_id":
 			if len(subs) > 0 {
@@ -570,6 +697,15 @@ func (dst *ApplicationDownlink) SetFields(src *ApplicationDownlink, paths ...str
 				dst.DecodedPayload = src.DecodedPayload
 			} else {
 				dst.DecodedPayload = nil
+			}
+		case "decoded_payload_warnings":
+			if len(subs) > 0 {
+				return fmt.Errorf("'decoded_payload_warnings' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DecodedPayloadWarnings = src.DecodedPayloadWarnings
+			} else {
+				dst.DecodedPayloadWarnings = nil
 			}
 		case "confirmed":
 			if len(subs) > 0 {
@@ -634,7 +770,7 @@ func (dst *ApplicationDownlink) SetFields(src *ApplicationDownlink, paths ...str
 }
 
 func (dst *ApplicationDownlinks) SetFields(src *ApplicationDownlinks, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "downlinks":
 			if len(subs) > 0 {
@@ -654,7 +790,7 @@ func (dst *ApplicationDownlinks) SetFields(src *ApplicationDownlinks, paths ...s
 }
 
 func (dst *ApplicationDownlinkFailed) SetFields(src *ApplicationDownlinkFailed, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "downlink":
 			if len(subs) > 0 {
@@ -701,7 +837,7 @@ func (dst *ApplicationDownlinkFailed) SetFields(src *ApplicationDownlinkFailed, 
 }
 
 func (dst *ApplicationInvalidatedDownlinks) SetFields(src *ApplicationInvalidatedDownlinks, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "downlinks":
 			if len(subs) > 0 {
@@ -730,8 +866,38 @@ func (dst *ApplicationInvalidatedDownlinks) SetFields(src *ApplicationInvalidate
 	return nil
 }
 
+func (dst *ApplicationServiceData) SetFields(src *ApplicationServiceData, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "service":
+			if len(subs) > 0 {
+				return fmt.Errorf("'service' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Service = src.Service
+			} else {
+				var zero string
+				dst.Service = zero
+			}
+		case "data":
+			if len(subs) > 0 {
+				return fmt.Errorf("'data' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Data = src.Data
+			} else {
+				dst.Data = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *ApplicationUp) SetFields(src *ApplicationUp, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device_ids":
 			if len(subs) > 0 {
@@ -768,6 +934,16 @@ func (dst *ApplicationUp) SetFields(src *ApplicationUp, paths ...string) error {
 				dst.ReceivedAt = src.ReceivedAt
 			} else {
 				dst.ReceivedAt = nil
+			}
+		case "simulated":
+			if len(subs) > 0 {
+				return fmt.Errorf("'simulated' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Simulated = src.Simulated
+			} else {
+				var zero bool
+				dst.Simulated = zero
 			}
 
 		case "up":
@@ -1082,6 +1258,39 @@ func (dst *ApplicationUp) SetFields(src *ApplicationUp, paths ...string) error {
 							dst.Up = nil
 						}
 					}
+				case "service_data":
+					_, srcOk := src.Up.(*ApplicationUp_ServiceData)
+					if !srcOk && src.Up != nil {
+						return fmt.Errorf("attempt to set oneof 'service_data', while different oneof is set in source")
+					}
+					_, dstOk := dst.Up.(*ApplicationUp_ServiceData)
+					if !dstOk && dst.Up != nil {
+						return fmt.Errorf("attempt to set oneof 'service_data', while different oneof is set in destination")
+					}
+					if len(oneofSubs) > 0 {
+						var newDst, newSrc *ApplicationServiceData
+						if !srcOk && !dstOk {
+							continue
+						}
+						if srcOk {
+							newSrc = src.Up.(*ApplicationUp_ServiceData).ServiceData
+						}
+						if dstOk {
+							newDst = dst.Up.(*ApplicationUp_ServiceData).ServiceData
+						} else {
+							newDst = &ApplicationServiceData{}
+							dst.Up = &ApplicationUp_ServiceData{ServiceData: newDst}
+						}
+						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
+							return err
+						}
+					} else {
+						if src != nil {
+							dst.Up = src.Up
+						} else {
+							dst.Up = nil
+						}
+					}
 
 				default:
 					return fmt.Errorf("invalid oneof field: '%s.%s'", name, oneofName)
@@ -1096,7 +1305,7 @@ func (dst *ApplicationUp) SetFields(src *ApplicationUp, paths ...string) error {
 }
 
 func (dst *MessagePayloadFormatters) SetFields(src *MessagePayloadFormatters, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "up_formatter":
 			if len(subs) > 0 {
@@ -1147,7 +1356,7 @@ func (dst *MessagePayloadFormatters) SetFields(src *MessagePayloadFormatters, pa
 }
 
 func (dst *DownlinkQueueRequest) SetFields(src *DownlinkQueueRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "end_device_ids":
 			if len(subs) > 0 {
@@ -1185,7 +1394,7 @@ func (dst *DownlinkQueueRequest) SetFields(src *DownlinkQueueRequest, paths ...s
 }
 
 func (dst *ApplicationDownlink_ClassBC) SetFields(src *ApplicationDownlink_ClassBC, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "gateways":
 			if len(subs) > 0 {

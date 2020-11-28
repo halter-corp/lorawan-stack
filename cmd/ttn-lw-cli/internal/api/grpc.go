@@ -20,10 +20,11 @@ import (
 	"crypto/x509"
 	"sync"
 
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/rpcclient"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -33,6 +34,7 @@ var (
 	withInsecure bool
 	tlsConfig    *tls.Config
 	auth         *rpcmetadata.MD
+	withDump     bool
 )
 
 // SetLogger sets the default API logger
@@ -43,6 +45,11 @@ func SetLogger(logger log.Interface) {
 // SetInsecure configures the API to use insecure connections.
 func SetInsecure(insecure bool) {
 	withInsecure = insecure
+}
+
+// SetDumpRequests configures the API options to dump gRPC requests.
+func SetDumpRequests(dump bool) {
+	withDump = dump
 }
 
 // AddCA adds the CA certificate file.
@@ -69,6 +76,16 @@ func SetAuth(authType, authValue string) {
 	}
 }
 
+// requestInterceptor is a gRPC interceptor logging the request payload
+func requestInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	logger := log.FromContext(ctx)
+	if b, err := jsonpb.TTN().Marshal(req); err == nil {
+		logger.WithFields(log.Fields("grpc_payload", string(b))).Debug("Request payload")
+	}
+
+	return invoker(ctx, method, req, reply, cc, opts...)
+}
+
 // GetDialOptions gets the dial options for a gRPC connection.
 func GetDialOptions() (opts []grpc.DialOption) {
 	opts = append(opts, grpc.FailOnNonTempDialError(true), grpc.WithBlock())
@@ -85,6 +102,9 @@ func GetDialOptions() (opts []grpc.DialOption) {
 			md := *auth
 			opts = append(opts, grpc.WithPerRPCCredentials(md))
 		}
+	}
+	if withDump {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(requestInterceptor))
 	}
 	return
 }

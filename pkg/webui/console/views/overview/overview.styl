@@ -20,31 +20,36 @@
 
 .welcome-section
   padding: 0 0 $ls.xl
+  +media-query($bp.m)
+    padding-bottom: 0
 
 .welcome
   font-size: $fs.xl3
 
 .get-started
   font-size: $fs.l
-  font-weight: normal
+  font-weight: $fwh.normal
 
 .chooser
+  padding: 2.5rem 1rem
   cursor: pointer
   display: flex
   justify-content: center
   flex-direction: column
   align-items: center
-  transform: scale(1.0001) // Will fix jiggle in animation
-  height: 28rem
-  width: 28rem
+  transform: scale(1.0001) // Will fix jiggle in animation.
+  max-width: 26rem
   background: white
   margin: 0 auto $ls.l
   box-shadow: 0 4px 35px 0 rgba(0, 0, 0, .04), inset 0 -1px 0 0 rgba(0, 0, 0, .11)
   border-radius: 25px
   transition: box-shadow .4s cubic-bezier(.250, .010, .070, 1), transform .4s cubic-bezier(.250, .010, .070, 1)
 
+  +media-query($bp.s)
+    box-shadow: 0 4px 55px 0 rgba(0, 0, 0, .2), inset 0 -1px 0 0 rgba(0, 0, 0, .11)
+
   & > div
-    margin-top: -2.9rem
+    margin-top: -4%
 
   & > span
     h2()
@@ -60,6 +65,7 @@
 
 .chooser-nav
   text-decoration: none
+  display: block
 
 .component-cards
   display: flex
@@ -68,10 +74,12 @@
 .component-section
   margin-bottom: $ls.l
 
+  +media-query($bp.m)
+    margin-bottom: $ls.xxs
+
 .component-card
   display: inline-flex
   margin: 0 $cs.xl $cs.xl 0
-  max-width: 18rem
   flex-shrink: 0
 
   &-icon
@@ -82,7 +90,6 @@
     margin-left: $cs.m
     display: flex
     flex-direction: column
-    overflow: hidden
 
     & > span
       display: block
@@ -98,8 +105,6 @@
   &-host
     font-family: $font-family-mono
     font-size: $fs.s
-    overflow: hidden
-    text-overflow: ellipsis
 
 .version-info-section
   display: flex
@@ -107,4 +112,4 @@
 
 .version-value
   font-size: $fs.xl4
-  font-weight: bold
+  font-weight: $fwh.bolder

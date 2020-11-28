@@ -19,7 +19,7 @@ import (
 	"crypto/sha512"
 	"hash"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // Algorithm is the type of the accepted algorithms.
@@ -48,8 +48,8 @@ var errUnknownAlgorithm = errors.DefineInternal(
 	"algorithm `{alg}` unknown",
 )
 
-// parseAlgorithm parses a string into an Algorithm and checks if it is supported.
-func parseAlgorithm(str string) (Algorithm, error) {
+// ParseAlgorithm parses a string into an Algorithm and checks if it is supported.
+func ParseAlgorithm(str string) (Algorithm, error) {
 	alg := Algorithm(str)
 	switch alg {
 	case Sha256, Sha512:

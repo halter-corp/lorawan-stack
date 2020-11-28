@@ -94,11 +94,13 @@ node_modules/
 /pkg/webui/locales/.backend
 
 # Development tooling
-/mage
+/tools/bin/mage
 
 # Keypair
 cert.pem
 key.pem
+ca.pem
+ca-key.pem
 
 # Development data directory
 .dev/
@@ -107,6 +109,13 @@ key.pem
 # Javascript test coverage
 /coverage
 /sdk/js/coverage
+
+# Cypress artifacts
+/cypress/screenshots
+/cypress/videos
+
+# Istanbul coverage
+.nyc_output
 
 # Release files
 /snapcraft.login

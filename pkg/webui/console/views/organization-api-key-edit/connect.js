@@ -15,36 +15,39 @@
 import { connect } from 'react-redux'
 import { replace } from 'connected-react-router'
 
-import withRequest from '../../../lib/components/with-request'
+import api from '@console/api'
 
-import { getOrganizationApiKey } from '../../store/actions/organizations'
+import withRequest from '@ttn-lw/lib/components/with-request'
+
+import { getApiKey } from '@console/store/actions/api-keys'
+
 import {
   selectSelectedOrganizationId,
   selectOrganizationRights,
   selectOrganizationPseudoRights,
   selectOrganizationRightsError,
   selectOrganizationRightsFetching,
-  selectOrganizationApiKey,
-  selectOrganizationApiKeyError,
-  selectOrganizationApiKeyFetching,
-} from '../../store/selectors/organizations'
-
-import api from '../../api'
+} from '@console/store/selectors/organizations'
+import {
+  selectSelectedApiKey,
+  selectApiKeyError,
+  selectApiKeyFetching,
+} from '@console/store/selectors/api-keys'
 
 export default OrganizationApiKeyEdit =>
   connect(
     function(state, props) {
       const { apiKeyId } = props.match.params
 
-      const keyFetching = selectOrganizationApiKeyFetching(state)
+      const keyFetching = selectApiKeyFetching(state)
       const rightsFetching = selectOrganizationRightsFetching(state)
-      const keyError = selectOrganizationApiKeyError(state)
+      const keyError = selectApiKeyError(state)
       const rightsError = selectOrganizationRightsError(state)
 
       return {
         keyId: apiKeyId,
         orgId: selectSelectedOrganizationId(state),
-        apiKey: selectOrganizationApiKey(state),
+        apiKey: selectSelectedApiKey(state),
         rights: selectOrganizationRights(state),
         pseudoRights: selectOrganizationPseudoRights(state),
         fetching: keyFetching || rightsFetching,
@@ -52,8 +55,8 @@ export default OrganizationApiKeyEdit =>
       }
     },
     dispatch => ({
-      getOrganizationApiKey(orgId, apiKeyId) {
-        dispatch(getOrganizationApiKey(orgId, apiKeyId))
+      getApiKey(orgId, keyId) {
+        dispatch(getApiKey('organization', orgId, keyId))
       },
       deleteOrganizationApiKeySuccess: orgId =>
         dispatch(replace(`/organizations/${orgId}/api-keys`)),
@@ -64,16 +67,16 @@ export default OrganizationApiKeyEdit =>
       ...stateProps,
       ...dispatchProps,
       ...ownProps,
-      deleteOrganizationApiKeySuccess: keyId =>
-        dispatchProps.deleteOrganizationApiKey(stateProps.orgId, stateProps.keyId),
-      deleteOrganizationApiKey: () =>
+      deleteOrganizationApiKeySuccess: () =>
         dispatchProps.deleteOrganizationApiKeySuccess(stateProps.orgId),
+      deleteOrganizationApiKey: () =>
+        dispatchProps.deleteOrganizationApiKey(stateProps.orgId, stateProps.keyId),
       updateOrganizationApiKey: key =>
         dispatchProps.updateOrganizationApiKey(stateProps.orgId, stateProps.keyId, key),
     }),
   )(
     withRequest(
-      ({ getOrganizationApiKey, orgId, keyId }) => getOrganizationApiKey(orgId, keyId),
+      ({ getApiKey, orgId, keyId }) => getApiKey(orgId, keyId),
       ({ fetching, apiKey }) => fetching || !Boolean(apiKey),
     )(OrganizationApiKeyEdit),
   )

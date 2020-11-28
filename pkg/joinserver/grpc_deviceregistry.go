@@ -18,27 +18,34 @@ import (
 	"context"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoservices"
-	"go.thethings.network/lorawan-stack/pkg/crypto/cryptoutil"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoservices"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	evtCreateEndDevice = events.Define(
 		"js.end_device.create", "create end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtUpdateEndDevice = events.Define(
 		"js.end_device.update", "update end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithUpdatedFieldsDataType(),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 	evtDeleteEndDevice = events.Define(
 		"js.end_device.delete", "delete end device",
-		ttnpb.RIGHT_APPLICATION_DEVICES_READ,
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_DEVICES_READ),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
 	)
 )
 
@@ -84,13 +91,13 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 	logger := log.FromContext(ctx)
 	dev, err := srv.JS.devices.GetByID(ctx, req.ApplicationIdentifiers, req.DeviceID, gets)
 	if errors.IsNotFound(err) {
-		return nil, errDeviceNotFound
+		return nil, errDeviceNotFound.New()
 	}
 	if err != nil {
 		return nil, err
 	}
 	if !dev.ApplicationIdentifiers.Equal(req.ApplicationIdentifiers) {
-		return nil, errDeviceNotFound
+		return nil, errDeviceNotFound.New()
 	}
 	if ttnpb.HasAnyField(req.FieldMask.Paths,
 		"root_keys.app_key.key",
@@ -115,7 +122,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 					Key: rootKeysEnc.GetNwkKey().GetKey(),
 				}
 			case len(rootKeysEnc.GetNwkKey().GetEncryptedKey()) > 0:
-				nwkKey, err := cryptoutil.UnwrapAES128Key(ctx, *rootKeysEnc.NwkKey, srv.JS.KeyVault)
+				nwkKey, err := cryptoutil.UnwrapAES128Key(ctx, rootKeysEnc.NwkKey, srv.JS.KeyVault)
 				if err != nil {
 					return nil, err
 				}
@@ -142,7 +149,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 					Key: rootKeysEnc.GetAppKey().GetKey(),
 				}
 			case len(rootKeysEnc.GetAppKey().GetEncryptedKey()) > 0:
-				appKey, err := cryptoutil.UnwrapAES128Key(ctx, *rootKeysEnc.AppKey, srv.JS.KeyVault)
+				appKey, err := cryptoutil.UnwrapAES128Key(ctx, rootKeysEnc.AppKey, srv.JS.KeyVault)
 				if err != nil {
 					return nil, err
 				}
@@ -172,22 +179,22 @@ var (
 
 // Set implements ttnpb.JsEndDeviceRegistryServer.
 func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest) (dev *ttnpb.EndDevice, err error) {
-	if req.EndDevice.JoinEUI == nil || req.EndDevice.JoinEUI.IsZero() {
-		return nil, errNoJoinEUI
+	if req.EndDevice.JoinEUI == nil {
+		return nil, errNoJoinEUI.New()
 	}
 	if req.EndDevice.DevEUI == nil || req.EndDevice.DevEUI.IsZero() {
-		return nil, errNoDevEUI
+		return nil, errNoDevEUI.New()
+	}
+
+	if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.app_key.key") && req.EndDevice.GetRootKeys().GetAppKey().GetKey().IsZero() {
+		return nil, errInvalidFieldValue.WithAttributes("field", "root_keys.app_key.key")
 	}
 
 	if err = rights.RequireApplication(ctx, req.EndDevice.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
 		return nil, err
 	}
 	if ttnpb.HasAnyField(req.FieldMask.Paths,
-		"root_keys.app_key.encrypted_key",
-		"root_keys.app_key.kek_label",
 		"root_keys.app_key.key",
-		"root_keys.nwk_key.encrypted_key",
-		"root_keys.nwk_key.kek_label",
 		"root_keys.nwk_key.key",
 		"root_keys.root_key_id",
 	) {
@@ -198,20 +205,16 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 
 	sets := append(req.FieldMask.Paths[:0:0], req.FieldMask.Paths...)
 	if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.app_key.key") {
-		if !req.EndDevice.GetRootKeys().GetAppKey().GetKey().IsZero() {
-			appKey, err := cryptoutil.WrapAES128Key(ctx, *req.EndDevice.RootKeys.AppKey.Key, srv.kekLabel, srv.JS.KeyVault)
-			if err != nil {
-				return nil, err
-			}
-			defer func(ke ttnpb.KeyEnvelope) {
-				if dev != nil {
-					dev.RootKeys.AppKey = &ke
-				}
-			}(*req.EndDevice.RootKeys.AppKey)
-			req.EndDevice.RootKeys.AppKey = &appKey
-		} else if req.EndDevice.RootKeys != nil {
-			req.EndDevice.RootKeys.AppKey = nil
+		appKey, err := cryptoutil.WrapAES128Key(ctx, *req.EndDevice.RootKeys.AppKey.Key, srv.kekLabel, srv.JS.KeyVault)
+		if err != nil {
+			return nil, err
 		}
+		defer func(ke ttnpb.KeyEnvelope) {
+			if dev != nil {
+				dev.RootKeys.AppKey = &ke
+			}
+		}(*req.EndDevice.RootKeys.AppKey)
+		req.EndDevice.RootKeys.AppKey = appKey
 		sets = ttnpb.AddFields(sets,
 			"root_keys.app_key.encrypted_key",
 			"root_keys.app_key.kek_label",
@@ -228,7 +231,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 					dev.RootKeys.NwkKey = &ke
 				}
 			}(*req.EndDevice.RootKeys.NwkKey)
-			req.EndDevice.RootKeys.NwkKey = &nwkKey
+			req.EndDevice.RootKeys.NwkKey = nwkKey
 		} else if req.EndDevice.RootKeys != nil {
 			req.EndDevice.RootKeys.NwkKey = nil
 		}
@@ -241,7 +244,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 	var evt events.Event
 	dev, err = srv.JS.devices.SetByID(ctx, req.EndDevice.ApplicationIdentifiers, req.EndDevice.DeviceID, req.FieldMask.Paths, func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 		if dev != nil {
-			evt = evtUpdateEndDevice(ctx, req.EndDevice.EndDeviceIdentifiers, req.FieldMask.Paths)
+			evt = evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDevice.EndDeviceIdentifiers, req.FieldMask.Paths)
 			if err := ttnpb.ProhibitFields(sets,
 				"ids.dev_addr",
 			); err != nil {
@@ -250,7 +253,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 			return &req.EndDevice, sets, nil
 		}
 
-		evt = evtCreateEndDevice(ctx, req.EndDevice.EndDeviceIdentifiers, nil)
+		evt = evtCreateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDevice.EndDeviceIdentifiers, nil)
 		if req.EndDevice.DevAddr != nil && !req.EndDevice.DevAddr.IsZero() {
 			return nil, nil, errInvalidFieldValue.WithAttributes("field", "ids.dev_addr")
 		}
@@ -286,10 +289,10 @@ func (srv jsEndDeviceRegistryServer) Delete(ctx context.Context, ids *ttnpb.EndD
 	}
 	var evt events.Event
 	_, err := srv.JS.devices.SetByID(ctx, ids.ApplicationIdentifiers, ids.DeviceID, nil, func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
-		if dev == nil || !dev.ApplicationIdentifiers.Equal(ids.ApplicationIdentifiers) {
-			return nil, nil, errDeviceNotFound
+		if dev == nil {
+			return nil, nil, errDeviceNotFound.New()
 		}
-		evt = evtDeleteEndDevice(ctx, ids, nil)
+		evt = evtDeleteEndDevice.NewWithIdentifiersAndData(ctx, ids, nil)
 		return nil, nil, nil
 	})
 	if err != nil {

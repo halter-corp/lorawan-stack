@@ -23,13 +23,13 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	clusterauth "go.thethings.network/lorawan-stack/pkg/auth/cluster"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/rpcmetadata"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
@@ -37,8 +37,8 @@ var (
 	errUnsupportedAuthorization = errors.DefineUnauthenticated("unsupported_authorization", "unsupported authorization method")
 	errAPIKeyNotFound           = errors.DefineUnauthenticated("api_key_not_found", "API key not found")
 	errInvalidAuthorization     = errors.DefineUnauthenticated("invalid_authorization", "invalid authorization")
-	errTokenNotFound            = errors.DefineUnauthenticated("token_not_found", "access token not found")
-	errTokenExpired             = errors.DefineUnauthenticated("token_expired", "access token expired")
+	errTokenNotFound            = errors.DefineUnauthenticated("token_not_found", "token not found")
+	errTokenExpired             = errors.DefineUnauthenticated("token_expired", "token expired")
 	errUserRejected             = errors.DefinePermissionDenied("user_rejected", "user account was rejected")
 	errUserRequested            = errors.DefinePermissionDenied("user_requested", "user account approval is pending")
 	errUserSuspended            = errors.DefinePermissionDenied("user_suspended", "user account was suspended")
@@ -85,7 +85,7 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 		}, nil
 	}
 	if strings.ToLower(md.AuthType) != "bearer" {
-		return nil, errUnsupportedAuthorization
+		return nil, errUnsupportedAuthorization.New()
 	}
 
 	token := md.AuthValue
@@ -115,10 +115,10 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 			valid, err := auth.Validate(apiKey.GetKey(), tokenKey)
 			region.End()
 			if err != nil {
-				return err
+				return errInvalidAuthorization.WithCause(err)
 			}
 			if !valid {
-				return errInvalidAuthorization
+				return errInvalidAuthorization.New()
 			}
 			apiKey.Key = ""
 			apiKey.Rights = ttnpb.RightsFrom(apiKey.Rights...).Implied().GetRights()
@@ -153,13 +153,13 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 			valid, err := auth.Validate(accessToken.GetAccessToken(), tokenKey)
 			region.End()
 			if err != nil {
-				return err
+				return errInvalidAuthorization.WithCause(err)
 			}
 			if !valid {
-				return errInvalidAuthorization
+				return errInvalidAuthorization.New()
 			}
 			if accessToken.ExpiresAt.Before(time.Now()) {
-				return errTokenExpired
+				return errTokenExpired.New()
 			}
 			accessToken.AccessToken, accessToken.RefreshToken = "", ""
 			accessToken.Rights = ttnpb.RightsFrom(accessToken.Rights...).Implied().GetRights()
@@ -186,19 +186,59 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 			case ttnpb.STATE_APPROVED:
 				// Normal OAuth client.
 			case ttnpb.STATE_REJECTED:
-				return errOAuthClientRejected
+				return errOAuthClientRejected.New()
 			case ttnpb.STATE_FLAGGED:
 				// Innocent until proven guilty.
 			case ttnpb.STATE_SUSPENDED:
-				return errOAuthClientSuspended
+				return errOAuthClientSuspended.New()
 			default:
 				panic(fmt.Sprintf("Unhandled client state: %s", client.State.String()))
 			}
 			userRights = ttnpb.RightsFrom(accessToken.Rights...)
 			return nil
 		}
+	case auth.SessionToken:
+		fetch = func(db *gorm.DB) error {
+			session, err := store.GetUserSessionStore(db).GetSessionByID(ctx, tokenID)
+			if err != nil {
+				if errors.IsNotFound(err) {
+					return errTokenNotFound.WithCause(err)
+				}
+				return err
+			}
+			region := trace.StartRegion(ctx, "validate session token")
+			valid, err := auth.Validate(session.GetSessionSecret(), tokenKey)
+			region.End()
+			if err != nil {
+				return errInvalidAuthorization.WithCause(err)
+			}
+			if !valid {
+				return errInvalidAuthorization.New()
+			}
+			if session.ExpiresAt != nil && session.ExpiresAt.Before(time.Now()) {
+				return errTokenExpired.New()
+			}
+			session.SessionSecret = ""
+			res.AccessMethod = &ttnpb.AuthInfoResponse_UserSession{
+				UserSession: session,
+			}
+			user, err = store.GetUserStore(db).GetUser(ctx, &session.UserIdentifiers, userFieldMask)
+			if err != nil {
+				if errors.IsNotFound(err) {
+					return errTokenNotFound.WithCause(err)
+				}
+				return err
+			}
+
+			// Warning: A user authorized by session cookie will be granted all
+			// current and future rights. When using this auth type, the respective
+			// handlers need to ensure thorough CSRF and CORS protection using
+			// appropriate middleware.
+			userRights = ttnpb.RightsFrom(ttnpb.RIGHT_ALL).Implied()
+			return nil
+		}
 	default:
-		return nil, errUnsupportedAuthorization
+		return nil, errUnsupportedAuthorization.New()
 	}
 
 	if err = is.withDatabase(ctx, fetch); err != nil {
@@ -206,11 +246,6 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 	}
 
 	if user != nil {
-		if user.Admin {
-			res.IsAdmin = true
-			res.UniversalRights = ttnpb.AllAdminRights.Implied().Intersect(userRights)
-		}
-
 		if is.configFromContext(ctx).UserRegistration.ContactInfoValidation.Required && user.PrimaryEmailAddressValidatedAt == nil {
 			// Go to profile page, edit basic settings (such as email), delete account.
 			restrictRights(res, ttnpb.RightsFrom(ttnpb.RIGHT_USER_INFO, ttnpb.RIGHT_USER_SETTINGS_BASIC, ttnpb.RIGHT_USER_DELETE))
@@ -224,6 +259,10 @@ func (is *IdentityServer) authInfo(ctx context.Context) (info *ttnpb.AuthInfoRes
 			warning.Add(ctx, "Restricted rights while account pending")
 		case ttnpb.STATE_APPROVED:
 			// Normal user.
+			if user.Admin {
+				res.IsAdmin = true
+				res.UniversalRights = ttnpb.AllAdminRights.Implied().Intersect(userRights)
+			}
 		case ttnpb.STATE_REJECTED:
 			// Go to profile page, delete account.
 			restrictRights(res, ttnpb.RightsFrom(ttnpb.RIGHT_USER_INFO, ttnpb.RIGHT_USER_DELETE))
@@ -266,11 +305,11 @@ func (is *IdentityServer) RequireAuthenticated(ctx context.Context) error {
 				// Flagged users have the same authentication presence as approved users until proven guilty.
 				return nil
 			case ttnpb.STATE_REQUESTED:
-				return errUserRequested
+				return errUserRequested.New()
 			case ttnpb.STATE_REJECTED:
-				return errUserRejected
+				return errUserRejected.New()
 			case ttnpb.STATE_SUSPENDED:
-				return errUserSuspended
+				return errUserSuspended.New()
 			default:
 				panic(fmt.Sprintf("Unhandled user state: %s", user.State.String()))
 			}
@@ -283,11 +322,13 @@ func (is *IdentityServer) RequireAuthenticated(ctx context.Context) error {
 		return nil
 	} else if accessToken := authInfo.GetOAuthAccessToken(); accessToken != nil {
 		return nil
+	} else if userSession := authInfo.GetUserSession(); userSession != nil {
+		return nil
 	}
 	if len(authInfo.UniversalRights.GetRights()) > 0 {
 		return nil
 	}
-	return errUnauthenticated
+	return errUnauthenticated.New()
 }
 
 // UniversalRights returns the universal rights (that apply to any entity or
@@ -313,7 +354,7 @@ func (is *IdentityServer) IsAdmin(ctx context.Context) bool {
 // RequireAdmin returns an error when the caller is not an admin.
 func (is *IdentityServer) RequireAdmin(ctx context.Context) error {
 	if !is.IsAdmin(ctx) {
-		return errPermissionDenied
+		return errPermissionDenied.New()
 	}
 	return nil
 }

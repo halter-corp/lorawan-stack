@@ -20,7 +20,7 @@ import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "lorawan-stack/api/identifiers.proto";
 
-option go_package = "go.thethings.network/lorawan-stack/pkg/ttnpb";
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
 // Right is the enum that defines all the different rights to do something in the network.
 enum Right {
@@ -119,6 +119,10 @@ enum Right {
   RIGHT_GATEWAY_STATUS_READ = 38;
   // The right to view view gateway location.
   RIGHT_GATEWAY_LOCATION_READ = 39;
+  // The right to store secrets associated with this gateway.
+  RIGHT_GATEWAY_WRITE_SECRETS = 57;
+  // The right to retrieve secrets associated with this gateway.
+  RIGHT_GATEWAY_READ_SECRETS = 58;
   // The pseudo-right for all (current and future) gateway rights.
   RIGHT_GATEWAY_ALL = 40;
 
@@ -155,6 +159,8 @@ enum Right {
 
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;
+
+  // Next value: 59
 }
 
 message Rights {

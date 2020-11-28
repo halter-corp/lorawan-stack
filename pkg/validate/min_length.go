@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 func MinLength(length int) validateFn { // nolint: golint, returns unexported type on purpose
 	return func(v interface{}) error {
 		if v == nil {
-			return errNil
+			return errNil.New()
 		}
 
 		typ := reflect.TypeOf(v)

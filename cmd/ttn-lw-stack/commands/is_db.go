@@ -15,8 +15,10 @@
 package commands
 
 import (
+	"github.com/jinzhu/gorm"
 	"github.com/spf13/cobra"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store/migrations"
 )
 
 var (
@@ -68,8 +70,18 @@ var (
 				logger.Infof("Detected database %s", dbVersion)
 			}
 
-			logger.Info("Migrating tables...")
-			if err = store.AutoMigrate(db).Error; err != nil {
+			err = store.Transact(ctx, db, func(db *gorm.DB) error {
+				logger.Info("Migrating table structure...")
+				return store.AutoMigrate(db).Error
+			})
+			if err != nil {
+				return err
+			}
+			err = store.Transact(ctx, db, func(db *gorm.DB) error {
+				logger.Info("Migrating table contents...")
+				return migrations.Apply(ctx, db, migrations.All...)
+			})
+			if err != nil {
 				return err
 			}
 

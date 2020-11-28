@@ -22,17 +22,20 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"go.opencensus.io/plugin/ocgrpc"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/metrics"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/warning"
-	"go.thethings.network/lorawan-stack/pkg/version"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware"
+	_ "go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/discover" // Register service discovery resolvers
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
+	"go.thethings.network/lorawan-stack/v3/pkg/version"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 // DefaultDialOptions for gRPC clients
@@ -63,5 +66,10 @@ func DefaultDialOptions(ctx context.Context) []grpc.DialOption {
 		)),
 		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(streamInterceptors...)),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(unaryInterceptors...)),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                5 * time.Minute,
+			Timeout:             20 * time.Second,
+			PermitWithoutStream: false,
+		}),
 	}
 }

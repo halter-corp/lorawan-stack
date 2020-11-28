@@ -21,16 +21,18 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectApplicationWebhookFlags = util.FieldMaskFlags(&ttnpb.ApplicationWebhook{})
 	setApplicationWebhookFlags    = util.FieldFlags(&ttnpb.ApplicationWebhook{})
+
+	selectAllApplicationWebhookFlags = util.SelectAllFlagSet("application webhook")
 )
 
 func applicationWebhookIDFlags() *pflag.FlagSet {
@@ -83,7 +85,7 @@ var (
 	}
 	applicationsWebhooksGetFormatsCommand = &cobra.Command{
 		Use:     "get-formats",
-		Aliases: []string{"formats"},
+		Aliases: []string{"formats", "list-formats"},
 		Short:   "Get the available formats for application webhooks",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
@@ -114,6 +116,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationWebhookRegistry/Get"])
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -146,6 +149,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationWebhookRegistry/List"])
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -197,8 +201,9 @@ var (
 		},
 	}
 	applicationsWebhooksDeleteCommand = &cobra.Command{
-		Use:   "delete [application-id] [webhook-id]",
-		Short: "Delete an application webhook",
+		Use:     "delete [application-id] [webhook-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an application webhook",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			webhookID, err := getApplicationWebhookID(cmd.Flags(), args)
 			if err != nil {
@@ -223,9 +228,11 @@ func init() {
 	applicationsWebhooksCommand.AddCommand(applicationsWebhooksGetFormatsCommand)
 	applicationsWebhooksGetCommand.Flags().AddFlagSet(applicationWebhookIDFlags())
 	applicationsWebhooksGetCommand.Flags().AddFlagSet(selectApplicationWebhookFlags)
+	applicationsWebhooksGetCommand.Flags().AddFlagSet(selectAllApplicationWebhookFlags)
 	applicationsWebhooksCommand.AddCommand(applicationsWebhooksGetCommand)
 	applicationsWebhooksListCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsWebhooksListCommand.Flags().AddFlagSet(selectApplicationWebhookFlags)
+	applicationsWebhooksListCommand.Flags().AddFlagSet(selectAllApplicationWebhookFlags)
 	applicationsWebhooksCommand.AddCommand(applicationsWebhooksListCommand)
 	applicationsWebhooksSetCommand.Flags().AddFlagSet(applicationWebhookIDFlags())
 	applicationsWebhooksSetCommand.Flags().AddFlagSet(setApplicationWebhookFlags)

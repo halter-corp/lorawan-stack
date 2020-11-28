@@ -15,12 +15,13 @@
 package ttnpb
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // MarshalText implements encoding.TextMarshaler interface.
@@ -79,9 +80,26 @@ func (v *Major) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalBinary implements encoding.BinaryMarshaler interface.
+func (v MACVersion) MarshalBinary() ([]byte, error) {
+	if v > 255 {
+		panic(fmt.Errorf("MACVersion enum exceeds 255"))
+	}
+	return []byte{byte(v)}, nil
+}
+
 // MarshalText implements encoding.TextMarshaler interface.
 func (v MACVersion) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
+}
+
+// UnmarshalBinary implements encoding.BinaryMarshaler interface.
+func (v *MACVersion) UnmarshalBinary(b []byte) error {
+	if len(b) != 1 {
+		return errCouldNotParse("MACVersion")(string(b))
+	}
+	*v = MACVersion(b[0])
+	return nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler interface.
@@ -674,6 +692,8 @@ func (v MACVersion) String() string {
 		return "1.0.2"
 	case MAC_V1_0_3:
 		return "1.0.3"
+	case MAC_V1_0_4:
+		return "1.0.4"
 	case MAC_V1_1:
 		return "1.1.0"
 	}
@@ -684,6 +704,8 @@ func init() {
 	for i := range MACVersion_name {
 		MACVersion_value[MACVersion(i).String()] = i
 	}
+	MACVersion_value["1.0"] = int32(MAC_V1_0) // 1.0 is the official version number
+	MACVersion_value["1.1"] = int32(MAC_V1_1) // 1.1 is the official version number
 }
 
 // Compare compares MACVersions v to o:
@@ -706,7 +728,44 @@ func (v MACVersion) EncryptFOpts() bool {
 // HasMaxFCntGap reports whether v defines a MaxFCntGap.
 // HasMaxFCntGap panics, if v.Validate() returns non-nil error.
 func (v MACVersion) HasMaxFCntGap() bool {
-	return v.Compare(MAC_V1_1) < 0
+	return v.Compare(MAC_V1_0_4) < 0
+}
+
+// HasNoChangeTXPowerIndex reports whether v defines a no-change TxPowerIndex value.
+// HasNoChangeTXPowerIndex panics, if v.Validate() returns non-nil error.
+func (v MACVersion) HasNoChangeTXPowerIndex() bool {
+	return v.Compare(MAC_V1_0_4) >= 0
+}
+
+// HasNoChangeDataRateIndex reports whether v defines a no-change DataRateIndex value.
+// HasNoChangeDataRateIndex panics, if v.Validate() returns non-nil error.
+func (v MACVersion) HasNoChangeDataRateIndex() bool {
+	return v.Compare(MAC_V1_0_4) >= 0
+}
+
+// IgnoreUplinksExceedingLengthLimit reports whether v requires Network Server to
+// silently drop uplinks exceeding selected data rate payload length limits.
+// IgnoreUplinksExceedingLengthLimit panics, if v.Validate() returns non-nil error.
+func (v MACVersion) IgnoreUplinksExceedingLengthLimit() bool {
+	return v.Compare(MAC_V1_0_4) >= 0 && v.Compare(MAC_V1_1) < 0
+}
+
+// IncrementDevNonce reports whether v defines DevNonce as an incrementing counter.
+// IncrementDevNonce panics, if v.Validate() returns non-nil error.
+func (v MACVersion) IncrementDevNonce() bool {
+	return v.Compare(MAC_V1_0_4) >= 0
+}
+
+// UseNwkKey reports whether v uses a root NwkKey.
+// UseNwkKey panics, if v.Validate() returns non-nil error.
+func (v MACVersion) UseNwkKey() bool {
+	return v.Compare(MAC_V1_1) >= 0
+}
+
+// RequireDevEUIForABP reports whether v requires ABP devices to have a DevEUI associated.
+// RequireDevEUIForABP panics, if v.Validate() returns non-nil error.
+func (v MACVersion) RequireDevEUIForABP() bool {
+	return v.Compare(MAC_V1_0_4) >= 0 && v.Compare(MAC_V1_1) < 0
 }
 
 // Validate reports whether v represents a valid PHYVersion.
@@ -758,6 +817,10 @@ func init() {
 	for i := range PHYVersion_name {
 		PHYVersion_value[PHYVersion(i).String()] = i
 	}
+	PHYVersion_value["1.0"] = int32(PHY_V1_0)           // 1.0 is the official version number
+	PHYVersion_value["1.0.2"] = int32(PHY_V1_0_2_REV_A) // Revisions were added from 1.0.2-b
+	PHYVersion_value["1.1-a"] = int32(PHY_V1_1_REV_A)   // 1.1 is the official version number
+	PHYVersion_value["1.1-b"] = int32(PHY_V1_1_REV_B)   // 1.1 is the official version number
 }
 
 // String implements fmt.Stringer.
@@ -768,4 +831,20 @@ func (v DataRateIndex) String() string {
 // String implements fmt.Stringer.
 func (v RxDelay) String() string {
 	return strconv.Itoa(int(v))
+}
+
+func (v LoRaDataRate) DataRate() DataRate {
+	return DataRate{
+		Modulation: &DataRate_LoRa{
+			LoRa: &v,
+		},
+	}
+}
+
+func (v FSKDataRate) DataRate() DataRate {
+	return DataRate{
+		Modulation: &DataRate_FSK{
+			FSK: &v,
+		},
+	}
 }

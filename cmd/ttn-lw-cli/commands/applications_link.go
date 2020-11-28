@@ -21,16 +21,18 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectApplicationLinkFlags = util.FieldMaskFlags(&ttnpb.ApplicationLink{})
 	setApplicationLinkFlags    = util.FieldFlags(&ttnpb.ApplicationLink{})
+
+	selectAllApplicationLinkFlags = util.SelectAllFlagSet("application link")
 )
 
 var errNoApplicationLinkAPIKey = errors.DefineInvalidArgument("no_application_link_api_key", "no application link API key set")
@@ -56,6 +58,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.As/GetLink"])
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -90,7 +93,11 @@ var (
 			if link.APIKey == "" {
 				return errNoApplicationLinkAPIKey
 			}
-
+			newPaths, err := parsePayloadFormatterParameterFlags("default-formatters", link.DefaultFormatters, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			paths = append(paths, newPaths...)
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
 				return err
@@ -108,8 +115,9 @@ var (
 		},
 	}
 	applicationsLinkDeleteCommand = &cobra.Command{
-		Use:   "delete [application-id]",
-		Short: "Delete an application link",
+		Use:     "delete [application-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an application link",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), args)
 			if appID == nil {
@@ -133,9 +141,11 @@ var (
 func init() {
 	applicationsLinkGetCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsLinkGetCommand.Flags().AddFlagSet(selectApplicationLinkFlags)
+	applicationsLinkGetCommand.Flags().AddFlagSet(selectAllApplicationLinkFlags)
 	applicationsLinkCommand.AddCommand(applicationsLinkGetCommand)
 	applicationsLinkSetCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsLinkSetCommand.Flags().AddFlagSet(setApplicationLinkFlags)
+	applicationsLinkSetCommand.Flags().AddFlagSet(payloadFormatterParameterFlags("default-formatters"))
 	applicationsLinkCommand.AddCommand(applicationsLinkSetCommand)
 	applicationsLinkDeleteCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsLinkCommand.AddCommand(applicationsLinkDeleteCommand)

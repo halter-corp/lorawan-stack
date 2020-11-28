@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -34,6 +34,10 @@ var infoFilteredPrefixes = []string{
 	`scheme "" not registered`,
 	`ccResolverWrapper: sending new addresses`,
 	`ClientConn switching balancer`,
+}
+
+var warningFilteredPrefixes = []string{
+	`grpc: Server.Serve failed to create ServerTransport: connection error: desc = "transport: http2Server.HandleStreams failed to receive the preface from client: unexpected EOF`,
 }
 
 type ttnGrpcLogger struct {
@@ -57,14 +61,22 @@ func (l *ttnGrpcLogger) Infoln(args ...interface{}) {
 func (l *ttnGrpcLogger) Infof(format string, args ...interface{}) {
 	l.info(fmt.Sprintf(format, args...))
 }
+func (l *ttnGrpcLogger) warn(msg string) {
+	for _, prefix := range warningFilteredPrefixes {
+		if strings.HasPrefix(msg, prefix) {
+			return
+		}
+	}
+	l.logger.Warn(msg)
+}
 func (l *ttnGrpcLogger) Warning(args ...interface{}) {
-	l.logger.Warn(fmt.Sprint(args...))
+	l.warn(fmt.Sprint(args...))
 }
 func (l *ttnGrpcLogger) Warningln(args ...interface{}) {
-	l.logger.Warn(fmt.Sprint(args...))
+	l.warn(fmt.Sprint(args...))
 }
 func (l *ttnGrpcLogger) Warningf(format string, args ...interface{}) {
-	l.logger.Warnf(format, args...)
+	l.warn(fmt.Sprintf(format, args...))
 }
 func (l *ttnGrpcLogger) Error(args ...interface{}) {
 	l.logger.Error(fmt.Sprint(args...))

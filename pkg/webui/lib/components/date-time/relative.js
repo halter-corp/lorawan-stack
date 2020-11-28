@@ -15,14 +15,13 @@
 import React from 'react'
 import { FormattedRelativeTime } from 'react-intl'
 
-import PropTypes from '../../prop-types'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import DateTime from '.'
 
-function formatInSeconds(from, to) {
-  return Math.floor((from - to) / 1000)
-}
+const formatInSeconds = (from, to) => Math.floor((from - to) / 1000)
 
-const RelativeTime = function(props) {
+const RelativeTime = props => {
   const { className, value, unit, computeDelta, updateIntervalInSeconds, children } = props
 
   return (
@@ -52,23 +51,23 @@ const RelativeTime = function(props) {
 RelativeTime.propTypes = {
   children: PropTypes.func,
   className: PropTypes.string,
-  /** The time to be displayed */
+  /** A function to compute relative delta in specified time units in the `unit` prop. */
   computeDelta: PropTypes.func,
-  /** The interval that the component will re-render in seconds */
+  /** The unit to calculate relative date time. */
   unit: PropTypes.oneOf(['second', 'minute', 'hour', 'day', 'week', 'month', 'year']),
-  /** The unit to calculate relative date time */
+  /** The interval that the component will re-render in seconds. */
   updateIntervalInSeconds: PropTypes.number,
-  /** A function to compute relative delta in specified time units in the `unit` prop */
+  /** The time to be displayed. */
   value: PropTypes.oneOfType([
     PropTypes.string,
-    PropTypes.number, // support timestamps
+    PropTypes.number, // Support timestamps.
     PropTypes.instanceOf(Date),
   ]).isRequired,
 }
 
 RelativeTime.defaultProps = {
   children: dateTime => dateTime,
-  className: '',
+  className: undefined,
   updateIntervalInSeconds: 1,
   unit: 'second',
   computeDelta: formatInSeconds,

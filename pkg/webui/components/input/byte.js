@@ -13,10 +13,11 @@
 // limitations under the License.
 
 import React from 'react'
-import PropTypes from 'prop-types'
 import classnames from 'classnames'
 import bind from 'autobind-decorator'
 import MaskedInput from 'react-text-mask'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './input.styl'
 
@@ -35,7 +36,7 @@ const mask = function(min, max, showPerChar = false) {
 
   let length = 3 * Math.floor(max / wordSize) - 1
   if (showPerChar && max % wordSize !== 0) {
-    // account for the space and the extra character
+    // Account for the space and the extra character.
     length += wordSize
   }
 
@@ -57,46 +58,27 @@ const clean = function(str) {
   return str.replace(new RegExp(`[ ${PLACEHOLDER_CHAR}]`, 'g'), '')
 }
 
-const Placeholder = function(props) {
-  const { min = 0, max = 256, value = '', placeholder, showPerChar = false } = props
-
-  if (placeholder || Boolean(value)) {
-    return null
-  }
-
-  const len = 1.5 * value.length - (value.length - 2 * Math.floor(value.length / 2))
-
-  const content = mask(min, max, showPerChar)
-    .map(function(el, i) {
-      if (!(el instanceof RegExp)) {
-        return ' '
-      }
-
-      if (i < len) {
-        return ' '
-      }
-
-      return PLACEHOLDER_CHAR
-    })
-    .join('')
-
-  return <div className={style.placeholder}>{content}</div>
-}
-
-@bind
 export default class ByteInput extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
     max: PropTypes.number,
     min: PropTypes.number,
-    onChange: PropTypes.func,
+    onBlur: PropTypes.func,
+    onChange: PropTypes.func.isRequired,
+    placeholder: PropTypes.message,
     showPerChar: PropTypes.bool,
-    value: PropTypes.string,
+    unbounded: PropTypes.bool,
+    value: PropTypes.string.isRequired,
   }
 
   static defaultProps = {
+    className: undefined,
     min: 0,
-    max: 256,
+    max: undefined,
+    placeholder: undefined,
     showPerChar: false,
+    onBlur: () => null,
+    unbounded: false,
   }
 
   input = React.createRef()
@@ -109,33 +91,28 @@ export default class ByteInput extends React.Component {
 
   render() {
     const {
+      onBlur,
       value,
       className,
       min,
       max,
       onChange,
-      valid,
       placeholder,
-      type,
       showPerChar,
+      unbounded,
       ...rest
     } = this.props
 
-    return [
-      <Placeholder
-        key="placeholder"
-        min={min}
-        max={max}
-        value={value}
-        placeholder={placeholder}
-        showPerChar={showPerChar}
-      />,
+    const valueLength = clean(value).length || 0
+    const calculatedMax = max || Math.max(Math.floor(valueLength / 2) + 1, 1)
+
+    return (
       <MaskedInput
         ref={this.input}
         key="input"
         className={classnames(className, style.byte)}
         value={value}
-        mask={mask(min, max, showPerChar)}
+        mask={mask(min, calculatedMax, showPerChar)}
         placeholderChar={PLACEHOLDER_CHAR}
         keepCharPositions={false}
         pipe={upper}
@@ -143,9 +120,13 @@ export default class ByteInput extends React.Component {
         placeholder={placeholder}
         onCopy={this.onCopy}
         onCut={this.onCut}
+        onBlur={this.onBlur}
+        onPaste={this.onPaste}
+        showMask={!placeholder && !unbounded}
+        guide={!unbounded}
         {...rest}
-      />,
-    ]
+      />
+    )
   }
 
   focus() {
@@ -164,14 +145,46 @@ export default class ByteInput extends React.Component {
     }
   }
 
+  @bind
   onChange(evt) {
+    const { max, showPerChar } = this.props
+    const { data } = evt.nativeEvent
+
+    let value = clean(event.target.value)
+    const normalizedMax = showPerChar ? Math.ceil(max / 2) : max
+
+    // Check if the value already has length equal to `max`.
+    const isValueMaxLength = value.length === normalizedMax * 2
+    // Check if the cursor is placed after the last placeholder chararcter.
+    const isCursorAfterMask = evt.target.selectionStart === normalizedMax * 3 - 1
+
+    if (!isValueMaxLength && isCursorAfterMask && data !== null) {
+      const hexMatch = data.match(hex)
+      if (hexMatch !== null) {
+        value += hexMatch[0]
+      }
+    }
+
     this.props.onChange({
       target: {
+        name: evt.target.name,
+        value,
+      },
+    })
+  }
+
+  @bind
+  onBlur(evt) {
+    this.props.onBlur({
+      relatedTarget: evt.relatedTarget,
+      target: {
+        name: evt.target.name,
         value: clean(evt.target.value),
       },
     })
   }
 
+  @bind
   onCopy(evt) {
     const input = evt.target
     const value = input.value.substr(
@@ -182,6 +195,18 @@ export default class ByteInput extends React.Component {
     evt.preventDefault()
   }
 
+  @bind
+  onPaste(evt) {
+    const { min, showPerChar, unbounded } = this.props
+    if (unbounded) {
+      evt.preventDefault()
+      this.input.current.inputElement.value = evt.clipboardData.getData('text/plain')
+      mask(min, evt.clipboardData.getData('text/plain').length, showPerChar)
+      this.onChange(evt)
+    }
+  }
+
+  @bind
   onCut(evt) {
     const input = evt.target
     const value = input.value.substr(
@@ -191,7 +216,7 @@ export default class ByteInput extends React.Component {
     evt.clipboardData.setData('text/plain', clean(value))
     evt.preventDefault()
 
-    // emit the cut value
+    // Emit the cut value.
     const cut = input.value.substr(0, input.selectionStart) + input.value.substr(input.selectionEnd)
     evt.target.value = cut
     this.onChange({

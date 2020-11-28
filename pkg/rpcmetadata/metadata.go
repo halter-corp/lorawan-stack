@@ -17,7 +17,6 @@ package rpcmetadata
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"google.golang.org/grpc/metadata"
@@ -33,17 +32,17 @@ type MD struct {
 	NetAddress     string
 	AllowInsecure  bool
 
-	// Limit is the limit of elements to display per-page.
-	Limit uint64
-
-	// Page is the page of elements to display.
-	Page uint64
-
 	// Host is the hostname the request is directed to.
 	Host string
 
 	// URI is the URI the request is directed to.
 	URI string
+
+	// XForwardedFor is set from the X-Forwarded-For header.
+	XForwardedFor string
+
+	// UserAgent is set from the User-Agent or the grpcgateway-user-agent header.
+	UserAgent string
 }
 
 // RequireTransportSecurity returns true if authentication is configured
@@ -75,11 +74,11 @@ func (m MD) ToMetadata() metadata.MD {
 	if m.URI != "" {
 		pairs = append(pairs, "uri", m.URI)
 	}
-	if m.Limit != 0 {
-		pairs = append(pairs, "limit", strconv.FormatUint(m.Limit, 10))
+	if m.XForwardedFor != "" {
+		pairs = append(pairs, "x-forwarded-for", m.XForwardedFor)
 	}
-	if m.Page != 0 {
-		pairs = append(pairs, "page", strconv.FormatUint(m.Page, 10))
+	if m.UserAgent != "" {
+		pairs = append(pairs, "user-agent", m.UserAgent)
 	}
 	return metadata.Pairs(pairs...)
 }
@@ -123,11 +122,13 @@ func FromMetadata(md metadata.MD) (m MD) {
 	if uri, ok := md["uri"]; ok && len(uri) > 0 {
 		m.URI = uri[len(uri)-1]
 	}
-	if limit, ok := md["limit"]; ok && len(limit) > 0 {
-		m.Limit, _ = strconv.ParseUint(limit[len(limit)-1], 10, 64)
+	if xForwardedFor, ok := md["x-forwarded-for"]; ok && len(xForwardedFor) > 0 {
+		m.XForwardedFor = xForwardedFor[len(xForwardedFor)-1]
 	}
-	if page, ok := md["page"]; ok && len(page) > 0 {
-		m.Page, _ = strconv.ParseUint(page[len(page)-1], 10, 64)
+	if userAgent, ok := md["grpcgateway-user-agent"]; ok && len(userAgent) > 0 {
+		m.UserAgent = userAgent[len(userAgent)-1]
+	} else if userAgent, ok := md["user-agent"]; ok && len(userAgent) > 0 {
+		m.UserAgent = userAgent[len(userAgent)-1]
 	}
 	return
 }

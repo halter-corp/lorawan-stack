@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -31,6 +32,25 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
+
+func request_Ns_GenerateDevAddr_0(ctx context.Context, marshaler runtime.Marshaler, client NsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq types.Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.GenerateDevAddr(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Ns_GenerateDevAddr_0(ctx context.Context, marshaler runtime.Marshaler, server NsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq types.Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := server.GenerateDevAddr(ctx, &protoReq)
+	return msg, metadata, err
+
+}
 
 var (
 	filter_NsEndDeviceRegistry_Get_0 = &utilities.DoubleArray{Encoding: map[string]int{"end_device_ids": 0, "application_ids": 1, "application_id": 2, "device_id": 3}, Base: []int{1, 1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 3, 2, 4, 5}}
@@ -114,7 +134,10 @@ func local_request_NsEndDeviceRegistry_Get_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "end_device_ids.device_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_NsEndDeviceRegistry_Get_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NsEndDeviceRegistry_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -367,7 +390,10 @@ func local_request_NsEndDeviceRegistry_Delete_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "device_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_NsEndDeviceRegistry_Delete_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_NsEndDeviceRegistry_Delete_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -376,32 +402,49 @@ func local_request_NsEndDeviceRegistry_Delete_0(ctx context.Context, marshaler r
 
 }
 
-func request_Ns_GenerateDevAddr_0(ctx context.Context, marshaler runtime.Marshaler, client NsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq types.Empty
-	var metadata runtime.ServerMetadata
+// RegisterNsHandlerServer registers the http handlers for service Ns to "mux".
+// UnaryRPC     :call NsServer directly.
+// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterNsHandlerFromEndpoint instead.
+func RegisterNsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server NsServer) error {
 
-	msg, err := client.GenerateDevAddr(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
+	mux.Handle("GET", pattern_Ns_GenerateDevAddr_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Ns_GenerateDevAddr_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
 
-}
+		forward_Ns_GenerateDevAddr_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
-func local_request_Ns_GenerateDevAddr_0(ctx context.Context, marshaler runtime.Marshaler, server NsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq types.Empty
-	var metadata runtime.ServerMetadata
+	})
 
-	msg, err := server.GenerateDevAddr(ctx, &protoReq)
-	return msg, metadata, err
-
+	return nil
 }
 
 // RegisterNsEndDeviceRegistryHandlerServer registers the http handlers for service NsEndDeviceRegistry to "mux".
 // UnaryRPC     :call NsEndDeviceRegistryServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterNsEndDeviceRegistryHandlerFromEndpoint instead.
 func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server NsEndDeviceRegistryServer) error {
 
 	mux.Handle("GET", pattern_NsEndDeviceRegistry_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -409,6 +452,7 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_NsEndDeviceRegistry_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -422,6 +466,8 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("PUT", pattern_NsEndDeviceRegistry_Set_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -429,6 +475,7 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_NsEndDeviceRegistry_Set_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -442,6 +489,8 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("POST", pattern_NsEndDeviceRegistry_Set_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -449,6 +498,7 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_NsEndDeviceRegistry_Set_1(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -462,6 +512,8 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	mux.Handle("DELETE", pattern_NsEndDeviceRegistry_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -469,6 +521,7 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 		resp, md, err := local_request_NsEndDeviceRegistry_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -482,21 +535,54 @@ func RegisterNsEndDeviceRegistryHandlerServer(ctx context.Context, mux *runtime.
 	return nil
 }
 
-// RegisterNsHandlerServer registers the http handlers for service Ns to "mux".
-// UnaryRPC     :call NsServer directly.
-// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-func RegisterNsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server NsServer) error {
+// RegisterNsHandlerFromEndpoint is same as RegisterNsHandler but
+// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
+func RegisterNsHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+	conn, err := grpc.Dial(endpoint, opts...)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+			return
+		}
+		go func() {
+			<-ctx.Done()
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+		}()
+	}()
+
+	return RegisterNsHandler(ctx, mux, conn)
+}
+
+// RegisterNsHandler registers the http handlers for service Ns to "mux".
+// The handlers forward requests to the grpc endpoint over "conn".
+func RegisterNsHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterNsHandlerClient(ctx, mux, NewNsClient(conn))
+}
+
+// RegisterNsHandlerClient registers the http handlers for service Ns
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "NsClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "NsClient"
+// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
+// "NsClient" to call the correct interceptors.
+func RegisterNsHandlerClient(ctx context.Context, mux *runtime.ServeMux, client NsClient) error {
 
 	mux.Handle("GET", pattern_Ns_GenerateDevAddr_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Ns_GenerateDevAddr_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := request_Ns_GenerateDevAddr_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -509,6 +595,14 @@ func RegisterNsHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 
 	return nil
 }
+
+var (
+	pattern_Ns_GenerateDevAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"ns", "dev_addr"}, "", runtime.AssumeColonVerbOpt(true)))
+)
+
+var (
+	forward_Ns_GenerateDevAddr_0 = runtime.ForwardResponseMessage
+)
 
 // RegisterNsEndDeviceRegistryHandlerFromEndpoint is same as RegisterNsEndDeviceRegistryHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
@@ -649,73 +743,4 @@ var (
 	forward_NsEndDeviceRegistry_Set_1 = runtime.ForwardResponseMessage
 
 	forward_NsEndDeviceRegistry_Delete_0 = runtime.ForwardResponseMessage
-)
-
-// RegisterNsHandlerFromEndpoint is same as RegisterNsHandler but
-// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterNsHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-			return
-		}
-		go func() {
-			<-ctx.Done()
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-		}()
-	}()
-
-	return RegisterNsHandler(ctx, mux, conn)
-}
-
-// RegisterNsHandler registers the http handlers for service Ns to "mux".
-// The handlers forward requests to the grpc endpoint over "conn".
-func RegisterNsHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterNsHandlerClient(ctx, mux, NewNsClient(conn))
-}
-
-// RegisterNsHandlerClient registers the http handlers for service Ns
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "NsClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "NsClient"
-// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "NsClient" to call the correct interceptors.
-func RegisterNsHandlerClient(ctx context.Context, mux *runtime.ServeMux, client NsClient) error {
-
-	mux.Handle("GET", pattern_Ns_GenerateDevAddr_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_Ns_GenerateDevAddr_0(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_Ns_GenerateDevAddr_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	return nil
-}
-
-var (
-	pattern_Ns_GenerateDevAddr_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"ns", "dev_addr"}, "", runtime.AssumeColonVerbOpt(true)))
-)
-
-var (
-	forward_Ns_GenerateDevAddr_0 = runtime.ForwardResponseMessage
 )

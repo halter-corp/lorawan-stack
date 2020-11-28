@@ -15,33 +15,36 @@
 import React from 'react'
 import classnames from 'classnames'
 
-import PropTypes from '../../lib/prop-types'
-import Message from '../../lib/components/message'
-import Icon from '../icon'
+import Icon from '@ttn-lw/components/icon'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+
 import Tab from './tab'
 
 import style from './tabs.styl'
 
-const Tabs = function({ className, active, tabs, onTabChange, divider }) {
+const Tabs = function({ className, active, tabs, onTabChange, divider, narrow }) {
   return (
     <ul className={classnames(className, style.tabs, { [style.divider]: divider })}>
-      {tabs.map(function(tab, index) {
-        const { disabled, title, name, icon, narrow = false, link, exact } = tab
-
+      {tabs.map(function({ name, disabled, narrow: nrw, link, exact, icon, title, hidden }, index) {
         return (
-          <Tab
-            key={index}
-            active={name === active}
-            name={name}
-            disabled={disabled}
-            onClick={onTabChange}
-            narrow={narrow}
-            link={link}
-            exact={exact}
-          >
-            {icon && <Icon icon={icon} className={style.icon} />}
-            <Message content={title} />
-          </Tab>
+          !Boolean(hidden) && (
+            <Tab
+              key={index}
+              active={name === active}
+              name={name}
+              disabled={disabled}
+              onClick={onTabChange}
+              narrow={nrw || narrow}
+              link={link}
+              exact={exact}
+            >
+              {icon && <Icon icon={icon} className={style.icon} />}
+              <Message content={title} />
+            </Tab>
+          )
         )
       })}
     </ul>
@@ -49,24 +52,35 @@ const Tabs = function({ className, active, tabs, onTabChange, divider }) {
 }
 
 Tabs.propTypes = {
-  /** The name of the active tab */
+  /** The name of the active tab. */
   active: PropTypes.string,
-  /** A list of tabs */
+  className: PropTypes.string,
+  /** Flag specifying whether the tab should render a bottom divider. */
+  divider: PropTypes.bool,
+  /**
+   * A click handler to be called when the selected tab changes. Passes
+   * the name of the new active tab as an argument.
+   */
+  narrow: PropTypes.bool,
+  /** A list of tabs. */
+  onTabChange: PropTypes.func,
   tabs: PropTypes.arrayOf(
     PropTypes.shape({
       title: PropTypes.message.isRequired,
       name: PropTypes.string.isRequired,
       icon: PropTypes.string,
       disabled: PropTypes.bool,
+      hidden: PropTypes.bool,
     }),
   ).isRequired,
-  /**
-   * A click handler to be called when the selected tab changes. Passes
-   * the name of the new active tab as an argument.
-   */
-  onTabChange: PropTypes.func,
-  /** Flag specifying whether the tab should render a bottom divider */
-  divider: PropTypes.bool,
+}
+
+Tabs.defaultProps = {
+  active: undefined,
+  className: undefined,
+  onTabChange: () => null,
+  divider: false,
+  narrow: false,
 }
 
 export default Tabs

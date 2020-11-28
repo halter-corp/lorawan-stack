@@ -16,35 +16,43 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { Col, Row, Container } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
-import bind from 'autobind-decorator'
 
-import sharedMessages from '../../../lib/shared-messages'
+import DataSheet from '@ttn-lw/components/data-sheet'
 
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import Message from '../../../lib/components/message'
-import DataSheet from '../../../components/data-sheet'
-import DateTime from '../../../lib/components/date-time'
-import DeviceEvents from '../../containers/device-events'
-import DeviceMap from '../../components/device-map'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import Message from '@ttn-lw/lib/components/message'
+import DateTime from '@ttn-lw/lib/components/date-time'
+
+import DeviceMap from '@console/components/device-map'
+
+import DeviceEvents from '@console/containers/device-events'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
+
+import { parseLorawanMacVersion } from '@console/lib/device-utils'
+
+import { selectSelectedDevice } from '@console/store/selectors/devices'
 
 import style from './device-overview.styl'
 
 const m = defineMessages({
-  activationInfo: 'Activation Information',
-  rootKeyId: 'Root Key ID',
-  sessionInfo: 'Session Information',
-  latestData: 'Latest Data',
-  rootKeys: 'Root Keys',
+  activationInfo: 'Activation information',
+  rootKeyId: 'Root key ID',
+  sessionInfo: 'Session information',
+  latestData: 'Latest data',
+  rootKeys: 'Root keys',
   keysNotExposed: 'Keys are not exposed',
 })
 
-@connect(function({ device }, props) {
-  return {
-    device: device.device,
-  }
-})
-@bind
+@connect((state, props) => ({
+  device: selectSelectedDevice(state),
+}))
 class DeviceOverview extends React.Component {
+  static propTypes = {
+    device: PropTypes.device.isRequired,
+  }
+
   get deviceInfo() {
     const {
       ids,
@@ -53,10 +61,14 @@ class DeviceOverview extends React.Component {
       root_keys = {},
       session = {},
       created_at,
+      lorawan_version,
+      supports_join,
     } = this.props.device
 
-    // Get session keys
+    // Get session keys.
     const { keys: sessionKeys = {} } = session
+
+    const lorawanVersion = parseLorawanMacVersion(lorawan_version)
 
     const {
       f_nwk_s_int_key = { key: undefined },
@@ -79,7 +91,7 @@ class DeviceOverview extends React.Component {
       },
     ]
 
-    // Add version info, if it is available
+    // Add version info, if it is available.
     if (Object.keys(version_ids).length > 0) {
       sheetData.push({
         header: sharedMessages.hardware,
@@ -92,19 +104,26 @@ class DeviceOverview extends React.Component {
       })
     }
 
-    // Add activation info, if available
+    // Add activation info, if available.
     const activationInfoData = {
       header: m.activationInfo,
       items: [],
     }
 
     if (ids.join_eui || ids.dev_eui) {
+      const joinEUI =
+        lorawanVersion < 100
+          ? sharedMessages.appEUIJoinEUI
+          : lorawanVersion >= 104
+          ? sharedMessages.joinEUI
+          : sharedMessages.appEUI
+
       activationInfoData.items.push(
-        { key: sharedMessages.joinEUI, value: ids.join_eui, type: 'byte', sensitive: false },
+        { key: joinEUI, value: ids.join_eui, type: 'byte', sensitive: false },
         { key: sharedMessages.devEUI, value: ids.dev_eui, type: 'byte', sensitive: false },
       )
 
-      // Add root keys, if available
+      // Add root keys, if available.
       if (Object.keys(root_keys).length > 0) {
         const infoEntry = {
           key: m.rootKeyId,
@@ -121,12 +140,14 @@ class DeviceOverview extends React.Component {
           ]
         } else {
           infoEntry.subItems = [
-            {
-              key: sharedMessages.appKey,
-              value: root_keys.app_key.key,
-              type: 'byte',
-              sensitive: true,
-            },
+            ...(root_keys.app_key
+              ? {
+                  key: sharedMessages.appKey,
+                  value: root_keys.app_key.key,
+                  type: 'byte',
+                  sensitive: true,
+                }
+              : { key: sharedMessages.appKey, value: undefined }),
             ...(root_keys.nwk_key
               ? {
                   key: sharedMessages.nwkKey,
@@ -138,7 +159,7 @@ class DeviceOverview extends React.Component {
           ]
         }
         activationInfoData.items.push(infoEntry)
-      } else {
+      } else if (supports_join) {
         activationInfoData.items.push({
           key: m.rootKeys,
           value: <Message content={sharedMessages.provisionedOnExternalJoinServer} />,
@@ -148,7 +169,7 @@ class DeviceOverview extends React.Component {
 
     sheetData.push(activationInfoData)
 
-    // Add session info, if available
+    // Add session info, if available.
 
     const sessionInfoData = {
       header: m.sessionInfo,
@@ -159,19 +180,19 @@ class DeviceOverview extends React.Component {
       sessionInfoData.items.push(
         { key: sharedMessages.devAddr, value: ids.dev_addr, type: 'byte', sensitive: false },
         {
-          key: sharedMessages.fwdNtwkKey,
+          key: sharedMessages.nwkSKey,
           value: f_nwk_s_int_key.key,
           type: 'code',
           sensitive: true,
         },
         {
-          key: sharedMessages.sNtwkSIKey,
+          key: sharedMessages.sNwkSIKey,
           value: s_nwk_s_int_key.key,
           type: 'code',
           sensitive: true,
         },
         {
-          key: sharedMessages.ntwkSEncKey,
+          key: sharedMessages.nwkSEncKey,
           value: nwk_s_enc_key.key,
           type: 'code',
           sensitive: true,

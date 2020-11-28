@@ -714,6 +714,27 @@ func (m *Gateway) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "frequency_plan_ids":
+
+			if len(m.GetFrequencyPlanIDs()) > 8 {
+				return GatewayValidationError{
+					field:  "frequency_plan_ids",
+					reason: "value must contain no more than 8 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetFrequencyPlanIDs() {
+				_, _ = idx, item
+
+				if utf8.RuneCountInString(item) > 64 {
+					return GatewayValidationError{
+						field:  fmt.Sprintf("frequency_plan_ids[%v]", idx),
+						reason: "value length must be at most 64 runes",
+					}
+				}
+
+			}
+
 		case "antennas":
 
 			for idx, item := range m.Antennas {
@@ -745,6 +766,32 @@ func (m *Gateway) ValidateFields(paths ...string) error {
 				return GatewayValidationError{
 					field:  "downlink_path_constraint",
 					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "schedule_anytime_delay":
+
+			if v, ok := interface{}(m.GetScheduleAnytimeDelay()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GatewayValidationError{
+						field:  "schedule_anytime_delay",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "update_location_from_status":
+			// no validation rules for UpdateLocationFromStatus
+		case "lbs_lns_secret":
+
+			if v, ok := interface{}(m.GetLBSLNSSecret()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GatewayValidationError{
+						field:  "lbs_lns_secret",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
 				}
 			}
 
@@ -1141,7 +1188,14 @@ func (m *ListGatewaysRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "order":
-			// no validation rules for Order
+
+			if _, ok := _ListGatewaysRequest_Order_InLookup[m.GetOrder()]; !ok {
+				return ListGatewaysRequestValidationError{
+					field:  "order",
+					reason: "value must be in list [ gateway_id -gateway_id gateway_eui -gateway_eui name -name created_at -created_at]",
+				}
+			}
+
 		case "limit":
 
 			if m.GetLimit() > 1000 {
@@ -1218,6 +1272,18 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListGatewaysRequestValidationError{}
+
+var _ListGatewaysRequest_Order_InLookup = map[string]struct{}{
+	"":             {},
+	"gateway_id":   {},
+	"-gateway_id":  {},
+	"gateway_eui":  {},
+	"-gateway_eui": {},
+	"name":         {},
+	"-name":        {},
+	"created_at":   {},
+	"-created_at":  {},
+}
 
 // ValidateFields checks the field values on CreateGatewayRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -2330,7 +2396,7 @@ func (m *GatewayStatus) ValidateFields(paths ...string) error {
 				if !_GatewayStatus_Versions_Pattern.MatchString(key) {
 					return GatewayStatusValidationError{
 						field:  fmt.Sprintf("versions[%v]", key),
-						reason: "value does not match regex pattern \"^[a-z0-9](?:[-]?[a-z0-9]){2,}$\"",
+						reason: "value does not match regex pattern \"^[a-z0-9](?:[_-]?[a-z0-9]){2,}$\"",
 					}
 				}
 
@@ -2371,7 +2437,7 @@ func (m *GatewayStatus) ValidateFields(paths ...string) error {
 				if !_GatewayStatus_Metrics_Pattern.MatchString(key) {
 					return GatewayStatusValidationError{
 						field:  fmt.Sprintf("metrics[%v]", key),
-						reason: "value does not match regex pattern \"^[a-z0-9](?:[-]?[a-z0-9]){2,}$\"",
+						reason: "value does not match regex pattern \"^[a-z0-9](?:[_-]?[a-z0-9]){2,}$\"",
 					}
 				}
 
@@ -2454,9 +2520,9 @@ var _ interface {
 	ErrorName() string
 } = GatewayStatusValidationError{}
 
-var _GatewayStatus_Versions_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
+var _GatewayStatus_Versions_Pattern = regexp.MustCompile("^[a-z0-9](?:[_-]?[a-z0-9]){2,}$")
 
-var _GatewayStatus_Metrics_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
+var _GatewayStatus_Metrics_Pattern = regexp.MustCompile("^[a-z0-9](?:[_-]?[a-z0-9]){2,}$")
 
 // ValidateFields checks the field values on GatewayConnectionStats with the
 // rules defined in the proto definition for this message. If any rules are
@@ -2549,6 +2615,23 @@ func (m *GatewayConnectionStats) ValidateFields(paths ...string) error {
 						cause:  err,
 					}
 				}
+			}
+
+		case "sub_bands":
+
+			for idx, item := range m.GetSubBands() {
+				_, _ = idx, item
+
+				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return GatewayConnectionStatsValidationError{
+							field:  fmt.Sprintf("sub_bands[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
 			}
 
 		default:
@@ -2794,3 +2877,93 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GatewayConnectionStats_RoundTripTimesValidationError{}
+
+// ValidateFields checks the field values on GatewayConnectionStats_SubBand
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, an error is returned.
+func (m *GatewayConnectionStats_SubBand) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = GatewayConnectionStats_SubBandFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "min_frequency":
+			// no validation rules for MinFrequency
+		case "max_frequency":
+			// no validation rules for MaxFrequency
+		case "downlink_utilization_limit":
+			// no validation rules for DownlinkUtilizationLimit
+		case "downlink_utilization":
+			// no validation rules for DownlinkUtilization
+		default:
+			return GatewayConnectionStats_SubBandValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// GatewayConnectionStats_SubBandValidationError is the validation error
+// returned by GatewayConnectionStats_SubBand.ValidateFields if the designated
+// constraints aren't met.
+type GatewayConnectionStats_SubBandValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GatewayConnectionStats_SubBandValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GatewayConnectionStats_SubBandValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GatewayConnectionStats_SubBandValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GatewayConnectionStats_SubBandValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GatewayConnectionStats_SubBandValidationError) ErrorName() string {
+	return "GatewayConnectionStats_SubBandValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GatewayConnectionStats_SubBandValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGatewayConnectionStats_SubBand.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GatewayConnectionStats_SubBandValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GatewayConnectionStats_SubBandValidationError{}

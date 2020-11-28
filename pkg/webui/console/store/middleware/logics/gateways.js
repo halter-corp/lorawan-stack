@@ -14,12 +14,20 @@
 
 import { createLogic } from 'redux-logic'
 
-import sharedMessages from '../../../../lib/shared-messages'
-import api from '../../../api'
-import * as gateways from '../../actions/gateways'
-import { selectGsConfig } from '../../../../lib/selectors/env'
-import { selectGatewayById, selectGatewayStatisticsIsFetching } from '../../selectors/gateways'
-import { getGatewayId } from '../../../../lib/selectors/id'
+import api from '@console/api'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import { selectGsConfig } from '@ttn-lw/lib/selectors/env'
+import { getGatewayId } from '@ttn-lw/lib/selectors/id'
+import getHostFromUrl from '@ttn-lw/lib/host-from-url'
+
+import * as gateways from '@console/store/actions/gateways'
+
+import {
+  selectGatewayById,
+  selectGatewayStatisticsIsFetching,
+} from '@console/store/selectors/gateways'
+
 import createEventsConnectLogics from './events'
 import createRequestLogic from './lib'
 
@@ -63,26 +71,39 @@ const getGatewaysLogic = createRequestLogic({
   latest: true,
   async process({ action }) {
     const {
-      params: { page, limit, query },
+      params: { page, limit, query, order },
     } = action.payload
     const { selectors, options } = action.meta
 
-    const data = query
+    const data = options.isSearch
       ? await api.gateways.search(
           {
             page,
             limit,
             id_contains: query,
-            name_contains: query,
+            order,
           },
           selectors,
         )
-      : await api.gateways.list({ page, limit }, selectors)
+      : await api.gateways.list({ page, limit, order }, selectors)
 
     let entities = data.gateways
     if (options.withStatus) {
+      const gsConfig = selectGsConfig()
+      const consoleGsAddress = getHostFromUrl(gsConfig.base_url)
+
       entities = await Promise.all(
         data.gateways.map(gateway => {
+          const gatewayServerAddress = gateway.gateway_server_address
+
+          if (!Boolean(gateway.gateway_server_address)) {
+            return Promise.resolve({ ...gateway, status: 'unknown' })
+          }
+
+          if (gatewayServerAddress !== consoleGsAddress) {
+            return Promise.resolve({ ...gateway, status: 'other-cluster' })
+          }
+
           const id = getGatewayId(gateway)
           return api.gateway
             .stats(id)
@@ -111,45 +132,6 @@ const getGatewaysRightsLogic = createRequestLogic({
     const { id } = action.payload
     const result = await api.rights.gateways(id)
     return result.rights.sort()
-  },
-})
-
-const getGatewayCollaboratorLogic = createRequestLogic({
-  type: gateways.GET_GTW_COLLABORATOR,
-  async process({ action }) {
-    const { id: gtwId, collaboratorId, isUser } = action.payload
-
-    const collaborator = isUser
-      ? await api.gateway.collaborators.getUser(gtwId, collaboratorId)
-      : await api.gateway.collaborators.getOrganization(gtwId, collaboratorId)
-
-    const { ids, ...rest } = collaborator
-
-    return {
-      id: collaboratorId,
-      isUser,
-      ...rest,
-    }
-  },
-})
-
-const getGatewayCollaboratorsLogic = createRequestLogic({
-  type: gateways.GET_GTW_COLLABORATORS_LIST,
-  async process({ action }) {
-    const { id, params } = action.payload
-    const res = await api.gateway.collaborators.list(id, params)
-    const collaborators = res.collaborators.map(function(collaborator) {
-      const { ids, ...rest } = collaborator
-      const isUser = !!ids.user_ids
-      const collaboratorId = isUser ? ids.user_ids.user_id : ids.organization_ids.organization_id
-
-      return {
-        id: collaboratorId,
-        isUser,
-        ...rest,
-      }
-    })
-    return { id, collaborators, totalCount: res.totalCount }
   },
 })
 
@@ -230,34 +212,13 @@ const updateGatewayStatisticsLogic = createRequestLogic({
   },
 })
 
-const getGatewayApiKeysLogic = createRequestLogic({
-  type: gateways.GET_GTW_API_KEYS_LIST,
-  async process({ action }) {
-    const { id: gtwId, params } = action.payload
-    const res = await api.gateway.apiKeys.list(gtwId, params)
-    return { ...res, id: gtwId }
-  },
-})
-
-const getGatewayApiKeyLogic = createRequestLogic({
-  type: gateways.GET_GTW_API_KEY,
-  async process({ action }) {
-    const { id: gtwId, keyId } = action.payload
-    return api.gateway.apiKeys.get(gtwId, keyId)
-  },
-})
-
 export default [
   getGatewayLogic,
   updateGatewayLogic,
   deleteGatewayLogic,
   getGatewaysLogic,
   getGatewaysRightsLogic,
-  getGatewayCollaboratorLogic,
-  getGatewayCollaboratorsLogic,
   startGatewayStatisticsLogic,
   updateGatewayStatisticsLogic,
   ...createEventsConnectLogics(gateways.SHARED_NAME, 'gateways', api.gateway.eventsSubscribe),
-  getGatewayApiKeysLogic,
-  getGatewayApiKeyLogic,
 ]

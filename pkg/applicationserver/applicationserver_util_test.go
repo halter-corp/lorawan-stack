@@ -17,8 +17,8 @@ package applicationserver_test
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
 var (
@@ -46,4 +46,12 @@ func (r MockDeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifi
 		panic("Set called, but not set")
 	}
 	return r.SetFunc(ctx, ids, paths, f)
+}
+
+// noopEndDeviceFetcher is a no-op.
+type noopEndDeviceFetcher struct{}
+
+// Get implements the EndDeviceFetcher interface.
+func (noopEndDeviceFetcher) Get(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, fieldMaskPaths ...string) (*ttnpb.EndDevice, error) {
+	return nil, errNotFound.New()
 }

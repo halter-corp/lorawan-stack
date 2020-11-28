@@ -16,8 +16,6 @@ package io
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +23,7 @@ import (
 	"strings"
 	"text/template"
 
-	"go.thethings.network/lorawan-stack/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
 )
 
 // Write output to Stdout.
@@ -93,72 +91,15 @@ func Write(w io.Writer, format string, data interface{}) (err error) {
 	return nil
 }
 
-// IsPipe returns whether the given reader is a pipe that can be read.
-func IsPipe(r io.Reader) bool {
+// BufferedPipe returns a buffered reader if the reader is a pipe that can be read.
+func BufferedPipe(r io.Reader) (*bufio.Reader, bool) {
 	if f, ok := r.(*os.File); ok {
-		if stat, err := f.Stat(); err == nil {
-			return (stat.Mode() & os.ModeCharDevice) == 0
+		if stat, err := f.Stat(); err == nil && stat.Mode()&os.ModeCharDevice == 0 {
+			rd := bufio.NewReader(r)
+			if n, err := rd.Peek(1); err == nil && len(n) == 1 {
+				return rd, true
+			}
 		}
 	}
-	return false
-}
-
-// Decoder is the interface for the functionality that reads and decodes entities
-// from an io.Reader, typically os.Stdin.
-type Decoder interface {
-	Decode(data interface{}) (paths []string, err error)
-}
-
-type jsonDecoder struct {
-	rd  *bufio.Reader
-	dec *json.Decoder
-}
-
-// NewJSONDecoder returns a new Decoder on top of r, and that uses the common JSON
-// format used in The Things Stack.
-func NewJSONDecoder(r io.Reader) Decoder {
-	rd := bufio.NewReader(r)
-	return &jsonDecoder{
-		rd:  rd,
-		dec: json.NewDecoder(rd),
-	}
-}
-
-func (r *jsonDecoder) Decode(data interface{}) (paths []string, err error) {
-	t, err := r.rd.ReadByte()
-	if err != nil {
-		return nil, err
-	}
-	if t == '{' {
-		if err := r.rd.UnreadByte(); err != nil {
-			return nil, err
-		}
-	}
-	var obj json.RawMessage
-	if err = r.dec.Decode(&obj); err != nil {
-		return nil, err
-	}
-	var m map[string]interface{}
-	if err = json.Unmarshal(obj, &m); err != nil {
-		return nil, err
-	}
-	paths = fieldPaths(m, "")
-	b := bytes.NewBuffer(obj)
-	if err = jsonpb.TTN().NewDecoder(b).Decode(data); err != nil {
-		return nil, err
-	}
-	r.rd = bufio.NewReader(io.MultiReader(r.dec.Buffered(), r.rd))
-	r.dec = json.NewDecoder(r.rd)
-	return paths, nil
-}
-
-func fieldPaths(m map[string]interface{}, prefix string) (paths []string) {
-	for path, sub := range m {
-		if m, ok := sub.(map[string]interface{}); ok {
-			paths = append(paths, fieldPaths(m, prefix+path+".")...)
-		} else {
-			paths = append(paths, prefix+path)
-		}
-	}
-	return paths
+	return nil, false
 }

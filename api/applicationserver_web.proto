@@ -24,7 +24,7 @@ import "lorawan-stack/api/identifiers.proto";
 
 package ttn.lorawan.v3;
 
-option go_package = "go.thethings.network/lorawan-stack/pkg/ttnpb";
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
 message ApplicationWebhookIdentifiers {
   ApplicationIdentifiers application_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
@@ -66,6 +66,9 @@ message ApplicationWebhookTemplate {
 
   repeated ApplicationWebhookTemplateField fields = 10;
 
+  // Control the creation of the downlink queue operations API key.
+  bool create_downlink_api_key = 19 [(gogoproto.customname) = "CreateDownlinkAPIKey"];
+
   message Message {
     // Path to append to the base URL. Can contain template fields, in RFC 6570 format.
     string path = 1;
@@ -77,7 +80,11 @@ message ApplicationWebhookTemplate {
   Message downlink_sent = 15;
   Message downlink_failed = 16;
   Message downlink_queued = 17;
+  Message downlink_queue_invalidated = 21;
   Message location_solved = 18;
+  Message service_data = 20;
+
+  // next: 22
 }
 
 message ApplicationWebhookTemplates {
@@ -102,6 +109,10 @@ message ApplicationWebhook {
   // The value of the fields used by the template. Maps field.id to the value.
   map<string,string> template_fields = 16;
 
+  // The API key to be used for downlink queue operations.
+  // The field is provided for convenience reasons, and can contain API keys with additional rights (albeit this is discouraged).
+  string downlink_api_key = 17 [(gogoproto.customname) = "DownlinkAPIKey"];
+
   message Message {
     // Path to append to the base URL.
     string path = 1;
@@ -113,7 +124,11 @@ message ApplicationWebhook {
   Message downlink_sent = 11;
   Message downlink_failed = 12;
   Message downlink_queued = 13;
+  Message downlink_queue_invalidated = 19;
   Message location_solved = 14;
+  Message service_data = 18;
+
+  // next: 20
 }
 
 message ApplicationWebhooks {

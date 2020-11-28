@@ -15,26 +15,68 @@
 import React from 'react'
 import bind from 'autobind-decorator'
 import classnames from 'classnames'
-import PropTypes from '../../lib/prop-types'
 
-import sharedMessages from '../../lib/shared-messages'
+import Button from '@ttn-lw/components/button'
 
-import Message from '../../lib/components/message'
-import Button from '../button'
-import Logo from '../../containers/logo'
+import Logo from '@ttn-lw/containers/logo'
+
+import Message from '@ttn-lw/lib/components/message'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import style from './modal.styl'
 
-@bind
 class Modal extends React.PureComponent {
+  static propTypes = {
+    approval: PropTypes.bool,
+    bottomLine: PropTypes.oneOfType([PropTypes.element, PropTypes.message]),
+    buttonMessage: PropTypes.message,
+    buttonName: PropTypes.message,
+    cancelButtonMessage: PropTypes.message,
+    children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.element), PropTypes.element]),
+    danger: PropTypes.bool,
+    formName: PropTypes.string,
+    inline: PropTypes.bool,
+    logo: PropTypes.bool,
+    message: PropTypes.message,
+    method: PropTypes.string,
+    name: PropTypes.string,
+    onComplete: PropTypes.func,
+    subtitle: PropTypes.message,
+    title: PropTypes.message,
+  }
+
+  static defaultProps = {
+    bottomLine: undefined,
+    buttonMessage: undefined,
+    buttonName: undefined,
+    cancelButtonMessage: sharedMessages.cancel,
+    children: undefined,
+    danger: false,
+    formName: undefined,
+    logo: false,
+    message: undefined,
+    method: undefined,
+    onComplete: () => null,
+    inline: false,
+    approval: true,
+    subtitle: undefined,
+    title: undefined,
+    name: undefined,
+  }
+
+  @bind
   handleApprove() {
     this.handleComplete(true)
   }
 
+  @bind
   handleCancel() {
     this.handleComplete(false)
   }
 
+  @bind
   handleComplete(result) {
     const { onComplete } = this.props
 
@@ -43,6 +85,8 @@ class Modal extends React.PureComponent {
 
   render() {
     const {
+      buttonName,
+      buttonMessage,
       title,
       subtitle,
       children,
@@ -50,8 +94,7 @@ class Modal extends React.PureComponent {
       logo,
       approval,
       formName,
-      buttonMessage = this.props.approval ? sharedMessages.approve : sharedMessages.ok,
-      cancelButtonMessage = sharedMessages.cancel,
+      cancelButtonMessage,
       onComplete,
       bottomLine,
       inline,
@@ -66,12 +109,23 @@ class Modal extends React.PureComponent {
 
     const name = formName ? { name: formName } : {}
     const RootComponent = this.props.method ? 'form' : 'div'
-    const messageElement = <Message content={message} className={style.message} />
-    const bottomLineElement = <Message content={bottomLine} />
+    const messageElement = message && <Message content={message} className={style.message} />
+    const bottomLineElement =
+      typeof bottomLine === 'object' && Boolean(bottomLine.id) ? (
+        <Message content={bottomLine} />
+      ) : (
+        bottomLine
+      )
 
+    const approveButtonMessage =
+      buttonMessage !== undefined
+        ? buttonMessage
+        : approval
+        ? sharedMessages.approve
+        : sharedMessages.ok
     let buttons = (
       <div>
-        <Button message={buttonMessage} onClick={this.handleApprove} icon="check" />
+        <Button message={approveButtonMessage} onClick={this.handleApprove} icon="check" />
       </div>
     )
 
@@ -88,7 +142,7 @@ class Modal extends React.PureComponent {
             {...name}
           />
           <Button
-            message={buttonMessage}
+            message={approveButtonMessage}
             onClick={this.handleApprove}
             name={formName}
             icon="check"
@@ -103,14 +157,19 @@ class Modal extends React.PureComponent {
     return (
       <React.Fragment>
         {!inline && <div key="shadow" className={style.shadow} />}
-        <RootComponent key="modal" className={modalClassNames} {...rest}>
+        <RootComponent
+          data-test-id="modal-window"
+          key="modal"
+          className={modalClassNames}
+          {...rest}
+        >
           {title && (
             <div className={style.titleSection}>
               <div>
                 <h1>
                   <Message content={title} />
                 </h1>
-                {subtitle && <Message content={subtitle} />}
+                {subtitle && <Message component="span" content={subtitle} />}
               </div>
               {logo && <Logo vertical className={style.logo} />}
             </div>
@@ -125,27 +184,6 @@ class Modal extends React.PureComponent {
       </React.Fragment>
     )
   }
-}
-
-Modal.defaultProps = {
-  onComplete: () => null,
-  inline: false,
-  approval: true,
-}
-
-Modal.propTypes = {
-  title: PropTypes.message,
-  children: PropTypes.oneOfType([PropTypes.arrayOf(PropTypes.element), PropTypes.element]),
-  message: PropTypes.message,
-  subtitle: PropTypes.message,
-  bottomLine: PropTypes.oneOfType([PropTypes.element, PropTypes.message]),
-  approval: PropTypes.bool,
-  buttonMessage: PropTypes.message,
-  cancelButtonMessage: PropTypes.message,
-  method: PropTypes.string,
-  buttonName: PropTypes.message,
-  inline: PropTypes.bool,
-  danger: PropTypes.bool,
 }
 
 export default Modal

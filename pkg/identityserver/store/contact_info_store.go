@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetContactInfoStore returns an ContactInfoStore on the given db (or transaction).
@@ -197,13 +197,13 @@ func (s *contactInfoStore) Validate(ctx context.Context, validation *ttnpb.Conta
 	}).Find(&model).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return errValidationTokenNotFound
+			return errValidationTokenNotFound.New()
 		}
 		return err
 	}
 
 	if model.ExpiresAt.Before(time.Now()) {
-		return errValidationTokenExpired
+		return errValidationTokenExpired.New()
 	}
 
 	err = s.query(ctx, ContactInfo{}).Where(ContactInfo{

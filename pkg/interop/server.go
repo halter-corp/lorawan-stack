@@ -24,13 +24,13 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"go.thethings.network/lorawan-stack/pkg/auth"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/fillcontext"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/web"
-	"go.thethings.network/lorawan-stack/pkg/web/middleware"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/fillcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/web"
+	"go.thethings.network/lorawan-stack/v3/pkg/web/middleware"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -70,15 +70,15 @@ type ApplicationServer interface {
 type noopServer struct{}
 
 func (noopServer) JoinRequest(context.Context, *JoinReq) (*JoinAns, error) {
-	return nil, errNotRegistered
+	return nil, errNotRegistered.New()
 }
 
 func (noopServer) AppSKeyRequest(context.Context, *AppSKeyReq) (*AppSKeyAns, error) {
-	return nil, errNotRegistered
+	return nil, errNotRegistered.New()
 }
 
 func (noopServer) HomeNSRequest(context.Context, *HomeNSReq) (*HomeNSAns, error) {
-	return nil, errNotRegistered
+	return nil, errNotRegistered.New()
 }
 
 // Server is the server.
@@ -277,7 +277,7 @@ func (s *Server) handleRequest(c echo.Context) error {
 	case *AppSKeyReq:
 		ans, err = s.js.AppSKeyRequest(ctx, req)
 	default:
-		return ErrMalformedMessage
+		return ErrMalformedMessage.New()
 	}
 	if err != nil {
 		return err

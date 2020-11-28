@@ -19,8 +19,8 @@ import (
 	"runtime/trace"
 
 	"github.com/jinzhu/gorm"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // GetAPIKeyStore returns an APIKeyStore on the given db (or transaction).
@@ -59,6 +59,7 @@ func (s *apiKeyStore) FindAPIKeys(ctx context.Context, entityID ttnpb.Identifier
 		EntityID:   entity.PrimaryKey(),
 		EntityType: entityTypeForID(entityID),
 	})
+	query = query.Order(orderFromContext(ctx, "api_keys", "api_key_id", "ASC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
 		countTotal(ctx, query)
 		query = query.Limit(limit).Offset(offset)
@@ -83,7 +84,7 @@ func (s *apiKeyStore) GetAPIKey(ctx context.Context, id string) (ttnpb.Identifie
 	var keyModel APIKey
 	if err := query.Where(APIKey{APIKeyID: id}).First(&keyModel).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil, errAPIKeyNotFound
+			return nil, nil, errAPIKeyNotFound.New()
 		}
 		return nil, nil, err
 	}
@@ -97,7 +98,7 @@ func (s *apiKeyStore) GetAPIKey(ctx context.Context, id string) (ttnpb.Identifie
 	}
 	ids, ok := identifiers[k]
 	if !ok {
-		return nil, nil, errAPIKeyEntity
+		return nil, nil, errAPIKeyEntity.New()
 	}
 	return ids, keyModel.toPB(), nil
 }
@@ -117,7 +118,7 @@ func (s *apiKeyStore) UpdateAPIKey(ctx context.Context, entityID ttnpb.Identifie
 	}).First(&keyModel).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, errAPIKeyNotFound
+			return nil, errAPIKeyNotFound.New()
 		}
 		return nil, err
 	}

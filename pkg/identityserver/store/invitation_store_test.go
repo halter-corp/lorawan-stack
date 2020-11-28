@@ -21,16 +21,16 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
 func TestInvitationStore(t *testing.T) {
 	a := assertions.New(t)
 	ctx := test.Context()
 
-	now := time.Now()
+	now := cleanTime(time.Now())
 
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
 		prepareTest(db, &Account{}, &User{}, &Invitation{})

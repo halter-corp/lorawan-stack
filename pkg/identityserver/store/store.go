@@ -18,17 +18,19 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"runtime/trace"
 	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/log"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 func newStore(db *gorm.DB) *store { return &store{DB: db} }
@@ -86,15 +88,20 @@ func (s *store) deleteEntity(ctx context.Context, entityID ttnpb.Identifiers) er
 
 var (
 	errDatabase      = errors.DefineInternal("database", "database error")
-	errAlreadyExists = errors.DefineAlreadyExists("already_exists", "entity already exists", "field", "value")
-	errIDTaken       = errors.DefineAlreadyExists("id_taken", "ID already taken")
+	errAlreadyExists = errors.DefineAlreadyExists("already_exists", "entity already exists")
+
+	// ErrIDTaken is returned when an entity can not be created because the ID is already taken.
+	ErrIDTaken = errors.DefineAlreadyExists("id_taken", "ID already taken")
+	// ErrEUITaken is returned when an entity can not be created because the EUI is already taken.
+	ErrEUITaken = errors.DefineAlreadyExists("eui_taken", "EUI already taken")
 )
 
-var uniqueViolationRegex = regexp.MustCompile(`duplicate key value \(([^)]+)\)=\(([^)]+)\)`)
+var uniqueViolationRegex = regexp.MustCompile(`duplicate key value( .+)? violates unique constraint "([a-z_]+)"`)
 
 func convertError(err error) error {
-	if err == nil {
-		return nil
+	switch err {
+	case nil, context.Canceled, context.DeadlineExceeded:
+		return err
 	}
 	if ttnErr, ok := errors.From(err); ok {
 		return ttnErr
@@ -103,10 +110,14 @@ func convertError(err error) error {
 		switch pqErr.Code.Name() {
 		case "unique_violation":
 			if match := uniqueViolationRegex.FindStringSubmatch(pqErr.Message); match != nil {
-				if strings.HasSuffix(match[1], "_id") {
-					return errIDTaken.WithCause(err)
+				switch {
+				case strings.HasSuffix(match[2], "_id_index"):
+					return ErrIDTaken.WithCause(err)
+				case strings.HasSuffix(match[2], "_eui_index"):
+					return ErrEUITaken.WithCause(err)
+				default:
+					return errAlreadyExists.WithCause(err).WithAttributes("index", match[2])
 				}
-				return errAlreadyExists.WithCause(err).WithAttributes("field", match[1], "value", match[2])
 			}
 			return errAlreadyExists.WithCause(err)
 		default:
@@ -163,19 +174,29 @@ func Initialize(db *gorm.DB) error {
 	return nil
 }
 
+// ErrTransactionRecovered is returned when a panic is caught from a SQL transaction.
+var ErrTransactionRecovered = errors.DefineInternal("transaction_recovered", "Internal Server Error")
+
 // Transact executes f in a db transaction.
 func Transact(ctx context.Context, db *gorm.DB, f func(db *gorm.DB) error) (err error) {
 	defer trace.StartRegion(ctx, "database transaction").End()
 	tx := db.Begin()
+	if tx.Error != nil {
+		return convertError(tx.Error)
+	}
 	defer func() {
 		if p := recover(); p != nil {
-			switch p := p.(type) {
-			case error:
-				err = p
-			case string:
-				err = errors.New(p)
-			default:
-				panic(p)
+			fmt.Fprintln(os.Stderr, p)
+			os.Stderr.Write(debug.Stack())
+			if pErr, ok := p.(error); ok {
+				switch pErr {
+				case context.Canceled, context.DeadlineExceeded:
+					err = pErr
+				default:
+					err = ErrTransactionRecovered.WithCause(pErr)
+				}
+			} else {
+				err = ErrTransactionRecovered.WithAttributes("panic", p)
 			}
 		}
 		if err != nil {
@@ -230,6 +251,8 @@ var (
 	errAccessTokenNotFound       = errors.DefineNotFound("access_token_not_found", "access token not found")
 
 	errAPIKeyNotFound = errors.DefineNotFound("api_key_not_found", "API key not found")
+
+	errMigrationNotFound = errors.DefineNotFound("migration_not_found", "migration not found")
 )
 
 func errNotFoundForID(id ttnpb.Identifiers) error {
@@ -263,34 +286,37 @@ type logger struct {
 
 // Print implements the gorm.logger interface.
 func (l logger) Print(v ...interface{}) {
-	if len(v) <= 2 {
+	if len(v) < 3 {
 		l.Error(fmt.Sprint(v...))
 		return
 	}
-	path := filepath.Base(v[1].(string))
-	logger := l.WithField("source", path)
+	logger := l.Interface
+	if source, ok := v[1].(string); ok {
+		logger = logger.WithField("source", filepath.Base(source))
+	} else {
+		l.Error(fmt.Sprint(v...))
+		return
+	}
 	switch v[0] {
-	case "log": // log, typically errors.
-		if len(v) < 3 {
-			return
-		}
+	case "log", "error":
 		if err, ok := v[2].(error); ok {
 			err = convertError(err)
 			if errors.IsAlreadyExists(err) {
 				return // no problem.
 			}
-			logger.WithError(err).Warn("Database error")
-		} else {
-			logger.Warn(fmt.Sprint(v[2:]...))
+			logger.WithError(err).Error("Database error")
+			return
 		}
-	case "sql": // slog, sql debug.
+		logger.Error(fmt.Sprint(v[2:]...))
+		return
+	case "sql":
 		if len(v) != 6 {
 			return
 		}
 		duration, _ := v[2].(time.Duration)
-		query := v[3].(string)
-		values := v[4].([]interface{})
-		rows := v[5].(int64)
+		query, _ := v[3].(string)
+		values, _ := v[4].([]interface{})
+		rows, _ := v[5].(int64)
 		logger.WithFields(log.Fields(
 			"duration", duration,
 			"query", query,

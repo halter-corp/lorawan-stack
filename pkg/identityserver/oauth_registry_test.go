@@ -19,9 +19,9 @@ import (
 
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/identityserver/store"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc"
 )
 
@@ -44,12 +44,13 @@ func TestOAuthRegistry(t *testing.T) {
 		}
 
 		err = oauthStore.CreateAccessToken(ctx, &ttnpb.OAuthAccessToken{
-			UserIDs:      user.UserIdentifiers,
-			ClientIDs:    client.ClientIdentifiers,
-			ID:           "access_token_id",
-			Rights:       client.Rights,
-			AccessToken:  "access_token",
-			RefreshToken: "refresh_token",
+			UserIDs:       user.UserIdentifiers,
+			ClientIDs:     client.ClientIdentifiers,
+			UserSessionID: "12345678-1234-5678-1234-567812345678",
+			ID:            "access_token_id",
+			Rights:        client.Rights,
+			AccessToken:   "access_token",
+			RefreshToken:  "refresh_token",
 		}, "")
 		if err != nil {
 			panic(err)
@@ -74,6 +75,7 @@ func TestOAuthRegistry(t *testing.T) {
 		a.So(err, should.BeNil)
 		if a.So(tokens, should.NotBeNil) && a.So(tokens.Tokens, should.HaveLength, 1) {
 			a.So(tokens.Tokens[0].ID, should.Equal, "access_token_id")
+			a.So(tokens.Tokens[0].UserSessionID, should.Equal, "12345678-1234-5678-1234-567812345678")
 		}
 
 		_, err = reg.DeleteToken(ctx, &ttnpb.OAuthAccessTokenIdentifiers{

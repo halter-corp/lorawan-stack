@@ -14,63 +14,40 @@
 
 import React from 'react'
 import bind from 'autobind-decorator'
+import classnames from 'classnames'
 
-import Icon from '../icon'
-import Message from '../../lib/components/message'
-import Link from '../link'
-import PropTypes from '../../lib/prop-types'
+import Icon from '@ttn-lw/components/icon'
+import Dropdown from '@ttn-lw/components/dropdown'
+
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import styles from './profile-dropdown.styl'
 
-const dropdownItemsPropTypes = PropTypes.arrayOf(
-  PropTypes.oneOfType([
-    PropTypes.shape({
-      title: PropTypes.message.isRequired,
-      icon: PropTypes.string,
-      path: PropTypes.string,
-      action: PropTypes.func.isRequired,
-    }),
-    PropTypes.shape({
-      title: PropTypes.message.isRequired,
-      icon: PropTypes.string,
-      path: PropTypes.string.isRequired,
-      action: PropTypes.func,
-    }),
-  ]),
-).isRequired
-
-@bind
 export default class ProfileDropdown extends React.PureComponent {
-  static propTypes = {
-    /** The id of the current user */
-    userId: PropTypes.string,
-    /**
-     * A list of items for the dropdown component
-     * See `<Dropdown />`'s `items` proptypes for details
-     */
-    dropdownItems: dropdownItemsPropTypes,
-  }
-
   state = {
     expanded: false,
   }
 
+  @bind
   showDropdown() {
     document.addEventListener('mousedown', this.handleClickOutside)
     this.setState({ expanded: true })
   }
 
+  @bind
   hideDropdown() {
     document.removeEventListener('mousedown', this.handleClickOutside)
     this.setState({ expanded: false })
   }
 
+  @bind
   handleClickOutside(e) {
     if (!this.node.contains(e.target)) {
       this.hideDropdown()
     }
   }
 
+  @bind
   toggleDropdown() {
     let { expanded } = this.state
     expanded = !expanded
@@ -81,16 +58,17 @@ export default class ProfileDropdown extends React.PureComponent {
     }
   }
 
+  @bind
   ref(node) {
     this.node = node
   }
 
   render() {
-    const { userId, dropdownItems, anchored, ...rest } = this.props
+    const { userName, className, children, ...rest } = this.props
 
     return (
       <div
-        className={styles.container}
+        className={classnames(styles.container, className)}
         onClick={this.toggleDropdown}
         onKeyPress={this.toggleDropdown}
         ref={this.ref}
@@ -98,54 +76,25 @@ export default class ProfileDropdown extends React.PureComponent {
         role="button"
         {...rest}
       >
-        <span className={styles.id}>{userId}</span>
-        <Icon icon="arrow_drop_down" />
-        {this.state.expanded && <Dropdown items={dropdownItems} anchored={anchored} />}
+        <span className={styles.id}>{userName}</span>
+        <Icon icon={this.state.expanded ? 'arrow_drop_up' : 'arrow_drop_down'} />
+        {this.state.expanded && <Dropdown className={styles.dropdown}>{children}</Dropdown>}
       </div>
     )
   }
 }
 
-const Dropdown = ({ items, anchored }) => (
-  <ul className={styles.dropdown}>
-    {items.map(function(item) {
-      const icon = item.icon && <Icon className={styles.icon} icon={item.icon} />
-      const ItemElement = item.action ? (
-        <button onClick={item.action} onKeyPress={item.action} role="tab" tabIndex="0">
-          {icon}
-          <Message content={item.title} />
-        </button>
-      ) : anchored ? (
-        <Link.BaseAnchor href={item.path}>
-          {icon}
-          <Message content={item.title} />
-        </Link.BaseAnchor>
-      ) : (
-        <Link to={item.path}>
-          {icon}
-          <Message content={item.title} />
-        </Link>
-      )
-      return (
-        <li className={styles.dropdownItem} key={item.title.id || item.title}>
-          {ItemElement}
-        </li>
-      )
-    })}
-  </ul>
-)
-
-Dropdown.propTypes = {
+ProfileDropdown.propTypes = {
   /**
-   * A list of items for the dropdown
-   * @param {(string|Object)} title - The title to be displayed
-   * @param {string} icon - The icon name to be displayed next to the title
-   * @param {string} path - The path for a navigation tab
-   * @param {function} action - Alternatively, the function to be called on click
+   * A list of items for the dropdown component. See `<Dropdown />`'s `items`
+   * proptypes for details.
    */
-  items: dropdownItemsPropTypes,
-  /** Flag identifying whether link should be rendered as plain anchor link */
-  anchored: PropTypes.bool,
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  /** The name/id of the current user. */
+  userName: PropTypes.string.isRequired,
 }
 
-export { Dropdown }
+ProfileDropdown.defaultProps = {
+  className: undefined,
+}

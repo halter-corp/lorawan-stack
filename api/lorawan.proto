@@ -22,13 +22,13 @@ import "lorawan-stack/api/identifiers.proto";
 
 package ttn.lorawan.v3;
 
-option go_package = "go.thethings.network/lorawan-stack/pkg/ttnpb";
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
 message Message {
   option (gogoproto.populate) = false;
 
   MHDR m_hdr = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
-  bytes mic = 2 [(gogoproto.customname) = "MIC", (validate.rules).bytes.len = 4];
+  bytes mic = 2 [(gogoproto.customname) = "MIC", (validate.rules).bytes = { min_len: 0, max_len: 4 }];
 
   // Payload represents either MACPayload, RejoinRequestPayload, JoinRequestPayload or JoinAcceptPayload
   // - MACPayload length is in range [7:M] bytes, where M is PHY specific.
@@ -72,6 +72,7 @@ enum MACVersion {
   MAC_V1_0_2 = 3;
   MAC_V1_1 = 4;
   MAC_V1_0_3 = 5;
+  MAC_V1_0_4 = 6;
 }
 
 enum PHYVersion {
@@ -122,12 +123,14 @@ message MACPayload {
   uint32 f_port = 2 [(validate.rules).uint32.lte = 255];
   bytes frm_payload = 3 [(gogoproto.customname) = "FRMPayload"];
   google.protobuf.Struct decoded_payload = 4;
+  // Full 32-bit FCnt value. Used internally by Network Server.
+  uint32 full_f_cnt = 5;
 }
 
 message FHDR {
   option (gogoproto.populate) = false;
 
-  bytes dev_addr = 1 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.DevAddr"];
+  bytes dev_addr = 1 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.DevAddr"];
   FCtrl f_ctrl = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   uint32 f_cnt = 3 [(validate.rules).uint32.lte = 65535];
   bytes f_opts = 4 [(validate.rules).bytes.max_len = 15];
@@ -144,9 +147,9 @@ message FCtrl {
 message JoinRequestPayload {
   option (gogoproto.populate) = false;
 
-  bytes join_eui = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "JoinEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.EUI64"];
-  bytes dev_eui = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "DevEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.EUI64"];
-  bytes dev_nonce = 3 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.DevNonce"];
+  bytes join_eui = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "JoinEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.EUI64"];
+  bytes dev_eui = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "DevEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.EUI64"];
+  bytes dev_nonce = 3 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.DevNonce"];
 }
 
 enum RejoinType {
@@ -159,9 +162,9 @@ message RejoinRequestPayload {
   option (gogoproto.populate) = false;
 
   RejoinType rejoin_type = 1 [(validate.rules).enum.defined_only = true];
-  bytes net_id = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "NetID", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.NetID"];
-  bytes join_eui = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "JoinEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.EUI64"];
-  bytes dev_eui = 4 [(gogoproto.nullable) = false, (gogoproto.customname) = "DevEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.EUI64"];
+  bytes net_id = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "NetID", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.NetID"];
+  bytes join_eui = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "JoinEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.EUI64"];
+  bytes dev_eui = 4 [(gogoproto.nullable) = false, (gogoproto.customname) = "DevEUI", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.EUI64"];
   uint32 rejoin_cnt = 5; // Contains RJCount0 or RJCount1 depending on rejoin_type.
 }
 
@@ -169,9 +172,9 @@ message JoinAcceptPayload {
   option (gogoproto.populate) = false;
 
   bytes encrypted = 1;
-  bytes join_nonce = 2 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.JoinNonce"];
-  bytes net_id = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "NetID", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.NetID"];
-  bytes dev_addr = 4 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/pkg/types.DevAddr"];
+  bytes join_nonce = 2 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.JoinNonce"];
+  bytes net_id = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "NetID", (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.NetID"];
+  bytes dev_addr = 4 [(gogoproto.nullable) = false, (gogoproto.customtype) = "go.thethings.network/lorawan-stack/v3/pkg/types.DevAddr"];
   DLSettings dl_settings = 5 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   RxDelay rx_delay = 6 [(validate.rules).enum.defined_only = true];
   CFList cf_list = 7 [(gogoproto.customname) = "CFList"];
@@ -286,6 +289,10 @@ message GatewayAntennaIdentifiers {
 message UplinkToken {
   GatewayAntennaIdentifiers ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   uint32 timestamp = 2;
+  // Absolute time observed by the server when the uplink message has been received.
+  google.protobuf.Timestamp server_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  // Absolute concentrator time as observed by the Gateway Server, accounting for rollovers.
+  int64 concentrator_time = 4;
 }
 
 message DownlinkPath {
@@ -332,6 +339,9 @@ message TxRequest {
   // This requires the gateway to have GPS time sychronization.
   // If the absolute time is not set, the first available time will be used that does not conflict or violate regional limitations.
   google.protobuf.Timestamp absolute_time = 9 [(gogoproto.stdtime) = true];
+
+  // Frequency plan ID from which the frequencies in this message are retrieved.
+  string frequency_plan_id = 10 [(gogoproto.customname) = "FrequencyPlanID", (validate.rules).string.max_len = 64];
 
   // Advanced metadata fields
   // - can be used for advanced information or experimental features that are not yet formally defined in the API
@@ -466,7 +476,7 @@ message MACCommand {
     option (gogoproto.populate) = false;
 
     uint32 channel_index = 1 [(validate.rules).uint32.lte = 255];
-    uint64 frequency = 2 [(validate.rules).uint64.gte = 100000]; // Channel frequency (Hz).
+    uint64 frequency = 2 [(validate.rules).uint64 = { lte: 0, gte: 100000 }]; // Channel frequency (Hz).
     DataRateIndex min_data_rate_index = 3 [(validate.rules).enum.defined_only = true];
     DataRateIndex max_data_rate_index = 4 [(validate.rules).enum.defined_only = true];
   }
@@ -533,7 +543,7 @@ message MACCommand {
   message PingSlotChannelReq {
     option (gogoproto.populate) = false;
 
-    uint64 frequency = 1 [(validate.rules).uint64.gte = 100000]; // Ping slot channel frequency (Hz).
+    uint64 frequency = 1 [(validate.rules).uint64 = { lte: 0, gte: 100000 }]; // Ping slot channel frequency (Hz).
     DataRateIndex data_rate_index = 2 [(validate.rules).enum.defined_only = true];
   }
   message PingSlotChannelAns {
@@ -549,7 +559,7 @@ message MACCommand {
   message BeaconFreqReq {
     option (gogoproto.populate) = false;
 
-    uint64 frequency = 1 [(validate.rules).uint64.gte = 100000]; // Frequency of the Class B beacons (Hz).
+    uint64 frequency = 1 [(validate.rules).uint64 = { lte: 0, gte: 100000 }]; // Frequency of the Class B beacons (Hz).
   }
   message BeaconFreqAns {
     bool frequency_ack = 1;

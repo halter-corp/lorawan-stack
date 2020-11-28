@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 var (
@@ -35,7 +35,7 @@ func Password(v interface{}) error {
 	}
 
 	if !passwordRegex.MatchString(password) {
-		return errPasswordLength
+		return errPasswordLength.New()
 	}
 
 	return nil

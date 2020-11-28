@@ -16,16 +16,19 @@ package shared
 
 import (
 	"fmt"
+	"time"
 
-	"go.thethings.network/lorawan-stack/cmd/internal/shared"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver"
-	"go.thethings.network/lorawan-stack/pkg/gatewayserver/io/udp"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/udp"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/ws"
 )
 
 // DefaultGatewayServerConfig is the default configuration for the GatewayServer.
 var DefaultGatewayServerConfig = gatewayserver.Config{
-	RequireRegisteredGateways: false,
+	RequireRegisteredGateways:         false,
+	UpdateGatewayLocationDebounceTime: time.Hour,
 	Forward: map[string][]string{
 		"": {"00000000/0"},
 	},
@@ -47,7 +50,9 @@ var DefaultGatewayServerConfig = gatewayserver.Config{
 		PublicAddress:    fmt.Sprintf("%s:1882", shared.DefaultPublicHost),
 		PublicTLSAddress: fmt.Sprintf("%s:8882", shared.DefaultPublicHost),
 	},
+	UpdateConnectionStatsDebounceTime: 3 * time.Second,
 	BasicStation: gatewayserver.BasicStationConfig{
+		Config:    ws.DefaultConfig,
 		Listen:    ":1887",
 		ListenTLS: ":8887",
 	},

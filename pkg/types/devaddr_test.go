@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"github.com/smartystreets/assertions"
-	"go.thethings.network/lorawan-stack/pkg/config"
-	. "go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/util/test/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	. "go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 var _ config.Configurable = &DevAddrPrefix{}
@@ -64,17 +64,17 @@ func TestDevAddr(t *testing.T) {
 		{
 			DevAddr{0xe3, 0xfc, 0xff, 0x42},
 			3,
-			[]byte{0x00, 0xff},
+			[]byte{0x01, 0xfe},
 			[]byte{0x00, 0xff, 0x42},
-			18,
+			17,
 			3,
 		},
 		{
 			DevAddr{0xf0, 0xff, 0xff, 0x42},
 			4,
-			[]byte{0x00, 0xff},
-			[]byte{0xff, 0x42},
-			16,
+			[]byte{0x01, 0xff},
+			[]byte{0x7f, 0x42},
+			15,
 			2,
 		},
 		{

@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // User model.
@@ -111,7 +111,7 @@ var userModelSetters = map[string]func(*User, *ttnpb.User){
 		if pb.PasswordUpdatedAt != nil {
 			usr.PasswordUpdatedAt = cleanTime(*pb.PasswordUpdatedAt)
 		} else {
-			usr.PasswordUpdatedAt = time.Now()
+			usr.PasswordUpdatedAt = cleanTime(time.Now())
 		}
 	},
 	requirePasswordUpdateField: func(usr *User, pb *ttnpb.User) { usr.RequirePasswordUpdate = pb.RequirePasswordUpdate },
@@ -194,4 +194,16 @@ func (usr *User) fromPB(pb *ttnpb.User, fieldMask *types.FieldMask) (columns []s
 		}
 	}
 	return
+}
+
+type userWithUID struct {
+	UID  string
+	User `gorm:"embedded"`
+}
+
+func (userWithUID) TableName() string { return "users" }
+
+func (u userWithUID) toPB(pb *ttnpb.User, fieldMask *types.FieldMask) {
+	u.User.Account.UID = u.UID
+	u.User.toPB(pb, fieldMask)
 }

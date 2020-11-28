@@ -10,7 +10,7 @@ import (
 )
 
 func (dst *ApplicationWebhookIdentifiers) SetFields(src *ApplicationWebhookIdentifiers, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -49,7 +49,7 @@ func (dst *ApplicationWebhookIdentifiers) SetFields(src *ApplicationWebhookIdent
 }
 
 func (dst *ApplicationWebhookTemplateIdentifiers) SetFields(src *ApplicationWebhookTemplateIdentifiers, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "template_id":
 			if len(subs) > 0 {
@@ -70,7 +70,7 @@ func (dst *ApplicationWebhookTemplateIdentifiers) SetFields(src *ApplicationWebh
 }
 
 func (dst *ApplicationWebhookTemplateField) SetFields(src *ApplicationWebhookTemplateField, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "id":
 			if len(subs) > 0 {
@@ -131,7 +131,7 @@ func (dst *ApplicationWebhookTemplateField) SetFields(src *ApplicationWebhookTem
 }
 
 func (dst *ApplicationWebhookTemplate) SetFields(src *ApplicationWebhookTemplate, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -239,6 +239,16 @@ func (dst *ApplicationWebhookTemplate) SetFields(src *ApplicationWebhookTemplate
 			} else {
 				dst.Fields = nil
 			}
+		case "create_downlink_api_key":
+			if len(subs) > 0 {
+				return fmt.Errorf("'create_downlink_api_key' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.CreateDownlinkAPIKey = src.CreateDownlinkAPIKey
+			} else {
+				var zero bool
+				dst.CreateDownlinkAPIKey = zero
+			}
 		case "uplink_message":
 			if len(subs) > 0 {
 				var newDst, newSrc *ApplicationWebhookTemplate_Message
@@ -414,6 +424,31 @@ func (dst *ApplicationWebhookTemplate) SetFields(src *ApplicationWebhookTemplate
 					dst.DownlinkQueued = nil
 				}
 			}
+		case "downlink_queue_invalidated":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationWebhookTemplate_Message
+				if (src == nil || src.DownlinkQueueInvalidated == nil) && dst.DownlinkQueueInvalidated == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DownlinkQueueInvalidated
+				}
+				if dst.DownlinkQueueInvalidated != nil {
+					newDst = dst.DownlinkQueueInvalidated
+				} else {
+					newDst = &ApplicationWebhookTemplate_Message{}
+					dst.DownlinkQueueInvalidated = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DownlinkQueueInvalidated = src.DownlinkQueueInvalidated
+				} else {
+					dst.DownlinkQueueInvalidated = nil
+				}
+			}
 		case "location_solved":
 			if len(subs) > 0 {
 				var newDst, newSrc *ApplicationWebhookTemplate_Message
@@ -439,6 +474,31 @@ func (dst *ApplicationWebhookTemplate) SetFields(src *ApplicationWebhookTemplate
 					dst.LocationSolved = nil
 				}
 			}
+		case "service_data":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationWebhookTemplate_Message
+				if (src == nil || src.ServiceData == nil) && dst.ServiceData == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.ServiceData
+				}
+				if dst.ServiceData != nil {
+					newDst = dst.ServiceData
+				} else {
+					newDst = &ApplicationWebhookTemplate_Message{}
+					dst.ServiceData = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ServiceData = src.ServiceData
+				} else {
+					dst.ServiceData = nil
+				}
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -448,7 +508,7 @@ func (dst *ApplicationWebhookTemplate) SetFields(src *ApplicationWebhookTemplate
 }
 
 func (dst *ApplicationWebhookTemplates) SetFields(src *ApplicationWebhookTemplates, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "templates":
 			if len(subs) > 0 {
@@ -468,7 +528,7 @@ func (dst *ApplicationWebhookTemplates) SetFields(src *ApplicationWebhookTemplat
 }
 
 func (dst *ApplicationWebhook) SetFields(src *ApplicationWebhook, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -571,6 +631,16 @@ func (dst *ApplicationWebhook) SetFields(src *ApplicationWebhook, paths ...strin
 			} else {
 				dst.TemplateFields = nil
 			}
+		case "downlink_api_key":
+			if len(subs) > 0 {
+				return fmt.Errorf("'downlink_api_key' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DownlinkAPIKey = src.DownlinkAPIKey
+			} else {
+				var zero string
+				dst.DownlinkAPIKey = zero
+			}
 		case "uplink_message":
 			if len(subs) > 0 {
 				var newDst, newSrc *ApplicationWebhook_Message
@@ -746,6 +816,31 @@ func (dst *ApplicationWebhook) SetFields(src *ApplicationWebhook, paths ...strin
 					dst.DownlinkQueued = nil
 				}
 			}
+		case "downlink_queue_invalidated":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationWebhook_Message
+				if (src == nil || src.DownlinkQueueInvalidated == nil) && dst.DownlinkQueueInvalidated == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DownlinkQueueInvalidated
+				}
+				if dst.DownlinkQueueInvalidated != nil {
+					newDst = dst.DownlinkQueueInvalidated
+				} else {
+					newDst = &ApplicationWebhook_Message{}
+					dst.DownlinkQueueInvalidated = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DownlinkQueueInvalidated = src.DownlinkQueueInvalidated
+				} else {
+					dst.DownlinkQueueInvalidated = nil
+				}
+			}
 		case "location_solved":
 			if len(subs) > 0 {
 				var newDst, newSrc *ApplicationWebhook_Message
@@ -771,6 +866,31 @@ func (dst *ApplicationWebhook) SetFields(src *ApplicationWebhook, paths ...strin
 					dst.LocationSolved = nil
 				}
 			}
+		case "service_data":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationWebhook_Message
+				if (src == nil || src.ServiceData == nil) && dst.ServiceData == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.ServiceData
+				}
+				if dst.ServiceData != nil {
+					newDst = dst.ServiceData
+				} else {
+					newDst = &ApplicationWebhook_Message{}
+					dst.ServiceData = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ServiceData = src.ServiceData
+				} else {
+					dst.ServiceData = nil
+				}
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -780,7 +900,7 @@ func (dst *ApplicationWebhook) SetFields(src *ApplicationWebhook, paths ...strin
 }
 
 func (dst *ApplicationWebhooks) SetFields(src *ApplicationWebhooks, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "webhooks":
 			if len(subs) > 0 {
@@ -800,7 +920,7 @@ func (dst *ApplicationWebhooks) SetFields(src *ApplicationWebhooks, paths ...str
 }
 
 func (dst *ApplicationWebhookFormats) SetFields(src *ApplicationWebhookFormats, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "formats":
 			if len(subs) > 0 {
@@ -820,7 +940,7 @@ func (dst *ApplicationWebhookFormats) SetFields(src *ApplicationWebhookFormats, 
 }
 
 func (dst *GetApplicationWebhookRequest) SetFields(src *GetApplicationWebhookRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -859,7 +979,7 @@ func (dst *GetApplicationWebhookRequest) SetFields(src *GetApplicationWebhookReq
 }
 
 func (dst *ListApplicationWebhooksRequest) SetFields(src *ListApplicationWebhooksRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -898,7 +1018,7 @@ func (dst *ListApplicationWebhooksRequest) SetFields(src *ListApplicationWebhook
 }
 
 func (dst *SetApplicationWebhookRequest) SetFields(src *SetApplicationWebhookRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "webhook":
 			if len(subs) > 0 {
@@ -937,7 +1057,7 @@ func (dst *SetApplicationWebhookRequest) SetFields(src *SetApplicationWebhookReq
 }
 
 func (dst *GetApplicationWebhookTemplateRequest) SetFields(src *GetApplicationWebhookTemplateRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -976,7 +1096,7 @@ func (dst *GetApplicationWebhookTemplateRequest) SetFields(src *GetApplicationWe
 }
 
 func (dst *ListApplicationWebhookTemplatesRequest) SetFields(src *ListApplicationWebhookTemplatesRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "field_mask":
 			if len(subs) > 0 {
@@ -997,7 +1117,7 @@ func (dst *ListApplicationWebhookTemplatesRequest) SetFields(src *ListApplicatio
 }
 
 func (dst *ApplicationWebhookTemplate_Message) SetFields(src *ApplicationWebhookTemplate_Message, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "path":
 			if len(subs) > 0 {
@@ -1018,7 +1138,7 @@ func (dst *ApplicationWebhookTemplate_Message) SetFields(src *ApplicationWebhook
 }
 
 func (dst *ApplicationWebhook_Message) SetFields(src *ApplicationWebhook_Message, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "path":
 			if len(subs) > 0 {

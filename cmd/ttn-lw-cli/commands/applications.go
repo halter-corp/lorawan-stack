@@ -20,16 +20,18 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/io"
-	"go.thethings.network/lorawan-stack/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
 	selectApplicationFlags = util.FieldMaskFlags(&ttnpb.Application{})
 	setApplicationFlags    = util.FieldFlags(&ttnpb.Application{})
+
+	selectAllApplicationFlags = util.SelectAllFlagSet("application")
 )
 
 func applicationIDFlags() *pflag.FlagSet {
@@ -68,6 +70,7 @@ var (
 		Short:   "List applications",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectApplicationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationRegistry/List"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -79,6 +82,7 @@ var (
 				FieldMask:    types.FieldMask{Paths: paths},
 				Limit:        limit,
 				Page:         page,
+				Order:        getOrder(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -93,6 +97,7 @@ var (
 		Short: "Search for applications",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectApplicationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchApplications"])
 
 			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
 			req.FieldMask.Paths = paths
@@ -120,6 +125,7 @@ var (
 				return errNoApplicationID
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectApplicationFlags)
+			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationRegistry/Get"])
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -179,10 +185,10 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res)
 		}),
 	}
-	applicationsUpdateCommand = &cobra.Command{
-		Use:     "update [application-id]",
-		Aliases: []string{"set"},
-		Short:   "Update an application",
+	applicationsSetCommand = &cobra.Command{
+		Use:     "set [application-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of an application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), args)
 			if appID == nil {
@@ -217,8 +223,9 @@ var (
 		},
 	}
 	applicationsDeleteCommand = &cobra.Command{
-		Use:   "delete [application-id]",
-		Short: "Delete an application",
+		Use:     "delete [application-id]",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete an application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appID := getApplicationID(cmd.Flags(), args)
 			if appID == nil {
@@ -250,22 +257,26 @@ func init() {
 	applicationsListCommand.Flags().AddFlagSet(collaboratorFlags())
 	applicationsListCommand.Flags().AddFlagSet(selectApplicationFlags)
 	applicationsListCommand.Flags().AddFlagSet(paginationFlags())
+	applicationsListCommand.Flags().AddFlagSet(orderFlags())
+	applicationsListCommand.Flags().AddFlagSet(selectAllApplicationFlags)
 	applicationsCommand.AddCommand(applicationsListCommand)
 	applicationsSearchCommand.Flags().AddFlagSet(searchFlags())
 	applicationsSearchCommand.Flags().AddFlagSet(selectApplicationFlags)
+	applicationsSearchCommand.Flags().AddFlagSet(selectAllApplicationFlags)
 	applicationsCommand.AddCommand(applicationsSearchCommand)
 	applicationsGetCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsGetCommand.Flags().AddFlagSet(selectApplicationFlags)
+	applicationsGetCommand.Flags().AddFlagSet(selectAllApplicationFlags)
 	applicationsCommand.AddCommand(applicationsGetCommand)
 	applicationsCreateCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsCreateCommand.Flags().AddFlagSet(collaboratorFlags())
 	applicationsCreateCommand.Flags().AddFlagSet(setApplicationFlags)
 	applicationsCreateCommand.Flags().AddFlagSet(attributesFlags())
 	applicationsCommand.AddCommand(applicationsCreateCommand)
-	applicationsUpdateCommand.Flags().AddFlagSet(applicationIDFlags())
-	applicationsUpdateCommand.Flags().AddFlagSet(setApplicationFlags)
-	applicationsUpdateCommand.Flags().AddFlagSet(attributesFlags())
-	applicationsCommand.AddCommand(applicationsUpdateCommand)
+	applicationsSetCommand.Flags().AddFlagSet(applicationIDFlags())
+	applicationsSetCommand.Flags().AddFlagSet(setApplicationFlags)
+	applicationsSetCommand.Flags().AddFlagSet(attributesFlags())
+	applicationsCommand.AddCommand(applicationsSetCommand)
 	applicationsDeleteCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsCommand.AddCommand(applicationsDeleteCommand)
 	applicationsContactInfoCommand.PersistentFlags().AddFlagSet(applicationIDFlags())

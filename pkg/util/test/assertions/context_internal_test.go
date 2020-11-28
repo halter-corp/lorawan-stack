@@ -23,9 +23,9 @@ import (
 
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/auth/rights"
-	"go.thethings.network/lorawan-stack/pkg/errorcontext"
-	"go.thethings.network/lorawan-stack/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 )
 
 func TestContextParent(t *testing.T) {
@@ -150,7 +150,7 @@ func TestContextParent(t *testing.T) {
 }
 
 func TestContextRoot(t *testing.T) {
-	var root = context.Background()
+	root := context.Background()
 
 	for _, tc := range []struct {
 		Name    string

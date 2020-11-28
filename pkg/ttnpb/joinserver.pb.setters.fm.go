@@ -5,11 +5,12 @@ package ttnpb
 import (
 	fmt "fmt"
 
-	go_thethings_network_lorawan_stack_pkg_types "go.thethings.network/lorawan-stack/pkg/types"
+	types "github.com/gogo/protobuf/types"
+	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 func (dst *SessionKeyRequest) SetFields(src *SessionKeyRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "session_key_id":
 			if len(subs) > 0 {
@@ -27,7 +28,7 @@ func (dst *SessionKeyRequest) SetFields(src *SessionKeyRequest, paths ...string)
 			if src != nil {
 				dst.DevEUI = src.DevEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.DevEUI = zero
 			}
 		case "join_eui":
@@ -37,7 +38,7 @@ func (dst *SessionKeyRequest) SetFields(src *SessionKeyRequest, paths ...string)
 			if src != nil {
 				dst.JoinEUI = src.JoinEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.JoinEUI = zero
 			}
 
@@ -49,7 +50,7 @@ func (dst *SessionKeyRequest) SetFields(src *SessionKeyRequest, paths ...string)
 }
 
 func (dst *NwkSKeysResponse) SetFields(src *NwkSKeysResponse, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "f_nwk_s_int_key":
 			if len(subs) > 0 {
@@ -114,7 +115,7 @@ func (dst *NwkSKeysResponse) SetFields(src *NwkSKeysResponse, paths ...string) e
 }
 
 func (dst *AppSKeyResponse) SetFields(src *AppSKeyResponse, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "app_s_key":
 			if len(subs) > 0 {
@@ -143,7 +144,7 @@ func (dst *AppSKeyResponse) SetFields(src *AppSKeyResponse, paths ...string) err
 }
 
 func (dst *CryptoServicePayloadRequest) SetFields(src *CryptoServicePayloadRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -210,7 +211,7 @@ func (dst *CryptoServicePayloadRequest) SetFields(src *CryptoServicePayloadReque
 }
 
 func (dst *CryptoServicePayloadResponse) SetFields(src *CryptoServicePayloadResponse, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "payload":
 			if len(subs) > 0 {
@@ -230,7 +231,7 @@ func (dst *CryptoServicePayloadResponse) SetFields(src *CryptoServicePayloadResp
 }
 
 func (dst *JoinAcceptMICRequest) SetFields(src *JoinAcceptMICRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "payload_request":
 			if len(subs) > 0 {
@@ -267,7 +268,7 @@ func (dst *JoinAcceptMICRequest) SetFields(src *JoinAcceptMICRequest, paths ...s
 			if src != nil {
 				dst.DevNonce = src.DevNonce
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.DevNonce
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce
 				dst.DevNonce = zero
 			}
 
@@ -279,7 +280,7 @@ func (dst *JoinAcceptMICRequest) SetFields(src *JoinAcceptMICRequest, paths ...s
 }
 
 func (dst *DeriveSessionKeysRequest) SetFields(src *DeriveSessionKeysRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -316,7 +317,7 @@ func (dst *DeriveSessionKeysRequest) SetFields(src *DeriveSessionKeysRequest, pa
 			if src != nil {
 				dst.JoinNonce = src.JoinNonce
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.JoinNonce
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.JoinNonce
 				dst.JoinNonce = zero
 			}
 		case "dev_nonce":
@@ -326,7 +327,7 @@ func (dst *DeriveSessionKeysRequest) SetFields(src *DeriveSessionKeysRequest, pa
 			if src != nil {
 				dst.DevNonce = src.DevNonce
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.DevNonce
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce
 				dst.DevNonce = zero
 			}
 		case "net_id":
@@ -336,7 +337,7 @@ func (dst *DeriveSessionKeysRequest) SetFields(src *DeriveSessionKeysRequest, pa
 			if src != nil {
 				dst.NetID = src.NetID
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.NetID
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
 				dst.NetID = zero
 			}
 		case "provisioner_id":
@@ -367,7 +368,7 @@ func (dst *DeriveSessionKeysRequest) SetFields(src *DeriveSessionKeysRequest, pa
 }
 
 func (dst *GetRootKeysRequest) SetFields(src *GetRootKeysRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "ids":
 			if len(subs) > 0 {
@@ -415,7 +416,7 @@ func (dst *GetRootKeysRequest) SetFields(src *GetRootKeysRequest, paths ...strin
 }
 
 func (dst *ProvisionEndDevicesRequest) SetFields(src *ProvisionEndDevicesRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -582,8 +583,198 @@ func (dst *ProvisionEndDevicesRequest) SetFields(src *ProvisionEndDevicesRequest
 	return nil
 }
 
+func (dst *ApplicationActivationSettings) SetFields(src *ApplicationActivationSettings, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "kek_label":
+			if len(subs) > 0 {
+				return fmt.Errorf("'kek_label' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.KEKLabel = src.KEKLabel
+			} else {
+				var zero string
+				dst.KEKLabel = zero
+			}
+		case "kek":
+			if len(subs) > 0 {
+				var newDst, newSrc *KeyEnvelope
+				if (src == nil || src.KEK == nil) && dst.KEK == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.KEK
+				}
+				if dst.KEK != nil {
+					newDst = dst.KEK
+				} else {
+					newDst = &KeyEnvelope{}
+					dst.KEK = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.KEK = src.KEK
+				} else {
+					dst.KEK = nil
+				}
+			}
+		case "home_net_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'home_net_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.HomeNetID = src.HomeNetID
+			} else {
+				dst.HomeNetID = nil
+			}
+		case "application_server_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'application_server_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ApplicationServerID = src.ApplicationServerID
+			} else {
+				var zero string
+				dst.ApplicationServerID = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *GetApplicationActivationSettingsRequest) SetFields(src *GetApplicationActivationSettingsRequest, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "application_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationIdentifiers
+				if src != nil {
+					newSrc = &src.ApplicationIdentifiers
+				}
+				newDst = &dst.ApplicationIdentifiers
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ApplicationIdentifiers = src.ApplicationIdentifiers
+				} else {
+					var zero ApplicationIdentifiers
+					dst.ApplicationIdentifiers = zero
+				}
+			}
+		case "field_mask":
+			if len(subs) > 0 {
+				return fmt.Errorf("'field_mask' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FieldMask = src.FieldMask
+			} else {
+				var zero types.FieldMask
+				dst.FieldMask = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *SetApplicationActivationSettingsRequest) SetFields(src *SetApplicationActivationSettingsRequest, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "application_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationIdentifiers
+				if src != nil {
+					newSrc = &src.ApplicationIdentifiers
+				}
+				newDst = &dst.ApplicationIdentifiers
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ApplicationIdentifiers = src.ApplicationIdentifiers
+				} else {
+					var zero ApplicationIdentifiers
+					dst.ApplicationIdentifiers = zero
+				}
+			}
+		case "settings":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationActivationSettings
+				if src != nil {
+					newSrc = &src.ApplicationActivationSettings
+				}
+				newDst = &dst.ApplicationActivationSettings
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ApplicationActivationSettings = src.ApplicationActivationSettings
+				} else {
+					var zero ApplicationActivationSettings
+					dst.ApplicationActivationSettings = zero
+				}
+			}
+		case "field_mask":
+			if len(subs) > 0 {
+				return fmt.Errorf("'field_mask' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FieldMask = src.FieldMask
+			} else {
+				var zero types.FieldMask
+				dst.FieldMask = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *DeleteApplicationActivationSettingsRequest) SetFields(src *DeleteApplicationActivationSettingsRequest, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "application_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *ApplicationIdentifiers
+				if src != nil {
+					newSrc = &src.ApplicationIdentifiers
+				}
+				newDst = &dst.ApplicationIdentifiers
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ApplicationIdentifiers = src.ApplicationIdentifiers
+				} else {
+					var zero ApplicationIdentifiers
+					dst.ApplicationIdentifiers = zero
+				}
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *JoinEUIPrefix) SetFields(src *JoinEUIPrefix, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {
@@ -592,7 +783,7 @@ func (dst *JoinEUIPrefix) SetFields(src *JoinEUIPrefix, paths ...string) error {
 			if src != nil {
 				dst.JoinEUI = src.JoinEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.JoinEUI = zero
 			}
 		case "length":
@@ -614,7 +805,7 @@ func (dst *JoinEUIPrefix) SetFields(src *JoinEUIPrefix, paths ...string) error {
 }
 
 func (dst *JoinEUIPrefixes) SetFields(src *JoinEUIPrefixes, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "prefixes":
 			if len(subs) > 0 {
@@ -634,7 +825,7 @@ func (dst *JoinEUIPrefixes) SetFields(src *JoinEUIPrefixes, paths ...string) err
 }
 
 func (dst *ProvisionEndDevicesRequest_IdentifiersList) SetFields(src *ProvisionEndDevicesRequest_IdentifiersList, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {
@@ -663,7 +854,7 @@ func (dst *ProvisionEndDevicesRequest_IdentifiersList) SetFields(src *ProvisionE
 }
 
 func (dst *ProvisionEndDevicesRequest_IdentifiersRange) SetFields(src *ProvisionEndDevicesRequest_IdentifiersRange, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {
@@ -681,7 +872,7 @@ func (dst *ProvisionEndDevicesRequest_IdentifiersRange) SetFields(src *Provision
 			if src != nil {
 				dst.StartDevEUI = src.StartDevEUI
 			} else {
-				var zero go_thethings_network_lorawan_stack_pkg_types.EUI64
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
 				dst.StartDevEUI = zero
 			}
 
@@ -693,7 +884,7 @@ func (dst *ProvisionEndDevicesRequest_IdentifiersRange) SetFields(src *Provision
 }
 
 func (dst *ProvisionEndDevicesRequest_IdentifiersFromData) SetFields(src *ProvisionEndDevicesRequest_IdentifiersFromData, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "join_eui":
 			if len(subs) > 0 {

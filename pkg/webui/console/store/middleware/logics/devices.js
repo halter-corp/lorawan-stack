@@ -12,22 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import api from '../../../api'
-import * as devices from '../../actions/devices'
-import * as deviceTemplateFormats from '../../actions/device-template-formats'
+import api from '@console/api'
+
+import * as devices from '@console/store/actions/devices'
+import * as deviceTemplateFormats from '@console/store/actions/device-template-formats'
+
+import createEventsConnectLogics from './events'
 import createRequestLogic from './lib'
+
+const getDeviceLogic = createRequestLogic({
+  type: devices.GET_DEV,
+  async process({ action }, dispatch) {
+    const {
+      payload: { appId, deviceId },
+      meta: { selector, options },
+    } = action
+    const dev = await api.device.get(appId, deviceId, selector, options)
+    dispatch(devices.startDeviceEventsStream(dev.ids))
+    return dev
+  },
+})
+
+const updateDeviceLogic = createRequestLogic(
+  {
+    type: devices.UPDATE_DEV,
+    async process({ action }) {
+      const {
+        payload: { appId, deviceId, patch },
+      } = action
+      const result = await api.device.update(appId, deviceId, patch)
+
+      return { ...patch, ...result }
+    },
+  },
+  devices.updateDeviceSuccess,
+)
 
 const getDevicesListLogic = createRequestLogic({
   type: devices.GET_DEVICES_LIST,
   async process({ action }) {
     const {
-      appId,
-      params: { page, limit },
+      id: appId,
+      params: { page, limit, order, query },
     } = action.payload
     const { selectors } = action.meta
 
-    const data = await api.devices.list(appId, { page, limit }, selectors)
-    return { devices: data.end_devices, totalCount: data.totalCount }
+    const data = query
+      ? await api.devices.search(
+          appId,
+          {
+            page,
+            limit,
+            id_contains: query,
+            order,
+          },
+          selectors,
+        )
+      : await api.devices.list(appId, { page, limit, order }, selectors)
+
+    return { entities: data.end_devices, totalCount: data.totalCount }
   },
 })
 
@@ -39,4 +82,10 @@ const getDeviceTemplateFormatsLogic = createRequestLogic({
   },
 })
 
-export default [getDevicesListLogic, getDeviceTemplateFormatsLogic]
+export default [
+  getDevicesListLogic,
+  getDeviceTemplateFormatsLogic,
+  getDeviceLogic,
+  updateDeviceLogic,
+  ...createEventsConnectLogics(devices.SHARED_NAME, 'devices', api.device.eventsSubscribe),
+]

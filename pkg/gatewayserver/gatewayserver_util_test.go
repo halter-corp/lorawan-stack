@@ -20,16 +20,16 @@ import (
 	"net"
 	"time"
 
-	"go.thethings.network/lorawan-stack/pkg/component"
-	"go.thethings.network/lorawan-stack/pkg/crypto"
-	"go.thethings.network/lorawan-stack/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/random"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/random"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -66,11 +66,12 @@ func startMockIS(ctx context.Context) (*mockIS, string) {
 	return is, lis.Addr().String()
 }
 
-func (is *mockIS) add(ctx context.Context, ids ttnpb.GatewayIdentifiers, key string) {
+func (is *mockIS) add(ctx context.Context, ids ttnpb.GatewayIdentifiers, key string, locationPublic bool, updateLocationFromStatus bool) {
 	uid := unique.ID(ctx, ids)
 	is.gateways[uid] = &ttnpb.Gateway{
 		GatewayIdentifiers: ids,
 		FrequencyPlanID:    test.EUFrequencyPlanID,
+		FrequencyPlanIDs:   []string{test.EUFrequencyPlanID},
 		Antennas: []ttnpb.GatewayAntenna{
 			{
 				Location: ttnpb.Location{
@@ -78,6 +79,8 @@ func (is *mockIS) add(ctx context.Context, ids ttnpb.GatewayIdentifiers, key str
 				},
 			},
 		},
+		LocationPublic:           locationPublic,
+		UpdateLocationFromStatus: updateLocationFromStatus,
 	}
 	if key != "" {
 		is.gatewayAuths[uid] = []string{fmt.Sprintf("Bearer %v", key)}
@@ -90,8 +93,19 @@ func (is *mockIS) Get(ctx context.Context, req *ttnpb.GetGatewayRequest) (*ttnpb
 	uid := unique.ID(ctx, req.GatewayIdentifiers)
 	gtw, ok := is.gateways[uid]
 	if !ok {
-		return nil, errNotFound
+		return nil, errNotFound.New()
 	}
+	return gtw, nil
+}
+
+func (is *mockIS) Update(ctx context.Context, req *ttnpb.UpdateGatewayRequest) (*ttnpb.Gateway, error) {
+	uid := unique.ID(ctx, req.Gateway.GatewayIdentifiers)
+	gtw, ok := is.gateways[uid]
+	if !ok {
+		return nil, errNotFound.New()
+	}
+	// Just update antennas
+	gtw.Antennas = req.Antennas
 	return gtw, nil
 }
 
@@ -102,7 +116,7 @@ func (is *mockIS) GetIdentifiersForEUI(ctx context.Context, req *ttnpb.GetGatewa
 			EUI:       &registeredGatewayEUI,
 		}, nil
 	}
-	return nil, errNotFound
+	return nil, errNotFound.New()
 }
 
 func (is *mockIS) ListRights(ctx context.Context, ids *ttnpb.GatewayIdentifiers) (res *ttnpb.Rights, err error) {
@@ -173,7 +187,7 @@ func randomUpDataPayload(devAddr types.DevAddr, fPort uint32, size int) []byte {
 		FPort:      fPort,
 		FRMPayload: random.Bytes(size),
 	}
-	buf, err := crypto.EncryptUplink(appSKey, devAddr, pld.FCnt, pld.FRMPayload)
+	buf, err := crypto.EncryptUplink(appSKey, devAddr, pld.FCnt, pld.FRMPayload, false)
 	if err != nil {
 		panic(err)
 	}
@@ -214,7 +228,7 @@ func randomDownDataPayload(devAddr types.DevAddr, fPort uint32, size int) []byte
 		FPort:      fPort,
 		FRMPayload: random.Bytes(size),
 	}
-	buf, err := crypto.EncryptDownlink(appSKey, devAddr, pld.FCnt, pld.FRMPayload)
+	buf, err := crypto.EncryptDownlink(appSKey, devAddr, pld.FCnt, pld.FRMPayload, false)
 	if err != nil {
 		panic(err)
 	}

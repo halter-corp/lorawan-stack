@@ -17,7 +17,7 @@ package ttnpb
 import (
 	"strings"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 )
 
 // TopLevelFields returns the unique top level fields of the given paths.
@@ -169,11 +169,32 @@ outer:
 
 // ExcludeFields returns the given paths without the given search paths to exclude.
 func ExcludeFields(paths []string, excludePaths ...string) []string {
+	if len(paths) == 0 {
+		return paths
+	}
 	excluded := make([]string, 0, len(paths))
 outer:
 	for _, path := range paths {
 		for _, excludePath := range excludePaths {
 			if path == excludePath || strings.HasPrefix(path, excludePath+".") {
+				continue outer
+			}
+		}
+		excluded = append(excluded, path)
+	}
+	return excluded
+}
+
+// ExcludeSubFields returns the given paths without sub-fields of excludePaths.
+func ExcludeSubFields(paths []string, excludePaths ...string) []string {
+	if len(paths) == 0 {
+		return paths
+	}
+	excluded := make([]string, 0, len(paths))
+outer:
+	for _, path := range paths {
+		for _, excludePath := range excludePaths {
+			if strings.HasPrefix(path, excludePath+".") {
 				continue outer
 			}
 		}
@@ -189,10 +210,11 @@ func AddFields(paths []string, addPaths ...string) []string {
 			paths = append(paths, p)
 		}
 	}
-	return paths
+	return ExcludeSubFields(paths, addPaths...)
 }
 
-func fieldsWithPrefix(prefix string, paths ...string) []string {
+// FieldsWithPrefix returns the paths with each the prefix prepended.
+func FieldsWithPrefix(prefix string, paths ...string) []string {
 	ret := make([]string, 0, len(paths))
 	for _, p := range paths {
 		ret = append(ret, prefix+"."+p)

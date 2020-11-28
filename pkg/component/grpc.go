@@ -17,17 +17,14 @@ package component
 import (
 	"context"
 	"net"
-	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	echo "github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	"go.thethings.network/lorawan-stack/pkg/metrics"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/hooks"
-	"go.thethings.network/lorawan-stack/pkg/rpcmiddleware/rpclog"
-	"go.thethings.network/lorawan-stack/pkg/rpcserver"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
 	"google.golang.org/grpc"
 )
 
@@ -37,7 +34,8 @@ func (c *Component) initGRPC() {
 	c.grpc = rpcserver.New(
 		c.ctx,
 		rpcserver.WithContextFiller(c.FillContext),
-		rpcserver.WithSentry(c.sentry),
+		rpcserver.WithTrustedProxies(c.config.GRPC.TrustedProxies...),
+		rpcserver.WithLogIgnoreMethods(c.config.GRPC.LogIgnoreMethods),
 	)
 }
 
@@ -47,7 +45,7 @@ func (c *Component) setupGRPC() (err error) {
 	}
 	metrics.InitializeServerMetrics(c.grpc.Server)
 	c.logger.Debug("Starting loopback connection")
-	c.loopback, err = rpcserver.StartLoopback(c.ctx, c.grpc.Server)
+	c.loopback, err = rpcserver.StartLoopback(c.ctx, c.grpc.Server, rpcclient.DefaultDialOptions(c.ctx)...)
 	if err != nil {
 		return errors.New("could not start loopback connection").WithCause(err)
 	}
@@ -55,16 +53,6 @@ func (c *Component) setupGRPC() (err error) {
 	for _, sub := range c.grpcSubsystems {
 		sub.RegisterHandlers(c.grpc.ServeMux, c.loopback)
 	}
-	c.web.RootGroup(ttnpb.HTTPAPIPrefix).Any(
-		"/*",
-		echo.WrapHandler(http.StripPrefix(ttnpb.HTTPAPIPrefix, c.grpc)),
-		middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowHeaders:     []string{"Authorization", "Content-Type", "X-CSRF-Token"},
-			AllowCredentials: true,
-			ExposeHeaders:    []string{"Date", "Content-Length", "X-Request-Id", "X-Total-Count", "X-Warning"},
-			MaxAge:           600,
-		}),
-	)
 	return nil
 }
 

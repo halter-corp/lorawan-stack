@@ -19,25 +19,28 @@ import { connect } from 'react-redux'
 import { replace } from 'connected-react-router'
 import bind from 'autobind-decorator'
 
-import api from '../../api'
-import sharedMessages from '../../../lib/shared-messages'
+import api from '@oauth/api'
 
-import ErrorMessage from '../../../lib/components/error-message'
-import Modal from '../../../components/modal'
-import Icon from '../../../components/icon'
-import Message from '../../../lib/components/message'
-import IntlHelmet from '../../../lib/components/intl-helmet'
-import { withEnv } from '../../../lib/components/env'
-import getCookieValue from '../../../lib/cookie'
+import Modal from '@ttn-lw/components/modal'
+import Icon from '@ttn-lw/components/icon'
+
+import ErrorMessage from '@ttn-lw/lib/components/error-message'
+import Message from '@ttn-lw/lib/components/message'
+import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
+import { withEnv } from '@ttn-lw/lib/components/env'
+
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './authorize.styl'
 
 const m = defineMessages({
-  modalTitle: 'Request for Permission',
-  modalSubtitle: '{clientName} is requesting permissions to do the following:',
+  modalTitle: 'Request for permission',
+  modalSubtitle: '{clientName} is requesting to be granted the following rights:',
   loginInfo: 'You are logged in as {userId}.',
   redirectInfo: 'You will be redirected to {redirectUri}',
   authorize: 'Authorize',
+  noDescription: 'This client does not provide a description',
 })
 
 @connect(
@@ -47,8 +50,18 @@ const m = defineMessages({
   }),
 )
 @withEnv
-@bind
 export default class Authorize extends PureComponent {
+  static propTypes = {
+    env: PropTypes.env,
+    location: PropTypes.location.isRequired,
+    redirectToLogin: PropTypes.func.isRequired,
+  }
+
+  static defaultProps = {
+    env: undefined,
+  }
+
+  @bind
   async handleLogout() {
     const { redirectToLogin } = this.props
     await api.oauth.logout()
@@ -59,6 +72,7 @@ export default class Authorize extends PureComponent {
     const {
       env: {
         pageData: { client, user, error },
+        csrfToken,
       },
       location,
     } = this.props
@@ -69,7 +83,7 @@ export default class Authorize extends PureComponent {
     }
 
     const redirectUri = redirect_uri || client.redirect_uris[0]
-    const clientName = capitalize(client.ids.client_id)
+    const clientName = client.name || capitalize(client.ids.client_id)
 
     const bottomLine = (
       <div>
@@ -78,7 +92,7 @@ export default class Authorize extends PureComponent {
             className={style.loginInfo}
             content={m.loginInfo}
             values={{ userId: user.ids.user_id }}
-          />
+          />{' '}
           <Message
             content={sharedMessages.logout}
             component="a"
@@ -104,20 +118,26 @@ export default class Authorize extends PureComponent {
           logo
         >
           <Fragment>
-            <input type="hidden" name="csrf" value={getCookieValue('_csrf')} />
+            <input type="hidden" name="_csrf" value={csrfToken} />
             <div className={style.left}>
               <ul>
                 {client.rights.map(right => (
                   <li key={right}>
                     <Icon icon="check" className={style.icon} />
-                    <Message content={{ id: `enum:${right}` }} />
+                    <Message content={{ id: `enum:${right}` }} firstToUpper />
                   </li>
                 ))}
               </ul>
             </div>
             <div className={style.right}>
-              <h3>{capitalize(client.ids.client_id)}</h3>
-              <p>{client.description}</p>
+              <h3>{clientName}</h3>
+              <p>
+                {Boolean(client.description) ? (
+                  client.description
+                ) : (
+                  <Message className={style.noDescription} content={m.noDescription} />
+                )}
+              </p>
             </div>
           </Fragment>
         </Modal>

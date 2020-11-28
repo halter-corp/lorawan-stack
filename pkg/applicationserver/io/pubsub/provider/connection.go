@@ -16,9 +16,13 @@ package provider
 
 import (
 	"context"
+	"reflect"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"github.com/golang/protobuf/proto"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"gocloud.dev/pubsub"
+	"google.golang.org/grpc/codes"
 )
 
 // DownlinkSubscriptions contains the subscriptions for the push and replace queue operations.
@@ -29,34 +33,29 @@ type DownlinkSubscriptions struct {
 
 // Shutdown shutdowns the active subscriptions.
 func (ds *DownlinkSubscriptions) Shutdown(ctx context.Context) error {
-	for _, sub := range []*pubsub.Subscription{
+	return shutdown(ctx,
 		ds.Push,
 		ds.Replace,
-	} {
-		if sub != nil {
-			if err := sub.Shutdown(ctx); err != nil && !errors.IsCanceled(err) {
-				return err
-			}
-		}
-	}
-	return nil
+	)
 }
 
 // UplinkTopics contains the topics for the uplink messages.
 type UplinkTopics struct {
-	UplinkMessage  *pubsub.Topic
-	JoinAccept     *pubsub.Topic
-	DownlinkAck    *pubsub.Topic
-	DownlinkNack   *pubsub.Topic
-	DownlinkSent   *pubsub.Topic
-	DownlinkFailed *pubsub.Topic
-	DownlinkQueued *pubsub.Topic
-	LocationSolved *pubsub.Topic
+	UplinkMessage            *pubsub.Topic
+	JoinAccept               *pubsub.Topic
+	DownlinkAck              *pubsub.Topic
+	DownlinkNack             *pubsub.Topic
+	DownlinkSent             *pubsub.Topic
+	DownlinkFailed           *pubsub.Topic
+	DownlinkQueued           *pubsub.Topic
+	DownlinkQueueInvalidated *pubsub.Topic
+	LocationSolved           *pubsub.Topic
+	ServiceData              *pubsub.Topic
 }
 
 // Shutdown shutdowns the active topics.
 func (ut *UplinkTopics) Shutdown(ctx context.Context) error {
-	for _, topic := range []*pubsub.Topic{
+	return shutdown(ctx,
 		ut.UplinkMessage,
 		ut.JoinAccept,
 		ut.DownlinkAck,
@@ -64,15 +63,10 @@ func (ut *UplinkTopics) Shutdown(ctx context.Context) error {
 		ut.DownlinkSent,
 		ut.DownlinkFailed,
 		ut.DownlinkQueued,
+		ut.DownlinkQueueInvalidated,
 		ut.LocationSolved,
-	} {
-		if topic != nil {
-			if err := topic.Shutdown(ctx); err != nil && !errors.IsCanceled(err) {
-				return err
-			}
-		}
-	}
-	return nil
+		ut.ServiceData,
+	)
 }
 
 // Shutdowner is an interface that contains a contextual shutdown method.
@@ -94,14 +88,47 @@ type Connection struct {
 
 // Shutdown shuts down the topics, subscriptions and the connections if required.
 func (c *Connection) Shutdown(ctx context.Context) error {
-	for _, s := range []Shutdowner{
+	return shutdown(ctx,
 		&c.Topics,
 		&c.Subscriptions,
 		c.ProviderConnection,
-	} {
+	)
+}
+
+var errShutdown = errors.DefineInternal("shutdown", "shutdown")
+
+func shutdown(ctx context.Context, shutdowners ...Shutdowner) error {
+	details := make([]proto.Message, 0, len(shutdowners))
+	for _, s := range shutdowners {
+		if isNil(s) {
+			continue
+		}
 		if err := s.Shutdown(ctx); err != nil {
-			return err
+			details = append(details, toProtoMessage(err))
 		}
 	}
+	if len(details) > 0 {
+		return errShutdown.WithDetails(details...)
+	}
 	return nil
+}
+
+func toProtoMessage(err error) proto.Message {
+	if ttnErr, ok := errors.From(err); ok {
+		return ttnpb.ErrorDetailsToProto(ttnErr)
+	}
+	return &ttnpb.ErrorDetails{
+		Code:          uint32(codes.Unknown),
+		MessageFormat: err.Error(),
+	}
+}
+
+func isNil(c interface{}) bool {
+	if c == nil {
+		return true
+	}
+	if val := reflect.ValueOf(c); val.Kind() == reflect.Ptr {
+		return val.IsNil()
+	}
+	return false
 }

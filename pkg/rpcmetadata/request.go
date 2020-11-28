@@ -17,7 +17,7 @@ package rpcmetadata
 import (
 	"context"
 
-	"go.thethings.network/lorawan-stack/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -39,7 +39,7 @@ var errUnauthenticated = errors.DefineUnauthenticated("unauthenticated", "the co
 func WithForwardedAuth(ctx context.Context, allowInsecure bool) (grpc.CallOption, error) {
 	md := FromIncomingContext(ctx)
 	if md.AuthType == "" || md.AuthValue == "" {
-		return nil, errUnauthenticated
+		return nil, errUnauthenticated.New()
 	}
 	md.AllowInsecure = allowInsecure
 	return grpc.PerRPCCredentials(md), nil

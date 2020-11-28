@@ -19,12 +19,12 @@ import (
 	"runtime/trace"
 	"time"
 
-	"github.com/go-redis/redis"
-	"go.thethings.network/lorawan-stack/pkg/errors"
-	ttnredis "go.thethings.network/lorawan-stack/pkg/redis"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/pkg/types"
-	"go.thethings.network/lorawan-stack/pkg/unique"
+	"github.com/go-redis/redis/v7"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 var (
@@ -136,7 +136,7 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 			}
 
 			if pb.ApplicationIdentifiers != ids.ApplicationIdentifiers || pb.DeviceID != ids.DeviceID {
-				return errInvalidIdentifiers
+				return errInvalidIdentifiers.New()
 			}
 
 			pb.UpdatedAt = time.Now().UTC()
@@ -161,7 +161,7 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 					return err
 				}
 				if updated.ApplicationIdentifiers != ids.ApplicationIdentifiers || updated.DeviceID != ids.DeviceID {
-					return errInvalidIdentifiers
+					return errInvalidIdentifiers.New()
 				}
 			} else {
 				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationID != stored.ApplicationID {
@@ -196,10 +196,10 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 					}
 					i, err := tx.Exists(ek).Result()
 					if err != nil {
-						return ttnredis.ConvertError(err)
+						return err
 					}
 					if i != 0 {
-						return errDuplicateIdentifiers
+						return errDuplicateIdentifiers.New()
 					}
 					p.SetNX(ek, uid, 0)
 				}
@@ -214,14 +214,14 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 				return err
 			}
 		}
-		_, err = tx.Pipelined(pipelined)
+		_, err = tx.TxPipelined(pipelined)
 		if err != nil {
 			return err
 		}
 		return nil
 	}, uk)
 	if err != nil {
-		return nil, err
+		return nil, ttnredis.ConvertError(err)
 	}
 	return pb, nil
 }
@@ -265,7 +265,7 @@ func (r *LinkRegistry) Range(ctx context.Context, paths []string, f func(context
 
 	uids, err := r.Redis.SMembers(r.allKey(ctx)).Result()
 	if err != nil {
-		return err
+		return ttnredis.ConvertError(err)
 	}
 	for _, uid := range uids {
 		ctx, err := unique.WithContext(ctx, uid)
@@ -373,14 +373,14 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 				return err
 			}
 		}
-		_, err = tx.Pipelined(pipelined)
+		_, err = tx.TxPipelined(pipelined)
 		if err != nil {
 			return err
 		}
 		return nil
 	}, uk)
 	if err != nil {
-		return nil, err
+		return nil, ttnredis.ConvertError(err)
 	}
 	return pb, nil
 }

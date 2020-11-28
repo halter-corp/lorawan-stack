@@ -24,9 +24,9 @@ import (
 
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
-	"go.thethings.network/lorawan-stack/pkg/events"
-	"go.thethings.network/lorawan-stack/pkg/events/fs"
-	"go.thethings.network/lorawan-stack/pkg/util/test"
+	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/events/fs"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
 func TestWatcher(t *testing.T) {
@@ -46,7 +46,7 @@ func TestWatcher(t *testing.T) {
 	time.Sleep(test.Delay)
 
 	var i int
-	var expected = []string{
+	expected := []string{
 		"fs.write",
 		"fs.chmod",
 		"fs.remove",

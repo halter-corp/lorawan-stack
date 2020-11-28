@@ -9,7 +9,7 @@ import (
 )
 
 func (dst *ApplicationLink) SetFields(src *ApplicationLink, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "network_server_address":
 			if len(subs) > 0 {
@@ -66,6 +66,15 @@ func (dst *ApplicationLink) SetFields(src *ApplicationLink, paths ...string) err
 				var zero bool
 				dst.TLS = zero
 			}
+		case "skip_payload_crypto":
+			if len(subs) > 0 {
+				return fmt.Errorf("'skip_payload_crypto' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SkipPayloadCrypto = src.SkipPayloadCrypto
+			} else {
+				dst.SkipPayloadCrypto = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -75,7 +84,7 @@ func (dst *ApplicationLink) SetFields(src *ApplicationLink, paths ...string) err
 }
 
 func (dst *GetApplicationLinkRequest) SetFields(src *GetApplicationLinkRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -114,7 +123,7 @@ func (dst *GetApplicationLinkRequest) SetFields(src *GetApplicationLinkRequest, 
 }
 
 func (dst *SetApplicationLinkRequest) SetFields(src *SetApplicationLinkRequest, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "application_ids":
 			if len(subs) > 0 {
@@ -171,7 +180,7 @@ func (dst *SetApplicationLinkRequest) SetFields(src *SetApplicationLinkRequest, 
 }
 
 func (dst *ApplicationLinkStats) SetFields(src *ApplicationLinkStats, paths ...string) error {
-	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+	for name, subs := range _processPaths(paths) {
 		switch name {
 		case "linked_at":
 			if len(subs) > 0 {

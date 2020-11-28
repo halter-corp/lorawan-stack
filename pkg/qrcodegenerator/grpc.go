@@ -19,8 +19,8 @@ import (
 
 	pbtypes "github.com/gogo/protobuf/types"
 	qrcodegen "github.com/skip2/go-qrcode"
-	"go.thethings.network/lorawan-stack/pkg/qrcode"
-	"go.thethings.network/lorawan-stack/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/qrcode"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 type endDeviceQRCodeGeneratorServer struct {
@@ -30,7 +30,7 @@ type endDeviceQRCodeGeneratorServer struct {
 func (s *endDeviceQRCodeGeneratorServer) GetFormat(ctx context.Context, req *ttnpb.GetQRCodeFormatRequest) (*ttnpb.QRCodeFormat, error) {
 	format := qrcode.GetEndDeviceFormat(req.FormatID)
 	if format == nil {
-		return nil, errFormatNotFound
+		return nil, errFormatNotFound.New()
 	}
 	return format.Format(), nil
 }
@@ -48,7 +48,7 @@ func (s *endDeviceQRCodeGeneratorServer) ListFormats(ctx context.Context, _ *pbt
 func (s *endDeviceQRCodeGeneratorServer) Generate(ctx context.Context, req *ttnpb.GenerateEndDeviceQRCodeRequest) (*ttnpb.GenerateQRCodeResponse, error) {
 	formatter := qrcode.GetEndDeviceFormat(req.FormatID)
 	if formatter == nil {
-		return nil, errFormatNotFound
+		return nil, errFormatNotFound.New()
 	}
 	data := formatter.New()
 	if err := data.Encode(&req.EndDevice); err != nil {

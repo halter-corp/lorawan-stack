@@ -36,6 +36,7 @@ var MessageFieldPathsNested = []string{
 	"Payload.mac_payload.f_hdr.f_opts",
 	"Payload.mac_payload.f_port",
 	"Payload.mac_payload.frm_payload",
+	"Payload.mac_payload.full_f_cnt",
 	"Payload.rejoin_request_payload",
 	"Payload.rejoin_request_payload.dev_eui",
 	"Payload.rejoin_request_payload.join_eui",
@@ -76,6 +77,7 @@ var MACPayloadFieldPathsNested = []string{
 	"f_hdr.f_opts",
 	"f_port",
 	"frm_payload",
+	"full_f_cnt",
 }
 
 var MACPayloadFieldPathsTopLevel = []string{
@@ -83,6 +85,7 @@ var MACPayloadFieldPathsTopLevel = []string{
 	"f_hdr",
 	"f_port",
 	"frm_payload",
+	"full_f_cnt",
 }
 var FHDRFieldPathsNested = []string{
 	"dev_addr",
@@ -260,16 +263,20 @@ var GatewayAntennaIdentifiersFieldPathsTopLevel = []string{
 	"gateway_ids",
 }
 var UplinkTokenFieldPathsNested = []string{
+	"concentrator_time",
 	"ids",
 	"ids.antenna_index",
 	"ids.gateway_ids",
 	"ids.gateway_ids.eui",
 	"ids.gateway_ids.gateway_id",
+	"server_time",
 	"timestamp",
 }
 
 var UplinkTokenFieldPathsTopLevel = []string{
+	"concentrator_time",
 	"ids",
+	"server_time",
 	"timestamp",
 }
 var DownlinkPathFieldPathsNested = []string{
@@ -290,6 +297,7 @@ var TxRequestFieldPathsNested = []string{
 	"advanced",
 	"class",
 	"downlink_paths",
+	"frequency_plan_id",
 	"priority",
 	"rx1_data_rate_index",
 	"rx1_delay",
@@ -303,6 +311,7 @@ var TxRequestFieldPathsTopLevel = []string{
 	"advanced",
 	"class",
 	"downlink_paths",
+	"frequency_plan_id",
 	"priority",
 	"rx1_data_rate_index",
 	"rx1_delay",
