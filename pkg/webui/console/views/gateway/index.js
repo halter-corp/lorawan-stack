@@ -37,12 +37,14 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import {
+  checkFromState,
   mayViewGatewayInfo,
   mayViewGatewayEvents,
   mayViewOrEditGatewayLocation,
   mayViewOrEditGatewayCollaborators,
   mayViewOrEditGatewayApiKeys,
   mayEditBasicGatewayInformation,
+  mayViewGatewaySecrets,
 } from '@console/lib/feature-checks'
 
 import {
@@ -61,7 +63,7 @@ import {
 } from '@console/store/selectors/gateways'
 
 @connect(
-  function(state, props) {
+  (state, props) => {
     const gtwId = props.match.params.gtwId
     const gateway = selectSelectedGateway(state)
 
@@ -71,6 +73,7 @@ import {
       error: selectGatewayError(state) || selectGatewayRightsError(state),
       fetching: selectGatewayFetching(state) || selectGatewayRightsFetching(state),
       rights: selectGatewayRights(state),
+      mayViewSecrets: checkFromState(mayViewGatewaySecrets, state),
     }
   },
   dispatch => ({
@@ -82,8 +85,8 @@ import {
   }),
 )
 @withRequest(
-  ({ gtwId, loadData }) =>
-    loadData(gtwId, [
+  ({ gtwId, loadData, mayViewSecrets }) => {
+    const selector = [
       'name',
       'description',
       'enforce_duty_cycle',
@@ -98,10 +101,19 @@ import {
       'update_channel',
       'schedule_anytime_delay',
       'attributes',
-    ]),
+      'require_authenticated_connection',
+      'disable_packet_broker_forwarding',
+    ]
+
+    if (mayViewSecrets) {
+      selector.push('lbs_lns_secret')
+    }
+
+    return loadData(gtwId, selector)
+  },
   ({ fetching, gateway }) => fetching || !Boolean(gateway),
 )
-@withBreadcrumb('gateways.single', function(props) {
+@withBreadcrumb('gateways.single', props => {
   const {
     gtwId,
     gateway: { name },

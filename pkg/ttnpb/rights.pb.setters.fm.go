@@ -2,7 +2,10 @@
 
 package ttnpb
 
-import fmt "fmt"
+import (
+	fmt "fmt"
+	time "time"
+)
 
 func (dst *Rights) SetFields(src *Rights, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
@@ -65,6 +68,35 @@ func (dst *APIKey) SetFields(src *APIKey, paths ...string) error {
 				dst.Rights = src.Rights
 			} else {
 				dst.Rights = nil
+			}
+		case "created_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'created_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.CreatedAt = src.CreatedAt
+			} else {
+				var zero time.Time
+				dst.CreatedAt = zero
+			}
+		case "updated_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'updated_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.UpdatedAt = src.UpdatedAt
+			} else {
+				var zero time.Time
+				dst.UpdatedAt = zero
+			}
+		case "expires_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'expires_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ExpiresAt = src.ExpiresAt
+			} else {
+				dst.ExpiresAt = nil
 			}
 
 		default:

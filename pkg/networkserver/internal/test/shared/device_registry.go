@@ -15,10 +15,13 @@
 package test
 
 import (
+	"bytes"
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/kr/pretty"
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -31,6 +34,58 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
+func isNil(c interface{}) bool {
+	if c == nil {
+		return true
+	}
+	if val := reflect.ValueOf(c); val.Kind() == reflect.Ptr {
+		return val.IsNil()
+	}
+	return false
+}
+
+func nilEquality(a interface{}, b interface{}) (bool, bool) {
+	if isNil(a) != isNil(b) {
+		return false, true
+	}
+	if isNil(a) {
+		return true, true
+	}
+	return false, false
+}
+
+func protoEquals(a proto.Message, b proto.Message) bool {
+	if eq, ok := nilEquality(a, b); ok {
+		return eq
+	}
+
+	ab, err := proto.Marshal(a)
+	if err != nil {
+		panic(err)
+	}
+	bb, err := proto.Marshal(b)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes.Equal(ab, bb)
+}
+
+func uplinkMatchEquals(a *UplinkMatch, b *UplinkMatch) bool {
+	if m, ok := nilEquality(a, b); ok {
+		return m
+	}
+
+	return protoEquals(&a.ApplicationIdentifiers, &b.ApplicationIdentifiers) &&
+		a.DeviceID == b.DeviceID &&
+		a.LoRaWANVersion == b.LoRaWANVersion &&
+		protoEquals(a.FNwkSIntKey, b.FNwkSIntKey) &&
+		a.LastFCnt == b.LastFCnt &&
+		protoEquals(a.ResetsFCnt, b.ResetsFCnt) &&
+		protoEquals(a.Supports32BitFCnt, b.Supports32BitFCnt) &&
+		a.IsPending == b.IsPending
+}
+
 func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 	type uplinkMatch struct {
 		*ttnpb.EndDevice
@@ -40,35 +95,36 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		t, a := test.MustNewTFromContext(ctx)
 		t.Helper()
 
-		expectedSession, expectedMACState, expectedMSB := expectedMatch.Session, expectedMatch.MACState, expectedMatch.Session.LastFCntUp&0xffff0000
+		expectedSession, expectedMACState := expectedMatch.Session, expectedMatch.MACState
 		if expectedMatch.IsPending {
-			expectedSession, expectedMACState, expectedMSB = expectedMatch.PendingSession, expectedMatch.PendingMACState, 0
+			expectedSession, expectedMACState = expectedMatch.PendingSession, expectedMatch.PendingMACState
 		}
 		var matched bool
-		var attempts []UplinkMatch
-		err := reg.RangeByUplinkMatches(ctx, up, CacheTTL, func(storedCtx context.Context, match UplinkMatch) (bool, error) {
+		var attempts []*UplinkMatch
+		err := reg.RangeByUplinkMatches(ctx, up, CacheTTL, func(storedCtx context.Context, match *UplinkMatch) (bool, error) {
 			attempts = append(attempts, match)
+			a.So(matched, should.BeFalse)
 			a.So(storedCtx, should.HaveParentContextOrEqual, ctx)
-			matched = test.AllTrue(
-				match.ApplicationIdentifiers() == expectedMatch.ApplicationIdentifiers,
-				match.DeviceID() == expectedMatch.DeviceID,
-				match.LoRaWANVersion() == expectedMACState.LoRaWANVersion,
-				match.FNwkSIntKey().Equal(expectedSession.FNwkSIntKey),
-				match.FCnt() == expectedMSB|up.Payload.GetMACPayload().FCnt,
-				match.LastFCnt() == expectedSession.LastFCntUp,
-				match.IsPending() == expectedMatch.IsPending,
-				match.ResetsFCnt() == expectedMatch.GetMACSettings().GetResetsFCnt(),
-			)
+			matched = uplinkMatchEquals(match, &UplinkMatch{
+				ApplicationIdentifiers: expectedMatch.ApplicationIdentifiers,
+				DeviceID:               expectedMatch.DeviceId,
+				LoRaWANVersion:         expectedMACState.LorawanVersion,
+				FNwkSIntKey:            expectedSession.FNwkSIntKey,
+				LastFCnt:               expectedSession.LastFCntUp,
+				ResetsFCnt:             expectedMatch.GetMACSettings().GetResetsFCnt(),
+				Supports32BitFCnt:      expectedMatch.GetMACSettings().GetSupports32BitFCnt(),
+				IsPending:              expectedMatch.IsPending,
+			})
 			return matched, nil
 		})
-		if !a.So(len(attempts), should.BeLessThanOrEqualTo, maxAttempts) {
-			t.Errorf("Attempted matches: %s", pretty.Sprint(attempts))
-		}
 		if !a.So(err, should.BeNil) {
 			t.Errorf("Expected nil error, got: %v\n", errors.Stack(err))
 		}
 		if !a.So(matched, should.BeTrue) {
 			t.Errorf("Device did not match after %d attempts", len(attempts))
+		}
+		if !a.So(len(attempts), should.BeLessThanOrEqualTo, maxAttempts) {
+			t.Errorf("Attempted matches: %s", pretty.Sprint(attempts))
 		}
 		return !a.Failed()
 	}
@@ -76,8 +132,8 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		t, a := test.MustNewTFromContext(ctx)
 		t.Helper()
 
-		var attempts []UplinkMatch
-		err := reg.RangeByUplinkMatches(ctx, up, CacheTTL, func(storedCtx context.Context, match UplinkMatch) (bool, error) {
+		var attempts []*UplinkMatch
+		err := reg.RangeByUplinkMatches(ctx, up, CacheTTL, func(storedCtx context.Context, match *UplinkMatch) (bool, error) {
 			attempts = append(attempts, match)
 			a.So(storedCtx, should.HaveParentContextOrEqual, ctx)
 			return false, nil
@@ -97,7 +153,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		t, a := test.MustNewTFromContext(ctx)
 		t.Helper()
 
-		stored, storedCtx, err := reg.GetByID(ctx, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceID, ttnpb.EndDeviceFieldPathsTopLevel)
+		stored, storedCtx, err := reg.GetByID(ctx, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceId, ttnpb.EndDeviceFieldPathsTopLevel)
 		if !test.AllTrue(
 			a.So(err, should.NotBeNil),
 			a.So(errors.IsNotFound(err), should.BeTrue),
@@ -108,7 +164,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 			return false
 		}
 
-		stored, storedCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEUI, *pb.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+		stored, storedCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEui, *pb.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 		if !test.AllTrue(
 			a.So(err, should.NotBeNil),
 			a.So(errors.IsNotFound(err), should.BeTrue),
@@ -119,7 +175,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 			return false
 		}
 
-		stored, storedCtx, err = reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceID, ttnpb.EndDeviceFieldPathsTopLevel,
+		stored, storedCtx, err = reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceId, ttnpb.EndDeviceFieldPathsTopLevel,
 			func(storedCtx context.Context, stored *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 				a.So(storedCtx, should.HaveParentContextOrEqual, ctx)
 				if !a.So(stored, should.BeNil) {
@@ -164,7 +220,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		}
 		ctx = storedCtx
 
-		stored, storedCtx, err = reg.GetByID(ctx, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceID, ttnpb.EndDeviceFieldPathsTopLevel)
+		stored, storedCtx, err = reg.GetByID(ctx, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceId, ttnpb.EndDeviceFieldPathsTopLevel)
 		if !test.AllTrue(
 			a.So(err, should.BeNil) || a.So(errors.Stack(err), should.BeEmpty),
 			a.So(storedCtx, should.HaveParentContextOrEqual, ctx),
@@ -175,7 +231,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		}
 		ctx = storedCtx
 
-		stored, storedCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEUI, *pb.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+		stored, storedCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEui, *pb.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 		if !test.AllTrue(
 			a.So(err, should.BeNil) || a.So(errors.Stack(err), should.BeEmpty),
 			a.So(storedCtx, should.HaveParentContextOrEqual, ctx),
@@ -186,7 +242,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		}
 		ctx = storedCtx
 
-		stored, storedCtx, err = reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceID, fields,
+		stored, storedCtx, err = reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceId, fields,
 			func(storedCtx context.Context, stored *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 				a.So(storedCtx, should.HaveParentContextOrEqual, ctx)
 				a.So(stored, should.Resemble, pb)
@@ -208,13 +264,13 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 
 	pb := &ttnpb.EndDevice{
 		FrequencyPlanID:   test.EUFrequencyPlanID,
-		LoRaWANVersion:    ttnpb.MAC_V1_0_3,
-		LoRaWANPHYVersion: ttnpb.PHY_V1_0_3_REV_A,
+		LorawanVersion:    ttnpb.MAC_V1_0_3,
+		LorawanPhyVersion: ttnpb.RP001_V1_0_3_REV_A,
 		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-			JoinEUI:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			DevEUI:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
-			DeviceID:               "test-dev",
+			JoinEui:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			DevEui:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"},
+			DeviceId:               "test-dev",
 		},
 		Session: &ttnpb.Session{
 			DevAddr:    types.DevAddr{0x42, 0xff, 0xff, 0xff},
@@ -225,7 +281,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 				},
 			},
 		},
-		MACState: MakeDefaultEU868MACState(ttnpb.CLASS_A, ttnpb.MAC_V1_0_3, ttnpb.PHY_V1_0_3_REV_A),
+		MACState: MakeDefaultEU868MACState(ttnpb.CLASS_A, ttnpb.MAC_V1_0_3, ttnpb.RP001_V1_0_3_REV_A),
 		PendingSession: &ttnpb.Session{
 			DevAddr: types.DevAddr{0x43, 0xff, 0xff, 0xff},
 			SessionKeys: ttnpb.SessionKeys{
@@ -243,7 +299,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 				},
 			},
 		},
-		PendingMACState: MakeDefaultEU868MACState(ttnpb.CLASS_A, ttnpb.MAC_V1_1, ttnpb.PHY_V1_1_REV_B),
+		PendingMACState: MakeDefaultEU868MACState(ttnpb.CLASS_A, ttnpb.MAC_V1_1, ttnpb.RP001_V1_1_REV_B),
 	}
 	pbFields := []string{
 		"frequency_plan_id",
@@ -299,8 +355,8 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 	pbOther.Session.LastFCntUp = pbCurrentUp.Payload.GetMACPayload().FCnt
 	pbOther.Session.FNwkSIntKey.Key = &types.AES128Key{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe}
 	pbOther.PendingSession = nil
-	pbOther.EndDeviceIdentifiers.DeviceID = "test-dev-other"
-	pbOther.EndDeviceIdentifiers.DevEUI = &types.EUI64{0x43, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	pbOther.EndDeviceIdentifiers.DeviceId = "test-dev-other"
+	pbOther.EndDeviceIdentifiers.DevEui = &types.EUI64{0x43, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	pbOtherCurrentUp := MakeDataUplink(WithDeviceDataUplinkConfig(pbOther, false, ttnpb.DATA_RATE_2, 1, 0)(DataUplinkConfig{
 		DecodePayload: true,
@@ -341,7 +397,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		t.Fatal("cached pbOther current session uplink matching assertion failed")
 	}
 
-	err := DeleteDevice(ctx, reg, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceID)
+	err := DeleteDevice(ctx, reg, pb.EndDeviceIdentifiers.ApplicationIdentifiers, pb.EndDeviceIdentifiers.DeviceId)
 	if !a.So(err, should.BeNil) {
 		t.Fatalf("pb deletion failed with: %s", errors.Stack(err))
 	}
@@ -358,7 +414,7 @@ func handleDeviceRegistryTest(ctx context.Context, reg DeviceRegistry) {
 		t.Fatal("pbOther current session uplink matching assertion failed")
 	}
 
-	err = DeleteDevice(ctx, reg, pbOther.EndDeviceIdentifiers.ApplicationIdentifiers, pbOther.EndDeviceIdentifiers.DeviceID)
+	err = DeleteDevice(ctx, reg, pbOther.EndDeviceIdentifiers.ApplicationIdentifiers, pbOther.EndDeviceIdentifiers.DeviceId)
 	if !a.So(err, should.BeNil) {
 		t.Fatalf("pbOther deletion failed with: %s", errors.Stack(err))
 	}
@@ -411,7 +467,7 @@ func HandleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 			t.Logf("Sleeping for %v for cached values to get cleaned up...", sleepFor)
 			time.Sleep(sleepFor)
 			test.RunSubtestFromContext(ctx, test.SubtestConfig{
-				Name: "2st run",
+				Name: "2nd run",
 				Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 					handleDeviceRegistryTest(ctx, reg)
 				},

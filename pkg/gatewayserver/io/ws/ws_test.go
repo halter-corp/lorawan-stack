@@ -18,8 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,6 +34,7 @@ import (
 	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/mock"
@@ -49,7 +52,7 @@ import (
 var (
 	serverAddress          = "127.0.0.1:0"
 	registeredGatewayUID   = "eui-0101010101010101"
-	registeredGatewayID    = ttnpb.GatewayIdentifiers{GatewayID: registeredGatewayUID}
+	registeredGatewayID    = ttnpb.GatewayIdentifiers{GatewayId: registeredGatewayUID}
 	registeredGateway      = ttnpb.Gateway{GatewayIdentifiers: registeredGatewayID, FrequencyPlanID: "EU_863_870"}
 	registeredGatewayToken = "secrettoken"
 
@@ -58,12 +61,14 @@ var (
 
 	testTrafficEndPoint = "/traffic/eui-0101010101010101"
 
-	timeout       = (1 << 5) * test.Delay
+	timeout       = (1 << 7) * test.Delay
 	defaultConfig = Config{
 		WSPingInterval:       (1 << 3) * test.Delay,
 		AllowUnauthenticated: true,
 		UseTrafficTLSAddress: false,
 	}
+
+	maxValidRoundTripDelay = (1 << 4) * test.Delay
 )
 
 func eui64Ptr(eui types.EUI64) *types.EUI64 { return &eui }
@@ -108,7 +113,7 @@ func TestClientTokenAuth(t *testing.T) {
 	} {
 		cfg := defaultConfig
 		cfg.AllowUnauthenticated = ttc.AllowUnauthenticated
-		bsWebServer := New(ctx, gs, lbslns.NewFormatter(), cfg)
+		bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), cfg)
 		lis, err := net.Listen("tcp", serverAddress)
 		if !a.So(err, should.BeNil) {
 			t.FailNow()
@@ -130,20 +135,20 @@ func TestClientTokenAuth(t *testing.T) {
 		}{
 			{
 				Name:           "RegisteredGatewayAndValidKey",
-				GatewayID:      registeredGatewayID.GatewayID,
+				GatewayID:      registeredGatewayID.GatewayId,
 				AuthToken:      registeredGatewayToken,
 				ErrorAssertion: nil,
 			},
 			{
 				Name:           "RegisteredGatewayAndValidKey",
-				GatewayID:      registeredGatewayID.GatewayID,
+				GatewayID:      registeredGatewayID.GatewayId,
 				AuthToken:      registeredGatewayToken,
 				TokenPrefix:    "Bearer ",
 				ErrorAssertion: nil,
 			},
 			{
 				Name:      "RegisteredGatewayAndInValidKey",
-				GatewayID: registeredGatewayID.GatewayID,
+				GatewayID: registeredGatewayID.GatewayId,
 				AuthToken: "invalidToken",
 				ErrorAssertion: func(err error) bool {
 					if err == nil {
@@ -154,7 +159,7 @@ func TestClientTokenAuth(t *testing.T) {
 			},
 			{
 				Name:      "RegisteredGatewayAndNoKey",
-				GatewayID: registeredGatewayID.GatewayID,
+				GatewayID: registeredGatewayID.GatewayId,
 				ErrorAssertion: func(err error) bool {
 					if ttc.AllowUnauthenticated && err == nil {
 						return true
@@ -223,7 +228,7 @@ func TestDiscover(t *testing.T) {
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
 	gs := mock.NewServer(c)
 
-	bsWebServer := New(ctx, gs, lbslns.NewFormatter(), defaultConfig)
+	bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), defaultConfig)
 	lis, err := net.Listen("tcp", serverAddress)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
@@ -298,15 +303,20 @@ func TestDiscover(t *testing.T) {
 				t.Fatalf("Failed to write message: %v", err)
 			}
 
+			var readErr error
 			resCh := make(chan []byte)
+			var wg sync.WaitGroup
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				_, data, err := conn.ReadMessage()
 				if err != nil {
 					close(resCh)
 					if err == websocket.ErrBadHandshake {
 						return
 					}
-					t.Fatalf("Failed to read message: %v", err)
+					readErr = err
+					return
 				}
 				resCh <- data
 			}()
@@ -319,6 +329,10 @@ func TestDiscover(t *testing.T) {
 				a.So(response, should.Resemble, tc.Response)
 			case <-time.After(timeout):
 				t.Fatal("Read message timeout")
+			}
+			wg.Wait()
+			if readErr != nil {
+				t.Fatalf("Failed to read message: %v", readErr)
 			}
 		})
 	}
@@ -361,12 +375,16 @@ func TestDiscover(t *testing.T) {
 				t.Fatalf("Failed to write message: %v", err)
 			}
 
+			var wg sync.WaitGroup
+			wg.Add(1)
 			go func() {
-				_, _, err := conn.ReadMessage()
-				if err == nil {
-					t.Fatalf("Expected connection closure with error but received none")
-				}
+				defer wg.Done()
+				_, _, err = conn.ReadMessage()
 			}()
+			wg.Wait()
+			if err != nil {
+				t.Fatalf("Failed to read message: %v", err)
+			}
 		})
 	}
 
@@ -401,16 +419,20 @@ func TestDiscover(t *testing.T) {
 			if err := conn.WriteMessage(websocket.TextMessage, req); err != nil {
 				t.Fatalf("Failed to write message: %v", err)
 			}
+			var readErr error
 			resCh := make(chan []byte)
+			var wg sync.WaitGroup
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				_, data, err := conn.ReadMessage()
 				if err != nil {
 					close(resCh)
 					if err == websocket.ErrBadHandshake {
 						return
-					} else {
-						t.Fatalf("Failed to read message: %v", err)
 					}
+					readErr = err
+					return
 				}
 				resCh <- data
 			}()
@@ -430,7 +452,10 @@ func TestDiscover(t *testing.T) {
 			case <-time.After(timeout):
 				t.Fatalf("Read message timeout")
 			}
-			conn.Close()
+			wg.Wait()
+			if readErr != nil {
+				t.Fatalf("Failed to read message: %v", readErr)
+			}
 		})
 	}
 }
@@ -460,7 +485,7 @@ func TestVersion(t *testing.T) {
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
 	gs := mock.NewServer(c)
 
-	bsWebServer := New(ctx, gs, lbslns.NewFormatter(), defaultConfig)
+	bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), defaultConfig)
 	lis, err := net.Listen("tcp", serverAddress)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
@@ -516,25 +541,16 @@ func TestVersion(t *testing.T) {
 					{7, 250, 0},
 					{0, 0, 0},
 				},
-				SX1301Config: []shared.SX1301Config{
+				SX1301Config: []pfconfig.LBSSX1301Config{
 					{
-						LoRaWANPublic: true,
-						ClockSource:   1,
-						AntennaGain:   0,
-						Radios: []shared.RFConfig{
+						Radios: []pfconfig.LBSRFConfig{
 							{
-								Enable:     true,
-								Frequency:  867500000,
-								TxEnable:   true,
-								RSSIOffset: -166,
+								Enable:    true,
+								Frequency: 867500000,
 							},
 							{
-								Enable:     true,
-								Frequency:  868500000,
-								TxEnable:   false,
-								TxFreqMin:  0,
-								TxFreqMax:  0,
-								RSSIOffset: -166,
+								Enable:    true,
+								Frequency: 868500000,
 							},
 						},
 						Channels: []shared.IFConfig{
@@ -549,7 +565,6 @@ func TestVersion(t *testing.T) {
 						},
 						LoRaStandardChannel: &shared.IFConfig{Enable: true, Radio: 0, IFValue: 800000, Bandwidth: 250000, SpreadFactor: 7, Datarate: 0},
 						FSKChannel:          &shared.IFConfig{Enable: true, Radio: 0, IFValue: 1300000, Bandwidth: 125000, SpreadFactor: 0, Datarate: 50000},
-						TxLUTConfigs:        []shared.TxLUTConfig{},
 					},
 				},
 			},
@@ -599,25 +614,16 @@ func TestVersion(t *testing.T) {
 				NoCCA:       true,
 				NoDwellTime: true,
 				NoDutyCycle: true,
-				SX1301Config: []shared.SX1301Config{
+				SX1301Config: []pfconfig.LBSSX1301Config{
 					{
-						LoRaWANPublic: true,
-						ClockSource:   1,
-						AntennaGain:   0,
-						Radios: []shared.RFConfig{
+						Radios: []pfconfig.LBSRFConfig{
 							{
-								Enable:     true,
-								Frequency:  867500000,
-								TxEnable:   true,
-								RSSIOffset: -166,
+								Enable:    true,
+								Frequency: 867500000,
 							},
 							{
-								Enable:     true,
-								Frequency:  868500000,
-								TxEnable:   false,
-								TxFreqMin:  0,
-								TxFreqMax:  0,
-								RSSIOffset: -166,
+								Enable:    true,
+								Frequency: 868500000,
 							},
 						},
 						Channels: []shared.IFConfig{
@@ -632,7 +638,6 @@ func TestVersion(t *testing.T) {
 						},
 						LoRaStandardChannel: &shared.IFConfig{Enable: true, Radio: 0, IFValue: 800000, Bandwidth: 250000, SpreadFactor: 7, Datarate: 0},
 						FSKChannel:          &shared.IFConfig{Enable: true, Radio: 0, IFValue: 1300000, Bandwidth: 125000, SpreadFactor: 0, Datarate: 50000},
-						TxLUTConfigs:        []shared.TxLUTConfig{},
 					},
 				},
 			},
@@ -666,11 +671,16 @@ func TestVersion(t *testing.T) {
 				t.Fatalf("Failed to write message: %v", err)
 			}
 
+			var readErr error
+			var wg sync.WaitGroup
 			resCh := make(chan []byte)
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				_, data, err := conn.ReadMessage()
 				if err != nil {
-					t.Fatalf("Failed to read message: %v", err)
+					readErr = err
+					return
 				}
 				resCh <- data
 			}()
@@ -684,6 +694,10 @@ func TestVersion(t *testing.T) {
 				a.So(response, should.Resemble, tc.ExpectedRouterConfig)
 			case <-time.After(timeout):
 				t.Fatalf("Read message timeout")
+			}
+			wg.Wait()
+			if readErr != nil {
+				t.Fatalf("Failed to read message: %v", err)
 			}
 			select {
 			case stat := <-gsConn.Status():
@@ -722,7 +736,7 @@ func TestTraffic(t *testing.T) {
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
 	gs := mock.NewServer(c)
 
-	bsWebServer := New(ctx, gs, lbslns.NewFormatter(), defaultConfig)
+	bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), defaultConfig)
 	lis, err := net.Listen("tcp", serverAddress)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
@@ -780,15 +794,15 @@ func TestTraffic(t *testing.T) {
 					MHDR: ttnpb.MHDR{MType: ttnpb.MType_JOIN_REQUEST, Major: ttnpb.Major_LORAWAN_R1},
 					MIC:  []byte{0x4E, 0x61, 0xBC, 0x00},
 					Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-						JoinEUI:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
-						DevEUI:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+						JoinEui:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
+						DevEui:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
 						DevNonce: [2]byte{0x46, 0x50},
 					}},
 				},
 				RxMetadata: []*ttnpb.RxMetadata{{
 					GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-						GatewayID: "eui-0101010101010101",
-						EUI:       &types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+						GatewayId: "eui-0101010101010101",
+						Eui:       &types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 					},
 					Time:        &[]time.Time{time.Unix(1548059982, 0)}[0],
 					Timestamp:   (uint32)(12666373963464220 & 0xFFFFFFFF),
@@ -801,7 +815,7 @@ func TestTraffic(t *testing.T) {
 					CodingRate: "4/5",
 					Time:       &[]time.Time{time.Unix(1548059982, 0)}[0],
 					Timestamp:  (uint32)(12666373963464220 & 0xFFFFFFFF),
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -851,8 +865,8 @@ func TestTraffic(t *testing.T) {
 				RxMetadata: []*ttnpb.RxMetadata{
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "eui-0101010101010101",
-							EUI:       &types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+							GatewayId: "eui-0101010101010101",
+							Eui:       &types.EUI64{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 						},
 						Time:        &[]time.Time{time.Unix(1548059982, 0)}[0],
 						Timestamp:   (uint32)(12666373963464220 & 0xFFFFFFFF),
@@ -866,7 +880,7 @@ func TestTraffic(t *testing.T) {
 					Time:       &[]time.Time{time.Unix(1548059982, 0)}[0],
 					Timestamp:  (uint32)(12666373963464220 & 0xFFFFFFFF),
 					CodingRate: "4/5",
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -877,9 +891,9 @@ func TestTraffic(t *testing.T) {
 			Name: "Downlink",
 			InputNetworkDownstream: &ttnpb.DownlinkMessage{
 				RawPayload: []byte("Ymxhamthc25kJ3M=="),
-				EndDeviceIDs: &ttnpb.EndDeviceIdentifiers{
-					DeviceID: "testdevice",
-					DevEUI:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
+				EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+					DeviceId: "testdevice",
+					DevEui:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
 				},
 				Settings: &ttnpb.DownlinkMessage_Request{
 					Request: &ttnpb.TxRequest{
@@ -905,7 +919,7 @@ func TestTraffic(t *testing.T) {
 				},
 			},
 			ExpectedBSDownstream: lbslns.DownlinkMessage{
-				DevEUI:      "00-00-00-00-00-00-00-00",
+				DevEUI:      "00-00-00-00-00-00-00-01",
 				DeviceClass: 0,
 				Pdu:         "596d7868616d74686332356b4a334d3d3d",
 				Diid:        1,
@@ -924,8 +938,21 @@ func TestTraffic(t *testing.T) {
 				XTime: 1548059982,
 			},
 			ExpectedNetworkUpstream: ttnpb.TxAcknowledgment{
-				CorrelationIDs: []string{"correlation1", "correlation2"},
+				DownlinkMessage: &ttnpb.DownlinkMessage{
+					RawPayload: []byte("Ymxhamthc25kJ3M=="),
+					EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+						DeviceId: "testdevice",
+						DevEui:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
+					},
+					Settings: &ttnpb.DownlinkMessage_Scheduled{
+						Scheduled: &ttnpb.TxSettings{
+							// Will only test that `Scheduled` field is set, not individual values.
+						},
+					},
+					CorrelationIDs: []string{"correlation1", "correlation2"},
+				},
 				Result:         ttnpb.TxAcknowledgment_SUCCESS,
+				CorrelationIDs: []string{"correlation1", "correlation2"},
 			},
 		},
 		{
@@ -935,8 +962,21 @@ func TestTraffic(t *testing.T) {
 				XTime: 1548059982,
 			},
 			ExpectedNetworkUpstream: ttnpb.TxAcknowledgment{
-				CorrelationIDs: []string{"correlation1", "correlation2"},
+				DownlinkMessage: &ttnpb.DownlinkMessage{
+					RawPayload: []byte("Ymxhamthc25kJ3M=="),
+					EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+						DeviceId: "testdevice",
+						DevEui:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
+					},
+					Settings: &ttnpb.DownlinkMessage_Scheduled{
+						Scheduled: &ttnpb.TxSettings{
+							// Will only test that `Scheduled` field is set, not individual values.
+						},
+					},
+					CorrelationIDs: []string{"correlation1", "correlation2"},
+				},
 				Result:         ttnpb.TxAcknowledgment_SUCCESS,
+				CorrelationIDs: []string{"correlation1", "correlation2"},
 			},
 		},
 		{
@@ -962,7 +1002,14 @@ func TestTraffic(t *testing.T) {
 					}
 					select {
 					case ack := <-gsConn.TxAck():
-						if !a.So(*ack, should.Resemble, tc.ExpectedNetworkUpstream) {
+						expected := tc.ExpectedNetworkUpstream.(ttnpb.TxAcknowledgment)
+						if expected.DownlinkMessage.GetScheduled() != nil {
+							if !a.So(ack.DownlinkMessage.GetScheduled(), should.NotBeNil) {
+								t.Fatalf("Invalid downlink message settings: %v", ack.DownlinkMessage.Settings)
+							}
+							ack.DownlinkMessage.Settings = expected.DownlinkMessage.Settings
+						}
+						if !a.So(*ack, should.Resemble, expected) {
 							t.Fatalf("Invalid TxAck: %v", ack)
 						}
 					case <-time.After(timeout):
@@ -999,15 +1046,20 @@ func TestTraffic(t *testing.T) {
 			}
 
 			if tc.InputNetworkDownstream != nil {
-				if _, err := gsConn.ScheduleDown(tc.InputDownlinkPath, tc.InputNetworkDownstream); err != nil {
+				if _, _, _, err := gsConn.ScheduleDown(tc.InputDownlinkPath, tc.InputNetworkDownstream); err != nil {
 					t.Fatalf("Failed to send downlink: %v", err)
 				}
 
-				resCh := make(chan []byte)
+				var readErr error
+				var wg sync.WaitGroup
+				resCh := make(chan []byte, 1)
+				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					_, data, err := wsConn.ReadMessage()
 					if err != nil {
-						t.Fatalf("Failed to read message: %v", err)
+						readErr = err
+						return
 					}
 					resCh <- data
 				}()
@@ -1027,9 +1079,26 @@ func TestTraffic(t *testing.T) {
 				case <-time.After(timeout):
 					t.Fatalf("Read message timeout")
 				}
+				wg.Wait()
+				if readErr != nil {
+					t.Fatalf("Failed to read message: %v", readErr)
+				}
 			}
 		})
 	}
+}
+
+type testTime struct {
+	Mux, Rx *time.Time
+}
+
+func (t testTime) getRefTime(drift time.Duration) float64 {
+	time.Sleep(1 << 3 * test.Delay)
+	now := time.Now()
+	offset := now.Sub(*t.Rx)
+	refTime := t.Mux.Add(offset)
+	refTime = refTime.Add(-drift)
+	return float64(refTime.UnixNano()) / float64(time.Second)
 }
 
 func TestRTT(t *testing.T) {
@@ -1057,7 +1126,7 @@ func TestRTT(t *testing.T) {
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
 	gs := mock.NewServer(c)
 
-	bsWebServer := New(ctx, gs, lbslns.NewFormatter(), defaultConfig)
+	bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), defaultConfig)
 	lis, err := net.Listen("tcp", serverAddress)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
@@ -1083,13 +1152,20 @@ func TestRTT(t *testing.T) {
 		t.Fatal("Connection timeout")
 	}
 
-	var MuxTime, RxTime float64
+	testTime := testTime{}
+
+	getTimeFromFloat64 := func(timeInFloat float64) *time.Time {
+		sec, nsec := math.Modf(timeInFloat)
+		retTime := time.Unix(int64(sec), int64(nsec*1e9))
+		return &retTime
+	}
+
 	for _, tc := range []struct {
 		Name                   string
 		InputBSUpstream        interface{}
 		InputNetworkDownstream *ttnpb.DownlinkMessage
 		InputDownlinkPath      *ttnpb.DownlinkPath
-		WaitTime               time.Duration
+		GatewayClockDrift      time.Duration
 		ExpectedRTTStatsCount  int
 	}{
 		{
@@ -1117,9 +1193,9 @@ func TestRTT(t *testing.T) {
 			Name: "Downlink",
 			InputNetworkDownstream: &ttnpb.DownlinkMessage{
 				RawPayload: []byte("Ymxhamthc25kJ3M=="),
-				EndDeviceIDs: &ttnpb.EndDeviceIdentifiers{
-					DeviceID: "testdevice",
-					DevEUI:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
+				EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+					DeviceId: "testdevice",
+					DevEui:   eui64Ptr(types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11}),
 				},
 				Settings: &ttnpb.DownlinkMessage_Request{
 					Request: &ttnpb.TxRequest{
@@ -1152,7 +1228,6 @@ func TestRTT(t *testing.T) {
 				XTime: 1548059982,
 			},
 			ExpectedRTTStatsCount: 1,
-			WaitTime:              1 << 4 * test.Delay,
 		},
 		{
 			Name: "RepeatedTxAck",
@@ -1161,7 +1236,6 @@ func TestRTT(t *testing.T) {
 				XTime: 1548059982,
 			},
 			ExpectedRTTStatsCount: 2,
-			WaitTime:              0,
 		},
 		{
 			Name: "UplinkFrame",
@@ -1185,8 +1259,24 @@ func TestRTT(t *testing.T) {
 					},
 				},
 			},
+			ExpectedRTTStatsCount: 2,
+		},
+		{
+			Name: "TxAckWithSmallClockDrift",
+			InputBSUpstream: lbslns.TxConfirmation{
+				Diid:  1,
+				XTime: 1548059982,
+			},
 			ExpectedRTTStatsCount: 3,
-			WaitTime:              1 << 3 * test.Delay,
+		},
+		{
+			Name: "TxAckWithClockDriftAboveThreshold",
+			InputBSUpstream: lbslns.TxConfirmation{
+				Diid:  1,
+				XTime: 1548059982,
+			},
+			ExpectedRTTStatsCount: 3,
+			GatewayClockDrift:     (1 << 5 * test.Delay),
 		},
 	} {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -1194,10 +1284,8 @@ func TestRTT(t *testing.T) {
 			if tc.InputBSUpstream != nil {
 				switch v := tc.InputBSUpstream.(type) {
 				case lbslns.TxConfirmation:
-					if MuxTime != 0 {
-						time.Sleep(tc.WaitTime)
-						now := float64(time.Now().UnixNano()) / float64(time.Second)
-						v.RefTime = now - RxTime + MuxTime
+					if testTime.Mux != nil {
+						v.RefTime = testTime.getRefTime(tc.GatewayClockDrift)
 					}
 					req, err := json.Marshal(v)
 					if err != nil {
@@ -1209,17 +1297,15 @@ func TestRTT(t *testing.T) {
 					select {
 					case ack := <-gsConn.TxAck():
 						if ack.Result != ttnpb.TxAcknowledgment_SUCCESS {
-							t.Fatalf("Tx Acknowledgement failed")
+							t.Fatalf("Tx acknowledgment failed")
 						}
 					case <-time.After(timeout):
 						t.Fatalf("Read message timeout")
 					}
 
 				case lbslns.UplinkDataFrame:
-					if MuxTime != 0 {
-						time.Sleep(tc.WaitTime)
-						now := float64(time.Now().UnixNano()) / float64(time.Second)
-						v.RefTime = now - RxTime + MuxTime
+					if testTime.Mux != nil {
+						v.RefTime = testTime.getRefTime(tc.GatewayClockDrift)
 					}
 					req, err := json.Marshal(v)
 					if err != nil {
@@ -1240,10 +1326,8 @@ func TestRTT(t *testing.T) {
 					}
 
 				case lbslns.JoinRequest:
-					if MuxTime != 0 {
-						time.Sleep(tc.WaitTime)
-						now := float64(time.Now().Unix()) + float64(time.Now().Nanosecond())/(1e9)
-						v.RefTime = now - RxTime + MuxTime
+					if testTime.Mux != nil {
+						v.RefTime = testTime.getRefTime(tc.GatewayClockDrift)
 					}
 					req, err := json.Marshal(v)
 					if err != nil {
@@ -1264,7 +1348,10 @@ func TestRTT(t *testing.T) {
 					}
 				}
 
-				if MuxTime > 0 {
+				if testTime.Mux != nil {
+					// Wait for stats to get updated
+					time.Sleep(1 << 2 * test.Delay)
+
 					// Atleast one downlink is needed for the first muxtime.
 					min, max, median, _, count := gsConn.RTTStats(90, time.Now())
 					if !a.So(count, should.Equal, tc.ExpectedRTTStatsCount) {
@@ -1285,15 +1372,20 @@ func TestRTT(t *testing.T) {
 			}
 
 			if tc.InputNetworkDownstream != nil {
-				if _, err := gsConn.ScheduleDown(tc.InputDownlinkPath, tc.InputNetworkDownstream); err != nil {
+				if _, _, _, err := gsConn.ScheduleDown(tc.InputDownlinkPath, tc.InputNetworkDownstream); err != nil {
 					t.Fatalf("Failed to send downlink: %v", err)
 				}
 
+				var readErr error
+				var wg sync.WaitGroup
 				resCh := make(chan []byte)
+				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					_, data, err := wsConn.ReadMessage()
 					if err != nil {
-						t.Fatalf("Failed to read message: %v", err)
+						readErr = err
+						return
 					}
 					resCh <- data
 				}()
@@ -1303,10 +1395,17 @@ func TestRTT(t *testing.T) {
 					if err := json.Unmarshal(res, &msg); err != nil {
 						t.Fatalf("Failed to unmarshal response `%s`: %v", string(res), err)
 					}
-					MuxTime = msg.MuxTime
-					RxTime = float64(time.Now().Unix()) + float64(time.Now().Nanosecond())/(1e9)
+					testTime.Mux = getTimeFromFloat64(msg.MuxTime)
+					// Simulate downstream delay
+					time.Sleep(1 << 2 * test.Delay)
+					now := time.Now()
+					testTime.Rx = &now
 				case <-time.After(timeout):
 					t.Fatalf("Read message timeout")
+				}
+				wg.Wait()
+				if readErr != nil {
+					t.Fatalf("Failed to read message: %v", err)
 				}
 			}
 		})
@@ -1338,7 +1437,7 @@ func TestPingPong(t *testing.T) {
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
 	gs := mock.NewServer(c)
 
-	bsWebServer := New(ctx, gs, lbslns.NewFormatter(), defaultConfig)
+	bsWebServer := New(ctx, gs, lbslns.NewFormatter(maxValidRoundTripDelay), defaultConfig)
 	lis, err := net.Listen("tcp", serverAddress)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
@@ -1403,4 +1502,41 @@ func TestPingPong(t *testing.T) {
 	case <-time.After(timeout):
 		t.Fatalf("Server pong timeout")
 	}
+}
+
+func TestRateLimit(t *testing.T) {
+	t.Run("Accept", func(t *testing.T) {
+		maxRate := uint(3)
+		conf := config.RateLimiting{
+			Profiles: []config.RateLimitingProfile{{
+				Name:         "accept connections",
+				MaxPerMin:    maxRate,
+				MaxBurst:     maxRate,
+				Associations: []string{"gs:accept:ws"},
+			}},
+		}
+		withServer(t, defaultConfig, conf, func(t *testing.T, _ *mock.IdentityServer, serverAddress string) {
+			a := assertions.New(t)
+			for i := uint(0); i < maxRate; i++ {
+				conn, _, err := websocket.DefaultDialer.Dial(serverAddress+testTrafficEndPoint, nil)
+				if !a.So(err, should.BeNil) {
+					t.Fatalf("Connection failed: %v", err)
+				}
+				conn.Close()
+			}
+
+			for i := 0; i < 3; i++ {
+				_, resp, err := websocket.DefaultDialer.Dial(serverAddress+testTrafficEndPoint, nil)
+				a.So(err, should.NotBeNil)
+				if !a.So(errors.IsResourceExhausted(errors.FromHTTPStatusCode(resp.StatusCode)), should.BeTrue) {
+					t.FailNow()
+				}
+
+				a.So(resp.Header.Get("x-rate-limit-limit"), should.NotBeEmpty)
+				a.So(resp.Header.Get("x-rate-limit-available"), should.NotBeEmpty)
+				a.So(resp.Header.Get("x-rate-limit-reset"), should.NotBeEmpty)
+				a.So(resp.Header.Get("x-rate-limit-retry"), should.NotBeEmpty)
+			}
+		})
+	})
 }

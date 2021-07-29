@@ -41,7 +41,7 @@ import (
 )
 
 var (
-	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"}
+	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"}
 	registeredGatewayUID = unique.ID(test.Context(), registeredGatewayID)
 	registeredGatewayKey = "test-key"
 
@@ -183,7 +183,7 @@ func TestTraffic(t *testing.T) {
 	t.Run("Upstream", func(t *testing.T) {
 		for _, tc := range []struct {
 			Topic   string
-			Message proto.Marshaler
+			Message proto.Message
 			OK      bool
 		}{
 			{
@@ -245,7 +245,7 @@ func TestTraffic(t *testing.T) {
 		} {
 			tcok := t.Run(tc.Topic, func(t *testing.T) {
 				a := assertions.New(t)
-				buf, err := tc.Message.Marshal()
+				buf, err := proto.Marshal(tc.Message)
 				a.So(err, should.BeNil)
 				token := client.Publish(tc.Topic, 1, false, buf)
 				if !token.WaitTimeout(timeout) {
@@ -289,10 +289,12 @@ func TestTraffic(t *testing.T) {
 
 	t.Run("Downstream", func(t *testing.T) {
 		for _, tc := range []struct {
-			Topic          string
-			Path           *ttnpb.DownlinkPath
-			Message        *ttnpb.DownlinkMessage
-			ErrorAssertion func(error) bool
+			Topic               string
+			Path                *ttnpb.DownlinkPath
+			Message             *ttnpb.DownlinkMessage
+			ErrorAssertion      func(error) bool
+			TxAckTopic          string
+			TxAckErrorAssertion func(error) bool
 		}{
 			{
 				Topic: fmt.Sprintf("v3/%v/down", registeredGatewayUID),
@@ -321,6 +323,7 @@ func TestTraffic(t *testing.T) {
 						},
 					},
 				},
+				TxAckTopic: fmt.Sprintf("v3/%v/down/ack", registeredGatewayUID),
 			},
 			{
 				Topic: fmt.Sprintf("v3/%v/down", registeredGatewayUID),
@@ -339,8 +342,8 @@ func TestTraffic(t *testing.T) {
 					Settings: &ttnpb.DownlinkMessage_Scheduled{
 						Scheduled: &ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{
-									LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{
+									Lora: &ttnpb.LoRaDataRate{
 										Bandwidth:       125000,
 										SpreadingFactor: 7,
 									},
@@ -377,7 +380,7 @@ func TestTraffic(t *testing.T) {
 				downCh := make(chan *ttnpb.DownlinkMessage)
 				handler := func(_ mqtt.Client, msg mqtt.Message) {
 					down := &ttnpb.GatewayDown{}
-					err := down.Unmarshal(msg.Payload())
+					err := proto.Unmarshal(msg.Payload(), down)
 					a.So(err, should.BeNil)
 					downCh <- down.DownlinkMessage
 				}
@@ -389,20 +392,50 @@ func TestTraffic(t *testing.T) {
 					t.FailNow()
 				}
 
-				_, err := conn.ScheduleDown(tc.Path, tc.Message)
+				_, _, _, err := conn.ScheduleDown(tc.Path, tc.Message)
 				if err != nil && (tc.ErrorAssertion == nil || !a.So(tc.ErrorAssertion(err), should.BeTrue)) {
 					t.Fatalf("Unexpected error: %v", err)
 				}
+				var cids []string
 				select {
 				case down := <-downCh:
 					if tc.ErrorAssertion == nil {
 						a.So(down, should.Resemble, tc.Message)
+						cids = down.GetCorrelationIDs()
 					} else {
 						t.Fatalf("Unexpected message: %v", down)
 					}
 				case <-time.After(timeout):
 					if tc.ErrorAssertion == nil {
 						t.Fatal("Receive expected downlink timeout")
+					}
+				}
+
+				if tc.ErrorAssertion != nil || tc.TxAckTopic == "" {
+					return
+				}
+				buf, err := proto.Marshal(&ttnpb.TxAcknowledgment{
+					CorrelationIDs: cids,
+					Result:         ttnpb.TxAcknowledgment_SUCCESS,
+				})
+				if !a.So(err, should.BeNil) {
+					t.FailNow()
+				}
+				token = client.Publish(tc.TxAckTopic, 1, false, buf)
+				if !token.WaitTimeout(timeout) {
+					t.Fatal("TxAcknowledgment publish timeout")
+				}
+				if !a.So(token.Error(), should.BeNil) {
+					t.FailNow()
+				}
+
+				select {
+				case ack := <-conn.TxAck():
+					a.So(ack.DownlinkMessage, should.Resemble, tc.Message)
+					a.So(ack.Result, should.Equal, ttnpb.TxAcknowledgment_SUCCESS)
+				case <-time.After(timeout):
+					if tc.TxAckErrorAssertion == nil {
+						t.Fatal("Timeout waiting for Tx acknowledgment")
 					}
 				}
 			})

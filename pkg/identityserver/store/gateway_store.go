@@ -21,7 +21,7 @@ import (
 	"runtime/trace"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -37,15 +37,15 @@ type gatewayStore struct {
 }
 
 // selectGatewayFields selects relevant fields (based on fieldMask) and preloads details if needed.
-func selectGatewayFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func selectGatewayFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	if len(fieldMask.GetPaths()) == 0 {
 		return query.Preload("Attributes").Preload("Antennas")
 	}
 	var gatewayColumns []string
 	var notFoundPaths []string
-	for _, path := range ttnpb.TopLevelFields(fieldMask.Paths) {
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
 		switch path {
-		case "ids", "created_at", "updated_at":
+		case "ids", "created_at", "updated_at", "deleted_at":
 			// always selected
 		case attributesField:
 			query = query.Preload("Attributes")
@@ -62,13 +62,13 @@ func selectGatewayFields(ctx context.Context, query *gorm.DB, fieldMask *types.F
 	if len(notFoundPaths) > 0 {
 		warning.Add(ctx, fmt.Sprintf("unsupported field mask paths: %s", strings.Join(notFoundPaths, ", ")))
 	}
-	return query.Select(cleanFields(append(append(modelColumns, "gateway_id", "gateway_eui"), gatewayColumns...)...))
+	return query.Select(cleanFields(append(append(modelColumns, "deleted_at", "gateway_id", "gateway_eui"), gatewayColumns...)...))
 }
 
 func (s *gatewayStore) CreateGateway(ctx context.Context, gtw *ttnpb.Gateway) (*ttnpb.Gateway, error) {
 	defer trace.StartRegion(ctx, "create gateway").End()
 	gtwModel := Gateway{
-		GatewayID: gtw.GatewayID, // The ID is not mutated by fromPB.
+		GatewayID: gtw.GatewayId, // The ID is not mutated by fromPB.
 	}
 	gtwModel.fromPB(gtw, nil)
 	if err := s.createEntity(ctx, &gtwModel); err != nil {
@@ -79,11 +79,11 @@ func (s *gatewayStore) CreateGateway(ctx context.Context, gtw *ttnpb.Gateway) (*
 	return &gtwProto, nil
 }
 
-func (s *gatewayStore) FindGateways(ctx context.Context, ids []*ttnpb.GatewayIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Gateway, error) {
+func (s *gatewayStore) FindGateways(ctx context.Context, ids []*ttnpb.GatewayIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Gateway, error) {
 	defer trace.StartRegion(ctx, "find gateways").End()
 	idStrings := make([]string, len(ids))
 	for i, id := range ids {
-		idStrings[i] = id.GetGatewayID()
+		idStrings[i] = id.GetGatewayId()
 	}
 	query := s.query(ctx, Gateway{}, withGatewayID(idStrings...))
 	query = selectGatewayFields(ctx, query, fieldMask)
@@ -107,11 +107,11 @@ func (s *gatewayStore) FindGateways(ctx context.Context, ids []*ttnpb.GatewayIde
 	return gtwProtos, nil
 }
 
-func (s *gatewayStore) GetGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Gateway, error) {
+func (s *gatewayStore) GetGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Gateway, error) {
 	defer trace.StartRegion(ctx, "get gateway").End()
-	query := s.query(ctx, Gateway{}, withGatewayID(id.GetGatewayID()))
-	if id.EUI != nil {
-		query = query.Scopes(withGatewayEUI(EUI64(*id.EUI)))
+	query := s.query(ctx, Gateway{}, withGatewayID(id.GetGatewayId()))
+	if id.Eui != nil {
+		query = query.Scopes(withGatewayEUI(EUI64(*id.Eui)))
 	}
 	query = selectGatewayFields(ctx, query, fieldMask)
 	var gtwModel Gateway
@@ -126,9 +126,9 @@ func (s *gatewayStore) GetGateway(ctx context.Context, id *ttnpb.GatewayIdentifi
 	return gtwProto, nil
 }
 
-func (s *gatewayStore) UpdateGateway(ctx context.Context, gtw *ttnpb.Gateway, fieldMask *types.FieldMask) (updated *ttnpb.Gateway, err error) {
+func (s *gatewayStore) UpdateGateway(ctx context.Context, gtw *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) (updated *ttnpb.Gateway, err error) {
 	defer trace.StartRegion(ctx, "update gateway").End()
-	query := s.query(ctx, Gateway{}, withGatewayID(gtw.GetGatewayID()))
+	query := s.query(ctx, Gateway{}, withGatewayID(gtw.GetGatewayId()))
 	query = selectGatewayFields(ctx, query, fieldMask)
 	var gtwModel Gateway
 	if err = query.First(&gtwModel).Error; err != nil {
@@ -163,4 +163,35 @@ func (s *gatewayStore) UpdateGateway(ctx context.Context, gtw *ttnpb.Gateway, fi
 func (s *gatewayStore) DeleteGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error {
 	defer trace.StartRegion(ctx, "delete gateway").End()
 	return s.deleteEntity(ctx, id)
+}
+
+func (s *gatewayStore) RestoreGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error {
+	defer trace.StartRegion(ctx, "restore gateway").End()
+	return s.restoreEntity(ctx, id)
+}
+
+func (s *gatewayStore) PurgeGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error {
+	defer trace.StartRegion(ctx, "purge gateway").End()
+	query := s.query(ctx, Gateway{}, withSoftDeleted(), withGatewayID(id.GetGatewayId()))
+	query = selectGatewayFields(ctx, query, nil)
+	var gtwModel Gateway
+	if err := query.First(&gtwModel).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errNotFoundForID(id)
+		}
+		return err
+	}
+	// delete gateway antennas before purging
+	if len(gtwModel.Antennas) > 0 {
+		if err := s.replaceGatewayAntennas(ctx, gtwModel.ID, gtwModel.Antennas, nil); err != nil {
+			return err
+		}
+	}
+	// delete gateway attributes before purging
+	if len(gtwModel.Attributes) > 0 {
+		if err := s.replaceAttributes(ctx, "gateway", gtwModel.ID, gtwModel.Attributes, nil); err != nil {
+			return err
+		}
+	}
+	return s.purgeEntity(ctx, id)
 }

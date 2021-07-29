@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -63,6 +64,10 @@ func runGoFrom(dir string, args ...string) error {
 	return execGoFrom(dir, os.Stdout, os.Stderr, "run", args...)
 }
 
+func writeToFile(filename string, value []byte) error {
+	return ioutil.WriteFile(filename, value, 0644)
+}
+
 func outputGo(cmd string, args ...string) (string, error) {
 	var buf bytes.Buffer
 	if err := execGo(&buf, os.Stderr, cmd, args...); err != nil {
@@ -71,12 +76,26 @@ func outputGo(cmd string, args ...string) (string, error) {
 	return buf.String(), nil
 }
 
-func runGoTool(args ...string) error {
-	return runGoFrom("tools", append([]string{"-exec", "go run exec_from.go -dir .."}, args...)...)
+func outputJSONGo(cmd string, args ...string) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := execGo(&buf, os.Stderr, cmd, args...); err != nil {
+		return nil, err
+	}
+	raw := buf.String()
+	jsonStartIdx := strings.Index(raw, "{")
+	if jsonStartIdx == -1 {
+		return nil, fmt.Errorf("No JSON found in output")
+	}
+	start := raw[jsonStartIdx:]
+	jsonEndIdx := strings.Index(start, "}")
+	if jsonEndIdx == -1 {
+		return nil, fmt.Errorf("No JSON found in output")
+	}
+	return []byte(start[:jsonEndIdx+1]), nil
 }
 
-func runUnconvert(pkgs ...string) error {
-	return runGoTool(append([]string{"github.com/mdempsky/unconvert", "-apply", "-safe"}, pkgs...)...)
+func runGoTool(args ...string) error {
+	return runGoFrom("tools", append([]string{"-exec", "go run exec_from.go -dir .."}, args...)...)
 }
 
 // CheckVersion checks the installed Go version against the minimum version we support.
@@ -160,28 +179,9 @@ func (g Go) Lint() error {
 	return runGoTool(append([]string{"github.com/mgechev/revive", "-config=.revive.toml", "-formatter=stylish"}, dirs...)...)
 }
 
-// Unconvert removes unnecessary type conversions from Go files.
-func (g Go) Unconvert() error {
-	dirs, err := g.packageDirs()
-	if err != nil {
-		return err
-	}
-	if len(dirs) == 0 {
-		return nil
-	}
-	if mg.Verbose() {
-		fmt.Printf("Removing unnecessary type conversions from %d Go packages\n", len(dirs))
-	}
-	var args []string
-	if goTags != "" {
-		args = append(args, "-tags", strings.Join(strings.Split(goTags, ","), " "))
-	}
-	return runUnconvert(append(args, dirs...)...)
-}
-
 // Quality runs code quality checks on Go files.
 func (g Go) Quality() {
-	mg.Deps(g.Fmt, g.Unconvert)
+	mg.Deps(g.Fmt)
 	g.Lint() // Errors are allowed.
 }
 
@@ -209,7 +209,7 @@ func (Go) TestBinaries() error {
 		fmt.Println("Testing Go binaries")
 	}
 	for _, binary := range goBinaries {
-		_, err := outputGo("run", binary, "--help")
+		_, err := outputGo("run", binary, "config")
 		if err != nil {
 			return err
 		}

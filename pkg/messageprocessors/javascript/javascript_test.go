@@ -35,10 +35,10 @@ func TestLegacyEncodeDownlink(t *testing.T) {
 	eui := types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "foo-app",
+			ApplicationId: "foo-app",
 		},
-		DeviceID: "foo-device",
-		DevEUI:   &eui,
+		DeviceId: "foo-device",
+		DevEui:   &eui,
 	}
 
 	message := &ttnpb.ApplicationDownlink{
@@ -104,10 +104,10 @@ func TestEncodeDownlink(t *testing.T) {
 	eui := types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "foo-app",
+			ApplicationId: "foo-app",
 		},
-		DeviceID: "foo-device",
-		DevEUI:   &eui,
+		DeviceId: "foo-device",
+		DevEui:   &eui,
 	}
 
 	message := &ttnpb.ApplicationDownlink{
@@ -239,10 +239,10 @@ func TestLegacyDecodeUplink(t *testing.T) {
 	eui := types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "foo-app",
+			ApplicationId: "foo-app",
 		},
-		DeviceID: "foo-device",
-		DevEUI:   &eui,
+		DeviceId: "foo-device",
+		DevEui:   &eui,
 	}
 
 	message := &ttnpb.ApplicationUplink{
@@ -317,10 +317,10 @@ func TestDecodeUplink(t *testing.T) {
 	eui := types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "foo-app",
+			ApplicationId: "foo-app",
 		},
-		DeviceID: "foo-device",
-		DevEUI:   &eui,
+		DeviceId: "foo-device",
+		DevEui:   &eui,
 	}
 
 	message := &ttnpb.ApplicationUplink{
@@ -426,6 +426,21 @@ func TestDecodeUplink(t *testing.T) {
 		err := host.DecodeUplink(ctx, ids, nil, message, script)
 		a.So(err, should.HaveSameErrorDefinitionAs, errOutputErrors.WithAttributes("errors", "error 1, error 2"))
 	}
+
+	// Splice input bytes.
+	{
+		script := `
+		function decodeUplink(input) {
+			return {
+				data: {
+					bytes: input.bytes.splice(0, 1),
+				}
+			}
+		}
+		`
+		err := host.DecodeUplink(ctx, ids, nil, message, script)
+		a.So(err, should.BeNil)
+	}
 }
 
 func TestDecodeDownlink(t *testing.T) {
@@ -437,10 +452,10 @@ func TestDecodeDownlink(t *testing.T) {
 	eui := types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "foo-app",
+			ApplicationId: "foo-app",
 		},
-		DeviceID: "foo-device",
-		DevEUI:   &eui,
+		DeviceId: "foo-device",
+		DevEui:   &eui,
 	}
 
 	message := &ttnpb.ApplicationDownlink{
@@ -541,5 +556,20 @@ func TestDecodeDownlink(t *testing.T) {
 		`
 		err := host.DecodeDownlink(ctx, ids, nil, message, script)
 		a.So(err, should.HaveSameErrorDefinitionAs, errOutputErrors.WithAttributes("errors", "error 1, error 2"))
+	}
+
+	// Splice input bytes.
+	{
+		script := `
+		function decodeDownlink(input) {
+			return {
+				data: {
+					bytes: input.bytes.splice(0, 1),
+				}
+			}
+		}
+		`
+		err := host.DecodeDownlink(ctx, ids, nil, message, script)
+		a.So(err, should.BeNil)
 	}
 }

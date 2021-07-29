@@ -18,33 +18,33 @@ package internal
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/mohae/deepcopy"
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 var LoRaWANVersionPairs = map[ttnpb.MACVersion]map[ttnpb.PHYVersion]struct{}{
 	ttnpb.MAC_V1_0: {
-		ttnpb.PHY_V1_0: struct{}{},
+		ttnpb.TS001_V1_0: struct{}{},
 	},
 	ttnpb.MAC_V1_0_1: {
-		ttnpb.PHY_V1_0_1: struct{}{},
+		ttnpb.TS001_V1_0_1: struct{}{},
 	},
 	ttnpb.MAC_V1_0_2: {
-		ttnpb.PHY_V1_0_2_REV_A: struct{}{},
-		ttnpb.PHY_V1_0_2_REV_B: struct{}{},
+		ttnpb.RP001_V1_0_2:       struct{}{},
+		ttnpb.RP001_V1_0_2_REV_B: struct{}{},
 	},
 	ttnpb.MAC_V1_0_3: {
-		ttnpb.PHY_V1_0_3_REV_A: struct{}{},
+		ttnpb.RP001_V1_0_3_REV_A: struct{}{},
 	},
 	ttnpb.MAC_V1_1: {
-		ttnpb.PHY_V1_1_REV_A: struct{}{},
-		ttnpb.PHY_V1_1_REV_B: struct{}{},
+		ttnpb.RP001_V1_1_REV_A: struct{}{},
+		ttnpb.RP001_V1_1_REV_B: struct{}{},
 	},
 }
 
@@ -67,19 +67,23 @@ var LoRaWANBands = func() map[string]map[ttnpb.PHYVersion]*band.Band {
 
 var errNoBandVersion = errors.DefineInvalidArgument("no_band_version", "specified version `{ver}` of band `{id}` does not exist")
 
-func DeviceFrequencyPlanAndBand(dev *ttnpb.EndDevice, fps *frequencyplans.Store) (*frequencyplans.FrequencyPlan, *band.Band, error) {
-	fp, err := fps.GetByID(dev.FrequencyPlanID)
+func FrequencyPlanAndBand(frequencyPlanID string, phyVersion ttnpb.PHYVersion, fps *frequencyplans.Store) (*frequencyplans.FrequencyPlan, *band.Band, error) {
+	fp, err := fps.GetByID(frequencyPlanID)
 	if err != nil {
 		return nil, nil, err
 	}
-	b, ok := LoRaWANBands[fp.BandID][dev.LoRaWANPHYVersion]
+	b, ok := LoRaWANBands[fp.BandID][phyVersion]
 	if !ok || b == nil {
 		return nil, nil, errNoBandVersion.WithAttributes(
-			"ver", dev.LoRaWANPHYVersion,
+			"ver", phyVersion,
 			"id", fp.BandID,
 		)
 	}
 	return fp, b, nil
+}
+
+func DeviceFrequencyPlanAndBand(dev *ttnpb.EndDevice, fps *frequencyplans.Store) (*frequencyplans.FrequencyPlan, *band.Band, error) {
+	return FrequencyPlanAndBand(dev.FrequencyPlanID, dev.LorawanPhyVersion, fps)
 }
 
 func DeviceBand(dev *ttnpb.EndDevice, fps *frequencyplans.Store) (*band.Band, error) {
@@ -103,7 +107,7 @@ func RXMetadataStats(ctx context.Context, mds []*ttnpb.RxMetadata) (gateways int
 	maxSNR = mds[0].SNR
 	for _, md := range mds {
 		if md.PacketBroker != nil {
-			gtws[fmt.Sprintf("%s@%s/%s", md.PacketBroker.ForwarderID, md.PacketBroker.ForwarderNetID, md.PacketBroker.ForwarderTenantID)] = struct{}{}
+			gtws[fmt.Sprintf("%s@%s/%s", md.PacketBroker.ForwarderClusterId, md.PacketBroker.ForwarderNetId, md.PacketBroker.ForwarderTenantId)] = struct{}{}
 		} else {
 			gtws[unique.ID(ctx, md.GatewayIdentifiers)] = struct{}{}
 		}
@@ -114,8 +118,12 @@ func RXMetadataStats(ctx context.Context, mds []*ttnpb.RxMetadata) (gateways int
 	return len(gtws), maxSNR
 }
 
-func TimePtr(t time.Time) *time.Time {
-	return &t
+func TimePtr(v time.Time) *time.Time {
+	return &v
+}
+
+func EndDevicePtr(v ttnpb.EndDevice) *ttnpb.EndDevice {
+	return &v
 }
 
 // CopyEndDevice returns a deep copy of ttnpb.EndDevice pb.

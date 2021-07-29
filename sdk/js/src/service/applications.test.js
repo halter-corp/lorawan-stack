@@ -36,37 +36,35 @@ const mockApplicationData = {
   ],
 }
 
-jest.mock('../api', function() {
-  return jest.fn().mockImplementation(function() {
-    return {
-      ApplicationRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockApplicationData }),
-        List: jest.fn().mockResolvedValue({
-          data: { applications: [mockApplicationData] },
-          headers: { 'x-total-count': 1 },
-        }),
-      },
-    }
-  })
-})
+jest.mock('../api', () =>
+  jest.fn().mockImplementation(() => ({
+    ApplicationRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockApplicationData }),
+      List: jest.fn().mockResolvedValue({
+        data: { applications: [mockApplicationData] },
+        headers: { 'x-total-count': 1 },
+      }),
+    },
+  })),
+)
 
-describe('Applications', function() {
+describe('Applications', () => {
   let applications
-  beforeEach(function() {
+  beforeEach(() => {
     const Api = require('../api')
 
     const Applications = require('./applications').default
     applications = new Applications(new Api(), { defaultUserId: 'testuser' })
   })
 
-  describe('when using proxied results', function() {
-    it('initializes correctly', function() {
+  describe('when using proxied results', () => {
+    it('initializes correctly', () => {
       jest.resetModules()
 
       expect(applications._api).toBeDefined()
     })
 
-    it('returns an application instance on getById()', async function() {
+    it('returns an application instance on getById()', async () => {
       jest.resetModules()
 
       const app = await applications.getById('test')
@@ -74,7 +72,7 @@ describe('Applications', function() {
       expect(app.ids.application_id).toBe('test')
     })
 
-    it('returns an application list on getAll()', async function() {
+    it('returns an application list on getAll()', async () => {
       jest.resetModules()
 
       const result = await applications.getAll()

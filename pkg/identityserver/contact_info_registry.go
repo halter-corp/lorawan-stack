@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
@@ -28,6 +28,11 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+)
+
+var (
+	errNoValidationNeeded     = errors.DefineInvalidArgument("no_validation_needed", "no validation needed for this contact info")
+	errValidationsAlreadySent = errors.DefineAlreadyExists("validations_already_sent", "validations for this contact info already sent")
 )
 
 func (is *IdentityServer) requestContactInfoValidation(ctx context.Context, ids *ttnpb.EntityIdentifiers) (*ttnpb.ContactInfoValidation, error) {
@@ -45,8 +50,8 @@ func (is *IdentityServer) requestContactInfoValidation(ctx context.Context, ids 
 		return nil, err
 	}
 	now := time.Now()
-	emailValidationsTTL := 48 * time.Hour
-	emailValidationsExpireAt := now.Add(emailValidationsTTL)
+	ttl := is.configFromContext(ctx).UserRegistration.ContactInfoValidation.TokenTTL
+	expires := now.Add(ttl)
 	emailValidations := make(map[string]*ttnpb.ContactInfoValidation)
 	for _, info := range contactInfo {
 		if info.ContactMethod == ttnpb.CONTACT_METHOD_EMAIL && info.ValidatedAt == nil {
@@ -61,49 +66,59 @@ func (is *IdentityServer) requestContactInfoValidation(ctx context.Context, ids 
 					Token:     key,
 					Entity:    ids,
 					CreatedAt: &now,
-					ExpiresAt: &emailValidationsExpireAt,
+					ExpiresAt: &expires,
 				}
 				emailValidations[info.Value] = validation
 			}
 			validation.ContactInfo = append(validation.ContactInfo, info)
 		}
 	}
-	var pendingContactInfo []*ttnpb.ContactInfo
-	if len(emailValidations) > 0 {
-		err := is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-			for email, validation := range emailValidations {
-				validation, err = store.GetContactInfoStore(db).CreateValidation(ctx, validation)
-				if err != nil {
-					return err
+	if len(emailValidations) == 0 {
+		return nil, errNoValidationNeeded.New()
+	}
+
+	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
+		for email, validation := range emailValidations {
+			validation, err = store.GetContactInfoStore(db).CreateValidation(ctx, validation)
+			if err != nil {
+				if errors.IsAlreadyExists(err) {
+					delete(emailValidations, email)
+					continue
 				}
-				log.FromContext(ctx).WithFields(log.Fields(
-					"email", email,
-					"token", validation.Token,
-				)).Info("Created email validation token")
-				emailValidations[email] = validation
+				return err
 			}
-			return nil
+			log.FromContext(ctx).WithFields(log.Fields(
+				"email", email,
+				"token", validation.Token,
+			)).Info("Created email validation token")
+			emailValidations[email] = validation
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var pendingContactInfo []*ttnpb.ContactInfo
+	for address, validation := range emailValidations {
+		err := is.SendEmail(ctx, func(data emails.Data) email.MessageData {
+			data.User.Email = address
+			data.SetEntity(validation.Entity)
+			return emails.Validate{
+				Data:  data,
+				ID:    validation.ID,
+				Token: validation.Token,
+				TTL:   ttl,
+			}
 		})
 		if err != nil {
-			return nil, err
+			log.FromContext(ctx).WithError(err).Error("Could not send validation email")
 		}
-		for address, validation := range emailValidations {
-			err := is.SendEmail(ctx, func(data emails.Data) email.MessageData {
-				data.User.Email = address
-				data.SetEntity(validation.Entity)
-				return emails.Validate{
-					Data:  data,
-					ID:    validation.ID,
-					Token: validation.Token,
-					TTL:   emailValidationsTTL,
-				}
-			})
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("Could not send validation email")
-			}
-			pendingContactInfo = append(pendingContactInfo, validation.ContactInfo...)
-			validation.Token = "" // Unset tokens after sending emails
-		}
+		pendingContactInfo = append(pendingContactInfo, validation.ContactInfo...)
+		validation.Token = "" // Unset tokens after sending emails
+	}
+	if len(pendingContactInfo) == 0 {
+		return nil, errValidationsAlreadySent.New()
 	}
 
 	return &ttnpb.ContactInfoValidation{
@@ -114,7 +129,7 @@ func (is *IdentityServer) requestContactInfoValidation(ctx context.Context, ids 
 	}, nil
 }
 
-func (is *IdentityServer) validateContactInfo(ctx context.Context, req *ttnpb.ContactInfoValidation) (*types.Empty, error) {
+func (is *IdentityServer) validateContactInfo(ctx context.Context, req *ttnpb.ContactInfoValidation) (*pbtypes.Empty, error) {
 	err := is.withDatabase(ctx, func(db *gorm.DB) error {
 		return store.GetContactInfoStore(db).Validate(ctx, req)
 	})
@@ -132,17 +147,17 @@ var errNoContactInfoForEntity = errors.DefineInvalidArgument("no_contact_info", 
 
 func (cir *contactInfoRegistry) RequestValidation(ctx context.Context, ids *ttnpb.EntityIdentifiers) (*ttnpb.ContactInfoValidation, error) {
 	var err error
-	switch id := ids.Identifiers().(type) {
-	case *ttnpb.ApplicationIdentifiers:
-		err = rights.RequireApplication(ctx, *id, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC)
-	case *ttnpb.ClientIdentifiers:
-		err = rights.RequireClient(ctx, *id, ttnpb.RIGHT_CLIENT_ALL)
-	case *ttnpb.GatewayIdentifiers:
-		err = rights.RequireGateway(ctx, *id, ttnpb.RIGHT_GATEWAY_SETTINGS_BASIC)
-	case *ttnpb.OrganizationIdentifiers:
-		err = rights.RequireOrganization(ctx, *id, ttnpb.RIGHT_ORGANIZATION_SETTINGS_BASIC)
-	case *ttnpb.UserIdentifiers:
-		err = rights.RequireUser(ctx, *id, ttnpb.RIGHT_USER_SETTINGS_BASIC)
+	switch id := ids.GetIds().(type) {
+	case *ttnpb.EntityIdentifiers_ApplicationIds:
+		err = rights.RequireApplication(ctx, *id.ApplicationIds, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC)
+	case *ttnpb.EntityIdentifiers_ClientIds:
+		err = rights.RequireClient(ctx, *id.ClientIds, ttnpb.RIGHT_CLIENT_ALL)
+	case *ttnpb.EntityIdentifiers_GatewayIds:
+		err = rights.RequireGateway(ctx, *id.GatewayIds, ttnpb.RIGHT_GATEWAY_SETTINGS_BASIC)
+	case *ttnpb.EntityIdentifiers_OrganizationIds:
+		err = rights.RequireOrganization(ctx, *id.OrganizationIds, ttnpb.RIGHT_ORGANIZATION_SETTINGS_BASIC)
+	case *ttnpb.EntityIdentifiers_UserIds:
+		err = rights.RequireUser(ctx, *id.UserIds, ttnpb.RIGHT_USER_SETTINGS_BASIC)
 	default:
 		return nil, errNoContactInfoForEntity.New()
 	}
@@ -152,6 +167,6 @@ func (cir *contactInfoRegistry) RequestValidation(ctx context.Context, ids *ttnp
 	return cir.requestContactInfoValidation(ctx, ids)
 }
 
-func (cir *contactInfoRegistry) Validate(ctx context.Context, req *ttnpb.ContactInfoValidation) (*types.Empty, error) {
+func (cir *contactInfoRegistry) Validate(ctx context.Context, req *ttnpb.ContactInfoValidation) (*pbtypes.Empty, error) {
 	return cir.validateContactInfo(ctx, req)
 }

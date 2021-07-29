@@ -34,11 +34,11 @@ type membershipStore struct {
 }
 
 func (s *membershipStore) queryMemberships(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityType string, includeIndirect bool) *gorm.DB {
-	accountQuery := s.query(ctx, Account{}).
+	accountQuery := s.query(WithoutSoftDeleted(ctx), Account{}).
 		Select(`"accounts"."id"`).
 		Where(fmt.Sprintf(`"accounts"."account_type" = '%s' AND "accounts"."uid" = ?`, id.EntityType()), id.IDString()).
 		QueryExpr()
-	organizationQuery := s.query(ctx, Account{}).
+	organizationQuery := s.query(WithoutSoftDeleted(ctx), Account{}).
 		Select(`"accounts"."id"`).
 		Joins(`JOIN "memberships" ON "memberships"."entity_type" = "accounts"."account_type" AND "memberships"."entity_id" = "accounts"."account_id"`).
 		Where(`"memberships"."account_id" = (?)`, accountQuery).
@@ -52,7 +52,7 @@ func (s *membershipStore) queryMemberships(ctx context.Context, id *ttnpb.Organi
 	return query
 }
 
-func (s *membershipStore) FindMemberships(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityType string, includeIndirect bool) ([]ttnpb.Identifiers, error) {
+func (s *membershipStore) FindMemberships(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityType string, includeIndirect bool) ([]*ttnpb.EntityIdentifiers, error) {
 	defer trace.StartRegion(ctx, fmt.Sprintf("find %s memberships of %s", entityType, id.IDString())).End()
 
 	membershipsQuery := s.queryMemberships(ctx, id, entityType, includeIndirect).Select("entity_id").QueryExpr()
@@ -85,7 +85,7 @@ func (s *membershipStore) FindMemberships(ctx context.Context, id *ttnpb.Organiz
 	} else {
 		setTotal(ctx, uint64(len(results)))
 	}
-	identifiers := make([]ttnpb.Identifiers, len(results))
+	identifiers := make([]*ttnpb.EntityIdentifiers, len(results))
 	for i, result := range results {
 		identifiers[i] = buildIdentifiers(entityType, result.FriendlyID)
 	}
@@ -99,16 +99,16 @@ type IndirectMembership struct {
 	OrganizationRights *ttnpb.Rights
 }
 
-func (s *membershipStore) FindIndirectMemberships(ctx context.Context, userID *ttnpb.UserIdentifiers, entityID ttnpb.Identifiers) ([]IndirectMembership, error) {
+func (s *membershipStore) FindIndirectMemberships(ctx context.Context, userID *ttnpb.UserIdentifiers, entityID *ttnpb.EntityIdentifiers) ([]IndirectMembership, error) {
 	defer trace.StartRegion(ctx, fmt.Sprintf("find indirect memberships of user on %s", entityID.EntityType())).End()
-	userQuery := s.query(ctx, Account{}).
+	userQuery := s.query(WithoutSoftDeleted(ctx), Account{}).
 		Select(`"accounts"."id"`).
 		Where(`"accounts"."account_type" = 'user' AND "accounts"."uid" = ?`, userID.IDString()).
 		QueryExpr()
 	entityQuery := s.query(ctx, modelForID(entityID), withID(entityID)).
 		Select(fmt.Sprintf(`"%ss"."id"`, entityID.EntityType())).
 		QueryExpr()
-	query := s.query(ctx, Account{}).
+	query := s.query(WithoutSoftDeleted(ctx), Account{}).
 		Select(`"usr_memberships"."rights" AS "usr_rights", "accounts"."uid" AS "organization_id", "entity_memberships"."rights" AS "entity_rights"`).
 		Joins(`JOIN "memberships" "usr_memberships" ON "usr_memberships"."entity_type" = 'organization' AND "usr_memberships"."entity_id" = "accounts"."account_id"`).
 		Joins(`JOIN "memberships" "entity_memberships" ON "entity_memberships"."account_id" = "accounts"."id"`).
@@ -127,14 +127,14 @@ func (s *membershipStore) FindIndirectMemberships(ctx context.Context, userID *t
 		usrRights, entityRights := ttnpb.Rights(res.UsrRights), ttnpb.Rights(res.EntityRights)
 		commonOrganizations[i] = IndirectMembership{
 			RightsOnOrganization:    &usrRights,
-			OrganizationIdentifiers: &ttnpb.OrganizationIdentifiers{OrganizationID: res.OrganizationID},
+			OrganizationIdentifiers: &ttnpb.OrganizationIdentifiers{OrganizationId: res.OrganizationID},
 			OrganizationRights:      &entityRights,
 		}
 	}
 	return commonOrganizations, nil
 }
 
-func (s *membershipStore) FindMembers(ctx context.Context, entityID ttnpb.Identifiers) (map[*ttnpb.OrganizationOrUserIdentifiers]*ttnpb.Rights, error) {
+func (s *membershipStore) FindMembers(ctx context.Context, entityID *ttnpb.EntityIdentifiers) (map[*ttnpb.OrganizationOrUserIdentifiers]*ttnpb.Rights, error) {
 	defer trace.StartRegion(ctx, fmt.Sprintf("find members of %s", entityID.EntityType())).End()
 	entityQuery := s.query(ctx, modelForID(entityID), withID(entityID)).
 		Select(fmt.Sprintf(`"%ss"."id"`, entityID.EntityType())).
@@ -175,7 +175,7 @@ var errMembershipNotFound = errors.DefineNotFound(
 	"account `{account_id}` is not a member of `{entity_type}` `{entity_id}`",
 )
 
-func (s *membershipStore) GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers) (*ttnpb.Rights, error) {
+func (s *membershipStore) GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers) (*ttnpb.Rights, error) {
 	defer trace.StartRegion(ctx, "get membership").End()
 	accountQuery := s.query(ctx, Account{}).
 		Select(`"accounts"."id"`).
@@ -209,7 +209,7 @@ var errAccountType = errors.DefineInvalidArgument(
 	"account of type `{account_type}` can not collaborate on `{entity_type}`",
 )
 
-func (s *membershipStore) SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers, rights *ttnpb.Rights) error {
+func (s *membershipStore) SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers, rights *ttnpb.Rights) error {
 	defer trace.StartRegion(ctx, "update membership").End()
 	var account Account
 	err := s.query(ctx, Account{}).Where(Account{
@@ -266,4 +266,31 @@ func (s *membershipStore) SetMember(ctx context.Context, id *ttnpb.OrganizationO
 	}
 	membership.Rights = Rights(*rights)
 	return query.Save(&membership).Error
+}
+
+func (s *membershipStore) DeleteEntityMembers(ctx context.Context, entityID *ttnpb.EntityIdentifiers) error {
+	defer trace.StartRegion(ctx, "delete entity memberships").End()
+	entity, err := s.findDeletedEntity(ctx, entityID, "id")
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, Membership{}).Where(&Membership{
+		EntityID:   entity.PrimaryKey(),
+		EntityType: entityTypeForID(entityID),
+	}).Delete(&Membership{}).Error
+}
+
+func (s *membershipStore) DeleteAccountMembers(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers) error {
+	defer trace.StartRegion(ctx, "delete account memberships").End()
+	var account Account
+	err := s.query(ctx, Account{}, withSoftDeleted()).Where(Account{
+		UID:         id.IDString(),
+		AccountType: id.EntityType(),
+	}).Find(&account).Error
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, Membership{}).Where(&Membership{
+		AccountID: account.PrimaryKey(),
+	}).Delete(&Membership{}).Error
 }

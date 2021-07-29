@@ -26,19 +26,41 @@ package ttn.lorawan.v3;
 
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
+// TODO: Migrate away from GoGo Protobuf (https://github.com/TheThingsNetwork/lorawan-stack/issues/2798).
+option (gogoproto.enum_stringer_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.goproto_enum_stringer_all) = false;
+option (gogoproto.goproto_registration) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.protosizer_all) = false;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.stringer_all) = true;
+
 message Organization {
+  option (gogoproto.populate) = true;
+
   OrganizationIdentifiers ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp deleted_at = 8 [(gogoproto.stdtime) = true];
 
   string name = 4 [(validate.rules).string.max_len = 50];
   string description = 5 [(validate.rules).string.max_len = 2000];
 
   // Key-value attributes for this organization. Typically used for organizing organizations or for storing integration-specific data.
-  map<string,string> attributes = 6 [(validate.rules).map.keys.string = {pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$" , max_len: 36}];
+  map<string,string> attributes = 6 [
+    (validate.rules).map = {
+      max_pairs: 10,
+      keys: { string: { pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$", max_len: 36 } },
+      values: { string: { max_len: 200 } }
+    }
+  ];
 
   // Contact information for this organization. Typically used to indicate who to contact with security/billing questions about the organization.
-  repeated ContactInfo contact_info = 7;
+  repeated ContactInfo contact_info = 7 [(validate.rules).repeated.max_items = 10];
+
+  // next: 9
 }
 
 message Organizations {
@@ -48,7 +70,7 @@ message Organizations {
 message GetOrganizationRequest {
   OrganizationIdentifiers organization_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   // The names of the organization fields that should be returned.
-  google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message ListOrganizationsRequest {
@@ -59,7 +81,7 @@ message ListOrganizationsRequest {
   // other organizations.
   OrganizationOrUserIdentifiers collaborator = 1;
   // The names of the organization fields that should be returned.
-  google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
+  google.protobuf.FieldMask field_mask = 2;
   // Order the results by this field path (must be present in the field mask).
   // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
   string order = 3 [
@@ -69,6 +91,8 @@ message ListOrganizationsRequest {
   uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
   // Page number for pagination. 0 is interpreted as 1.
   uint32 page = 5;
+  // Only return recently deleted organizations.
+  bool deleted = 6;
 }
 
 message CreateOrganizationRequest {
@@ -82,7 +106,7 @@ message CreateOrganizationRequest {
 message UpdateOrganizationRequest {
   Organization organization = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   // The names of the organization fields that should be updated.
-  google.protobuf.FieldMask field_mask = 2 [(gogoproto.nullable) = false];
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message ListOrganizationAPIKeysRequest {
@@ -96,18 +120,27 @@ message ListOrganizationAPIKeysRequest {
 message GetOrganizationAPIKeyRequest {
   OrganizationIdentifiers organization_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   // Unique public identifier for the API key.
-  string key_id = 2 [(gogoproto.customname) = "KeyID"];
+  string key_id = 2;
 }
 
 message CreateOrganizationAPIKeyRequest {
   OrganizationIdentifiers organization_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   string name = 2 [(validate.rules).string.max_len = 50];
-  repeated Right rights = 3 [(validate.rules).repeated.items.enum.defined_only = true];
+  repeated Right rights = 3 [
+    (validate.rules).repeated = {
+      min_items: 1,
+      unique: true,
+      items: { enum: { defined_only: true } }
+    }
+  ];
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true, (validate.rules).timestamp.gt_now = true];
 }
 
 message UpdateOrganizationAPIKeyRequest {
   OrganizationIdentifiers organization_ids = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
   APIKey api_key = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
+  // The names of the api key fields that should be updated.
+  google.protobuf.FieldMask field_mask = 3;
 }
 
 message ListOrganizationCollaboratorsRequest {

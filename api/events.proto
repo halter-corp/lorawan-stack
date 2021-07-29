@@ -26,6 +26,17 @@ package ttn.lorawan.v3;
 
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
+// TODO: Migrate away from GoGo Protobuf (https://github.com/TheThingsNetwork/lorawan-stack/issues/2798).
+option (gogoproto.enum_stringer_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.goproto_enum_stringer_all) = false;
+option (gogoproto.goproto_registration) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.protosizer_all) = false;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.stringer_all) = true;
+
 message Event {
   // Name of the event. This can be used to find the (localized) event description.
   string name = 1;
@@ -73,6 +84,20 @@ message StreamEventsRequest {
   google.protobuf.Timestamp after = 3 [(gogoproto.stdtime) = true];
 }
 
+message FindRelatedEventsRequest {
+  string correlation_id = 1 [
+    (gogoproto.customname) = "CorrelationID",
+    (validate.rules).string = {
+      min_len: 1,
+      max_len: 100,
+    }
+  ];
+}
+
+message FindRelatedEventsResponse {
+  repeated Event events = 1;
+}
+
 // The Events service serves events from the cluster.
 service Events {
   // Stream live events, optionally with a tail of historical events (depending on server support and retention policy).
@@ -83,4 +108,10 @@ service Events {
       body: "*"
     };
   };
+
+  rpc FindRelated(FindRelatedEventsRequest) returns (FindRelatedEventsResponse) {
+    option (google.api.http) = {
+      get: "/events/related"
+    };
+  }
 }

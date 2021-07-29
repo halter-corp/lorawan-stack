@@ -28,12 +28,10 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
-func timePtr(time time.Time) *time.Time { return &time }
-
 func TestFromDownlinkMessage(t *testing.T) {
 	var lbsLNS lbsLNS
 	ctx := log.NewContext(test.Context(), test.GetLogger(t))
-	uid := unique.ID(ctx, ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"})
+	uid := unique.ID(ctx, ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"})
 	var session ws.Session
 	session.Data = State{
 		ID: 0x11,
@@ -47,8 +45,8 @@ func TestFromDownlinkMessage(t *testing.T) {
 			Name: "SampleDownlink",
 			DownlinkMessage: ttnpb.DownlinkMessage{
 				RawPayload: []byte("Ymxhamthc25kJ3M=="),
-				EndDeviceIDs: &ttnpb.EndDeviceIdentifiers{
-					DeviceID: "testdevice",
+				EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+					DeviceId: "testdevice",
 				},
 				Settings: &ttnpb.DownlinkMessage_Scheduled{
 					Scheduled: &ttnpb.TxSettings{
@@ -63,7 +61,7 @@ func TestFromDownlinkMessage(t *testing.T) {
 				CorrelationIDs: []string{"correlation1"},
 			},
 			ExpectedDownlinkMessage: DownlinkMessage{
-				DevEUI:      "00-00-00-00-00-00-00-00",
+				DevEUI:      "00-00-00-00-00-00-00-01",
 				DeviceClass: 0,
 				Diid:        1,
 				Pdu:         "596d7868616d74686332356b4a334d3d3d",
@@ -79,8 +77,8 @@ func TestFromDownlinkMessage(t *testing.T) {
 			Name: "WithAbsoluteTime",
 			DownlinkMessage: ttnpb.DownlinkMessage{
 				RawPayload: []byte("Ymxhamthc25kJ3M=="),
-				EndDeviceIDs: &ttnpb.EndDeviceIdentifiers{
-					DeviceID: "testdevice",
+				EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+					DeviceId: "testdevice",
 				},
 				Settings: &ttnpb.DownlinkMessage_Scheduled{
 					Scheduled: &ttnpb.TxSettings{
@@ -94,7 +92,7 @@ func TestFromDownlinkMessage(t *testing.T) {
 				CorrelationIDs: []string{"correlation2"},
 			},
 			ExpectedDownlinkMessage: DownlinkMessage{
-				DevEUI:      "00-00-00-00-00-00-00-00",
+				DevEUI:      "00-00-00-00-00-00-00-01",
 				DeviceClass: 0,
 				Diid:        2,
 				Pdu:         "596d7868616d74686332356b4a334d3d3d",

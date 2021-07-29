@@ -59,8 +59,8 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_READ); err != nil {
 		return nil, err
 	}
-	gets := req.FieldMask.Paths
-	if ttnpb.HasAnyField(req.FieldMask.Paths,
+	gets := req.FieldMask.GetPaths()
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(),
 		"root_keys.app_key.key",
 		"root_keys.nwk_key.key",
 	) {
@@ -71,7 +71,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 			"provisioner_id",
 			"provisioning_data",
 		)
-		if ttnpb.HasAnyField(req.FieldMask.Paths,
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(),
 			"root_keys.app_key.key",
 		) {
 			gets = ttnpb.AddFields(gets,
@@ -79,7 +79,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 				"root_keys.app_key.kek_label",
 			)
 		}
-		if ttnpb.HasAnyField(req.FieldMask.Paths,
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(),
 			"root_keys.nwk_key.key",
 		) {
 			gets = ttnpb.AddFields(gets,
@@ -89,7 +89,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 		}
 	}
 	logger := log.FromContext(ctx)
-	dev, err := srv.JS.devices.GetByID(ctx, req.ApplicationIdentifiers, req.DeviceID, gets)
+	dev, err := srv.JS.devices.GetByID(ctx, req.ApplicationIdentifiers, req.DeviceId, gets)
 	if errors.IsNotFound(err) {
 		return nil, errDeviceNotFound.New()
 	}
@@ -99,7 +99,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 	if !dev.ApplicationIdentifiers.Equal(req.ApplicationIdentifiers) {
 		return nil, errDeviceNotFound.New()
 	}
-	if ttnpb.HasAnyField(req.FieldMask.Paths,
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(),
 		"root_keys.app_key.key",
 		"root_keys.nwk_key.key",
 	) {
@@ -107,7 +107,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 		dev.RootKeys = &ttnpb.RootKeys{
 			RootKeyID: rootKeysEnc.GetRootKeyID(),
 		}
-		cc, err := srv.JS.GetPeerConn(ctx, ttnpb.ClusterRole_CRYPTO_SERVER, dev.EndDeviceIdentifiers)
+		cc, err := srv.JS.GetPeerConn(ctx, ttnpb.ClusterRole_CRYPTO_SERVER, &dev.EndDeviceIdentifiers)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				logger.WithError(err).Debug("Crypto Server connection is not available")
@@ -115,7 +115,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 			cc = nil
 		}
 
-		if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.nwk_key.key") {
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "root_keys.nwk_key.key") {
 			switch {
 			case !rootKeysEnc.GetNwkKey().GetKey().IsZero():
 				dev.RootKeys.NwkKey = &ttnpb.KeyEnvelope{
@@ -142,7 +142,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 			}
 		}
 
-		if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.app_key.key") {
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "root_keys.app_key.key") {
 			switch {
 			case !rootKeysEnc.GetAppKey().GetKey().IsZero():
 				dev.RootKeys.AppKey = &ttnpb.KeyEnvelope{
@@ -169,7 +169,7 @@ func (srv jsEndDeviceRegistryServer) Get(ctx context.Context, req *ttnpb.GetEndD
 			}
 		}
 	}
-	return ttnpb.FilterGetEndDevice(dev, req.FieldMask.Paths...)
+	return ttnpb.FilterGetEndDevice(dev, req.FieldMask.GetPaths()...)
 }
 
 var (
@@ -179,21 +179,21 @@ var (
 
 // Set implements ttnpb.JsEndDeviceRegistryServer.
 func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest) (dev *ttnpb.EndDevice, err error) {
-	if req.EndDevice.JoinEUI == nil {
+	if req.EndDevice.JoinEui == nil {
 		return nil, errNoJoinEUI.New()
 	}
-	if req.EndDevice.DevEUI == nil || req.EndDevice.DevEUI.IsZero() {
+	if req.EndDevice.DevEui == nil || req.EndDevice.DevEui.IsZero() {
 		return nil, errNoDevEUI.New()
 	}
 
-	if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.app_key.key") && req.EndDevice.GetRootKeys().GetAppKey().GetKey().IsZero() {
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "root_keys.app_key.key") && req.EndDevice.GetRootKeys().GetAppKey().GetKey().IsZero() {
 		return nil, errInvalidFieldValue.WithAttributes("field", "root_keys.app_key.key")
 	}
 
 	if err = rights.RequireApplication(ctx, req.EndDevice.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
 		return nil, err
 	}
-	if ttnpb.HasAnyField(req.FieldMask.Paths,
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(),
 		"root_keys.app_key.key",
 		"root_keys.nwk_key.key",
 		"root_keys.root_key_id",
@@ -203,8 +203,8 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 		}
 	}
 
-	sets := append(req.FieldMask.Paths[:0:0], req.FieldMask.Paths...)
-	if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.app_key.key") {
+	sets := append(req.FieldMask.GetPaths()[:0:0], req.FieldMask.GetPaths()...)
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "root_keys.app_key.key") {
 		appKey, err := cryptoutil.WrapAES128Key(ctx, *req.EndDevice.RootKeys.AppKey.Key, srv.kekLabel, srv.JS.KeyVault)
 		if err != nil {
 			return nil, err
@@ -220,7 +220,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 			"root_keys.app_key.kek_label",
 		)
 	}
-	if ttnpb.HasAnyField(req.FieldMask.Paths, "root_keys.nwk_key.key") {
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "root_keys.nwk_key.key") {
 		if !req.EndDevice.GetRootKeys().GetNwkKey().GetKey().IsZero() {
 			nwkKey, err := cryptoutil.WrapAES128Key(ctx, *req.EndDevice.RootKeys.NwkKey.Key, srv.kekLabel, srv.JS.KeyVault)
 			if err != nil {
@@ -242,9 +242,9 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 	}
 
 	var evt events.Event
-	dev, err = srv.JS.devices.SetByID(ctx, req.EndDevice.ApplicationIdentifiers, req.EndDevice.DeviceID, req.FieldMask.Paths, func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
+	dev, err = srv.JS.devices.SetByID(ctx, req.EndDevice.ApplicationIdentifiers, req.EndDevice.DeviceId, req.FieldMask.GetPaths(), func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 		if dev != nil {
-			evt = evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDevice.EndDeviceIdentifiers, req.FieldMask.Paths)
+			evt = evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, &req.EndDevice.EndDeviceIdentifiers, req.FieldMask.GetPaths())
 			if err := ttnpb.ProhibitFields(sets,
 				"ids.dev_addr",
 			); err != nil {
@@ -253,7 +253,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 			return &req.EndDevice, sets, nil
 		}
 
-		evt = evtCreateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDevice.EndDeviceIdentifiers, nil)
+		evt = evtCreateEndDevice.NewWithIdentifiersAndData(ctx, &req.EndDevice.EndDeviceIdentifiers, nil)
 		if req.EndDevice.DevAddr != nil && !req.EndDevice.DevAddr.IsZero() {
 			return nil, nil, errInvalidFieldValue.WithAttributes("field", "ids.dev_addr")
 		}
@@ -270,7 +270,7 @@ func (srv jsEndDeviceRegistryServer) Set(ctx context.Context, req *ttnpb.SetEndD
 	if evt != nil {
 		events.Publish(evt)
 	}
-	return ttnpb.FilterGetEndDevice(dev, req.FieldMask.Paths...)
+	return ttnpb.FilterGetEndDevice(dev, req.FieldMask.GetPaths()...)
 }
 
 // Provision is deprecated.
@@ -288,7 +288,7 @@ func (srv jsEndDeviceRegistryServer) Delete(ctx context.Context, ids *ttnpb.EndD
 		return nil, err
 	}
 	var evt events.Event
-	_, err := srv.JS.devices.SetByID(ctx, ids.ApplicationIdentifiers, ids.DeviceID, nil, func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
+	_, err := srv.JS.devices.SetByID(ctx, ids.ApplicationIdentifiers, ids.DeviceId, nil, func(dev *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 		if dev == nil {
 			return nil, nil, errDeviceNotFound.New()
 		}

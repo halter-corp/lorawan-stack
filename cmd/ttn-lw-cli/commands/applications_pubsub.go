@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,21 +19,23 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 var (
-	selectApplicationPubSubFlags       = util.FieldMaskFlags(&ttnpb.ApplicationPubSub{})
-	setApplicationPubSubFlags          = util.FieldFlags(&ttnpb.ApplicationPubSub{})
-	natsProviderApplicationPubSubFlags = util.FieldFlags(&ttnpb.ApplicationPubSub_NATSProvider{}, "nats")
-	mqttProviderApplicationPubSubFlags = util.FieldFlags(&ttnpb.ApplicationPubSub_MQTTProvider{}, "mqtt")
+	selectApplicationPubSubFlags         = util.FieldMaskFlags(&ttnpb.ApplicationPubSub{})
+	setApplicationPubSubFlags            = util.FieldFlags(&ttnpb.ApplicationPubSub{})
+	natsProviderApplicationPubSubFlags   = util.HideFlagSet(util.FieldFlags(&ttnpb.ApplicationPubSub_NATSProvider{}, "nats"))
+	mqttProviderApplicationPubSubFlags   = util.HideFlagSet(util.FieldFlags(&ttnpb.ApplicationPubSub_MQTTProvider{}, "mqtt"))
+	awsiotProviderApplicationPubSubFlags = util.HideFlagSet(util.FieldFlags(&ttnpb.ApplicationPubSub_AWSIoTProvider{}, "aws_iot"))
+	awsiotDefaultIntegrationPubSubFlags  = util.HideFlagSet(util.FieldFlags(&ttnpb.ApplicationPubSub_AWSIoTProvider_DefaultIntegration{}, "aws_iot", "deployment", "default"))
 
 	selectAllApplicationPubSubFlags = util.SelectAllFlagSet("application pub/sub")
 )
@@ -48,12 +50,18 @@ func applicationPubSubIDFlags() *pflag.FlagSet {
 func applicationPubSubProviderFlags() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
 	flagSet.Bool("nats", false, "use the NATS provider")
+	util.HideFlag(flagSet, "nats")
 	flagSet.AddFlagSet(natsProviderApplicationPubSubFlags)
 	flagSet.Bool("mqtt", false, "use the MQTT provider")
+	util.HideFlag(flagSet, "mqtt")
 	flagSet.AddFlagSet(mqttProviderApplicationPubSubFlags)
-	flagSet.AddFlagSet(dataFlags("mqtt.tls-ca", ""))
-	flagSet.AddFlagSet(dataFlags("mqtt.tls-client-cert", ""))
-	flagSet.AddFlagSet(dataFlags("mqtt.tls-client-key", ""))
+	flagSet.AddFlagSet(util.HideFlagSet(dataFlags("mqtt.tls-ca", "")))
+	flagSet.AddFlagSet(util.HideFlagSet(dataFlags("mqtt.tls-client-cert", "")))
+	flagSet.AddFlagSet(util.HideFlagSet(dataFlags("mqtt.tls-client-key", "")))
+	flagSet.Bool("aws-iot", false, "use the AWS IoT provider")
+	util.HideFlag(flagSet, "aws-iot")
+	flagSet.AddFlagSet(awsiotProviderApplicationPubSubFlags)
+	flagSet.AddFlagSet(awsiotDefaultIntegrationPubSubFlags)
 	addDeprecatedProviderFlags(flagSet)
 	return flagSet
 }
@@ -91,8 +99,8 @@ func getApplicationPubSubID(flagSet *pflag.FlagSet, args []string) (*ttnpb.Appli
 		return nil, errNoPubSubID
 	}
 	return &ttnpb.ApplicationPubSubIdentifiers{
-		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: applicationID},
-		PubSubID:               pubsubID,
+		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: applicationID},
+		PubSubId:               pubsubID,
 	}, nil
 }
 
@@ -136,7 +144,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPubSubRegistry/Get"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPubSubRegistry/Get"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -144,7 +152,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPubSubRegistryClient(as).Get(ctx, &ttnpb.GetApplicationPubSubRequest{
 				ApplicationPubSubIdentifiers: *pubsubID,
-				FieldMask:                    types.FieldMask{Paths: paths},
+				FieldMask:                    &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -170,7 +178,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPubSubRegistry/List"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPubSubRegistry/List"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -178,7 +186,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPubSubRegistryClient(as).List(ctx, &ttnpb.ListApplicationPubSubsRequest{
 				ApplicationIdentifiers: *appID,
-				FieldMask:              types.FieldMask{Paths: paths},
+				FieldMask:              &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -205,7 +213,7 @@ var (
 			}
 			pubsub, err := ttnpb.NewApplicationPubSubRegistryClient(as).Get(ctx, &ttnpb.GetApplicationPubSubRequest{
 				ApplicationPubSubIdentifiers: *pubsubID,
-				FieldMask:                    types.FieldMask{Paths: paths},
+				FieldMask:                    &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil && !errors.IsNotFound(err) {
 				return err
@@ -219,26 +227,26 @@ var (
 			}
 
 			if nats, _ := cmd.Flags().GetBool("nats"); nats {
-				if pubsub.GetNATS() == nil {
+				if pubsub.GetNats() == nil {
 					paths = append(paths, "provider")
-					pubsub.Provider = &ttnpb.ApplicationPubSub_NATS{
-						NATS: &ttnpb.ApplicationPubSub_NATSProvider{},
+					pubsub.Provider = &ttnpb.ApplicationPubSub_Nats{
+						Nats: &ttnpb.ApplicationPubSub_NATSProvider{},
 					}
 				} else {
 					providerPaths := util.UpdateFieldMask(cmd.Flags(), natsProviderApplicationPubSubFlags)
 					providerPaths = ttnpb.FieldsWithPrefix("provider", providerPaths...)
 					paths = append(paths, providerPaths...)
 				}
-				if err = util.SetFields(pubsub.GetNATS(), natsProviderApplicationPubSubFlags, "nats"); err != nil {
+				if err = util.SetFields(pubsub.GetNats(), natsProviderApplicationPubSubFlags, "nats"); err != nil {
 					return err
 				}
 			}
 
 			if mqtt, _ := cmd.Flags().GetBool("mqtt"); mqtt {
-				if pubsub.GetMQTT() == nil {
+				if pubsub.GetMqtt() == nil {
 					paths = append(paths, "provider")
-					pubsub.Provider = &ttnpb.ApplicationPubSub_MQTT{
-						MQTT: &ttnpb.ApplicationPubSub_MQTTProvider{},
+					pubsub.Provider = &ttnpb.ApplicationPubSub_Mqtt{
+						Mqtt: &ttnpb.ApplicationPubSub_MQTTProvider{},
 					}
 				} else {
 					providerPaths := util.UpdateFieldMask(cmd.Flags(), mqttProviderApplicationPubSubFlags)
@@ -261,14 +269,42 @@ var (
 						}
 					}
 				}
-				if err = util.SetFields(pubsub.GetMQTT(), mqttProviderApplicationPubSubFlags, "mqtt"); err != nil {
+				if err = util.SetFields(pubsub.GetMqtt(), mqttProviderApplicationPubSubFlags, "mqtt"); err != nil {
 					return err
+				}
+			}
+
+			if awsiot, _ := cmd.Flags().GetBool("aws-iot"); awsiot {
+				if pubsub.GetAwsIot() == nil {
+					paths = append(paths, "provider")
+					pubsub.Provider = &ttnpb.ApplicationPubSub_AwsIot{
+						AwsIot: &ttnpb.ApplicationPubSub_AWSIoTProvider{},
+					}
+				} else {
+					providerPaths := util.UpdateFieldMask(cmd.Flags(), awsiotProviderApplicationPubSubFlags)
+					providerPaths = ttnpb.FieldsWithPrefix("provider", providerPaths...)
+					paths = append(paths, providerPaths...)
+				}
+				if err = util.SetFields(pubsub.GetAwsIot(), awsiotProviderApplicationPubSubFlags, "aws_iot"); err != nil {
+					return err
+				}
+				if defaultStackName, _ := cmd.Flags().GetString("aws-iot.deployment.default.stack-name"); defaultStackName != "" {
+					defaultPaths := util.UpdateFieldMask(cmd.Flags(), awsiotDefaultIntegrationPubSubFlags)
+					defaultPaths = ttnpb.FieldsWithPrefix("provider", defaultPaths...)
+					paths = append(paths, defaultPaths...)
+					defaultIntegration := &ttnpb.ApplicationPubSub_AWSIoTProvider_DefaultIntegration{}
+					if err = util.SetFields(defaultIntegration, awsiotDefaultIntegrationPubSubFlags, "aws_iot", "deployment", "default"); err != nil {
+						return err
+					}
+					pubsub.GetAwsIot().Deployment = &ttnpb.ApplicationPubSub_AWSIoTProvider_Default{
+						Default: defaultIntegration,
+					}
 				}
 			}
 
 			res, err := ttnpb.NewApplicationPubSubRegistryClient(as).Set(ctx, &ttnpb.SetApplicationPubSubRequest{
 				ApplicationPubSub: *pubsub,
-				FieldMask:         types.FieldMask{Paths: paths},
+				FieldMask:         &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err

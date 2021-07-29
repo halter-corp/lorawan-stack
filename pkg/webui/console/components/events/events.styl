@@ -70,6 +70,16 @@ $event-container-height = 40px
 
   .actions
     background-color: white
+    display: flex
+
+.toggle-container
+  display: flex
+  align-items: center
+  color: $tc-subtle-gray
+  margin-right: $cs.s
+
+.toggle-label
+  margin-right: $cs.xs
 
 .widget-container
   border-normal()
@@ -133,6 +143,9 @@ $event-container-height = 40px
     background-color: lighten($tc-warning, 55)
     .cell-time
       color: $tc-warning
+    .cell-type::before
+      content: "Console:"
+      margin-right: $cs.xs
 
   &:not(.widget)
     cursor: pointer
@@ -257,3 +270,6 @@ $event-container-height = 40px
 
   &-title
     font-weight: $fw.bold
+
+.body-link
+  color: inherit

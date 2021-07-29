@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package commands
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -24,23 +25,26 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.thethings.network/lorawan-stack/v3/cmd/internal/commands"
+	cmdio "go.thethings.network/lorawan-stack/v3/cmd/internal/io"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
 	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared/version"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	cmdio "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	conf "go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/io"
+	pkgversion "go.thethings.network/lorawan-stack/v3/pkg/version"
 	"golang.org/x/oauth2"
 )
 
 var (
-	logger       *log.Logger
+	logger       log.Stack
 	name         = "ttn-lw-cli"
 	mgr          = conf.InitializeWithDefaults(name, "ttn_lw", DefaultConfig)
 	config       = &Config{}
@@ -49,6 +53,9 @@ var (
 	cache        util.AuthCache
 
 	inputDecoder io.Decoder
+
+	versionUpdate       chan pkgversion.Update
+	versionCheckTimeout = 500 * time.Millisecond
 
 	// Root command is the entrypoint of the program
 	Root = &cobra.Command{
@@ -60,6 +67,16 @@ var (
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			// clean up the API
 			api.CloseAll()
+
+			select {
+			case <-ctx.Done():
+			case <-time.After(versionCheckTimeout):
+				logger.Warn("Version check timed out")
+			case versionUpdate, ok := <-versionUpdate:
+				if ok {
+					pkgversion.LogUpdate(ctx, &versionUpdate)
+				}
+			}
 
 			err := util.SaveAuthCache(cache)
 			if err != nil {
@@ -100,12 +117,30 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 		cache = cache.ForID(config.CredentialsID)
 
 		// create logger
-		logger = log.NewLogger(
-			log.WithLevel(config.Log.Level),
-			log.WithHandler(log.NewCLI(os.Stderr)),
-		)
+		logger, err = shared.InitializeLogger(&config.Log)
+		if err != nil {
+			return err
+		}
 
 		ctx = log.NewContext(ctx, logger)
+
+		// check version in background
+		versionUpdate = make(chan pkgversion.Update)
+		if config.SkipVersionCheck {
+			close(versionUpdate)
+		} else {
+			go func(ctx context.Context) {
+				defer close(versionUpdate)
+				update, err := pkgversion.CheckUpdate(ctx)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Warn("Failed to check version update")
+				} else if update != nil {
+					versionUpdate <- *update
+				} else {
+					log.FromContext(ctx).Debug("No new version available")
+				}
+			}(ctx)
+		}
 
 		// prepare the API
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{}
@@ -137,6 +172,9 @@ func preRun(tasks ...func() error) func(cmd *cobra.Command, args []string) error
 		// Drop default HTTP port numbers from OAuth server address if present.
 		// Causes issues with `--http.redirect-to-tls` stack option.
 		u, err := url.Parse(config.OAuthServerAddress)
+		if err != nil {
+			return err
+		}
 		if u.Port() == "443" && u.Scheme == "https" || u.Port() == "80" && u.Scheme == "http" {
 			u.Host = u.Hostname()
 			config.OAuthServerAddress = u.String()
@@ -205,6 +243,40 @@ func optionalAuth() error {
 		return err
 	}
 	return nil
+}
+
+func confirmChoice(warnings []string, force bool) bool {
+	if force {
+		return true
+	}
+	if len(warnings) > 0 {
+		for _, warning := range warnings {
+			logger.Warn(warning)
+		}
+	}
+	logger.Warn("Are you sure? Confirm your choice:")
+	for {
+		fmt.Fprint(os.Stderr, "[Y/n]> ")
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return false
+		}
+		input = strings.TrimSpace(input)
+		input = strings.ToLower(input)
+		if len(input) > 1 {
+			fmt.Fprintln(os.Stderr, "Please enter Y or n:")
+			continue
+		}
+		if strings.Compare(input, "n") == 0 {
+			return false
+		} else if strings.Compare(input, "y") == 0 {
+			break
+		} else {
+			continue
+		}
+	}
+	return true
 }
 
 func requireAuth() error {

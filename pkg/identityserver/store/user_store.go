@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"runtime/trace"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -37,19 +37,19 @@ type userStore struct {
 }
 
 // selectUserFields selects relevant fields (based on fieldMask) and preloads details if needed.
-func selectUserFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func selectUserFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	if len(fieldMask.GetPaths()) == 0 {
 		return query.Preload("Attributes").Preload("ProfilePicture").Select([]string{"accounts.uid", "users.*"})
 	}
 	var userColumns []string
 	var notFoundPaths []string
-	userColumns = append(userColumns, "accounts.uid")
+	userColumns = append(userColumns, "users.deleted_at", "accounts.uid")
 	for _, column := range modelColumns {
 		userColumns = append(userColumns, "users."+column)
 	}
-	for _, path := range ttnpb.TopLevelFields(fieldMask.Paths) {
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
 		switch path {
-		case "ids", "created_at", "updated_at":
+		case "ids", "created_at", "updated_at", "deleted_at":
 			// always selected
 		case attributesField:
 			query = query.Preload("Attributes")
@@ -73,9 +73,9 @@ func selectUserFields(ctx context.Context, query *gorm.DB, fieldMask *types.Fiel
 func (s *userStore) CreateUser(ctx context.Context, usr *ttnpb.User) (*ttnpb.User, error) {
 	defer trace.StartRegion(ctx, "create user").End()
 	userModel := User{
-		Account: Account{UID: usr.UserID}, // The ID is not mutated by fromPB.
+		Account: Account{UID: usr.UserId}, // The ID is not mutated by fromPB.
 	}
-	fieldMask := &types.FieldMask{Paths: append(defaultUserFieldMask.Paths, passwordField)}
+	fieldMask := &pbtypes.FieldMask{Paths: append(defaultUserFieldMask.GetPaths(), passwordField)}
 	userModel.fromPB(usr, fieldMask)
 	if err := s.createEntity(ctx, &userModel); err != nil {
 		return nil, err
@@ -85,11 +85,11 @@ func (s *userStore) CreateUser(ctx context.Context, usr *ttnpb.User) (*ttnpb.Use
 	return &userProto, nil
 }
 
-func (s *userStore) FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.User, error) {
+func (s *userStore) FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.User, error) {
 	defer trace.StartRegion(ctx, "find users").End()
 	idStrings := make([]string, len(ids))
 	for i, id := range ids {
-		idStrings[i] = id.GetUserID()
+		idStrings[i] = id.GetUserId()
 	}
 	query := s.query(ctx, User{}, withUserID(idStrings...))
 	query = selectUserFields(ctx, query, fieldMask)
@@ -113,7 +113,7 @@ func (s *userStore) FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers,
 	return userProtos, nil
 }
 
-func (s *userStore) ListAdmins(ctx context.Context, fieldMask *types.FieldMask) ([]*ttnpb.User, error) {
+func (s *userStore) ListAdmins(ctx context.Context, fieldMask *pbtypes.FieldMask) ([]*ttnpb.User, error) {
 	defer trace.StartRegion(ctx, "list admins").End()
 
 	query := s.query(ctx, User{}, withUserID()).Where(&User{Admin: true})
@@ -138,9 +138,9 @@ func (s *userStore) ListAdmins(ctx context.Context, fieldMask *types.FieldMask) 
 	return userProtos, nil
 }
 
-func (s *userStore) GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fieldMask *types.FieldMask) (*ttnpb.User, error) {
+func (s *userStore) GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.User, error) {
 	defer trace.StartRegion(ctx, "get user").End()
-	query := s.query(ctx, User{}, withUserID(id.GetUserID()))
+	query := s.query(ctx, User{}, withUserID(id.GetUserId()))
 	query = selectUserFields(ctx, query, fieldMask)
 	var userModel userWithUID
 	if err := query.First(&userModel).Error; err != nil {
@@ -154,9 +154,9 @@ func (s *userStore) GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fiel
 	return userProto, nil
 }
 
-func (s *userStore) UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *types.FieldMask) (updated *ttnpb.User, err error) {
+func (s *userStore) UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *pbtypes.FieldMask) (updated *ttnpb.User, err error) {
 	defer trace.StartRegion(ctx, "update user").End()
-	query := s.query(ctx, User{}, withUserID(usr.GetUserID()))
+	query := s.query(ctx, User{}, withUserID(usr.GetUserId()))
 	query = selectUserFields(ctx, query, fieldMask)
 	var userModel userWithUID
 	if err = query.First(&userModel).Error; err != nil {
@@ -202,4 +202,45 @@ func (s *userStore) UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *
 func (s *userStore) DeleteUser(ctx context.Context, id *ttnpb.UserIdentifiers) (err error) {
 	defer trace.StartRegion(ctx, "delete user").End()
 	return s.deleteEntity(ctx, id)
+}
+
+func (s *userStore) RestoreUser(ctx context.Context, id *ttnpb.UserIdentifiers) (err error) {
+	defer trace.StartRegion(ctx, "restore user").End()
+	return s.restoreEntity(ctx, id)
+}
+
+func (s *userStore) PurgeUser(ctx context.Context, id *ttnpb.UserIdentifiers) (err error) {
+	defer trace.StartRegion(ctx, "purge user").End()
+	query := s.query(ctx, User{}, withSoftDeleted(), withUserID(id.GetUserId()))
+	query = selectUserFields(ctx, query, nil)
+	var userModel userWithUID
+	if err = query.First(&userModel).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errNotFoundForID(id)
+		}
+		return err
+	}
+	if err := ctx.Err(); err != nil { // Early exit if context canceled
+		return err
+	}
+	if len(userModel.Attributes) > 0 {
+		if err := s.replaceAttributes(ctx, "user", userModel.ID, userModel.Attributes, nil); err != nil {
+			return err
+		}
+	}
+	if userModel.ProfilePicture != nil {
+		if err = s.query(ctx, Picture{}).Delete(userModel.ProfilePicture).Error; err != nil {
+			return err
+		}
+	}
+
+	err = s.purgeEntity(ctx, id)
+	if err != nil {
+		return err
+	}
+	// Purge account after purging user because it is necessary for user query
+	return s.query(ctx, Account{}, withSoftDeleted()).Where(Account{
+		UID:         id.IDString(),
+		AccountType: id.EntityType(),
+	}).Delete(Account{}).Error
 }

@@ -64,14 +64,14 @@ func (m *ApplicationWebhookIdentifiers) ValidateFields(paths ...string) error {
 
 		case "webhook_id":
 
-			if utf8.RuneCountInString(m.GetWebhookID()) > 36 {
+			if utf8.RuneCountInString(m.GetWebhookId()) > 36 {
 				return ApplicationWebhookIdentifiersValidationError{
 					field:  "webhook_id",
 					reason: "value length must be at most 36 runes",
 				}
 			}
 
-			if !_ApplicationWebhookIdentifiers_WebhookID_Pattern.MatchString(m.GetWebhookID()) {
+			if !_ApplicationWebhookIdentifiers_WebhookId_Pattern.MatchString(m.GetWebhookId()) {
 				return ApplicationWebhookIdentifiersValidationError{
 					field:  "webhook_id",
 					reason: "value does not match regex pattern \"^[a-z0-9](?:[-]?[a-z0-9]){2,}$\"",
@@ -145,7 +145,7 @@ var _ interface {
 	ErrorName() string
 } = ApplicationWebhookIdentifiersValidationError{}
 
-var _ApplicationWebhookIdentifiers_WebhookID_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
+var _ApplicationWebhookIdentifiers_WebhookId_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
 
 // ValidateFields checks the field values on
 // ApplicationWebhookTemplateIdentifiers with the rules defined in the proto
@@ -164,14 +164,14 @@ func (m *ApplicationWebhookTemplateIdentifiers) ValidateFields(paths ...string) 
 		switch name {
 		case "template_id":
 
-			if utf8.RuneCountInString(m.GetTemplateID()) > 36 {
+			if utf8.RuneCountInString(m.GetTemplateId()) > 36 {
 				return ApplicationWebhookTemplateIdentifiersValidationError{
 					field:  "template_id",
 					reason: "value length must be at most 36 runes",
 				}
 			}
 
-			if !_ApplicationWebhookTemplateIdentifiers_TemplateID_Pattern.MatchString(m.GetTemplateID()) {
+			if !_ApplicationWebhookTemplateIdentifiers_TemplateId_Pattern.MatchString(m.GetTemplateId()) {
 				return ApplicationWebhookTemplateIdentifiersValidationError{
 					field:  "template_id",
 					reason: "value does not match regex pattern \"^[a-z0-9](?:[-]?[a-z0-9]){2,}$\"",
@@ -245,7 +245,7 @@ var _ interface {
 	ErrorName() string
 } = ApplicationWebhookTemplateIdentifiersValidationError{}
 
-var _ApplicationWebhookTemplateIdentifiers_TemplateID_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
+var _ApplicationWebhookTemplateIdentifiers_TemplateId_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
 
 // ValidateFields checks the field values on ApplicationWebhookTemplateField
 // with the rules defined in the proto definition for this message. If any
@@ -264,14 +264,14 @@ func (m *ApplicationWebhookTemplateField) ValidateFields(paths ...string) error 
 		switch name {
 		case "id":
 
-			if utf8.RuneCountInString(m.GetID()) > 36 {
+			if utf8.RuneCountInString(m.GetId()) > 36 {
 				return ApplicationWebhookTemplateFieldValidationError{
 					field:  "id",
 					reason: "value length must be at most 36 runes",
 				}
 			}
 
-			if !_ApplicationWebhookTemplateField_ID_Pattern.MatchString(m.GetID()) {
+			if !_ApplicationWebhookTemplateField_Id_Pattern.MatchString(m.GetId()) {
 				return ApplicationWebhookTemplateFieldValidationError{
 					field:  "id",
 					reason: "value does not match regex pattern \"^[a-z0-9](?:[-]?[a-z0-9]){2,}$\"",
@@ -307,6 +307,8 @@ func (m *ApplicationWebhookTemplateField) ValidateFields(paths ...string) error 
 				}
 			}
 
+		case "optional":
+			// no validation rules for Optional
 		default:
 			return ApplicationWebhookTemplateFieldValidationError{
 				field:  name,
@@ -374,7 +376,7 @@ var _ interface {
 	ErrorName() string
 } = ApplicationWebhookTemplateFieldValidationError{}
 
-var _ApplicationWebhookTemplateField_ID_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
+var _ApplicationWebhookTemplateField_Id_Pattern = regexp.MustCompile("^[a-z0-9](?:[-]?[a-z0-9]){2,}$")
 
 // ValidateFields checks the field values on ApplicationWebhookTemplate with
 // the rules defined in the proto definition for this message. If any rules
@@ -423,7 +425,7 @@ func (m *ApplicationWebhookTemplate) ValidateFields(paths ...string) error {
 
 		case "logo_url":
 
-			if uri, err := url.Parse(m.GetLogoURL()); err != nil {
+			if uri, err := url.Parse(m.GetLogoUrl()); err != nil {
 				return ApplicationWebhookTemplateValidationError{
 					field:  "logo_url",
 					reason: "value must be a valid URI",
@@ -438,7 +440,7 @@ func (m *ApplicationWebhookTemplate) ValidateFields(paths ...string) error {
 
 		case "info_url":
 
-			if uri, err := url.Parse(m.GetInfoURL()); err != nil {
+			if uri, err := url.Parse(m.GetInfoUrl()); err != nil {
 				return ApplicationWebhookTemplateValidationError{
 					field:  "info_url",
 					reason: "value must be a valid URI",
@@ -453,7 +455,7 @@ func (m *ApplicationWebhookTemplate) ValidateFields(paths ...string) error {
 
 		case "documentation_url":
 
-			if uri, err := url.Parse(m.GetDocumentationURL()); err != nil {
+			if uri, err := url.Parse(m.GetDocumentationUrl()); err != nil {
 				return ApplicationWebhookTemplateValidationError{
 					field:  "documentation_url",
 					reason: "value must be a valid URI",
@@ -468,7 +470,7 @@ func (m *ApplicationWebhookTemplate) ValidateFields(paths ...string) error {
 
 		case "base_url":
 
-			if uri, err := url.Parse(m.GetBaseURL()); err != nil {
+			if uri, err := url.Parse(m.GetBaseUrl()); err != nil {
 				return ApplicationWebhookTemplateValidationError{
 					field:  "base_url",
 					reason: "value must be a valid URI",
@@ -517,7 +519,7 @@ func (m *ApplicationWebhookTemplate) ValidateFields(paths ...string) error {
 			}
 
 		case "create_downlink_api_key":
-			// no validation rules for CreateDownlinkAPIKey
+			// no validation rules for CreateDownlinkApiKey
 		case "uplink_message":
 
 			if v, ok := interface{}(m.GetUplinkMessage()).(interface{ ValidateFields(...string) error }); ok {
@@ -859,7 +861,7 @@ func (m *ApplicationWebhook) ValidateFields(paths ...string) error {
 
 		case "base_url":
 
-			if uri, err := url.Parse(m.GetBaseURL()); err != nil {
+			if uri, err := url.Parse(m.GetBaseUrl()); err != nil {
 				return ApplicationWebhookValidationError{
 					field:  "base_url",
 					reason: "value must be a valid URI",
@@ -905,7 +907,14 @@ func (m *ApplicationWebhook) ValidateFields(paths ...string) error {
 		case "template_fields":
 			// no validation rules for TemplateFields
 		case "downlink_api_key":
-			// no validation rules for DownlinkAPIKey
+
+			if utf8.RuneCountInString(m.GetDownlinkApiKey()) > 128 {
+				return ApplicationWebhookValidationError{
+					field:  "downlink_api_key",
+					reason: "value length must be at most 128 runes",
+				}
+			}
+
 		case "uplink_message":
 
 			if v, ok := interface{}(m.GetUplinkMessage()).(interface{ ValidateFields(...string) error }); ok {
@@ -1305,7 +1314,7 @@ func (m *GetApplicationWebhookRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetApplicationWebhookRequestValidationError{
 						field:  "field_mask",
@@ -1411,7 +1420,7 @@ func (m *ListApplicationWebhooksRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListApplicationWebhooksRequestValidationError{
 						field:  "field_mask",
@@ -1517,7 +1526,7 @@ func (m *SetApplicationWebhookRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return SetApplicationWebhookRequestValidationError{
 						field:  "field_mask",
@@ -1623,7 +1632,7 @@ func (m *GetApplicationWebhookTemplateRequest) ValidateFields(paths ...string) e
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetApplicationWebhookTemplateRequestValidationError{
 						field:  "field_mask",
@@ -1717,7 +1726,7 @@ func (m *ListApplicationWebhookTemplatesRequest) ValidateFields(paths ...string)
 		switch name {
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListApplicationWebhookTemplatesRequestValidationError{
 						field:  "field_mask",
@@ -1810,7 +1819,14 @@ func (m *ApplicationWebhookTemplate_Message) ValidateFields(paths ...string) err
 		_ = subs
 		switch name {
 		case "path":
-			// no validation rules for Path
+
+			if utf8.RuneCountInString(m.GetPath()) > 64 {
+				return ApplicationWebhookTemplate_MessageValidationError{
+					field:  "path",
+					reason: "value length must be at most 64 runes",
+				}
+			}
+
 		default:
 			return ApplicationWebhookTemplate_MessageValidationError{
 				field:  name,
@@ -1894,7 +1910,14 @@ func (m *ApplicationWebhook_Message) ValidateFields(paths ...string) error {
 		_ = subs
 		switch name {
 		case "path":
-			// no validation rules for Path
+
+			if utf8.RuneCountInString(m.GetPath()) > 64 {
+				return ApplicationWebhook_MessageValidationError{
+					field:  "path",
+					reason: "value length must be at most 64 runes",
+				}
+			}
+
 		default:
 			return ApplicationWebhook_MessageValidationError{
 				field:  name,

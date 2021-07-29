@@ -14,16 +14,21 @@
 
 import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
+import CancelablePromise from 'cancelable-promise'
 
-import { attachPromise } from '@console/store/actions/lib'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
 const useRequest = requestAction => {
   const dispatch = useDispatch()
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
   const [result, setResult] = useState()
+
   useEffect(() => {
-    const promise = dispatch(attachPromise(requestAction))
+    const promise = (requestAction instanceof Array
+      ? CancelablePromise.all(requestAction.map(req => dispatch(attachPromise(req))))
+      : dispatch(attachPromise(requestAction))
+    )
       .then(() => {
         setResult(result)
         setFetching(false)
@@ -38,9 +43,6 @@ const useRequest = requestAction => {
       promise.cancel()
     }
 
-    // Disabling deps check because in this case we want the effect hook to
-    // run only once on component mount. See also:
-    // https://github.com/facebook/create-react-app/issues/6880
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

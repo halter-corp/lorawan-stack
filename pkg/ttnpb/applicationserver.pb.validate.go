@@ -50,24 +50,6 @@ func (m *ApplicationLink) ValidateFields(paths ...string) error {
 	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
 		_ = subs
 		switch name {
-		case "network_server_address":
-
-			if !_ApplicationLink_NetworkServerAddress_Pattern.MatchString(m.GetNetworkServerAddress()) {
-				return ApplicationLinkValidationError{
-					field:  "network_server_address",
-					reason: "value does not match regex pattern \"^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\\\-]*[a-zA-Z0-9])\\\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$\"",
-				}
-			}
-
-		case "api_key":
-
-			if utf8.RuneCountInString(m.GetAPIKey()) < 1 {
-				return ApplicationLinkValidationError{
-					field:  "api_key",
-					reason: "value length must be at least 1 runes",
-				}
-			}
-
 		case "default_formatters":
 
 			if v, ok := interface{}(m.GetDefaultFormatters()).(interface{ ValidateFields(...string) error }); ok {
@@ -81,7 +63,7 @@ func (m *ApplicationLink) ValidateFields(paths ...string) error {
 			}
 
 		case "tls":
-			// no validation rules for TLS
+			// no validation rules for Tls
 		case "skip_payload_crypto":
 
 			if v, ok := interface{}(m.GetSkipPayloadCrypto()).(interface{ ValidateFields(...string) error }); ok {
@@ -158,8 +140,6 @@ var _ interface {
 	ErrorName() string
 } = ApplicationLinkValidationError{}
 
-var _ApplicationLink_NetworkServerAddress_Pattern = regexp.MustCompile("^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$")
-
 // ValidateFields checks the field values on GetApplicationLinkRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -189,7 +169,7 @@ func (m *GetApplicationLinkRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetApplicationLinkRequestValidationError{
 						field:  "field_mask",
@@ -307,7 +287,7 @@ func (m *SetApplicationLinkRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return SetApplicationLinkRequestValidationError{
 						field:  "field_mask",
@@ -515,3 +495,1244 @@ var _ interface {
 } = ApplicationLinkStatsValidationError{}
 
 var _ApplicationLinkStats_NetworkServerAddress_Pattern = regexp.MustCompile("^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$")
+
+// ValidateFields checks the field values on AsConfiguration with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *AsConfiguration) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = AsConfigurationFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "pubsub":
+
+			if v, ok := interface{}(m.GetPubsub()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return AsConfigurationValidationError{
+						field:  "pubsub",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return AsConfigurationValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// AsConfigurationValidationError is the validation error returned by
+// AsConfiguration.ValidateFields if the designated constraints aren't met.
+type AsConfigurationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AsConfigurationValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AsConfigurationValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AsConfigurationValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AsConfigurationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AsConfigurationValidationError) ErrorName() string { return "AsConfigurationValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AsConfigurationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAsConfiguration.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AsConfigurationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AsConfigurationValidationError{}
+
+// ValidateFields checks the field values on GetAsConfigurationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetAsConfigurationRequest) ValidateFields(paths ...string) error {
+	if len(paths) > 0 {
+		return fmt.Errorf("message GetAsConfigurationRequest has no fields, but paths %s were specified", paths)
+	}
+	return nil
+}
+
+// GetAsConfigurationRequestValidationError is the validation error returned by
+// GetAsConfigurationRequest.ValidateFields if the designated constraints
+// aren't met.
+type GetAsConfigurationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAsConfigurationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAsConfigurationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAsConfigurationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAsConfigurationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAsConfigurationRequestValidationError) ErrorName() string {
+	return "GetAsConfigurationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAsConfigurationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAsConfigurationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAsConfigurationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAsConfigurationRequestValidationError{}
+
+// ValidateFields checks the field values on GetAsConfigurationResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, an error is returned.
+func (m *GetAsConfigurationResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = GetAsConfigurationResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "configuration":
+
+			if v, ok := interface{}(m.GetConfiguration()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GetAsConfigurationResponseValidationError{
+						field:  "configuration",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return GetAsConfigurationResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// GetAsConfigurationResponseValidationError is the validation error returned
+// by GetAsConfigurationResponse.ValidateFields if the designated constraints
+// aren't met.
+type GetAsConfigurationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAsConfigurationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAsConfigurationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAsConfigurationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAsConfigurationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAsConfigurationResponseValidationError) ErrorName() string {
+	return "GetAsConfigurationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAsConfigurationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAsConfigurationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAsConfigurationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAsConfigurationResponseValidationError{}
+
+// ValidateFields checks the field values on NsAsHandleUplinkRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *NsAsHandleUplinkRequest) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = NsAsHandleUplinkRequestFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "application_ups":
+
+			if len(m.GetApplicationUps()) < 1 {
+				return NsAsHandleUplinkRequestValidationError{
+					field:  "application_ups",
+					reason: "value must contain at least 1 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetApplicationUps() {
+				_, _ = idx, item
+
+				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return NsAsHandleUplinkRequestValidationError{
+							field:  fmt.Sprintf("application_ups[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
+			}
+
+		default:
+			return NsAsHandleUplinkRequestValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// NsAsHandleUplinkRequestValidationError is the validation error returned by
+// NsAsHandleUplinkRequest.ValidateFields if the designated constraints aren't met.
+type NsAsHandleUplinkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NsAsHandleUplinkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NsAsHandleUplinkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NsAsHandleUplinkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NsAsHandleUplinkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NsAsHandleUplinkRequestValidationError) ErrorName() string {
+	return "NsAsHandleUplinkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e NsAsHandleUplinkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNsAsHandleUplinkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NsAsHandleUplinkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NsAsHandleUplinkRequestValidationError{}
+
+// ValidateFields checks the field values on EncodeDownlinkRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *EncodeDownlinkRequest) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = EncodeDownlinkRequestFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "end_device_ids":
+
+			if m.GetEndDeviceIds() == nil {
+				return EncodeDownlinkRequestValidationError{
+					field:  "end_device_ids",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetEndDeviceIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EncodeDownlinkRequestValidationError{
+						field:  "end_device_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "version_ids":
+
+			if v, ok := interface{}(m.GetVersionIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EncodeDownlinkRequestValidationError{
+						field:  "version_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "downlink":
+
+			if m.GetDownlink() == nil {
+				return EncodeDownlinkRequestValidationError{
+					field:  "downlink",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetDownlink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EncodeDownlinkRequestValidationError{
+						field:  "downlink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "formatter":
+
+			if _, ok := PayloadFormatter_name[int32(m.GetFormatter())]; !ok {
+				return EncodeDownlinkRequestValidationError{
+					field:  "formatter",
+					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "parameter":
+			// no validation rules for Parameter
+		default:
+			return EncodeDownlinkRequestValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// EncodeDownlinkRequestValidationError is the validation error returned by
+// EncodeDownlinkRequest.ValidateFields if the designated constraints aren't met.
+type EncodeDownlinkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EncodeDownlinkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EncodeDownlinkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EncodeDownlinkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EncodeDownlinkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EncodeDownlinkRequestValidationError) ErrorName() string {
+	return "EncodeDownlinkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EncodeDownlinkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEncodeDownlinkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EncodeDownlinkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EncodeDownlinkRequestValidationError{}
+
+// ValidateFields checks the field values on EncodeDownlinkResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *EncodeDownlinkResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = EncodeDownlinkResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "downlink":
+
+			if v, ok := interface{}(m.GetDownlink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EncodeDownlinkResponseValidationError{
+						field:  "downlink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return EncodeDownlinkResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// EncodeDownlinkResponseValidationError is the validation error returned by
+// EncodeDownlinkResponse.ValidateFields if the designated constraints aren't met.
+type EncodeDownlinkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EncodeDownlinkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EncodeDownlinkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EncodeDownlinkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EncodeDownlinkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EncodeDownlinkResponseValidationError) ErrorName() string {
+	return "EncodeDownlinkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EncodeDownlinkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEncodeDownlinkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EncodeDownlinkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EncodeDownlinkResponseValidationError{}
+
+// ValidateFields checks the field values on DecodeUplinkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *DecodeUplinkRequest) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = DecodeUplinkRequestFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "end_device_ids":
+
+			if m.GetEndDeviceIds() == nil {
+				return DecodeUplinkRequestValidationError{
+					field:  "end_device_ids",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetEndDeviceIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeUplinkRequestValidationError{
+						field:  "end_device_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "version_ids":
+
+			if v, ok := interface{}(m.GetVersionIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeUplinkRequestValidationError{
+						field:  "version_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "uplink":
+
+			if m.GetUplink() == nil {
+				return DecodeUplinkRequestValidationError{
+					field:  "uplink",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetUplink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeUplinkRequestValidationError{
+						field:  "uplink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "formatter":
+
+			if _, ok := PayloadFormatter_name[int32(m.GetFormatter())]; !ok {
+				return DecodeUplinkRequestValidationError{
+					field:  "formatter",
+					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "parameter":
+			// no validation rules for Parameter
+		default:
+			return DecodeUplinkRequestValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// DecodeUplinkRequestValidationError is the validation error returned by
+// DecodeUplinkRequest.ValidateFields if the designated constraints aren't met.
+type DecodeUplinkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DecodeUplinkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DecodeUplinkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DecodeUplinkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DecodeUplinkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DecodeUplinkRequestValidationError) ErrorName() string {
+	return "DecodeUplinkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DecodeUplinkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDecodeUplinkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DecodeUplinkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DecodeUplinkRequestValidationError{}
+
+// ValidateFields checks the field values on DecodeUplinkResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *DecodeUplinkResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = DecodeUplinkResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "uplink":
+
+			if v, ok := interface{}(m.GetUplink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeUplinkResponseValidationError{
+						field:  "uplink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return DecodeUplinkResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// DecodeUplinkResponseValidationError is the validation error returned by
+// DecodeUplinkResponse.ValidateFields if the designated constraints aren't met.
+type DecodeUplinkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DecodeUplinkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DecodeUplinkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DecodeUplinkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DecodeUplinkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DecodeUplinkResponseValidationError) ErrorName() string {
+	return "DecodeUplinkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DecodeUplinkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDecodeUplinkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DecodeUplinkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DecodeUplinkResponseValidationError{}
+
+// ValidateFields checks the field values on DecodeDownlinkRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *DecodeDownlinkRequest) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = DecodeDownlinkRequestFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "end_device_ids":
+
+			if m.GetEndDeviceIds() == nil {
+				return DecodeDownlinkRequestValidationError{
+					field:  "end_device_ids",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetEndDeviceIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeDownlinkRequestValidationError{
+						field:  "end_device_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "version_ids":
+
+			if v, ok := interface{}(m.GetVersionIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeDownlinkRequestValidationError{
+						field:  "version_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "downlink":
+
+			if m.GetDownlink() == nil {
+				return DecodeDownlinkRequestValidationError{
+					field:  "downlink",
+					reason: "value is required",
+				}
+			}
+
+			if v, ok := interface{}(m.GetDownlink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeDownlinkRequestValidationError{
+						field:  "downlink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "formatter":
+
+			if _, ok := PayloadFormatter_name[int32(m.GetFormatter())]; !ok {
+				return DecodeDownlinkRequestValidationError{
+					field:  "formatter",
+					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "parameter":
+			// no validation rules for Parameter
+		default:
+			return DecodeDownlinkRequestValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// DecodeDownlinkRequestValidationError is the validation error returned by
+// DecodeDownlinkRequest.ValidateFields if the designated constraints aren't met.
+type DecodeDownlinkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DecodeDownlinkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DecodeDownlinkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DecodeDownlinkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DecodeDownlinkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DecodeDownlinkRequestValidationError) ErrorName() string {
+	return "DecodeDownlinkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DecodeDownlinkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDecodeDownlinkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DecodeDownlinkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DecodeDownlinkRequestValidationError{}
+
+// ValidateFields checks the field values on DecodeDownlinkResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *DecodeDownlinkResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = DecodeDownlinkResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "downlink":
+
+			if v, ok := interface{}(m.GetDownlink()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return DecodeDownlinkResponseValidationError{
+						field:  "downlink",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return DecodeDownlinkResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// DecodeDownlinkResponseValidationError is the validation error returned by
+// DecodeDownlinkResponse.ValidateFields if the designated constraints aren't met.
+type DecodeDownlinkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DecodeDownlinkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DecodeDownlinkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DecodeDownlinkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DecodeDownlinkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DecodeDownlinkResponseValidationError) ErrorName() string {
+	return "DecodeDownlinkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DecodeDownlinkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDecodeDownlinkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DecodeDownlinkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DecodeDownlinkResponseValidationError{}
+
+// ValidateFields checks the field values on AsConfiguration_PubSub with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *AsConfiguration_PubSub) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = AsConfiguration_PubSubFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "providers":
+
+			if v, ok := interface{}(m.GetProviders()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return AsConfiguration_PubSubValidationError{
+						field:  "providers",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return AsConfiguration_PubSubValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// AsConfiguration_PubSubValidationError is the validation error returned by
+// AsConfiguration_PubSub.ValidateFields if the designated constraints aren't met.
+type AsConfiguration_PubSubValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AsConfiguration_PubSubValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AsConfiguration_PubSubValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AsConfiguration_PubSubValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AsConfiguration_PubSubValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AsConfiguration_PubSubValidationError) ErrorName() string {
+	return "AsConfiguration_PubSubValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AsConfiguration_PubSubValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAsConfiguration_PubSub.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AsConfiguration_PubSubValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AsConfiguration_PubSubValidationError{}
+
+// ValidateFields checks the field values on AsConfiguration_PubSub_Providers
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, an error is returned.
+func (m *AsConfiguration_PubSub_Providers) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = AsConfiguration_PubSub_ProvidersFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "mqtt":
+			// no validation rules for Mqtt
+		case "nats":
+			// no validation rules for Nats
+		default:
+			return AsConfiguration_PubSub_ProvidersValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// AsConfiguration_PubSub_ProvidersValidationError is the validation error
+// returned by AsConfiguration_PubSub_Providers.ValidateFields if the
+// designated constraints aren't met.
+type AsConfiguration_PubSub_ProvidersValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AsConfiguration_PubSub_ProvidersValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AsConfiguration_PubSub_ProvidersValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AsConfiguration_PubSub_ProvidersValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AsConfiguration_PubSub_ProvidersValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AsConfiguration_PubSub_ProvidersValidationError) ErrorName() string {
+	return "AsConfiguration_PubSub_ProvidersValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AsConfiguration_PubSub_ProvidersValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAsConfiguration_PubSub_Providers.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AsConfiguration_PubSub_ProvidersValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AsConfiguration_PubSub_ProvidersValidationError{}

@@ -29,6 +29,17 @@ package ttn.lorawan.v3;
 
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
+// TODO: Migrate away from GoGo Protobuf (https://github.com/TheThingsNetwork/lorawan-stack/issues/2798).
+option (gogoproto.enum_stringer_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.goproto_enum_stringer_all) = false;
+option (gogoproto.goproto_registration) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.protosizer_all) = false;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.stringer_all) = true;
+
 message AuthInfoResponse {
   message APIKeyAccess {
     APIKey api_key = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (validate.rules).message.required = true];
@@ -86,6 +97,8 @@ message IsConfiguration {
       google.protobuf.UInt32Value min_special = 5;
     }
     PasswordRequirements password_requirements = 4;
+
+    bool enabled = 5;
   }
   UserRegistration user_registration = 3;
 
@@ -114,6 +127,8 @@ message GetIsConfigurationResponse {
 }
 
 service Is {
+  // Get the configuration of the Identity Server. The response is typically used
+  // to enable or disable features in a user interface.
   rpc GetConfiguration(GetIsConfigurationRequest) returns (GetIsConfigurationResponse) {
     option (google.api.http) = {
       get: "/is/configuration"

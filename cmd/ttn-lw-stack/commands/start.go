@@ -25,12 +25,14 @@ import (
 	"github.com/spf13/cobra"
 	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver"
+	asdistribredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/distribution/redis"
 	asioapredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages/redis"
 	asiopsredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/redis"
 	asiowebredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web/redis"
 	asredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/console"
+	"go.thethings.network/lorawan-stack/v3/pkg/devicerepository"
 	"go.thethings.network/lorawan-stack/v3/pkg/devicetemplateconverter"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
@@ -83,6 +85,7 @@ var startCommand = &cobra.Command{
 			DeviceTemplateConverter    bool
 			QRCodeGenerator            bool
 			PacketBrokerAgent          bool
+			DeviceRepository           bool
 		}
 		startDefault := len(args) == 0
 		for _, arg := range args {
@@ -115,6 +118,8 @@ var startCommand = &cobra.Command{
 				start.QRCodeGenerator = true
 			case "pba":
 				start.PacketBrokerAgent = true
+			case "dr":
+				start.DeviceRepository = true
 			case "all":
 				start.IdentityServer = true
 				start.GatewayServer = true
@@ -126,9 +131,24 @@ var startCommand = &cobra.Command{
 				start.DeviceTemplateConverter = true
 				start.QRCodeGenerator = true
 				start.PacketBrokerAgent = true
+				start.DeviceRepository = true
 			default:
 				return errUnknownComponent.WithAttributes("component", arg)
 			}
+		}
+
+		if startDefault {
+			start.IdentityServer = true
+			start.GatewayServer = true
+			start.NetworkServer = true
+			start.ApplicationServer = true
+			start.JoinServer = true
+			start.Console = true
+			start.GatewayConfigurationServer = true
+			start.DeviceTemplateConverter = true
+			start.QRCodeGenerator = true
+			start.PacketBrokerAgent = true
+			start.DeviceRepository = true
 		}
 
 		logger.Info("Setting up core component")
@@ -170,7 +190,25 @@ var startCommand = &cobra.Command{
 
 		redisConsumerID := redis.Key(host, strconv.Itoa(os.Getpid()))
 
-		if start.IdentityServer || startDefault {
+		for _, httpClient := range []**http.Client{
+			&config.ServiceBase.FrequencyPlans.HTTPClient,
+			&config.ServiceBase.Interop.SenderClientCA.HTTPClient,
+			&config.ServiceBase.KeyVault.HTTPClient,
+			&config.ServiceBase.RateLimiting.HTTPClient,
+			&config.ServiceBase.Blob.HTTPClient,
+			&config.AS.Interop.InteropClient.BlobConfig.HTTPClient,
+			&config.NS.Interop.BlobConfig.HTTPClient,
+		} {
+			if *httpClient != nil {
+				continue
+			}
+			*httpClient, err = c.HTTPClient(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		if start.IdentityServer {
 			logger.Info("Setting up Identity Server")
 			if config.IS.OAuth.UI.TemplateData.SentryDSN == "" {
 				config.IS.OAuth.UI.TemplateData.SentryDSN = config.Sentry.DSN
@@ -182,15 +220,15 @@ var startCommand = &cobra.Command{
 			if config.Cache.Service == "redis" {
 				is.SetRedisCache(redis.New(config.Cache.Redis.WithNamespace("is", "cache")))
 			}
-			if oauthMount := config.IS.OAuth.UI.MountPath(); oauthMount != "/" {
-				if !strings.HasSuffix(oauthMount, "/") {
-					oauthMount += "/"
+			if accountAppMount := config.IS.OAuth.UI.MountPath(); accountAppMount != "/" {
+				if !strings.HasSuffix(accountAppMount, "/") {
+					accountAppMount += "/"
 				}
-				rootRedirect = web.Redirect("/", http.StatusFound, oauthMount)
+				rootRedirect = web.Redirect("/", http.StatusFound, accountAppMount)
 			}
 		}
 
-		if start.GatewayServer || startDefault {
+		if start.GatewayServer {
 			logger.Info("Setting up Gateway Server")
 			switch config.Cache.Service {
 			case "redis":
@@ -205,52 +243,55 @@ var startCommand = &cobra.Command{
 			_ = gs
 		}
 
-		if start.NetworkServer || startDefault {
+		if start.NetworkServer {
 			redisConsumerGroup := "ns"
 
 			logger.Info("Setting up Network Server")
 
-			uplinkQueueSize := config.NS.ApplicationUplinkQueue.BufferSize
+			applicationUplinkQueueSize := config.NS.ApplicationUplinkQueue.BufferSize
 			if config.NS.ApplicationUplinkQueue.BufferSize > math.MaxInt64 {
-				uplinkQueueSize = math.MaxInt64
+				applicationUplinkQueueSize = math.MaxInt64
 			}
-			config.NS.ApplicationUplinkQueue.Queue = nsredis.NewApplicationUplinkQueue(
+			applicationUplinkQueue := nsredis.NewApplicationUplinkQueue(
 				NewNetworkServerApplicationUplinkQueueRedis(*config),
-				int64(uplinkQueueSize), redisConsumerGroup, redisConsumerID,
+				int64(applicationUplinkQueueSize), redisConsumerGroup, redisConsumerID, time.Minute,
 			)
+			if err := applicationUplinkQueue.Init(ctx); err != nil {
+				return shared.ErrInitializeNetworkServer.WithCause(err)
+			}
+			defer applicationUplinkQueue.Close(ctx)
+			config.NS.ApplicationUplinkQueue.Queue = applicationUplinkQueue
 			devices := &nsredis.DeviceRegistry{
 				Redis:   NewNetworkServerDeviceRegistryRedis(*config),
 				LockTTL: time.Second,
 			}
-			if err := devices.Init(); err != nil {
+			if err := devices.Init(ctx); err != nil {
 				return shared.ErrInitializeNetworkServer.WithCause(err)
 			}
 			config.NS.Devices = devices
 			config.NS.UplinkDeduplicator = &nsredis.UplinkDeduplicator{
 				Redis: redis.New(config.Cache.Redis.WithNamespace("ns", "uplink-deduplication")),
 			}
-			nsDownlinkTasks := nsredis.NewDownlinkTaskQueue(
+			downlinkTasks := nsredis.NewDownlinkTaskQueue(
 				NewNetworkServerDownlinkTaskRedis(*config),
 				100000, redisConsumerGroup, redisConsumerID,
 			)
-			if err := nsDownlinkTasks.Init(); err != nil {
+			if err := downlinkTasks.Init(ctx); err != nil {
 				return shared.ErrInitializeNetworkServer.WithCause(err)
 			}
-			config.NS.DownlinkTasks = nsDownlinkTasks
+			defer downlinkTasks.Close(ctx)
+			config.NS.DownlinkTasks = downlinkTasks
+			config.NS.ScheduledDownlinkMatcher = &nsredis.ScheduledDownlinkMatcher{
+				Redis: redis.New(config.Redis.WithNamespace("ns", "scheduled-downlinks")),
+			}
 			ns, err := networkserver.New(c, &config.NS)
 			if err != nil {
 				return shared.ErrInitializeNetworkServer.WithCause(err)
 			}
-			ns.Component.RegisterTask(&component.TaskConfig{
-				Context: ns.Context(),
-				ID:      "queue_downlink",
-				Func:    nsDownlinkTasks.Run,
-				Restart: component.TaskRestartOnFailure,
-				Backoff: component.DefaultTaskBackoffConfig,
-			})
+			_ = ns
 		}
 
-		if start.ApplicationServer || startDefault {
+		if start.ApplicationServer {
 			logger.Info("Setting up Application Server")
 			config.AS.Links = &asredis.LinkRegistry{
 				Redis: redis.New(config.Redis.WithNamespace("as", "links")),
@@ -258,12 +299,24 @@ var startCommand = &cobra.Command{
 			config.AS.Devices = &asredis.DeviceRegistry{
 				Redis: NewComponentDeviceRegistryRedis(*config, "as"),
 			}
+			config.AS.UplinkStorage.Registry = &asredis.ApplicationUplinkRegistry{
+				Redis: redis.New(config.Redis.WithNamespace("as", "applicationups")),
+				Limit: config.AS.UplinkStorage.Limit,
+			}
+			config.AS.Distribution.PubSub = &asdistribredis.PubSub{
+				Redis: redis.New(config.Cache.Redis.WithNamespace("as", "traffic")),
+			}
 			config.AS.PubSub.Registry = &asiopsredis.PubSubRegistry{
 				Redis: redis.New(config.Redis.WithNamespace("as", "io", "pubsub")),
 			}
-			config.AS.Packages.Registry = &asioapredis.ApplicationPackagesRegistry{
-				Redis: redis.New(config.Redis.WithNamespace("as", "io", "applicationpackages")),
+			applicationPackagesRegistry := &asioapredis.ApplicationPackagesRegistry{
+				Redis:   redis.New(config.Redis.WithNamespace("as", "io", "applicationpackages")),
+				LockTTL: 10 * time.Second,
 			}
+			if err := applicationPackagesRegistry.Init(ctx); err != nil {
+				return shared.ErrInitializeApplicationServer.WithCause(err)
+			}
+			config.AS.Packages.Registry = applicationPackagesRegistry
 			if config.AS.Webhooks.Target != "" {
 				config.AS.Webhooks.Registry = &asiowebredis.WebhookRegistry{
 					Redis: redis.New(config.Redis.WithNamespace("as", "io", "webhooks")),
@@ -281,7 +334,7 @@ var startCommand = &cobra.Command{
 			_ = as
 		}
 
-		if start.JoinServer || startDefault {
+		if start.JoinServer {
 			logger.Info("Setting up Join Server")
 			config.JS.Devices = &jsredis.DeviceRegistry{
 				Redis: NewComponentDeviceRegistryRedis(*config, "js"),
@@ -299,7 +352,7 @@ var startCommand = &cobra.Command{
 			_ = js
 		}
 
-		if start.Console || startDefault {
+		if start.Console {
 			logger.Info("Setting up Console")
 			if config.Console.UI.TemplateData.SentryDSN == "" {
 				config.Console.UI.TemplateData.SentryDSN = config.Sentry.DSN
@@ -317,7 +370,7 @@ var startCommand = &cobra.Command{
 			}
 		}
 
-		if start.GatewayConfigurationServer || startDefault {
+		if start.GatewayConfigurationServer {
 			logger.Info("Setting up Gateway Configuration Server")
 			gcs, err := gatewayconfigurationserver.New(c, &config.GCS)
 			if err != nil {
@@ -326,7 +379,7 @@ var startCommand = &cobra.Command{
 			_ = gcs
 		}
 
-		if start.DeviceTemplateConverter || startDefault {
+		if start.DeviceTemplateConverter {
 			logger.Info("Setting up Device Template Converter")
 			dtc, err := devicetemplateconverter.New(c, &config.DTC)
 			if err != nil {
@@ -335,7 +388,7 @@ var startCommand = &cobra.Command{
 			_ = dtc
 		}
 
-		if start.QRCodeGenerator || startDefault {
+		if start.QRCodeGenerator {
 			logger.Info("Setting up QR Code Generator")
 			qrg, err := qrcodegenerator.New(c, &config.QRG)
 			if err != nil {
@@ -344,13 +397,27 @@ var startCommand = &cobra.Command{
 			_ = qrg
 		}
 
-		if start.PacketBrokerAgent || startDefault {
+		if start.PacketBrokerAgent {
 			logger.Info("Setting up Packet Broker Agent")
 			pba, err := packetbrokeragent.New(c, &config.PBA)
 			if err != nil {
 				return shared.ErrInitializePacketBrokerAgent.WithCause(err)
 			}
 			_ = pba
+		}
+
+		if start.DeviceRepository {
+			logger.Info("Setting up Device Repository")
+			store, err := config.DR.NewStore(ctx, config.Blob)
+			if err != nil {
+				return shared.ErrInitializeDeviceRepository.WithCause(err)
+			}
+			config.DR.Store.Store = store
+			dr, err := devicerepository.New(c, &config.DR)
+			if err != nil {
+				return shared.ErrInitializeDeviceRepository.WithCause(err)
+			}
+			_ = dr
 		}
 
 		if rootRedirect != nil {

@@ -14,6 +14,7 @@
   - [Message `GetApplicationAPIKeyRequest`](#ttn.lorawan.v3.GetApplicationAPIKeyRequest)
   - [Message `GetApplicationCollaboratorRequest`](#ttn.lorawan.v3.GetApplicationCollaboratorRequest)
   - [Message `GetApplicationRequest`](#ttn.lorawan.v3.GetApplicationRequest)
+  - [Message `IssueDevEUIResponse`](#ttn.lorawan.v3.IssueDevEUIResponse)
   - [Message `ListApplicationAPIKeysRequest`](#ttn.lorawan.v3.ListApplicationAPIKeysRequest)
   - [Message `ListApplicationCollaboratorsRequest`](#ttn.lorawan.v3.ListApplicationCollaboratorsRequest)
   - [Message `ListApplicationsRequest`](#ttn.lorawan.v3.ListApplicationsRequest)
@@ -26,11 +27,25 @@
 - [File `lorawan-stack/api/applicationserver.proto`](#lorawan-stack/api/applicationserver.proto)
   - [Message `ApplicationLink`](#ttn.lorawan.v3.ApplicationLink)
   - [Message `ApplicationLinkStats`](#ttn.lorawan.v3.ApplicationLinkStats)
+  - [Message `AsConfiguration`](#ttn.lorawan.v3.AsConfiguration)
+  - [Message `AsConfiguration.PubSub`](#ttn.lorawan.v3.AsConfiguration.PubSub)
+  - [Message `AsConfiguration.PubSub.Providers`](#ttn.lorawan.v3.AsConfiguration.PubSub.Providers)
+  - [Message `DecodeDownlinkRequest`](#ttn.lorawan.v3.DecodeDownlinkRequest)
+  - [Message `DecodeDownlinkResponse`](#ttn.lorawan.v3.DecodeDownlinkResponse)
+  - [Message `DecodeUplinkRequest`](#ttn.lorawan.v3.DecodeUplinkRequest)
+  - [Message `DecodeUplinkResponse`](#ttn.lorawan.v3.DecodeUplinkResponse)
+  - [Message `EncodeDownlinkRequest`](#ttn.lorawan.v3.EncodeDownlinkRequest)
+  - [Message `EncodeDownlinkResponse`](#ttn.lorawan.v3.EncodeDownlinkResponse)
   - [Message `GetApplicationLinkRequest`](#ttn.lorawan.v3.GetApplicationLinkRequest)
+  - [Message `GetAsConfigurationRequest`](#ttn.lorawan.v3.GetAsConfigurationRequest)
+  - [Message `GetAsConfigurationResponse`](#ttn.lorawan.v3.GetAsConfigurationResponse)
+  - [Message `NsAsHandleUplinkRequest`](#ttn.lorawan.v3.NsAsHandleUplinkRequest)
   - [Message `SetApplicationLinkRequest`](#ttn.lorawan.v3.SetApplicationLinkRequest)
+  - [Enum `AsConfiguration.PubSub.Providers.Status`](#ttn.lorawan.v3.AsConfiguration.PubSub.Providers.Status)
   - [Service `AppAs`](#ttn.lorawan.v3.AppAs)
   - [Service `As`](#ttn.lorawan.v3.As)
   - [Service `AsEndDeviceRegistry`](#ttn.lorawan.v3.AsEndDeviceRegistry)
+  - [Service `NsAs`](#ttn.lorawan.v3.NsAs)
 - [File `lorawan-stack/api/applicationserver_integrations_storage.proto`](#lorawan-stack/api/applicationserver_integrations_storage.proto)
   - [Message `GetStoredApplicationUpRequest`](#ttn.lorawan.v3.GetStoredApplicationUpRequest)
   - [Service `ApplicationUpStorage`](#ttn.lorawan.v3.ApplicationUpStorage)
@@ -121,24 +136,62 @@
   - [Service `ContactInfoRegistry`](#ttn.lorawan.v3.ContactInfoRegistry)
 - [File `lorawan-stack/api/deviceclaimingserver.proto`](#lorawan-stack/api/deviceclaimingserver.proto)
   - [Message `AuthorizeApplicationRequest`](#ttn.lorawan.v3.AuthorizeApplicationRequest)
+  - [Message `AuthorizeGatewayRequest`](#ttn.lorawan.v3.AuthorizeGatewayRequest)
+  - [Message `CUPSRedirection`](#ttn.lorawan.v3.CUPSRedirection)
+  - [Message `CUPSRedirection.ClientTLS`](#ttn.lorawan.v3.CUPSRedirection.ClientTLS)
   - [Message `ClaimEndDeviceRequest`](#ttn.lorawan.v3.ClaimEndDeviceRequest)
   - [Message `ClaimEndDeviceRequest.AuthenticatedIdentifiers`](#ttn.lorawan.v3.ClaimEndDeviceRequest.AuthenticatedIdentifiers)
+  - [Message `ClaimGatewayRequest`](#ttn.lorawan.v3.ClaimGatewayRequest)
+  - [Message `ClaimGatewayRequest.AuthenticatedIdentifiers`](#ttn.lorawan.v3.ClaimGatewayRequest.AuthenticatedIdentifiers)
   - [Service `EndDeviceClaimingServer`](#ttn.lorawan.v3.EndDeviceClaimingServer)
+  - [Service `GatewayClaimingServer`](#ttn.lorawan.v3.GatewayClaimingServer)
+- [File `lorawan-stack/api/devicerepository.proto`](#lorawan-stack/api/devicerepository.proto)
+  - [Message `DecodedMessagePayload`](#ttn.lorawan.v3.DecodedMessagePayload)
+  - [Message `EncodedMessagePayload`](#ttn.lorawan.v3.EncodedMessagePayload)
+  - [Message `EndDeviceBrand`](#ttn.lorawan.v3.EndDeviceBrand)
+  - [Message `EndDeviceModel`](#ttn.lorawan.v3.EndDeviceModel)
+  - [Message `EndDeviceModel.Battery`](#ttn.lorawan.v3.EndDeviceModel.Battery)
+  - [Message `EndDeviceModel.Compliances`](#ttn.lorawan.v3.EndDeviceModel.Compliances)
+  - [Message `EndDeviceModel.Compliances.Compliance`](#ttn.lorawan.v3.EndDeviceModel.Compliances.Compliance)
+  - [Message `EndDeviceModel.Dimensions`](#ttn.lorawan.v3.EndDeviceModel.Dimensions)
+  - [Message `EndDeviceModel.FirmwareVersion`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion)
+  - [Message `EndDeviceModel.FirmwareVersion.Profile`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.Profile)
+  - [Message `EndDeviceModel.FirmwareVersion.ProfilesEntry`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.ProfilesEntry)
+  - [Message `EndDeviceModel.HardwareVersion`](#ttn.lorawan.v3.EndDeviceModel.HardwareVersion)
+  - [Message `EndDeviceModel.OperatingConditions`](#ttn.lorawan.v3.EndDeviceModel.OperatingConditions)
+  - [Message `EndDeviceModel.OperatingConditions.Limits`](#ttn.lorawan.v3.EndDeviceModel.OperatingConditions.Limits)
+  - [Message `EndDeviceModel.Photos`](#ttn.lorawan.v3.EndDeviceModel.Photos)
+  - [Message `EndDeviceModel.Reseller`](#ttn.lorawan.v3.EndDeviceModel.Reseller)
+  - [Message `EndDeviceModel.Videos`](#ttn.lorawan.v3.EndDeviceModel.Videos)
+  - [Message `GetEndDeviceBrandRequest`](#ttn.lorawan.v3.GetEndDeviceBrandRequest)
+  - [Message `GetEndDeviceModelRequest`](#ttn.lorawan.v3.GetEndDeviceModelRequest)
+  - [Message `GetPayloadFormatterRequest`](#ttn.lorawan.v3.GetPayloadFormatterRequest)
+  - [Message `GetTemplateRequest`](#ttn.lorawan.v3.GetTemplateRequest)
+  - [Message `ListEndDeviceBrandsRequest`](#ttn.lorawan.v3.ListEndDeviceBrandsRequest)
+  - [Message `ListEndDeviceBrandsResponse`](#ttn.lorawan.v3.ListEndDeviceBrandsResponse)
+  - [Message `ListEndDeviceModelsRequest`](#ttn.lorawan.v3.ListEndDeviceModelsRequest)
+  - [Message `ListEndDeviceModelsResponse`](#ttn.lorawan.v3.ListEndDeviceModelsResponse)
+  - [Message `MessagePayloadDecoder`](#ttn.lorawan.v3.MessagePayloadDecoder)
+  - [Message `MessagePayloadDecoder.Example`](#ttn.lorawan.v3.MessagePayloadDecoder.Example)
+  - [Message `MessagePayloadEncoder`](#ttn.lorawan.v3.MessagePayloadEncoder)
+  - [Message `MessagePayloadEncoder.Example`](#ttn.lorawan.v3.MessagePayloadEncoder.Example)
+  - [Enum `KeyProvisioning`](#ttn.lorawan.v3.KeyProvisioning)
+  - [Enum `KeySecurity`](#ttn.lorawan.v3.KeySecurity)
+  - [Service `DeviceRepository`](#ttn.lorawan.v3.DeviceRepository)
 - [File `lorawan-stack/api/end_device.proto`](#lorawan-stack/api/end_device.proto)
+  - [Message `BoolValue`](#ttn.lorawan.v3.BoolValue)
   - [Message `ConvertEndDeviceTemplateRequest`](#ttn.lorawan.v3.ConvertEndDeviceTemplateRequest)
   - [Message `CreateEndDeviceRequest`](#ttn.lorawan.v3.CreateEndDeviceRequest)
+  - [Message `DevAddrPrefix`](#ttn.lorawan.v3.DevAddrPrefix)
   - [Message `EndDevice`](#ttn.lorawan.v3.EndDevice)
   - [Message `EndDevice.AttributesEntry`](#ttn.lorawan.v3.EndDevice.AttributesEntry)
   - [Message `EndDevice.LocationsEntry`](#ttn.lorawan.v3.EndDevice.LocationsEntry)
   - [Message `EndDeviceAuthenticationCode`](#ttn.lorawan.v3.EndDeviceAuthenticationCode)
-  - [Message `EndDeviceBrand`](#ttn.lorawan.v3.EndDeviceBrand)
-  - [Message `EndDeviceModel`](#ttn.lorawan.v3.EndDeviceModel)
   - [Message `EndDeviceTemplate`](#ttn.lorawan.v3.EndDeviceTemplate)
   - [Message `EndDeviceTemplateFormat`](#ttn.lorawan.v3.EndDeviceTemplateFormat)
   - [Message `EndDeviceTemplateFormats`](#ttn.lorawan.v3.EndDeviceTemplateFormats)
   - [Message `EndDeviceTemplateFormats.FormatsEntry`](#ttn.lorawan.v3.EndDeviceTemplateFormats.FormatsEntry)
   - [Message `EndDeviceVersion`](#ttn.lorawan.v3.EndDeviceVersion)
-  - [Message `EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers)
   - [Message `EndDevices`](#ttn.lorawan.v3.EndDevices)
   - [Message `GetEndDeviceIdentifiersForEUIsRequest`](#ttn.lorawan.v3.GetEndDeviceIdentifiersForEUIsRequest)
   - [Message `GetEndDeviceRequest`](#ttn.lorawan.v3.GetEndDeviceRequest)
@@ -150,7 +203,9 @@
   - [Message `MACState.DataRateRange`](#ttn.lorawan.v3.MACState.DataRateRange)
   - [Message `MACState.DataRateRanges`](#ttn.lorawan.v3.MACState.DataRateRanges)
   - [Message `MACState.JoinAccept`](#ttn.lorawan.v3.MACState.JoinAccept)
+  - [Message `MACState.JoinRequest`](#ttn.lorawan.v3.MACState.JoinRequest)
   - [Message `MACState.RejectedDataRateRangesEntry`](#ttn.lorawan.v3.MACState.RejectedDataRateRangesEntry)
+  - [Message `ResetAndGetEndDeviceRequest`](#ttn.lorawan.v3.ResetAndGetEndDeviceRequest)
   - [Message `Session`](#ttn.lorawan.v3.Session)
   - [Message `SetEndDeviceRequest`](#ttn.lorawan.v3.SetEndDeviceRequest)
   - [Message `UpdateEndDeviceRequest`](#ttn.lorawan.v3.UpdateEndDeviceRequest)
@@ -168,6 +223,8 @@
   - [Message `Event`](#ttn.lorawan.v3.Event)
   - [Message `Event.Authentication`](#ttn.lorawan.v3.Event.Authentication)
   - [Message `Event.ContextEntry`](#ttn.lorawan.v3.Event.ContextEntry)
+  - [Message `FindRelatedEventsRequest`](#ttn.lorawan.v3.FindRelatedEventsRequest)
+  - [Message `FindRelatedEventsResponse`](#ttn.lorawan.v3.FindRelatedEventsResponse)
   - [Message `StreamEventsRequest`](#ttn.lorawan.v3.StreamEventsRequest)
   - [Service `Events`](#ttn.lorawan.v3.Events)
 - [File `lorawan-stack/api/gateway.proto`](#lorawan-stack/api/gateway.proto)
@@ -175,9 +232,11 @@
   - [Message `CreateGatewayRequest`](#ttn.lorawan.v3.CreateGatewayRequest)
   - [Message `Gateway`](#ttn.lorawan.v3.Gateway)
   - [Message `Gateway.AttributesEntry`](#ttn.lorawan.v3.Gateway.AttributesEntry)
+  - [Message `Gateway.LRFHSS`](#ttn.lorawan.v3.Gateway.LRFHSS)
   - [Message `GatewayAntenna`](#ttn.lorawan.v3.GatewayAntenna)
   - [Message `GatewayAntenna.AttributesEntry`](#ttn.lorawan.v3.GatewayAntenna.AttributesEntry)
   - [Message `GatewayBrand`](#ttn.lorawan.v3.GatewayBrand)
+  - [Message `GatewayClaimAuthenticationCode`](#ttn.lorawan.v3.GatewayClaimAuthenticationCode)
   - [Message `GatewayConnectionStats`](#ttn.lorawan.v3.GatewayConnectionStats)
   - [Message `GatewayConnectionStats.RoundTripTimes`](#ttn.lorawan.v3.GatewayConnectionStats.RoundTripTimes)
   - [Message `GatewayConnectionStats.SubBand`](#ttn.lorawan.v3.GatewayConnectionStats.SubBand)
@@ -187,7 +246,6 @@
   - [Message `GatewayStatus`](#ttn.lorawan.v3.GatewayStatus)
   - [Message `GatewayStatus.MetricsEntry`](#ttn.lorawan.v3.GatewayStatus.MetricsEntry)
   - [Message `GatewayStatus.VersionsEntry`](#ttn.lorawan.v3.GatewayStatus.VersionsEntry)
-  - [Message `GatewayVersion`](#ttn.lorawan.v3.GatewayVersion)
   - [Message `GatewayVersionIdentifiers`](#ttn.lorawan.v3.GatewayVersionIdentifiers)
   - [Message `Gateways`](#ttn.lorawan.v3.Gateways)
   - [Message `GetGatewayAPIKeyRequest`](#ttn.lorawan.v3.GetGatewayAPIKeyRequest)
@@ -200,6 +258,7 @@
   - [Message `SetGatewayCollaboratorRequest`](#ttn.lorawan.v3.SetGatewayCollaboratorRequest)
   - [Message `UpdateGatewayAPIKeyRequest`](#ttn.lorawan.v3.UpdateGatewayAPIKeyRequest)
   - [Message `UpdateGatewayRequest`](#ttn.lorawan.v3.UpdateGatewayRequest)
+  - [Enum `GatewayAntennaPlacement`](#ttn.lorawan.v3.GatewayAntennaPlacement)
 - [File `lorawan-stack/api/gateway_services.proto`](#lorawan-stack/api/gateway_services.proto)
   - [Message `PullGatewayConfigurationRequest`](#ttn.lorawan.v3.PullGatewayConfigurationRequest)
   - [Service `GatewayAccess`](#ttn.lorawan.v3.GatewayAccess)
@@ -216,10 +275,11 @@
 - [File `lorawan-stack/api/identifiers.proto`](#lorawan-stack/api/identifiers.proto)
   - [Message `ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers)
   - [Message `ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers)
-  - [Message `CombinedIdentifiers`](#ttn.lorawan.v3.CombinedIdentifiers)
   - [Message `EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers)
+  - [Message `EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers)
   - [Message `EntityIdentifiers`](#ttn.lorawan.v3.EntityIdentifiers)
   - [Message `GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers)
+  - [Message `NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers)
   - [Message `OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers)
   - [Message `OrganizationOrUserIdentifiers`](#ttn.lorawan.v3.OrganizationOrUserIdentifiers)
   - [Message `UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers)
@@ -261,6 +321,7 @@
   - [Message `ProvisionEndDevicesRequest.IdentifiersRange`](#ttn.lorawan.v3.ProvisionEndDevicesRequest.IdentifiersRange)
   - [Message `SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest)
   - [Message `SetApplicationActivationSettingsRequest`](#ttn.lorawan.v3.SetApplicationActivationSettingsRequest)
+  - [Service `AppJs`](#ttn.lorawan.v3.AppJs)
   - [Service `ApplicationActivationSettingRegistry`](#ttn.lorawan.v3.ApplicationActivationSettingRegistry)
   - [Service `ApplicationCryptoService`](#ttn.lorawan.v3.ApplicationCryptoService)
   - [Service `AsJs`](#ttn.lorawan.v3.AsJs)
@@ -280,13 +341,17 @@
   - [Message `DLSettings`](#ttn.lorawan.v3.DLSettings)
   - [Message `DataRate`](#ttn.lorawan.v3.DataRate)
   - [Message `DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue)
+  - [Message `DataRateOffsetValue`](#ttn.lorawan.v3.DataRateOffsetValue)
+  - [Message `DeviceEIRPValue`](#ttn.lorawan.v3.DeviceEIRPValue)
   - [Message `DownlinkPath`](#ttn.lorawan.v3.DownlinkPath)
   - [Message `FCtrl`](#ttn.lorawan.v3.FCtrl)
   - [Message `FHDR`](#ttn.lorawan.v3.FHDR)
   - [Message `FSKDataRate`](#ttn.lorawan.v3.FSKDataRate)
+  - [Message `FrequencyValue`](#ttn.lorawan.v3.FrequencyValue)
   - [Message `GatewayAntennaIdentifiers`](#ttn.lorawan.v3.GatewayAntennaIdentifiers)
   - [Message `JoinAcceptPayload`](#ttn.lorawan.v3.JoinAcceptPayload)
   - [Message `JoinRequestPayload`](#ttn.lorawan.v3.JoinRequestPayload)
+  - [Message `LRFHSSDataRate`](#ttn.lorawan.v3.LRFHSSDataRate)
   - [Message `LoRaDataRate`](#ttn.lorawan.v3.LoRaDataRate)
   - [Message `MACCommand`](#ttn.lorawan.v3.MACCommand)
   - [Message `MACCommand.ADRParamSetupReq`](#ttn.lorawan.v3.MACCommand.ADRParamSetupReq)
@@ -335,7 +400,9 @@
   - [Enum `CFListType`](#ttn.lorawan.v3.CFListType)
   - [Enum `Class`](#ttn.lorawan.v3.Class)
   - [Enum `DataRateIndex`](#ttn.lorawan.v3.DataRateIndex)
+  - [Enum `DataRateOffset`](#ttn.lorawan.v3.DataRateOffset)
   - [Enum `DeviceEIRP`](#ttn.lorawan.v3.DeviceEIRP)
+  - [Enum `JoinRequestType`](#ttn.lorawan.v3.JoinRequestType)
   - [Enum `MACCommandIdentifier`](#ttn.lorawan.v3.MACCommandIdentifier)
   - [Enum `MACVersion`](#ttn.lorawan.v3.MACVersion)
   - [Enum `MType`](#ttn.lorawan.v3.MType)
@@ -345,8 +412,8 @@
   - [Enum `PingSlotPeriod`](#ttn.lorawan.v3.PingSlotPeriod)
   - [Enum `RejoinCountExponent`](#ttn.lorawan.v3.RejoinCountExponent)
   - [Enum `RejoinPeriodExponent`](#ttn.lorawan.v3.RejoinPeriodExponent)
+  - [Enum `RejoinRequestType`](#ttn.lorawan.v3.RejoinRequestType)
   - [Enum `RejoinTimeExponent`](#ttn.lorawan.v3.RejoinTimeExponent)
-  - [Enum `RejoinType`](#ttn.lorawan.v3.RejoinType)
   - [Enum `RxDelay`](#ttn.lorawan.v3.RxDelay)
   - [Enum `TxSchedulePriority`](#ttn.lorawan.v3.TxSchedulePriority)
 - [File `lorawan-stack/api/message_services.proto`](#lorawan-stack/api/message_services.proto)
@@ -368,7 +435,9 @@
   - [Message `ApplicationUplink`](#ttn.lorawan.v3.ApplicationUplink)
   - [Message `ApplicationUplink.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplink.LocationsEntry)
   - [Message `DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage)
+  - [Message `DownlinkQueueOperationErrorDetails`](#ttn.lorawan.v3.DownlinkQueueOperationErrorDetails)
   - [Message `DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest)
+  - [Message `GatewayTxAcknowledgment`](#ttn.lorawan.v3.GatewayTxAcknowledgment)
   - [Message `GatewayUplinkMessage`](#ttn.lorawan.v3.GatewayUplinkMessage)
   - [Message `MessagePayloadFormatters`](#ttn.lorawan.v3.MessagePayloadFormatters)
   - [Message `TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment)
@@ -385,6 +454,7 @@
   - [Message `MQTTConnectionInfo`](#ttn.lorawan.v3.MQTTConnectionInfo)
 - [File `lorawan-stack/api/networkserver.proto`](#lorawan-stack/api/networkserver.proto)
   - [Message `GenerateDevAddrResponse`](#ttn.lorawan.v3.GenerateDevAddrResponse)
+  - [Message `GetDefaultMACSettingsRequest`](#ttn.lorawan.v3.GetDefaultMACSettingsRequest)
   - [Service `AsNs`](#ttn.lorawan.v3.AsNs)
   - [Service `GsNs`](#ttn.lorawan.v3.GsNs)
   - [Service `Ns`](#ttn.lorawan.v3.Ns)
@@ -420,8 +490,29 @@
   - [Service `OrganizationAccess`](#ttn.lorawan.v3.OrganizationAccess)
   - [Service `OrganizationRegistry`](#ttn.lorawan.v3.OrganizationRegistry)
 - [File `lorawan-stack/api/packetbrokeragent.proto`](#lorawan-stack/api/packetbrokeragent.proto)
+  - [Message `ListForwarderRoutingPoliciesRequest`](#ttn.lorawan.v3.ListForwarderRoutingPoliciesRequest)
+  - [Message `ListHomeNetworkRoutingPoliciesRequest`](#ttn.lorawan.v3.ListHomeNetworkRoutingPoliciesRequest)
+  - [Message `ListPacketBrokerHomeNetworksRequest`](#ttn.lorawan.v3.ListPacketBrokerHomeNetworksRequest)
+  - [Message `ListPacketBrokerNetworksRequest`](#ttn.lorawan.v3.ListPacketBrokerNetworksRequest)
+  - [Message `PacketBrokerDefaultRoutingPolicy`](#ttn.lorawan.v3.PacketBrokerDefaultRoutingPolicy)
+  - [Message `PacketBrokerDevAddrBlock`](#ttn.lorawan.v3.PacketBrokerDevAddrBlock)
+  - [Message `PacketBrokerGateway`](#ttn.lorawan.v3.PacketBrokerGateway)
+  - [Message `PacketBrokerGateway.GatewayIdentifiers`](#ttn.lorawan.v3.PacketBrokerGateway.GatewayIdentifiers)
+  - [Message `PacketBrokerInfo`](#ttn.lorawan.v3.PacketBrokerInfo)
+  - [Message `PacketBrokerNetwork`](#ttn.lorawan.v3.PacketBrokerNetwork)
+  - [Message `PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier)
+  - [Message `PacketBrokerNetworks`](#ttn.lorawan.v3.PacketBrokerNetworks)
+  - [Message `PacketBrokerRoutingPolicies`](#ttn.lorawan.v3.PacketBrokerRoutingPolicies)
+  - [Message `PacketBrokerRoutingPolicy`](#ttn.lorawan.v3.PacketBrokerRoutingPolicy)
+  - [Message `PacketBrokerRoutingPolicyDownlink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink)
+  - [Message `PacketBrokerRoutingPolicyUplink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink)
+  - [Message `SetPacketBrokerDefaultRoutingPolicyRequest`](#ttn.lorawan.v3.SetPacketBrokerDefaultRoutingPolicyRequest)
+  - [Message `SetPacketBrokerRoutingPolicyRequest`](#ttn.lorawan.v3.SetPacketBrokerRoutingPolicyRequest)
+  - [Message `UpdatePacketBrokerGatewayRequest`](#ttn.lorawan.v3.UpdatePacketBrokerGatewayRequest)
+  - [Message `UpdatePacketBrokerGatewayResponse`](#ttn.lorawan.v3.UpdatePacketBrokerGatewayResponse)
   - [Service `GsPba`](#ttn.lorawan.v3.GsPba)
   - [Service `NsPba`](#ttn.lorawan.v3.NsPba)
+  - [Service `Pba`](#ttn.lorawan.v3.Pba)
 - [File `lorawan-stack/api/picture.proto`](#lorawan-stack/api/picture.proto)
   - [Message `Picture`](#ttn.lorawan.v3.Picture)
   - [Message `Picture.Embedded`](#ttn.lorawan.v3.Picture.Embedded)
@@ -450,15 +541,25 @@
   - [Message `Rights`](#ttn.lorawan.v3.Rights)
   - [Enum `Right`](#ttn.lorawan.v3.Right)
 - [File `lorawan-stack/api/search_services.proto`](#lorawan-stack/api/search_services.proto)
+  - [Message `SearchApplicationsRequest`](#ttn.lorawan.v3.SearchApplicationsRequest)
+  - [Message `SearchApplicationsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchApplicationsRequest.AttributesContainEntry)
+  - [Message `SearchClientsRequest`](#ttn.lorawan.v3.SearchClientsRequest)
+  - [Message `SearchClientsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchClientsRequest.AttributesContainEntry)
   - [Message `SearchEndDevicesRequest`](#ttn.lorawan.v3.SearchEndDevicesRequest)
   - [Message `SearchEndDevicesRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchEndDevicesRequest.AttributesContainEntry)
-  - [Message `SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest)
-  - [Message `SearchEntitiesRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchEntitiesRequest.AttributesContainEntry)
+  - [Message `SearchGatewaysRequest`](#ttn.lorawan.v3.SearchGatewaysRequest)
+  - [Message `SearchGatewaysRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchGatewaysRequest.AttributesContainEntry)
+  - [Message `SearchOrganizationsRequest`](#ttn.lorawan.v3.SearchOrganizationsRequest)
+  - [Message `SearchOrganizationsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchOrganizationsRequest.AttributesContainEntry)
+  - [Message `SearchUsersRequest`](#ttn.lorawan.v3.SearchUsersRequest)
+  - [Message `SearchUsersRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchUsersRequest.AttributesContainEntry)
   - [Service `EndDeviceRegistrySearch`](#ttn.lorawan.v3.EndDeviceRegistrySearch)
   - [Service `EntityRegistrySearch`](#ttn.lorawan.v3.EntityRegistrySearch)
 - [File `lorawan-stack/api/secrets.proto`](#lorawan-stack/api/secrets.proto)
   - [Message `Secret`](#ttn.lorawan.v3.Secret)
 - [File `lorawan-stack/api/user.proto`](#lorawan-stack/api/user.proto)
+  - [Message `CreateLoginTokenRequest`](#ttn.lorawan.v3.CreateLoginTokenRequest)
+  - [Message `CreateLoginTokenResponse`](#ttn.lorawan.v3.CreateLoginTokenResponse)
   - [Message `CreateTemporaryPasswordRequest`](#ttn.lorawan.v3.CreateTemporaryPasswordRequest)
   - [Message `CreateUserAPIKeyRequest`](#ttn.lorawan.v3.CreateUserAPIKeyRequest)
   - [Message `CreateUserRequest`](#ttn.lorawan.v3.CreateUserRequest)
@@ -471,6 +572,7 @@
   - [Message `ListUserAPIKeysRequest`](#ttn.lorawan.v3.ListUserAPIKeysRequest)
   - [Message `ListUserSessionsRequest`](#ttn.lorawan.v3.ListUserSessionsRequest)
   - [Message `ListUsersRequest`](#ttn.lorawan.v3.ListUsersRequest)
+  - [Message `LoginToken`](#ttn.lorawan.v3.LoginToken)
   - [Message `SendInvitationRequest`](#ttn.lorawan.v3.SendInvitationRequest)
   - [Message `UpdateUserAPIKeyRequest`](#ttn.lorawan.v3.UpdateUserAPIKeyRequest)
   - [Message `UpdateUserPasswordRequest`](#ttn.lorawan.v3.UpdateUserPasswordRequest)
@@ -501,10 +603,12 @@ Application is the message that defines an Application in the network.
 | `ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `deleted_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `description` | [`string`](#string) |  |  |
 | `attributes` | [`Application.AttributesEntry`](#ttn.lorawan.v3.Application.AttributesEntry) | repeated | Key-value attributes for this application. Typically used for organizing applications or for storing integration-specific data. |
 | `contact_info` | [`ContactInfo`](#ttn.lorawan.v3.ContactInfo) | repeated | Contact information for this application. Typically used to indicate who to contact with technical/security questions about the application. |
+| `dev_eui_counter` | [`uint32`](#uint32) |  |  |
 
 #### Field Rules
 
@@ -513,7 +617,8 @@ Application is the message that defines an Application in the network.
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
 
 ### <a name="ttn.lorawan.v3.Application.AttributesEntry">Message `Application.AttributesEntry`</a>
 
@@ -535,6 +640,7 @@ Application is the message that defines an Application in the network.
 | `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 #### Field Rules
 
@@ -542,7 +648,8 @@ Application is the message that defines an Application in the network.
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
-| `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
+| `rights` | <p>`repeated.min_items`: `1`</p><p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `expires_at` | <p>`timestamp.gt_now`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.CreateApplicationRequest">Message `CreateApplicationRequest`</a>
 
@@ -598,6 +705,12 @@ Application is the message that defines an Application in the network.
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
 
+### <a name="ttn.lorawan.v3.IssueDevEUIResponse">Message `IssueDevEUIResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `dev_eui` | [`bytes`](#bytes) |  |  |
+
 ### <a name="ttn.lorawan.v3.ListApplicationAPIKeysRequest">Message `ListApplicationAPIKeysRequest`</a>
 
 | Field | Type | Label | Description |
@@ -637,6 +750,7 @@ Application is the message that defines an Application in the network.
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted applications. |
 
 #### Field Rules
 
@@ -665,6 +779,7 @@ Application is the message that defines an Application in the network.
 | ----- | ---- | ----- | ----------- |
 | `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  |  |
 | `api_key` | [`APIKey`](#ttn.lorawan.v3.APIKey) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the api key fields that should be updated. |
 
 #### Field Rules
 
@@ -689,6 +804,9 @@ Application is the message that defines an Application in the network.
 ## <a name="lorawan-stack/api/application_services.proto">File `lorawan-stack/api/application_services.proto`</a>
 
 ### <a name="ttn.lorawan.v3.ApplicationAccess">Service `ApplicationAccess`</a>
+
+The ApplicationAcces service, exposed by the Identity Server, is used to manage
+API keys and collaborators of applications.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
@@ -718,6 +836,9 @@ Application is the message that defines an Application in the network.
 
 ### <a name="ttn.lorawan.v3.ApplicationRegistry">Service `ApplicationRegistry`</a>
 
+The ApplicationRegistry service, exposed by the Identity Server, is used to manage
+application registrations.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Create` | [`CreateApplicationRequest`](#ttn.lorawan.v3.CreateApplicationRequest) | [`Application`](#ttn.lorawan.v3.Application) | Create a new application. This also sets the given organization or user as first collaborator with all possible rights. |
@@ -725,6 +846,11 @@ Application is the message that defines an Application in the network.
 | `List` | [`ListApplicationsRequest`](#ttn.lorawan.v3.ListApplicationsRequest) | [`Applications`](#ttn.lorawan.v3.Applications) | List applications where the given user or organization is a direct collaborator. If no user or organization is given, this returns the applications the caller has access to. Similar to Get, this selects the fields given by the field mask. More or less fields may be returned, depending on the rights of the caller. |
 | `Update` | [`UpdateApplicationRequest`](#ttn.lorawan.v3.UpdateApplicationRequest) | [`Application`](#ttn.lorawan.v3.Application) | Update the application, changing the fields specified by the field mask to the provided values. |
 | `Delete` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the application. This may not release the application ID for reuse. All end devices must be deleted from the application before it can be deleted. |
+| `Restore` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Restore a recently deleted application.
+
+Deployment configuration may specify if, and for how long after deletion, entities can be restored. |
+| `Purge` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Purge the application. This will release the application ID for reuse. All end devices must be deleted from the application before it can be deleted. The application owner is responsible for clearing data from any (external) integrations that may store and expose data by application ID |
+| `IssueDevEUI` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`IssueDevEUIResponse`](#ttn.lorawan.v3.IssueDevEUIResponse) | Request DevEUI from the configured address block for a device inside the application. The maximum number of DevEUI's issued per application can be configured. |
 
 #### HTTP bindings
 
@@ -738,6 +864,9 @@ Application is the message that defines an Application in the network.
 | `List` | `GET` | `/api/v3/organizations/{collaborator.organization_ids.organization_id}/applications` |  |
 | `Update` | `PUT` | `/api/v3/applications/{application.ids.application_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/applications/{application_id}` |  |
+| `Restore` | `POST` | `/api/v3/applications/{application_id}/restore` |  |
+| `Purge` | `DELETE` | `/api/v3/applications/{application_id}/purge` |  |
+| `IssueDevEUI` | `POST` | `/api/v3/applications/{application_id}/dev-eui` |  |
 
 ## <a name="lorawan-stack/api/applicationserver.proto">File `lorawan-stack/api/applicationserver.proto`</a>
 
@@ -745,18 +874,9 @@ Application is the message that defines an Application in the network.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `network_server_address` | [`string`](#string) |  | The address of the external Network Server where to link to. The typical format of the address is "host:port". If the port is omitted, the normal port inference (with DNS lookup, otherwise defaults) is used. Leave empty when linking to a cluster Network Server. |
-| `api_key` | [`string`](#string) |  | The API key to use to link the Application Server to Network Server. This API key needs to have RIGHT_APPLICATION_LINK. |
 | `default_formatters` | [`MessagePayloadFormatters`](#ttn.lorawan.v3.MessagePayloadFormatters) |  | Default message payload formatters to use when there are no formatters defined on the end device level. |
 | `tls` | [`bool`](#bool) |  | Enable TLS for linking to the external Network Server. For cluster-local Network Servers, the cluster's TLS setting is used. |
 | `skip_payload_crypto` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Skip decryption of uplink payloads and encryption of downlink payloads. Leave empty for the using the Application Server's default setting. |
-
-#### Field Rules
-
-| Field | Validations |
-| ----- | ----------- |
-| `network_server_address` | <p>`string.pattern`: `^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$`</p> |
-| `api_key` | <p>`string.min_len`: `1`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationLinkStats">Message `ApplicationLinkStats`</a>
 
@@ -777,6 +897,99 @@ Link stats as monitored by the Application Server.
 | ----- | ----------- |
 | `network_server_address` | <p>`string.pattern`: `^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$`</p> |
 
+### <a name="ttn.lorawan.v3.AsConfiguration">Message `AsConfiguration`</a>
+
+Application Server configuration.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `pubsub` | [`AsConfiguration.PubSub`](#ttn.lorawan.v3.AsConfiguration.PubSub) |  |  |
+
+### <a name="ttn.lorawan.v3.AsConfiguration.PubSub">Message `AsConfiguration.PubSub`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `providers` | [`AsConfiguration.PubSub.Providers`](#ttn.lorawan.v3.AsConfiguration.PubSub.Providers) |  |  |
+
+### <a name="ttn.lorawan.v3.AsConfiguration.PubSub.Providers">Message `AsConfiguration.PubSub.Providers`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mqtt` | [`AsConfiguration.PubSub.Providers.Status`](#ttn.lorawan.v3.AsConfiguration.PubSub.Providers.Status) |  |  |
+| `nats` | [`AsConfiguration.PubSub.Providers.Status`](#ttn.lorawan.v3.AsConfiguration.PubSub.Providers.Status) |  |  |
+
+### <a name="ttn.lorawan.v3.DecodeDownlinkRequest">Message `DecodeDownlinkRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  |  |
+| `downlink` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) |  |  |
+| `formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  |  |
+| `parameter` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `end_device_ids` | <p>`message.required`: `true`</p> |
+| `downlink` | <p>`message.required`: `true`</p> |
+| `formatter` | <p>`enum.defined_only`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DecodeDownlinkResponse">Message `DecodeDownlinkResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `downlink` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) |  |  |
+
+### <a name="ttn.lorawan.v3.DecodeUplinkRequest">Message `DecodeUplinkRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  |  |
+| `uplink` | [`ApplicationUplink`](#ttn.lorawan.v3.ApplicationUplink) |  |  |
+| `formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  |  |
+| `parameter` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `end_device_ids` | <p>`message.required`: `true`</p> |
+| `uplink` | <p>`message.required`: `true`</p> |
+| `formatter` | <p>`enum.defined_only`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DecodeUplinkResponse">Message `DecodeUplinkResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `uplink` | [`ApplicationUplink`](#ttn.lorawan.v3.ApplicationUplink) |  |  |
+
+### <a name="ttn.lorawan.v3.EncodeDownlinkRequest">Message `EncodeDownlinkRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  |  |
+| `downlink` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) |  |  |
+| `formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  |  |
+| `parameter` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `end_device_ids` | <p>`message.required`: `true`</p> |
+| `downlink` | <p>`message.required`: `true`</p> |
+| `formatter` | <p>`enum.defined_only`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.EncodeDownlinkResponse">Message `EncodeDownlinkResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `downlink` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) |  |  |
+
 ### <a name="ttn.lorawan.v3.GetApplicationLinkRequest">Message `GetApplicationLinkRequest`</a>
 
 | Field | Type | Label | Description |
@@ -789,6 +1002,28 @@ Link stats as monitored by the Application Server.
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.GetAsConfigurationRequest">Message `GetAsConfigurationRequest`</a>
+
+### <a name="ttn.lorawan.v3.GetAsConfigurationResponse">Message `GetAsConfigurationResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `configuration` | [`AsConfiguration`](#ttn.lorawan.v3.AsConfiguration) |  |  |
+
+### <a name="ttn.lorawan.v3.NsAsHandleUplinkRequest">Message `NsAsHandleUplinkRequest`</a>
+
+Container for multiple Application uplink messages.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ups` | [`ApplicationUp`](#ttn.lorawan.v3.ApplicationUp) | repeated |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `application_ups` | <p>`repeated.min_items`: `1`</p> |
 
 ### <a name="ttn.lorawan.v3.SetApplicationLinkRequest">Message `SetApplicationLinkRequest`</a>
 
@@ -805,6 +1040,14 @@ Link stats as monitored by the Application Server.
 | `application_ids` | <p>`message.required`: `true`</p> |
 | `link` | <p>`message.required`: `true`</p> |
 
+### <a name="ttn.lorawan.v3.AsConfiguration.PubSub.Providers.Status">Enum `AsConfiguration.PubSub.Providers.Status`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `ENABLED` | 0 | No restrictions are in place. |
+| `WARNING` | 1 | Warnings are being emitted that the provider will be deprecated in the future. |
+| `DISABLED` | 2 | New integrations cannot be set up, and old ones do not start. |
+
 ### <a name="ttn.lorawan.v3.AppAs">Service `AppAs`</a>
 
 The AppAs service connects an application or integration to an Application Server.
@@ -817,6 +1060,9 @@ The AppAs service connects an application or integration to an Application Serve
 | `DownlinkQueueList` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`ApplicationDownlinks`](#ttn.lorawan.v3.ApplicationDownlinks) | List the items currently in the downlink queue. |
 | `GetMQTTConnectionInfo` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`MQTTConnectionInfo`](#ttn.lorawan.v3.MQTTConnectionInfo) | Get connection information to connect an MQTT client. |
 | `SimulateUplink` | [`ApplicationUp`](#ttn.lorawan.v3.ApplicationUp) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Simulate an upstream message. This can be used to test integrations. |
+| `EncodeDownlink` | [`EncodeDownlinkRequest`](#ttn.lorawan.v3.EncodeDownlinkRequest) | [`EncodeDownlinkResponse`](#ttn.lorawan.v3.EncodeDownlinkResponse) |  |
+| `DecodeUplink` | [`DecodeUplinkRequest`](#ttn.lorawan.v3.DecodeUplinkRequest) | [`DecodeUplinkResponse`](#ttn.lorawan.v3.DecodeUplinkResponse) |  |
+| `DecodeDownlink` | [`DecodeDownlinkRequest`](#ttn.lorawan.v3.DecodeDownlinkRequest) | [`DecodeDownlinkResponse`](#ttn.lorawan.v3.DecodeDownlinkResponse) |  |
 
 #### HTTP bindings
 
@@ -827,6 +1073,9 @@ The AppAs service connects an application or integration to an Application Serve
 | `DownlinkQueueList` | `GET` | `/api/v3/as/applications/{application_ids.application_id}/devices/{device_id}/down` |  |
 | `GetMQTTConnectionInfo` | `GET` | `/api/v3/as/applications/{application_id}/mqtt-connection-info` |  |
 | `SimulateUplink` | `POST` | `/api/v3/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/simulate` | `*` |
+| `EncodeDownlink` | `POST` | `/api/v3/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/encode` | `*` |
+| `DecodeUplink` | `POST` | `/api/v3/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/decode` | `*` |
+| `DecodeDownlink` | `POST` | `/api/v3/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/decode` | `*` |
 
 ### <a name="ttn.lorawan.v3.As">Service `As`</a>
 
@@ -838,6 +1087,7 @@ The As service manages the Application Server.
 | `SetLink` | [`SetApplicationLinkRequest`](#ttn.lorawan.v3.SetApplicationLinkRequest) | [`ApplicationLink`](#ttn.lorawan.v3.ApplicationLink) | Set a link configuration from the Application Server a Network Server. This call returns immediately after setting the link configuration; it does not wait for a link to establish. To get link statistics or errors, use GetLinkStats. Note that there can only be one Application Server instance linked to a Network Server for a given application at a time. |
 | `DeleteLink` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the link between the Application Server and Network Server for the specified application. |
 | `GetLinkStats` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`ApplicationLinkStats`](#ttn.lorawan.v3.ApplicationLinkStats) | GetLinkStats returns the link statistics. This call returns a NotFound error code if there is no link for the given application identifiers. This call returns the error code of the link error if linking to a Network Server failed. |
+| `GetConfiguration` | [`GetAsConfigurationRequest`](#ttn.lorawan.v3.GetAsConfigurationRequest) | [`GetAsConfigurationResponse`](#ttn.lorawan.v3.GetAsConfigurationResponse) |  |
 
 #### HTTP bindings
 
@@ -847,6 +1097,7 @@ The As service manages the Application Server.
 | `SetLink` | `PUT` | `/api/v3/as/applications/{application_ids.application_id}/link` | `*` |
 | `DeleteLink` | `DELETE` | `/api/v3/as/applications/{application_id}/link` |  |
 | `GetLinkStats` | `GET` | `/api/v3/as/applications/{application_id}/link/stats` |  |
+| `GetConfiguration` | `GET` | `/api/v3/as/configuration` |  |
 
 ### <a name="ttn.lorawan.v3.AsEndDeviceRegistry">Service `AsEndDeviceRegistry`</a>
 
@@ -867,20 +1118,30 @@ The AsEndDeviceRegistry service allows clients to manage their end devices on th
 | `Set` | `POST` | `/api/v3/as/applications/{end_device.ids.application_ids.application_id}/devices` | `*` |
 | `Delete` | `DELETE` | `/api/v3/as/applications/{application_ids.application_id}/devices/{device_id}` |  |
 
+### <a name="ttn.lorawan.v3.NsAs">Service `NsAs`</a>
+
+The NsAs service connects a Network Server to an Application Server.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `HandleUplink` | [`NsAsHandleUplinkRequest`](#ttn.lorawan.v3.NsAsHandleUplinkRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Handle Application uplink messages. |
+
 ## <a name="lorawan-stack/api/applicationserver_integrations_storage.proto">File `lorawan-stack/api/applicationserver_integrations_storage.proto`</a>
 
 ### <a name="ttn.lorawan.v3.GetStoredApplicationUpRequest">Message `GetStoredApplicationUpRequest`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Query upstream messages from all end devices of an application. Cannot be used in conjunction with EndDeviceIdentifiers. |
-| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  | Query upstream messages from a single end device. Cannot be used in conjunction with ApplicationIdentifiers. |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Query upstream messages from all end devices of an application. Cannot be used in conjunction with end_device_ids. |
+| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  | Query upstream messages from a single end device. Cannot be used in conjunction with application_ids. |
 | `type` | [`string`](#string) |  | Query upstream messages of a specific type. If not set, then all upstream messages are returned. |
 | `limit` | [`google.protobuf.UInt32Value`](#google.protobuf.UInt32Value) |  | Limit number of results. |
-| `after` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Query upstream messages after this timestamp only. |
-| `before` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Query upstream messages before this timestamp only. |
+| `after` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Query upstream messages after this timestamp only. Cannot be used in conjunction with last. |
+| `before` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Query upstream messages before this timestamp only. Cannot be used in conjunction with last. |
 | `f_port` | [`google.protobuf.UInt32Value`](#google.protobuf.UInt32Value) |  | Query uplinks on a specific FPort only. |
 | `order` | [`string`](#string) |  | Order results. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the upstream message fields that should be returned. See the API reference for allowed field names for each type of upstream message. |
+| `last` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Query upstream messages that have arrived in the last minutes or hours. Cannot be used in conjunction with after and before. |
 
 #### Field Rules
 
@@ -891,9 +1152,11 @@ The AsEndDeviceRegistry service allows clients to manage their end devices on th
 
 ### <a name="ttn.lorawan.v3.ApplicationUpStorage">Service `ApplicationUpStorage`</a>
 
+The ApplicationUpStorage service can be used to query stored application upstream messages.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `GetStoredApplicationUp` | [`GetStoredApplicationUpRequest`](#ttn.lorawan.v3.GetStoredApplicationUpRequest) | [`ApplicationUp`](#ttn.lorawan.v3.ApplicationUp) _stream_ |  |
+| `GetStoredApplicationUp` | [`GetStoredApplicationUpRequest`](#ttn.lorawan.v3.GetStoredApplicationUpRequest) | [`ApplicationUp`](#ttn.lorawan.v3.ApplicationUp) _stream_ | Returns a stream of application messages that have been stored in the database. |
 
 #### HTTP bindings
 
@@ -1231,6 +1494,9 @@ The MQTT provider settings.
 | `client_id` | <p>`string.max_len`: `23`</p> |
 | `username` | <p>`string.max_len`: `100`</p> |
 | `password` | <p>`string.max_len`: `100`</p> |
+| `tls_ca` | <p>`bytes.max_len`: `8192`</p> |
+| `tls_client_cert` | <p>`bytes.max_len`: `8192`</p> |
+| `tls_client_key` | <p>`bytes.max_len`: `8192`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationPubSub.MQTTProvider.HeadersEntry">Message `ApplicationPubSub.MQTTProvider.HeadersEntry`</a>
 
@@ -1399,6 +1665,7 @@ The NATS provider settings.
 | `ids` | <p>`message.required`: `true`</p> |
 | `base_url` | <p>`string.uri`: `true`</p> |
 | `format` | <p>`string.max_len`: `20`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `downlink_api_key` | <p>`string.max_len`: `128`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationWebhook.HeadersEntry">Message `ApplicationWebhook.HeadersEntry`</a>
 
@@ -1412,6 +1679,12 @@ The NATS provider settings.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `path` | [`string`](#string) |  | Path to append to the base URL. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `path` | <p>`string.max_len`: `64`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationWebhook.TemplateFieldsEntry">Message `ApplicationWebhook.TemplateFieldsEntry`</a>
 
@@ -1499,6 +1772,12 @@ The NATS provider settings.
 | ----- | ---- | ----- | ----------- |
 | `path` | [`string`](#string) |  | Path to append to the base URL. Can contain template fields, in RFC 6570 format. |
 
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `path` | <p>`string.max_len`: `64`</p> |
+
 ### <a name="ttn.lorawan.v3.ApplicationWebhookTemplateField">Message `ApplicationWebhookTemplateField`</a>
 
 ApplicationWebhookTemplateField represents a custom field that needs to be filled by the user in order to use the template.
@@ -1512,6 +1791,7 @@ The fields are meant to be replaced inside the URLs and headers when the webhook
 | `description` | [`string`](#string) |  |  |
 | `secret` | [`bool`](#bool) |  | Secret decides if the field should be shown in plain-text or should stay hidden. |
 | `default_value` | [`string`](#string) |  |  |
+| `optional` | [`bool`](#bool) |  |  |
 
 #### Field Rules
 
@@ -1640,6 +1920,7 @@ An OAuth client on the network.
 | `ids` | [`ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers) |  |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `deleted_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `description` | [`string`](#string) |  |  |
 | `attributes` | [`Client.AttributesEntry`](#ttn.lorawan.v3.Client.AttributesEntry) | repeated | Key-value attributes for this client. Typically used for organizing clients or for storing integration-specific data. |
@@ -1647,7 +1928,8 @@ An OAuth client on the network.
 | `secret` | [`string`](#string) |  | The client secret is only visible to collaborators of the client. |
 | `redirect_uris` | [`string`](#string) | repeated | The allowed redirect URIs against which authorization requests are checked. If the authorization request does not pass a redirect URI, the first one from this list is taken. |
 | `logout_redirect_uris` | [`string`](#string) | repeated | The allowed logout redirect URIs against which client initiated logout requests are checked. If the authorization request does not pass a redirect URI, the first one from this list is taken. |
-| `state` | [`State`](#ttn.lorawan.v3.State) |  | The reviewing state of the client. This field can only be modified by admins. |
+| `state` | [`State`](#ttn.lorawan.v3.State) |  | The reviewing state of the client. This field can only be modified by admins. If state_description is not updated when updating state, state_description is cleared. |
+| `state_description` | [`string`](#string) |  | A description for the state field. This field can only be modified by admins, and should typically only be updated when also updating `state`. |
 | `skip_authorization` | [`bool`](#bool) |  | If set, the authorization page will be skipped. This field can only be modified by admins. |
 | `endorsed` | [`bool`](#bool) |  | If set, the authorization page will show endorsement. This field can only be modified by admins. |
 | `grants` | [`GrantType`](#ttn.lorawan.v3.GrantType) | repeated | OAuth flows that can be used for the client to get a token. After a client is created, this field can only be modified by admins. |
@@ -1660,8 +1942,13 @@ An OAuth client on the network.
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
+| `secret` | <p>`string.max_len`: `128`</p> |
+| `redirect_uris` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `128`</p> |
+| `logout_redirect_uris` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `128`</p> |
 | `state` | <p>`enum.defined_only`: `true`</p> |
+| `state_description` | <p>`string.max_len`: `128`</p> |
 | `grants` | <p>`repeated.items.enum.defined_only`: `true`</p> |
 | `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
 
@@ -1743,6 +2030,7 @@ An OAuth client on the network.
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted clients. |
 
 #### Field Rules
 
@@ -1792,6 +2080,9 @@ The OAuth2 flows an OAuth client can use to get an access token.
 
 ### <a name="ttn.lorawan.v3.ClientAccess">Service `ClientAccess`</a>
 
+The ClientAcces service, exposed by the Identity Server, is used to manage
+collaborators of OAuth clients.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `ListRights` | [`ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers) | [`Rights`](#ttn.lorawan.v3.Rights) | List the rights the caller has on this application. |
@@ -1812,13 +2103,20 @@ The OAuth2 flows an OAuth client can use to get an access token.
 
 ### <a name="ttn.lorawan.v3.ClientRegistry">Service `ClientRegistry`</a>
 
+The ClientRegistry service, exposed by the Identity Server, is used to manage
+OAuth client registrations.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Create` | [`CreateClientRequest`](#ttn.lorawan.v3.CreateClientRequest) | [`Client`](#ttn.lorawan.v3.Client) | Create a new OAuth client. This also sets the given organization or user as first collaborator with all possible rights. |
 | `Get` | [`GetClientRequest`](#ttn.lorawan.v3.GetClientRequest) | [`Client`](#ttn.lorawan.v3.Client) | Get the OAuth client with the given identifiers, selecting the fields specified in the field mask. More or less fields may be returned, depending on the rights of the caller. |
-| `List` | [`ListClientsRequest`](#ttn.lorawan.v3.ListClientsRequest) | [`Clients`](#ttn.lorawan.v3.Clients) | List OAuth clients where the given user or organization is a direct collaborator. If no user or organization is given, this returns the OAuth clients the caller has access to. Similar to Get, this selects the fields sepcified in the field mask. More or less fields may be returned, depending on the rights of the caller. |
+| `List` | [`ListClientsRequest`](#ttn.lorawan.v3.ListClientsRequest) | [`Clients`](#ttn.lorawan.v3.Clients) | List OAuth clients where the given user or organization is a direct collaborator. If no user or organization is given, this returns the OAuth clients the caller has access to. Similar to Get, this selects the fields specified in the field mask. More or less fields may be returned, depending on the rights of the caller. |
 | `Update` | [`UpdateClientRequest`](#ttn.lorawan.v3.UpdateClientRequest) | [`Client`](#ttn.lorawan.v3.Client) | Update the OAuth client, changing the fields specified by the field mask to the provided values. |
 | `Delete` | [`ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the OAuth client. This may not release the client ID for reuse. |
+| `Restore` | [`ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Restore a recently deleted client.
+
+Deployment configuration may specify if, and for how long after deletion, entities can be restored. |
+| `Purge` | [`ClientIdentifiers`](#ttn.lorawan.v3.ClientIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Purge the client. This will release the client ID for reuse. |
 
 #### HTTP bindings
 
@@ -1832,6 +2130,8 @@ The OAuth2 flows an OAuth client can use to get an access token.
 | `List` | `GET` | `/api/v3/organizations/{collaborator.organization_ids.organization_id}/clients` |  |
 | `Update` | `PUT` | `/api/v3/clients/{client.ids.client_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/clients/{client_id}` |  |
+| `Restore` | `POST` | `/api/v3/clients/{client_id}/restore` |  |
+| `Purge` | `DELETE` | `/api/v3/clients/{client_id}/purge` |  |
 
 ## <a name="lorawan-stack/api/cluster.proto">File `lorawan-stack/api/cluster.proto`</a>
 
@@ -1900,6 +2200,14 @@ PeerInfo
 | `public` | [`bool`](#bool) |  |  |
 | `validated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `contact_type` | <p>`enum.defined_only`: `true`</p> |
+| `contact_method` | <p>`enum.defined_only`: `true`</p> |
+| `value` | <p>`string.max_len`: `256`</p> |
+
 ### <a name="ttn.lorawan.v3.ContactInfoValidation">Message `ContactInfoValidation`</a>
 
 | Field | Type | Label | Description |
@@ -1910,6 +2218,13 @@ PeerInfo
 | `contact_info` | [`ContactInfo`](#ttn.lorawan.v3.ContactInfo) | repeated |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `id` | <p>`string.max_len`: `64`</p> |
+| `token` | <p>`string.max_len`: `64`</p> |
 
 ### <a name="ttn.lorawan.v3.ContactMethod">Enum `ContactMethod`</a>
 
@@ -1929,6 +2244,12 @@ PeerInfo
 | `CONTACT_TYPE_TECHNICAL` | 3 |  |
 
 ### <a name="ttn.lorawan.v3.ContactInfoRegistry">Service `ContactInfoRegistry`</a>
+
+The ContactInfoRegistry service, exposed by the Identity Server, is used for
+validating contact information of registered entities.
+
+The actual contact information can be managed with the different registry services:
+ApplicationRegistry, ClientRegistry, GatewayRegistry, OrganizationRegistry and UserRegistry.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
@@ -1956,14 +2277,59 @@ PeerInfo
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
+| `api_key` | <p>`string.min_len`: `1`</p><p>`string.max_len`: `128`</p> |
+
+### <a name="ttn.lorawan.v3.AuthorizeGatewayRequest">Message `AuthorizeGatewayRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gateway_ids` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) |  |  |
+| `api_key` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `gateway_ids` | <p>`message.required`: `true`</p> |
 | `api_key` | <p>`string.min_len`: `1`</p> |
+
+### <a name="ttn.lorawan.v3.CUPSRedirection">Message `CUPSRedirection`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `target_cups_uri` | [`string`](#string) |  | CUPS URI for LoRa Basics Station CUPS redirection. |
+| `current_gateway_key` | [`string`](#string) |  | The key set in the gateway to authenticate itself. |
+| `target_cups_trust` | [`bytes`](#bytes) |  | Optional PEM encoded CA Root certificate. If this field is empty, DCS will attempt to dial the Target CUPS server and fetch the CA. |
+| `client_tls` | [`CUPSRedirection.ClientTLS`](#ttn.lorawan.v3.CUPSRedirection.ClientTLS) |  | TODO: Support mTLS (https://github.com/TheThingsNetwork/lorawan-stack/issues/137) |
+| `auth_token` | [`string`](#string) |  | The Device Claiming Server will fill this field with a The Things Stack API Key. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `current_gateway_key` | <p>`string.max_len`: `2048`</p> |
+| `auth_token` | <p>`string.max_len`: `2048`</p> |
+
+### <a name="ttn.lorawan.v3.CUPSRedirection.ClientTLS">Message `CUPSRedirection.ClientTLS`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `cert` | [`bytes`](#bytes) |  | PEM encoded Client Certificate. |
+| `key` | [`bytes`](#bytes) |  | PEM encoded Client Private Key. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `cert` | <p>`bytes.max_len`: `8192`</p> |
+| `key` | <p>`bytes.max_len`: `8192`</p> |
 
 ### <a name="ttn.lorawan.v3.ClaimEndDeviceRequest">Message `ClaimEndDeviceRequest`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `authenticated_identifiers` | [`ClaimEndDeviceRequest.AuthenticatedIdentifiers`](#ttn.lorawan.v3.ClaimEndDeviceRequest.AuthenticatedIdentifiers) |  |  |
-| `qr_code` | [`bytes`](#bytes) |  |  |
+| `authenticated_identifiers` | [`ClaimEndDeviceRequest.AuthenticatedIdentifiers`](#ttn.lorawan.v3.ClaimEndDeviceRequest.AuthenticatedIdentifiers) |  | Authenticated identifiers. |
+| `qr_code` | [`bytes`](#bytes) |  | Raw QR code contents. |
 | `target_application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers of the target end device. |
 | `target_device_id` | [`string`](#string) |  | End device ID of the target end device. If empty, use the source device ID. |
 | `target_network_server_address` | [`string`](#string) |  | The address of the Network Server where the device will be registered. If set and if the source device is currently registered on a Network Server, settings will be transferred. If not set, the device shall not be registered on a Network Server. |
@@ -1991,9 +2357,9 @@ PeerInfo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `join_eui` | [`bytes`](#bytes) |  |  |
-| `dev_eui` | [`bytes`](#bytes) |  |  |
-| `authentication_code` | [`string`](#string) |  |  |
+| `join_eui` | [`bytes`](#bytes) |  | JoinEUI (or AppEUI) of the device to claim. |
+| `dev_eui` | [`bytes`](#bytes) |  | DevEUI of the device to claim. |
+| `authentication_code` | [`string`](#string) |  | Authentication code to prove ownership. In the LoRa Alliance TR005 specification, this equals the OwnerToken. |
 
 #### Field Rules
 
@@ -2001,13 +2367,51 @@ PeerInfo
 | ----- | ----------- |
 | `authentication_code` | <p>`string.pattern`: `^[A-Z0-9]{1,32}$`</p> |
 
+### <a name="ttn.lorawan.v3.ClaimGatewayRequest">Message `ClaimGatewayRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authenticated_identifiers` | [`ClaimGatewayRequest.AuthenticatedIdentifiers`](#ttn.lorawan.v3.ClaimGatewayRequest.AuthenticatedIdentifiers) |  |  |
+| `qr_code` | [`bytes`](#bytes) |  |  |
+| `collaborator` | [`OrganizationOrUserIdentifiers`](#ttn.lorawan.v3.OrganizationOrUserIdentifiers) |  | Collaborator to grant all rights on the target gateway. |
+| `target_gateway_id` | [`string`](#string) |  | Gateway ID for the target gateway. This must be a unique value. If this is not set, the target ID for the target gateway will be set to `eui-<gateway-eui>` |
+| `target_gateway_server_address` | [`string`](#string) |  | Target Gateway Server Address for the target gateway. |
+| `cups_redirection` | [`CUPSRedirection`](#ttn.lorawan.v3.CUPSRedirection) |  | Parameters to set CUPS redirection for the gateway. |
+| `target_frequency_plan_id` | [`string`](#string) |  | Frequency plan ID of the target gateway. This equals the first element of the frequency_plan_ids field. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `qr_code` | <p>`bytes.min_len`: `0`</p><p>`bytes.max_len`: `1024`</p> |
+| `collaborator` | <p>`message.required`: `true`</p> |
+| `target_gateway_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$`</p> |
+| `target_gateway_server_address` | <p>`string.pattern`: `^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$`</p> |
+| `target_frequency_plan_id` | <p>`string.max_len`: `64`</p> |
+
+### <a name="ttn.lorawan.v3.ClaimGatewayRequest.AuthenticatedIdentifiers">Message `ClaimGatewayRequest.AuthenticatedIdentifiers`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gateway_eui` | [`bytes`](#bytes) |  |  |
+| `authentication_code` | [`bytes`](#bytes) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `authentication_code` | <p>`bytes.max_len`: `2048`</p> |
+
 ### <a name="ttn.lorawan.v3.EndDeviceClaimingServer">Service `EndDeviceClaimingServer`</a>
+
+The EndDeviceClaimingServer service configures authorization to claim end devices registered in an application,
+and allows clients to claim end devices.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Claim` | [`ClaimEndDeviceRequest`](#ttn.lorawan.v3.ClaimEndDeviceRequest) | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | Claims the end device by claim authentication code or QR code and transfers the device to the target application. |
-| `AuthorizeApplication` | [`AuthorizeApplicationRequest`](#ttn.lorawan.v3.AuthorizeApplicationRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
-| `UnauthorizeApplication` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
+| `AuthorizeApplication` | [`AuthorizeApplicationRequest`](#ttn.lorawan.v3.AuthorizeApplicationRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Authorize the End Device Claiming Server to claim devices registered in the given application. The application identifiers are the source application, where the devices are registered before they are claimed. The API key is used to access the application, find the device, verify the claim request and delete the end device from the source application. |
+| `UnauthorizeApplication` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Unauthorize the End Device Claiming Server to claim devices in the given application. This reverts the authorization given with rpc AuthorizeApplication. |
 
 #### HTTP bindings
 
@@ -2017,7 +2421,422 @@ PeerInfo
 | `AuthorizeApplication` | `POST` | `/api/v3/edcs/applications/{application_ids.application_id}/authorize` | `*` |
 | `UnauthorizeApplication` | `DELETE` | `/api/v3/edcs/applications/{application_id}/authorize` |  |
 
+### <a name="ttn.lorawan.v3.GatewayClaimingServer">Service `GatewayClaimingServer`</a>
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `Claim` | [`ClaimGatewayRequest`](#ttn.lorawan.v3.ClaimGatewayRequest) | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) | Claims a gateway by claim authentication code or QR code and transfers the gateway to the target user. |
+| `AuthorizeGateway` | [`AuthorizeGatewayRequest`](#ttn.lorawan.v3.AuthorizeGatewayRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | AuthorizeGateway allows a gateway to be claimed. |
+| `UnauthorizeGateway` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | UnauthorizeGateway prevents a gateway from being claimed. |
+
+#### HTTP bindings
+
+| Method Name | Method | Pattern | Body |
+| ----------- | ------ | ------- | ---- |
+| `Claim` | `POST` | `/api/v3/gcls/claim` | `*` |
+| `AuthorizeGateway` | `POST` | `/api/v3/gcls/gateways/{gateway_ids.gateway_id}/authorize` | `*` |
+| `UnauthorizeGateway` | `DELETE` | `/api/v3/gcls/gateways/{gateway_id}/authorize` |  |
+
+## <a name="lorawan-stack/api/devicerepository.proto">File `lorawan-stack/api/devicerepository.proto`</a>
+
+### <a name="ttn.lorawan.v3.DecodedMessagePayload">Message `DecodedMessagePayload`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
+| `warnings` | [`string`](#string) | repeated |  |
+| `errors` | [`string`](#string) | repeated |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `warnings` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `100`</p> |
+| `errors` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.EncodedMessagePayload">Message `EncodedMessagePayload`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `f_port` | [`uint32`](#uint32) |  |  |
+| `frm_payload` | [`bytes`](#bytes) |  |  |
+| `warnings` | [`string`](#string) | repeated |  |
+| `errors` | [`string`](#string) | repeated |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `f_port` | <p>`uint32.lte`: `255`</p> |
+| `warnings` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `100`</p> |
+| `errors` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.EndDeviceBrand">Message `EndDeviceBrand`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `brand_id` | [`string`](#string) |  | Brand identifier, as specified in the Device Repository. |
+| `name` | [`string`](#string) |  | Brand name. |
+| `private_enterprise_number` | [`uint32`](#uint32) |  | Private Enterprise Number (PEN) assigned by IANA. |
+| `organization_unique_identifiers` | [`string`](#string) | repeated | Organization Unique Identifiers (OUI) assigned by IEEE. |
+| `lora_alliance_vendor_id` | [`uint32`](#uint32) |  | VendorID managed by the LoRa Alliance, as defined in TR005. |
+| `website` | [`string`](#string) |  | Brand website URL. |
+| `email` | [`string`](#string) |  | Contact email address. |
+| `logo` | [`string`](#string) |  | Path to brand logo. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel">Message `EndDeviceModel`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `brand_id` | [`string`](#string) |  | Brand identifier, as defined in the Device Repository. |
+| `model_id` | [`string`](#string) |  | Model identifier, as defined in the Device Repository. |
+| `name` | [`string`](#string) |  | Model name, as defined in the Device Repository. |
+| `description` | [`string`](#string) |  | Model description. |
+| `hardware_versions` | [`EndDeviceModel.HardwareVersion`](#ttn.lorawan.v3.EndDeviceModel.HardwareVersion) | repeated | Available hardware versions. |
+| `firmware_versions` | [`EndDeviceModel.FirmwareVersion`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion) | repeated | Available firmware versions. |
+| `sensors` | [`string`](#string) | repeated | List of sensors included in the device. |
+| `dimensions` | [`EndDeviceModel.Dimensions`](#ttn.lorawan.v3.EndDeviceModel.Dimensions) |  | Device dimensions. |
+| `weight` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Device weight (gram). |
+| `battery` | [`EndDeviceModel.Battery`](#ttn.lorawan.v3.EndDeviceModel.Battery) |  | Device battery information. |
+| `operating_conditions` | [`EndDeviceModel.OperatingConditions`](#ttn.lorawan.v3.EndDeviceModel.OperatingConditions) |  | Device operating conditions. |
+| `ip_code` | [`string`](#string) |  | Device IP rating code. |
+| `key_provisioning` | [`KeyProvisioning`](#ttn.lorawan.v3.KeyProvisioning) | repeated | Supported key provisioning methods. |
+| `key_security` | [`KeySecurity`](#ttn.lorawan.v3.KeySecurity) |  | Device key security. |
+| `photos` | [`EndDeviceModel.Photos`](#ttn.lorawan.v3.EndDeviceModel.Photos) |  | Device photos. |
+| `videos` | [`EndDeviceModel.Videos`](#ttn.lorawan.v3.EndDeviceModel.Videos) |  | Device videos. |
+| `product_url` | [`string`](#string) |  | Device information page URL. |
+| `datasheet_url` | [`string`](#string) |  | Device datasheet URL. |
+| `resellers` | [`EndDeviceModel.Reseller`](#ttn.lorawan.v3.EndDeviceModel.Reseller) | repeated | Reseller URLs. |
+| `compliances` | [`EndDeviceModel.Compliances`](#ttn.lorawan.v3.EndDeviceModel.Compliances) |  | List of standards the device is compliant with. |
+| `additional_radios` | [`string`](#string) | repeated | List of any additional radios included in the device. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `model_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `name` | <p>`string.max_len`: `50`</p> |
+| `description` | <p>`string.max_len`: `2000`</p> |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Battery">Message `EndDeviceModel.Battery`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `replaceable` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether the device battery can be replaced. |
+| `type` | [`string`](#string) |  | Battery type. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Compliances">Message `EndDeviceModel.Compliances`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `safety` | [`EndDeviceModel.Compliances.Compliance`](#ttn.lorawan.v3.EndDeviceModel.Compliances.Compliance) | repeated | List of safety standards the device is compliant with. |
+| `radio_equipment` | [`EndDeviceModel.Compliances.Compliance`](#ttn.lorawan.v3.EndDeviceModel.Compliances.Compliance) | repeated | List of radio equipment standards the device is compliant with. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Compliances.Compliance">Message `EndDeviceModel.Compliances.Compliance`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `body` | [`string`](#string) |  |  |
+| `norm` | [`string`](#string) |  |  |
+| `standard` | [`string`](#string) |  |  |
+| `version` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Dimensions">Message `EndDeviceModel.Dimensions`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `width` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Device width (mm). |
+| `height` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Device height (mm). |
+| `diameter` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Device diameter (mm). |
+| `length` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Device length (mm). |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.FirmwareVersion">Message `EndDeviceModel.FirmwareVersion`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `version` | [`string`](#string) |  | Firmware version string. |
+| `numeric` | [`uint32`](#uint32) |  | Numeric firmware revision number. |
+| `supported_hardware_versions` | [`string`](#string) | repeated | Hardware versions supported by this firmware version. |
+| `profiles` | [`EndDeviceModel.FirmwareVersion.ProfilesEntry`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.ProfilesEntry) | repeated | Device profiles for each supported region (band). |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.Profile">Message `EndDeviceModel.FirmwareVersion.Profile`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `vendor_id` | [`string`](#string) |  | Vendor ID of the profile, as defined in the Device Repository. If this value is set, the profile is loaded from this vendor's folder. If this value is not set, the profile is loaded from the current (end device's) vendor. |
+| `profile_id` | [`string`](#string) |  | Profile identifier, as defined in the Device Repository. |
+| `lorawan_certified` | [`bool`](#bool) |  | Whether the device is LoRaWAN certified. |
+| `codec_id` | [`string`](#string) |  | Payload formatter codec identifier, as defined in the Device Repository. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.ProfilesEntry">Message `EndDeviceModel.FirmwareVersion.ProfilesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`EndDeviceModel.FirmwareVersion.Profile`](#ttn.lorawan.v3.EndDeviceModel.FirmwareVersion.Profile) |  |  |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.HardwareVersion">Message `EndDeviceModel.HardwareVersion`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `version` | [`string`](#string) |  | Hardware version string. |
+| `numeric` | [`uint32`](#uint32) |  | Numberic hardware revision number. |
+| `part_number` | [`string`](#string) |  | Hardware part number. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.OperatingConditions">Message `EndDeviceModel.OperatingConditions`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `temperature` | [`EndDeviceModel.OperatingConditions.Limits`](#ttn.lorawan.v3.EndDeviceModel.OperatingConditions.Limits) |  | Temperature operating conditions (Celsius). |
+| `relative_humidity` | [`EndDeviceModel.OperatingConditions.Limits`](#ttn.lorawan.v3.EndDeviceModel.OperatingConditions.Limits) |  | Relative humidity operating conditions (Fraction, in range [0, 1]). |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.OperatingConditions.Limits">Message `EndDeviceModel.OperatingConditions.Limits`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `min` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Min value of operating conditions range. |
+| `max` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Max value of operating conditions range. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Photos">Message `EndDeviceModel.Photos`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `main` | [`string`](#string) |  | Main device photo. |
+| `other` | [`string`](#string) | repeated | List of other device photos. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Reseller">Message `EndDeviceModel.Reseller`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `name` | [`string`](#string) |  | Reseller name. |
+| `region` | [`string`](#string) | repeated | Reseller regions. |
+| `url` | [`string`](#string) |  | Reseller URL. |
+
+### <a name="ttn.lorawan.v3.EndDeviceModel.Videos">Message `EndDeviceModel.Videos`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `main` | [`string`](#string) |  | Link to main device video. |
+| `other` | [`string`](#string) | repeated | Links to other device videos. |
+
+### <a name="ttn.lorawan.v3.GetEndDeviceBrandRequest">Message `GetEndDeviceBrandRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `brand_id` | [`string`](#string) |  | Brand identifier, as defined in the Device Repository. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | Field mask paths. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+
+### <a name="ttn.lorawan.v3.GetEndDeviceModelRequest">Message `GetEndDeviceModelRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `brand_id` | [`string`](#string) |  | Brand identifier, as defined in the Device Repository. |
+| `model_id` | [`string`](#string) |  | Model identifier, as defined in the Device Repository. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | Field mask paths. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `model_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+
+### <a name="ttn.lorawan.v3.GetPayloadFormatterRequest">Message `GetPayloadFormatterRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version information. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | Field mask paths. |
+
+### <a name="ttn.lorawan.v3.GetTemplateRequest">Message `GetTemplateRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version information. |
+
+### <a name="ttn.lorawan.v3.ListEndDeviceBrandsRequest">Message `ListEndDeviceBrandsRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `order_by` | [`string`](#string) |  | Order (for pagination) |
+| `search` | [`string`](#string) |  | Search for brands matching a query string. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | Field mask paths. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+| `order_by` | <p>`string.in`: `[ brand_id -brand_id name -name]`</p> |
+| `search` | <p>`string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.ListEndDeviceBrandsResponse">Message `ListEndDeviceBrandsResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `brands` | [`EndDeviceBrand`](#ttn.lorawan.v3.EndDeviceBrand) | repeated |  |
+
+### <a name="ttn.lorawan.v3.ListEndDeviceModelsRequest">Message `ListEndDeviceModelsRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application identifiers. |
+| `brand_id` | [`string`](#string) |  | List end devices from a specific brand. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `order_by` | [`string`](#string) |  | Order end devices |
+| `search` | [`string`](#string) |  | List end devices matching a query string. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | Field mask paths. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+| `order_by` | <p>`string.in`: `[ brand_id -brand_id model_id -model_id name -name]`</p> |
+| `search` | <p>`string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.ListEndDeviceModelsResponse">Message `ListEndDeviceModelsResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `models` | [`EndDeviceModel`](#ttn.lorawan.v3.EndDeviceModel) | repeated |  |
+
+### <a name="ttn.lorawan.v3.MessagePayloadDecoder">Message `MessagePayloadDecoder`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  | Payload formatter type. |
+| `formatter_parameter` | [`string`](#string) |  | Parameter for the formatter, must be set together. |
+| `codec_id` | [`string`](#string) |  |  |
+| `examples` | [`MessagePayloadDecoder.Example`](#ttn.lorawan.v3.MessagePayloadDecoder.Example) | repeated |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `formatter` | <p>`enum.defined_only`: `true`</p> |
+| `codec_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$`</p> |
+| `examples` | <p>`repeated.max_items`: `20`</p> |
+
+### <a name="ttn.lorawan.v3.MessagePayloadDecoder.Example">Message `MessagePayloadDecoder.Example`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `description` | [`string`](#string) |  |  |
+| `input` | [`EncodedMessagePayload`](#ttn.lorawan.v3.EncodedMessagePayload) |  |  |
+| `output` | [`DecodedMessagePayload`](#ttn.lorawan.v3.DecodedMessagePayload) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `description` | <p>`string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.MessagePayloadEncoder">Message `MessagePayloadEncoder`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  | Payload formatter type. |
+| `formatter_parameter` | [`string`](#string) |  | Parameter for the formatter, must be set together. |
+| `codec_id` | [`string`](#string) |  |  |
+| `examples` | [`MessagePayloadEncoder.Example`](#ttn.lorawan.v3.MessagePayloadEncoder.Example) | repeated |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `formatter` | <p>`enum.defined_only`: `true`</p> |
+| `codec_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$`</p> |
+| `examples` | <p>`repeated.max_items`: `20`</p> |
+
+### <a name="ttn.lorawan.v3.MessagePayloadEncoder.Example">Message `MessagePayloadEncoder.Example`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `description` | [`string`](#string) |  |  |
+| `input` | [`DecodedMessagePayload`](#ttn.lorawan.v3.DecodedMessagePayload) |  |  |
+| `output` | [`EncodedMessagePayload`](#ttn.lorawan.v3.EncodedMessagePayload) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `description` | <p>`string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.KeyProvisioning">Enum `KeyProvisioning`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `KEY_PROVISIONING_UNKNOWN` | 0 | Unknown Key Provisioning. |
+| `KEY_PROVISIONING_CUSTOM` | 1 | Custom Key Provisioning. |
+| `KEY_PROVISIONING_JOIN_SERVER` | 2 | Key Provisioning from the Global Join Server. |
+| `KEY_PROVISIONING_MANIFEST` | 3 | Key Provisioning from Manifest. |
+
+### <a name="ttn.lorawan.v3.KeySecurity">Enum `KeySecurity`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `KEY_SECURITY_UNKNOWN` | 0 | Unknown key security. |
+| `KEY_SECURITY_NONE` | 1 | No key security. |
+| `KEY_SECURITY_READ_PROTECTED` | 2 | Read Protected key security. |
+| `KEY_SECURITY_SECURE_ELEMENT` | 3 | Key security using the Security Element. |
+
+### <a name="ttn.lorawan.v3.DeviceRepository">Service `DeviceRepository`</a>
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `ListBrands` | [`ListEndDeviceBrandsRequest`](#ttn.lorawan.v3.ListEndDeviceBrandsRequest) | [`ListEndDeviceBrandsResponse`](#ttn.lorawan.v3.ListEndDeviceBrandsResponse) |  |
+| `GetBrand` | [`GetEndDeviceBrandRequest`](#ttn.lorawan.v3.GetEndDeviceBrandRequest) | [`EndDeviceBrand`](#ttn.lorawan.v3.EndDeviceBrand) |  |
+| `ListModels` | [`ListEndDeviceModelsRequest`](#ttn.lorawan.v3.ListEndDeviceModelsRequest) | [`ListEndDeviceModelsResponse`](#ttn.lorawan.v3.ListEndDeviceModelsResponse) |  |
+| `GetModel` | [`GetEndDeviceModelRequest`](#ttn.lorawan.v3.GetEndDeviceModelRequest) | [`EndDeviceModel`](#ttn.lorawan.v3.EndDeviceModel) |  |
+| `GetTemplate` | [`GetTemplateRequest`](#ttn.lorawan.v3.GetTemplateRequest) | [`EndDeviceTemplate`](#ttn.lorawan.v3.EndDeviceTemplate) |  |
+| `GetUplinkDecoder` | [`GetPayloadFormatterRequest`](#ttn.lorawan.v3.GetPayloadFormatterRequest) | [`MessagePayloadDecoder`](#ttn.lorawan.v3.MessagePayloadDecoder) |  |
+| `GetDownlinkDecoder` | [`GetPayloadFormatterRequest`](#ttn.lorawan.v3.GetPayloadFormatterRequest) | [`MessagePayloadDecoder`](#ttn.lorawan.v3.MessagePayloadDecoder) |  |
+| `GetDownlinkEncoder` | [`GetPayloadFormatterRequest`](#ttn.lorawan.v3.GetPayloadFormatterRequest) | [`MessagePayloadEncoder`](#ttn.lorawan.v3.MessagePayloadEncoder) |  |
+
+#### HTTP bindings
+
+| Method Name | Method | Pattern | Body |
+| ----------- | ------ | ------- | ---- |
+| `ListBrands` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands` |  |
+| `GetBrand` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{brand_id}` |  |
+| `ListModels` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{brand_id}/models` |  |
+| `ListModels` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/models` |  |
+| `GetModel` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{brand_id}/models/{model_id}` |  |
+| `GetTemplate` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/template` |  |
+| `GetUplinkDecoder` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/uplink/decoder` |  |
+| `GetDownlinkDecoder` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/decoder` |  |
+| `GetDownlinkEncoder` | `GET` | `/api/v3/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/encoder` |  |
+
 ## <a name="lorawan-stack/api/end_device.proto">File `lorawan-stack/api/end_device.proto`</a>
+
+### <a name="ttn.lorawan.v3.BoolValue">Message `BoolValue`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `value` | [`bool`](#bool) |  |  |
 
 ### <a name="ttn.lorawan.v3.ConvertEndDeviceTemplateRequest">Message `ConvertEndDeviceTemplateRequest`</a>
 
@@ -2043,6 +2862,13 @@ PeerInfo
 | Field | Validations |
 | ----- | ----------- |
 | `end_device` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DevAddrPrefix">Message `DevAddrPrefix`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `dev_addr` | [`bytes`](#bytes) |  | DevAddr base. |
+| `length` | [`uint32`](#uint32) |  | Number of most significant bits from dev_addr that are used as prefix. |
 
 ### <a name="ttn.lorawan.v3.EndDevice">Message `EndDevice`</a>
 
@@ -2093,9 +2919,6 @@ SDKs are responsible for combining (if desired) the three.
 | `power_state` | [`PowerState`](#ttn.lorawan.v3.PowerState) |  | The power state of the device; whether it is battery-powered or connected to an external power source. Received via the DevStatus MAC command at status_received_at. Stored in Network Server. |
 | `battery_percentage` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Latest-known battery percentage of the device. Received via the DevStatus MAC command at last_dev_status_received_at or earlier. Stored in Network Server. |
 | `downlink_margin` | [`int32`](#int32) |  | Demodulation signal-to-noise ratio (dB). Received via the DevStatus MAC command at last_dev_status_received_at. Stored in Network Server. |
-| `recent_adr_uplinks` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | repeated | Recent uplink messages with ADR bit set to 1 sorted by time. Stored in Network Server. The field is reset each time an uplink message carrying MACPayload is received with ADR bit set to 0. The number of messages stored is in the range [0,20]; |
-| `recent_uplinks` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | repeated | Recent uplink messages sorted by time. Stored in Network Server. The number of messages stored may depend on configuration. |
-| `recent_downlinks` | [`DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage) | repeated | Recent downlink messages sorted by time. Stored in Network Server. The number of messages stored may depend on configuration. |
 | `queued_application_downlinks` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) | repeated | Queued Application downlink messages. Stored in Application Server, which sets them on the Network Server. This field is deprecated and is always set equal to session.queued_application_downlinks. |
 | `formatters` | [`MessagePayloadFormatters`](#ttn.lorawan.v3.MessagePayloadFormatters) |  | The payload formatters for this end device. Stored in Application Server. Copied on creation from template identified by version_ids. |
 | `provisioner_id` | [`string`](#string) |  | ID of the provisioner. Stored in Join Server. |
@@ -2104,6 +2927,7 @@ SDKs are responsible for combining (if desired) the three.
 | `claim_authentication_code` | [`EndDeviceAuthenticationCode`](#ttn.lorawan.v3.EndDeviceAuthenticationCode) |  | Authentication code to claim ownership of the end device. Stored in Join Server. |
 | `skip_payload_crypto` | [`bool`](#bool) |  | Skip decryption of uplink payloads and encryption of downlink payloads. This field is deprecated, use skip_payload_crypto_override instead. |
 | `skip_payload_crypto_override` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Skip decryption of uplink payloads and encryption of downlink payloads. This field overrides the application-level setting. |
+| `activated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Timestamp when the device has been activated. Stored in the Entity Registry. This field is set by the Application Server when an end device sends its first uplink. The Application Server will use the field in order to avoid repeated calls to the Entity Registry. The field cannot be unset once set. |
 
 #### Field Rules
 
@@ -2112,7 +2936,7 @@ SDKs are responsible for combining (if desired) the three.
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
 | `service_profile_id` | <p>`string.max_len`: `64`</p> |
 | `network_server_address` | <p>`string.pattern`: `^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$`</p> |
 | `network_server_kek_label` | <p>`string.max_len`: `2048`</p> |
@@ -2157,30 +2981,6 @@ Authentication code for end devices.
 | Field | Validations |
 | ----- | ----------- |
 | `value` | <p>`string.pattern`: `^[A-Z0-9]{1,32}$`</p> |
-
-### <a name="ttn.lorawan.v3.EndDeviceBrand">Message `EndDeviceBrand`</a>
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `id` | [`string`](#string) |  |  |
-| `name` | [`string`](#string) |  |  |
-| `url` | [`string`](#string) |  |  |
-| `logos` | [`string`](#string) | repeated | Logos contains file names of brand logos. |
-
-### <a name="ttn.lorawan.v3.EndDeviceModel">Message `EndDeviceModel`</a>
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `brand_id` | [`string`](#string) |  |  |
-| `id` | [`string`](#string) |  |  |
-| `name` | [`string`](#string) |  |  |
-
-#### Field Rules
-
-| Field | Validations |
-| ----- | ----------- |
-| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
-| `id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 
 ### <a name="ttn.lorawan.v3.EndDeviceTemplate">Message `EndDeviceTemplate`</a>
 
@@ -2260,25 +3060,8 @@ Template for creating end devices.
 | `lorawan_version` | <p>`enum.defined_only`: `true`</p> |
 | `lorawan_phy_version` | <p>`enum.defined_only`: `true`</p> |
 | `frequency_plan_id` | <p>`string.max_len`: `64`</p> |
+| `photos` | <p>`repeated.max_items`: `10`</p> |
 | `default_formatters` | <p>`message.required`: `true`</p> |
-
-### <a name="ttn.lorawan.v3.EndDeviceVersionIdentifiers">Message `EndDeviceVersionIdentifiers`</a>
-
-Identifies an end device model with version information.
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `brand_id` | [`string`](#string) |  |  |
-| `model_id` | [`string`](#string) |  |  |
-| `hardware_version` | [`string`](#string) |  |  |
-| `firmware_version` | [`string`](#string) |  |  |
-
-#### Field Rules
-
-| Field | Validations |
-| ----- | ----------- |
-| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
-| `model_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 
 ### <a name="ttn.lorawan.v3.EndDevices">Message `EndDevices`</a>
 
@@ -2338,7 +3121,7 @@ This is used internally by the Network Server.
 | `adr_ack_limit` | [`uint32`](#uint32) |  | ADR: number of messages to wait before setting ADRAckReq. This field is deprecated, use adr_ack_limit_exponent instead. |
 | `adr_ack_delay` | [`uint32`](#uint32) |  | ADR: number of messages to wait after setting ADRAckReq and before changing TxPower or DataRate. This field is deprecated, use adr_ack_delay_exponent instead. |
 | `rx1_delay` | [`RxDelay`](#ttn.lorawan.v3.RxDelay) |  | Rx1 delay (Rx2 delay is Rx1 delay + 1 second). |
-| `rx1_data_rate_offset` | [`uint32`](#uint32) |  | Data rate offset for Rx1. |
+| `rx1_data_rate_offset` | [`DataRateOffset`](#ttn.lorawan.v3.DataRateOffset) |  | Data rate offset for Rx1. |
 | `rx2_data_rate_index` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  | Data rate index for Rx2. |
 | `rx2_frequency` | [`uint64`](#uint64) |  | Frequency for Rx2 (Hz). |
 | `max_duty_cycle` | [`AggregatedDutyCycle`](#ttn.lorawan.v3.AggregatedDutyCycle) |  | Maximum uplink duty cycle (of all channels). |
@@ -2348,8 +3131,8 @@ This is used internally by the Network Server.
 | `ping_slot_data_rate_index` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  | Data rate index of the class B ping slot. This field is deprecated, use ping_slot_data_rate_index_value instead. |
 | `beacon_frequency` | [`uint64`](#uint64) |  | Frequency of the class B beacon (Hz). |
 | `channels` | [`MACParameters.Channel`](#ttn.lorawan.v3.MACParameters.Channel) | repeated | Configured uplink channels and optionally Rx1 frequency. |
-| `uplink_dwell_time` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether uplink dwell time is set (400ms). If this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it). |
-| `downlink_dwell_time` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether downlink dwell time is set (400ms). If this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it). |
+| `uplink_dwell_time` | [`BoolValue`](#ttn.lorawan.v3.BoolValue) |  | Whether uplink dwell time is set (400ms). If this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it). |
+| `downlink_dwell_time` | [`BoolValue`](#ttn.lorawan.v3.BoolValue) |  | Whether downlink dwell time is set (400ms). If this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it). |
 | `adr_ack_limit_exponent` | [`ADRAckLimitExponentValue`](#ttn.lorawan.v3.ADRAckLimitExponentValue) |  | ADR: number of messages to wait before setting ADRAckReq. |
 | `adr_ack_delay_exponent` | [`ADRAckDelayExponentValue`](#ttn.lorawan.v3.ADRAckDelayExponentValue) |  | ADR: number of messages to wait after setting ADRAckReq and before changing TxPower or DataRate. |
 | `ping_slot_data_rate_index_value` | [`DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue) |  | Data rate index of the class B ping slot. |
@@ -2362,7 +3145,7 @@ This is used internally by the Network Server.
 | `adr_tx_power_index` | <p>`uint32.lte`: `15`</p> |
 | `adr_nb_trans` | <p>`uint32.lte`: `15`</p> |
 | `rx1_delay` | <p>`enum.defined_only`: `true`</p> |
-| `rx1_data_rate_offset` | <p>`uint32.lte`: `7`</p> |
+| `rx1_data_rate_offset` | <p>`enum.defined_only`: `true`</p> |
 | `rx2_data_rate_index` | <p>`enum.defined_only`: `true`</p> |
 | `rx2_frequency` | <p>`uint64.gte`: `100000`</p> |
 | `max_duty_cycle` | <p>`enum.defined_only`: `true`</p> |
@@ -2386,7 +3169,7 @@ This is used internally by the Network Server.
 
 | Field | Validations |
 | ----- | ----------- |
-| `uplink_frequency` | <p>`uint64.gte`: `100000`</p> |
+| `uplink_frequency` | <p>`uint64.lte`: `0`</p><p>`uint64.gte`: `100000`</p> |
 | `downlink_frequency` | <p>`uint64.gte`: `100000`</p> |
 | `min_data_rate_index` | <p>`enum.defined_only`: `true`</p> |
 | `max_data_rate_index` | <p>`enum.defined_only`: `true`</p> |
@@ -2398,43 +3181,38 @@ This is used internally by the Network Server.
 | `class_b_timeout` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Maximum delay for the device to answer a MAC request or a confirmed downlink frame. If unset, the default value from Network Server configuration will be used. |
 | `ping_slot_periodicity` | [`PingSlotPeriodValue`](#ttn.lorawan.v3.PingSlotPeriodValue) |  | Periodicity of the class B ping slot. If unset, the default value from Network Server configuration will be used. |
 | `ping_slot_data_rate_index` | [`DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue) |  | Data rate index of the class B ping slot. If unset, the default value from Network Server configuration will be used. |
-| `ping_slot_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | Frequency of the class B ping slot (Hz). If unset, the default value from Network Server configuration will be used. |
-| `beacon_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | Frequency of the class B beacon (Hz). If unset, the default value from Network Server configuration will be used. |
+| `ping_slot_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | Frequency of the class B ping slot (Hz). If unset, the default value from Network Server configuration will be used. |
+| `beacon_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | Frequency of the class B beacon (Hz). If unset, the default value from Network Server configuration will be used. |
 | `class_c_timeout` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Maximum delay for the device to answer a MAC request or a confirmed downlink frame. If unset, the default value from Network Server configuration will be used. |
 | `rx1_delay` | [`RxDelayValue`](#ttn.lorawan.v3.RxDelayValue) |  | Class A Rx1 delay. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
-| `rx1_data_rate_offset` | [`google.protobuf.UInt32Value`](#google.protobuf.UInt32Value) |  | Rx1 data rate offset. If unset, the default value from Network Server configuration will be used. |
+| `rx1_data_rate_offset` | [`DataRateOffsetValue`](#ttn.lorawan.v3.DataRateOffsetValue) |  | Rx1 data rate offset. If unset, the default value from Network Server configuration will be used. |
 | `rx2_data_rate_index` | [`DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue) |  | Data rate index for Rx2. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
-| `rx2_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | Frequency for Rx2 (Hz). If unset, the default value from Network Server configuration or regional parameters specification will be used. |
+| `rx2_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | Frequency for Rx2 (Hz). If unset, the default value from Network Server configuration or regional parameters specification will be used. |
 | `factory_preset_frequencies` | [`uint64`](#uint64) | repeated | List of factory-preset frequencies. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
 | `max_duty_cycle` | [`AggregatedDutyCycleValue`](#ttn.lorawan.v3.AggregatedDutyCycleValue) |  | Maximum uplink duty cycle (of all channels). |
-| `supports_32_bit_f_cnt` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether the device supports 32-bit frame counters. If unset, the default value from Network Server configuration will be used. |
-| `use_adr` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether the Network Server should use ADR for the device. If unset, the default value from Network Server configuration will be used. |
+| `supports_32_bit_f_cnt` | [`BoolValue`](#ttn.lorawan.v3.BoolValue) |  | Whether the device supports 32-bit frame counters. If unset, the default value from Network Server configuration will be used. |
+| `use_adr` | [`BoolValue`](#ttn.lorawan.v3.BoolValue) |  | Whether the Network Server should use ADR for the device. If unset, the default value from Network Server configuration will be used. |
 | `adr_margin` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | The ADR margin tells the network server how much margin it should add in ADR requests. A bigger margin is less efficient, but gives a better chance of successful reception. If unset, the default value from Network Server configuration will be used. |
-| `resets_f_cnt` | [`google.protobuf.BoolValue`](#google.protobuf.BoolValue) |  | Whether the device resets the frame counters (not LoRaWAN compliant). If unset, the default value from Network Server configuration will be used. |
+| `resets_f_cnt` | [`BoolValue`](#ttn.lorawan.v3.BoolValue) |  | Whether the device resets the frame counters (not LoRaWAN compliant). If unset, the default value from Network Server configuration will be used. |
 | `status_time_periodicity` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | The interval after which a DevStatusReq MACCommand shall be sent. If unset, the default value from Network Server configuration will be used. |
 | `status_count_periodicity` | [`google.protobuf.UInt32Value`](#google.protobuf.UInt32Value) |  | Number of uplink messages after which a DevStatusReq MACCommand shall be sent. If unset, the default value from Network Server configuration will be used. |
 | `desired_rx1_delay` | [`RxDelayValue`](#ttn.lorawan.v3.RxDelayValue) |  | The Rx1 delay Network Server should configure device to use via MAC commands or Join-Accept. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
-| `desired_rx1_data_rate_offset` | [`google.protobuf.UInt32Value`](#google.protobuf.UInt32Value) |  | The Rx1 data rate offset Network Server should configure device to use via MAC commands or Join-Accept. If unset, the default value from Network Server configuration will be used. |
+| `desired_rx1_data_rate_offset` | [`DataRateOffsetValue`](#ttn.lorawan.v3.DataRateOffsetValue) |  | The Rx1 data rate offset Network Server should configure device to use via MAC commands or Join-Accept. If unset, the default value from Network Server configuration will be used. |
 | `desired_rx2_data_rate_index` | [`DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue) |  | The Rx2 data rate index Network Server should configure device to use via MAC commands or Join-Accept. If unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used. |
-| `desired_rx2_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | The Rx2 frequency index Network Server should configure device to use via MAC commands. If unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used. |
+| `desired_rx2_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | The Rx2 frequency index Network Server should configure device to use via MAC commands. If unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used. |
 | `desired_max_duty_cycle` | [`AggregatedDutyCycleValue`](#ttn.lorawan.v3.AggregatedDutyCycleValue) |  | The maximum uplink duty cycle (of all channels) Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration will be used. |
 | `desired_adr_ack_limit_exponent` | [`ADRAckLimitExponentValue`](#ttn.lorawan.v3.ADRAckLimitExponentValue) |  | The ADR ACK limit Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
 | `desired_adr_ack_delay_exponent` | [`ADRAckDelayExponentValue`](#ttn.lorawan.v3.ADRAckDelayExponentValue) |  | The ADR ACK delay Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
 | `desired_ping_slot_data_rate_index` | [`DataRateIndexValue`](#ttn.lorawan.v3.DataRateIndexValue) |  | The data rate index of the class B ping slot Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration will be used. |
-| `desired_ping_slot_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | The frequency of the class B ping slot (Hz) Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
-| `desired_beacon_frequency` | [`google.protobuf.UInt64Value`](#google.protobuf.UInt64Value) |  | The frequency of the class B beacon (Hz) Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration will be used. |
+| `desired_ping_slot_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | The frequency of the class B ping slot (Hz) Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration or regional parameters specification will be used. |
+| `desired_beacon_frequency` | [`FrequencyValue`](#ttn.lorawan.v3.FrequencyValue) |  | The frequency of the class B beacon (Hz) Network Server should configure device to use via MAC commands. If unset, the default value from Network Server configuration will be used. |
+| `desired_max_eirp` | [`DeviceEIRPValue`](#ttn.lorawan.v3.DeviceEIRPValue) |  | Maximum EIRP (dBm). If unset, the default value from regional parameters specification will be used. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
-| `ping_slot_frequency` | <p>`uint64.gte`: `100000`</p> |
-| `beacon_frequency` | <p>`uint64.gte`: `100000`</p> |
-| `rx1_data_rate_offset` | <p>`uint32.lte`: `7`</p> |
-| `rx2_frequency` | <p>`uint64.gte`: `100000`</p> |
-| `desired_rx2_frequency` | <p>`uint64.gte`: `100000`</p> |
-| `desired_ping_slot_frequency` | <p>`uint64.gte`: `100000`</p> |
-| `desired_beacon_frequency` | <p>`uint64.gte`: `100000`</p> |
+| `factory_preset_frequencies` | <p>`repeated.max_items`: `96`</p> |
 
 ### <a name="ttn.lorawan.v3.MACState">Message `MACState`</a>
 
@@ -2455,7 +3233,7 @@ This is used internally by the Network Server.
 | `queued_responses` | [`MACCommand`](#ttn.lorawan.v3.MACCommand) | repeated | Queued MAC responses. Regenerated on each uplink. |
 | `pending_requests` | [`MACCommand`](#ttn.lorawan.v3.MACCommand) | repeated | Pending MAC requests(i.e. sent requests, for which no response has been received yet). Regenerated on each downlink. |
 | `queued_join_accept` | [`MACState.JoinAccept`](#ttn.lorawan.v3.MACState.JoinAccept) |  | Queued join-accept. Set each time a (re-)join request accept is received from Join Server and removed each time a downlink is scheduled. |
-| `pending_join_request` | [`JoinRequest`](#ttn.lorawan.v3.JoinRequest) |  | Pending join request. Set each time a join accept is scheduled and removed each time an uplink is received from the device. |
+| `pending_join_request` | [`MACState.JoinRequest`](#ttn.lorawan.v3.MACState.JoinRequest) |  | Pending join request. Set each time a join-accept is scheduled and removed each time an uplink is received from the device. |
 | `rx_windows_available` | [`bool`](#bool) |  | Whether or not Rx windows are expected to be open. Set to true every time an uplink is received. Set to false every time a successful downlink scheduling attempt is made. |
 | `recent_uplinks` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | repeated | Recent data uplink messages sorted by time. The number of messages stored may depend on configuration. |
 | `recent_downlinks` | [`DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage) | repeated | Recent data downlink messages sorted by time. The number of messages stored may depend on configuration. |
@@ -2465,6 +3243,7 @@ This is used internally by the Network Server.
 | `rejected_frequencies` | [`uint64`](#uint64) | repeated | Frequencies rejected by the device. |
 | `last_downlink_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Time when the last downlink message was scheduled. |
 | `rejected_data_rate_ranges` | [`MACState.RejectedDataRateRangesEntry`](#ttn.lorawan.v3.MACState.RejectedDataRateRangesEntry) | repeated | Data rate ranges rejected by the device per frequency. |
+| `last_adr_change_f_cnt_up` | [`uint32`](#uint32) |  | Frame counter of uplink, which confirmed the last ADR parameter change. |
 
 #### Field Rules
 
@@ -2509,18 +3288,34 @@ This is used internally by the Network Server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `payload` | [`bytes`](#bytes) |  | Payload of the join-accept received from Join Server. |
-| `request` | [`JoinRequest`](#ttn.lorawan.v3.JoinRequest) |  | JoinRequest sent to Join Server. |
+| `request` | [`MACState.JoinRequest`](#ttn.lorawan.v3.MACState.JoinRequest) |  |  |
 | `keys` | [`SessionKeys`](#ttn.lorawan.v3.SessionKeys) |  | Network session keys associated with the join. |
 | `correlation_ids` | [`string`](#string) | repeated |  |
+| `dev_addr` | [`bytes`](#bytes) |  |  |
+| `net_id` | [`bytes`](#bytes) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `payload` | <p>`bytes.min_len`: `17`</p><p>`bytes.max_len`: `33`</p> |
-| `request` | <p>`message.required`: `true`</p> |
 | `keys` | <p>`message.required`: `true`</p> |
 | `correlation_ids` | <p>`repeated.items.string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.MACState.JoinRequest">Message `MACState.JoinRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `downlink_settings` | [`DLSettings`](#ttn.lorawan.v3.DLSettings) |  |  |
+| `rx_delay` | [`RxDelay`](#ttn.lorawan.v3.RxDelay) |  |  |
+| `cf_list` | [`CFList`](#ttn.lorawan.v3.CFList) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `downlink_settings` | <p>`message.required`: `true`</p> |
+| `rx_delay` | <p>`enum.defined_only`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.MACState.RejectedDataRateRangesEntry">Message `MACState.RejectedDataRateRangesEntry`</a>
 
@@ -2528,6 +3323,19 @@ This is used internally by the Network Server.
 | ----- | ---- | ----- | ----------- |
 | `key` | [`uint64`](#uint64) |  |  |
 | `value` | [`MACState.DataRateRanges`](#ttn.lorawan.v3.MACState.DataRateRanges) |  |  |
+
+### <a name="ttn.lorawan.v3.ResetAndGetEndDeviceRequest">Message `ResetAndGetEndDeviceRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `end_device_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the end device fields that should be returned. See the API reference for which fields can be returned by the different services. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `end_device_ids` | <p>`message.required`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.Session">Message `Session`</a>
 
@@ -2588,14 +3396,29 @@ Power state of the device.
 
 ### <a name="ttn.lorawan.v3.EndDeviceRegistry">Service `EndDeviceRegistry`</a>
 
+The EndDeviceRegistry service, exposed by the Identity Server, is used to manage
+end device registrations.
+
+After registering an end device, it also needs to be registered in
+the NsEndDeviceRegistry that is exposed by the Network Server,
+the AsEndDeviceRegistry that is exposed by the Application Server,
+and the JsEndDeviceRegistry that is exposed by the Join Server.
+
+Before deleting an end device it first needs to be deleted from the
+NsEndDeviceRegistry, the AsEndDeviceRegistry and the JsEndDeviceRegistry.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `Create` | [`CreateEndDeviceRequest`](#ttn.lorawan.v3.CreateEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Create a new end device within an application. After creating a device in the EndDeviceRegistry (Identity Server), it still needs to be created in the NsEndDeviceRegistry, AsEndDeviceRegistry and JsEndDeviceRegistry. |
+| `Create` | [`CreateEndDeviceRequest`](#ttn.lorawan.v3.CreateEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Create a new end device within an application.
+
+After registering an end device, it also needs to be registered in the NsEndDeviceRegistry that is exposed by the Network Server, the AsEndDeviceRegistry that is exposed by the Application Server, and the JsEndDeviceRegistry that is exposed by the Join Server. |
 | `Get` | [`GetEndDeviceRequest`](#ttn.lorawan.v3.GetEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Get the end device with the given identifiers, selecting the fields specified in the field mask. More or less fields may be returned, depending on the rights of the caller. |
 | `GetIdentifiersForEUIs` | [`GetEndDeviceIdentifiersForEUIsRequest`](#ttn.lorawan.v3.GetEndDeviceIdentifiersForEUIsRequest) | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | Get the identifiers of the end device that has the given EUIs registered. |
 | `List` | [`ListEndDevicesRequest`](#ttn.lorawan.v3.ListEndDevicesRequest) | [`EndDevices`](#ttn.lorawan.v3.EndDevices) | List end devices in the given application. Similar to Get, this selects the fields given by the field mask. More or less fields may be returned, depending on the rights of the caller. |
-| `Update` | [`UpdateEndDeviceRequest`](#ttn.lorawan.v3.UpdateEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Update the OAuth client, changing the fields specified by the field mask to the provided values. |
-| `Delete` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the end device with the given IDs. Before deleting an end device from the EndDeviceRegistry (the Identity Server), the device needs to be deleted from the JsEndDeviceRegistry, AsEndDeviceRegistry and NsEndDeviceRegistry. This is NOT done automatically. |
+| `Update` | [`UpdateEndDeviceRequest`](#ttn.lorawan.v3.UpdateEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Update the end device, changing the fields specified by the field mask to the provided values. |
+| `Delete` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the end device with the given IDs.
+
+Before deleting an end device it first needs to be deleted from the NsEndDeviceRegistry, the AsEndDeviceRegistry and the JsEndDeviceRegistry. This is NOT done automatically. |
 
 #### HTTP bindings
 
@@ -2640,6 +3463,7 @@ Power state of the device.
 | `GATEWAY_CONFIGURATION_SERVER` | 10 |  |
 | `QR_CODE_GENERATOR` | 11 |  |
 | `PACKET_BROKER_AGENT` | 12 |  |
+| `DEVICE_REPOSITORY` | 13 |  |
 
 ### <a name="ttn.lorawan.v3.DownlinkPathConstraint">Enum `DownlinkPathConstraint`</a>
 
@@ -2720,6 +3544,24 @@ The messages (for translation) are stored as "error:<namespace>:<name>".
 | `key` | [`string`](#string) |  |  |
 | `value` | [`bytes`](#bytes) |  |  |
 
+### <a name="ttn.lorawan.v3.FindRelatedEventsRequest">Message `FindRelatedEventsRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `correlation_id` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `correlation_id` | <p>`string.min_len`: `1`</p><p>`string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.FindRelatedEventsResponse">Message `FindRelatedEventsResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `events` | [`Event`](#ttn.lorawan.v3.Event) | repeated |  |
+
 ### <a name="ttn.lorawan.v3.StreamEventsRequest">Message `StreamEventsRequest`</a>
 
 | Field | Type | Label | Description |
@@ -2735,12 +3577,14 @@ The Events service serves events from the cluster.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Stream` | [`StreamEventsRequest`](#ttn.lorawan.v3.StreamEventsRequest) | [`Event`](#ttn.lorawan.v3.Event) _stream_ | Stream live events, optionally with a tail of historical events (depending on server support and retention policy). Events may arrive out-of-order. |
+| `FindRelated` | [`FindRelatedEventsRequest`](#ttn.lorawan.v3.FindRelatedEventsRequest) | [`FindRelatedEventsResponse`](#ttn.lorawan.v3.FindRelatedEventsResponse) |  |
 
 #### HTTP bindings
 
 | Method Name | Method | Pattern | Body |
 | ----------- | ------ | ------- | ---- |
 | `Stream` | `POST` | `/api/v3/events` | `*` |
+| `FindRelated` | `GET` | `/api/v3/events/related` |  |
 
 ## <a name="lorawan-stack/api/gateway.proto">File `lorawan-stack/api/gateway.proto`</a>
 
@@ -2751,6 +3595,7 @@ The Events service serves events from the cluster.
 | `gateway_ids` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 #### Field Rules
 
@@ -2758,7 +3603,8 @@ The Events service serves events from the cluster.
 | ----- | ----------- |
 | `gateway_ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
-| `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
+| `rights` | <p>`repeated.min_items`: `1`</p><p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `expires_at` | <p>`timestamp.gt_now`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.CreateGatewayRequest">Message `CreateGatewayRequest`</a>
 
@@ -2783,6 +3629,7 @@ Gateway is the message that defines a gateway on the network.
 | `ids` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) |  |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `deleted_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `description` | [`string`](#string) |  |  |
 | `attributes` | [`Gateway.AttributesEntry`](#ttn.lorawan.v3.Gateway.AttributesEntry) | repeated | Key-value attributes for this gateway. Typically used for organizing gateways or for storing integration-specific data. |
@@ -2801,9 +3648,13 @@ Gateway is the message that defines a gateway on the network.
 | `downlink_path_constraint` | [`DownlinkPathConstraint`](#ttn.lorawan.v3.DownlinkPathConstraint) |  |  |
 | `schedule_anytime_delay` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Adjust the time that GS schedules class C messages in advance. This is useful for gateways that have a known high latency backhaul, like 3G and satellite. |
 | `update_location_from_status` | [`bool`](#bool) |  | Update the location of this gateway from status messages. This only works for gateways connecting with authentication; gateways connected over UDP are not supported. |
-| `lbs_lns_secret` | [`Secret`](#ttn.lorawan.v3.Secret) |  | The LoRa Basics Station LNS secret. This is either an auth token (such as an API Key) or a TLS private certificate. Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value.
-
-next: 23 |
+| `lbs_lns_secret` | [`Secret`](#ttn.lorawan.v3.Secret) |  | The LoRa Basics Station LNS secret. This is either an auth token (such as an API Key) or a TLS private certificate. Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value. |
+| `claim_authentication_code` | [`GatewayClaimAuthenticationCode`](#ttn.lorawan.v3.GatewayClaimAuthenticationCode) |  | The authentication code for gateway claiming. Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value. The entire field must be used in RPCs since sub-fields are validated wrt to each other. Direct selection/update of sub-fields only are not allowed. Use the top level field mask `claim_authentication_code` even when updating single fields. |
+| `target_cups_uri` | [`string`](#string) |  | CUPS URI for LoRa Basics Station CUPS redirection. The CUPS Trust field will be automatically fetched from the cert chain presented by the target server. |
+| `target_cups_key` | [`Secret`](#ttn.lorawan.v3.Secret) |  | CUPS Key for LoRa Basics Station CUPS redirection. If redirecting to another instance of TTS, use the CUPS API Key for the gateway on the target instance. Requires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value. |
+| `require_authenticated_connection` | [`bool`](#bool) |  | Require an authenticated gateway connection. This prevents the gateway from using the UDP protocol and requires authentication when using other protocols. |
+| `lrfhss` | [`Gateway.LRFHSS`](#ttn.lorawan.v3.Gateway.LRFHSS) |  |  |
+| `disable_packet_broker_forwarding` | [`bool`](#bool) |  |  |
 
 #### Field Rules
 
@@ -2812,12 +3663,16 @@ next: 23 |
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
 | `version_ids` | <p>`message.required`: `true`</p> |
 | `gateway_server_address` | <p>`string.pattern`: `^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$`</p> |
+| `update_channel` | <p>`string.max_len`: `128`</p> |
 | `frequency_plan_id` | <p>`string.max_len`: `64`</p> |
 | `frequency_plan_ids` | <p>`repeated.max_items`: `8`</p><p>`repeated.items.string.max_len`: `64`</p> |
+| `antennas` | <p>`repeated.max_items`: `8`</p> |
 | `downlink_path_constraint` | <p>`enum.defined_only`: `true`</p> |
+| `target_cups_uri` | <p>`string.uri`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.Gateway.AttributesEntry">Message `Gateway.AttributesEntry`</a>
 
@@ -2826,22 +3681,31 @@ next: 23 |
 | `key` | [`string`](#string) |  |  |
 | `value` | [`string`](#string) |  |  |
 
+### <a name="ttn.lorawan.v3.Gateway.LRFHSS">Message `Gateway.LRFHSS`</a>
+
+LR-FHSS gateway capabilities.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `supported` | [`bool`](#bool) |  | The gateway supports the LR-FHSS uplink channels. |
+
 ### <a name="ttn.lorawan.v3.GatewayAntenna">Message `GatewayAntenna`</a>
 
 GatewayAntenna is the message that defines a gateway antenna.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `gain` | [`float`](#float) |  | gain is the antenna gain relative to this gateway, in dBi. |
+| `gain` | [`float`](#float) |  | Antenna gain relative to the gateway, in dBi. |
 | `location` | [`Location`](#ttn.lorawan.v3.Location) |  | location is the antenna's location. |
 | `attributes` | [`GatewayAntenna.AttributesEntry`](#ttn.lorawan.v3.GatewayAntenna.AttributesEntry) | repeated |  |
+| `placement` | [`GatewayAntennaPlacement`](#ttn.lorawan.v3.GatewayAntennaPlacement) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `location` | <p>`message.required`: `true`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
 
 ### <a name="ttn.lorawan.v3.GatewayAntenna.AttributesEntry">Message `GatewayAntenna.AttributesEntry`</a>
 
@@ -2858,6 +3722,16 @@ GatewayAntenna is the message that defines a gateway antenna.
 | `name` | [`string`](#string) |  |  |
 | `url` | [`string`](#string) |  |  |
 | `logos` | [`string`](#string) | repeated | Logos contains file names of brand logos. |
+
+### <a name="ttn.lorawan.v3.GatewayClaimAuthenticationCode">Message `GatewayClaimAuthenticationCode`</a>
+
+Authentication code for claiming gateways.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `secret` | [`Secret`](#ttn.lorawan.v3.Secret) |  |  |
+| `valid_from` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `valid_to` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 ### <a name="ttn.lorawan.v3.GatewayConnectionStats">Message `GatewayConnectionStats`</a>
 
@@ -2952,8 +3826,10 @@ Connection stats as monitored by the Gateway Server.
 | Field | Validations |
 | ----- | ----------- |
 | `time` | <p>`timestamp.required`: `true`</p> |
-| `versions` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[_-]?[a-z0-9]){2,}$`</p> |
-| `metrics` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[_-]?[a-z0-9]){2,}$`</p> |
+| `versions` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[_-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `32`</p> |
+| `antenna_locations` | <p>`repeated.max_items`: `8`</p> |
+| `ip` | <p>`repeated.max_items`: `10`</p><p>`repeated.items.string.ip`: `true`</p> |
+| `metrics` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[_-]?[a-z0-9]){2,}$`</p> |
 
 ### <a name="ttn.lorawan.v3.GatewayStatus.MetricsEntry">Message `GatewayStatus.MetricsEntry`</a>
 
@@ -2968,23 +3844,6 @@ Connection stats as monitored by the Gateway Server.
 | ----- | ---- | ----- | ----------- |
 | `key` | [`string`](#string) |  |  |
 | `value` | [`string`](#string) |  |  |
-
-### <a name="ttn.lorawan.v3.GatewayVersion">Message `GatewayVersion`</a>
-
-Template for creating gateways.
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `ids` | [`GatewayVersionIdentifiers`](#ttn.lorawan.v3.GatewayVersionIdentifiers) |  | Version identifiers. |
-| `photos` | [`string`](#string) | repeated | Photos contains file names of gateway photos. |
-| `radios` | [`GatewayRadio`](#ttn.lorawan.v3.GatewayRadio) | repeated |  |
-| `clock_source` | [`uint32`](#uint32) |  |  |
-
-#### Field Rules
-
-| Field | Validations |
-| ----- | ----------- |
-| `ids` | <p>`message.required`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.GatewayVersionIdentifiers">Message `GatewayVersionIdentifiers`</a>
 
@@ -3003,6 +3862,8 @@ Identifies an end device model with version information.
 | ----- | ----------- |
 | `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 | `model_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `hardware_version` | <p>`string.max_len`: `32`</p> |
+| `firmware_version` | <p>`string.max_len`: `32`</p> |
 
 ### <a name="ttn.lorawan.v3.Gateways">Message `Gateways`</a>
 
@@ -3095,6 +3956,7 @@ Identifies an end device model with version information.
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted gateways. |
 
 #### Field Rules
 
@@ -3123,6 +3985,7 @@ Identifies an end device model with version information.
 | ----- | ---- | ----- | ----------- |
 | `gateway_ids` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) |  |  |
 | `api_key` | [`APIKey`](#ttn.lorawan.v3.APIKey) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the api key fields that should be updated. |
 
 #### Field Rules
 
@@ -3144,6 +4007,14 @@ Identifies an end device model with version information.
 | ----- | ----------- |
 | `gateway` | <p>`message.required`: `true`</p> |
 
+### <a name="ttn.lorawan.v3.GatewayAntennaPlacement">Enum `GatewayAntennaPlacement`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `PLACEMENT_UNKNOWN` | 0 |  |
+| `INDOOR` | 1 |  |
+| `OUTDOOR` | 2 |  |
+
 ## <a name="lorawan-stack/api/gateway_services.proto">File `lorawan-stack/api/gateway_services.proto`</a>
 
 ### <a name="ttn.lorawan.v3.PullGatewayConfigurationRequest">Message `PullGatewayConfigurationRequest`</a>
@@ -3154,6 +4025,9 @@ Identifies an end device model with version information.
 | `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
 
 ### <a name="ttn.lorawan.v3.GatewayAccess">Service `GatewayAccess`</a>
+
+The GatewayAcces service, exposed by the Identity Server, is used to manage
+API keys and collaborators of gateways.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
@@ -3189,6 +4063,9 @@ Identifies an end device model with version information.
 
 ### <a name="ttn.lorawan.v3.GatewayRegistry">Service `GatewayRegistry`</a>
 
+The GatewayRegistry service, exposed by the Identity Server, is used to manage
+gateway registrations.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Create` | [`CreateGatewayRequest`](#ttn.lorawan.v3.CreateGatewayRequest) | [`Gateway`](#ttn.lorawan.v3.Gateway) | Create a new gateway. This also sets the given organization or user as first collaborator with all possible rights. |
@@ -3197,6 +4074,10 @@ Identifies an end device model with version information.
 | `List` | [`ListGatewaysRequest`](#ttn.lorawan.v3.ListGatewaysRequest) | [`Gateways`](#ttn.lorawan.v3.Gateways) | List gateways where the given user or organization is a direct collaborator. If no user or organization is given, this returns the gateways the caller has access to. Similar to Get, this selects the fields given by the field mask. More or less fields may be returned, depending on the rights of the caller. |
 | `Update` | [`UpdateGatewayRequest`](#ttn.lorawan.v3.UpdateGatewayRequest) | [`Gateway`](#ttn.lorawan.v3.Gateway) | Update the gateway, changing the fields specified by the field mask to the provided values. |
 | `Delete` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the gateway. This may not release the gateway ID for reuse, but it does release the EUI. |
+| `Restore` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Restore a recently deleted gateway. This does not restore the EUI, as that was released when deleting the gateway.
+
+Deployment configuration may specify if, and for how long after deletion, entities can be restored. |
+| `Purge` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Purge the gateway. This will release both gateway ID and EUI for reuse. The gateway owner is responsible for clearing data from any (external) integrations that may store and expose data by gateway ID. |
 
 #### HTTP bindings
 
@@ -3210,6 +4091,8 @@ Identifies an end device model with version information.
 | `List` | `GET` | `/api/v3/organizations/{collaborator.organization_ids.organization_id}/gateways` |  |
 | `Update` | `PUT` | `/api/v3/gateways/{gateway.ids.gateway_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/gateways/{gateway_id}` |  |
+| `Restore` | `POST` | `/api/v3/gateways/{gateway_id}/restore` |  |
+| `Purge` | `DELETE` | `/api/v3/gateways/{gateway_id}/purge` |  |
 
 ## <a name="lorawan-stack/api/gatewayserver.proto">File `lorawan-stack/api/gatewayserver.proto`</a>
 
@@ -3229,7 +4112,7 @@ GatewayUp may contain zero or more uplink messages and/or a status message for t
 | ----- | ---- | ----- | ----------- |
 | `uplink_messages` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | repeated | Uplink messages received by the gateway. |
 | `gateway_status` | [`GatewayStatus`](#ttn.lorawan.v3.GatewayStatus) |  | Gateway status produced by the gateway. |
-| `tx_acknowledgment` | [`TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment) |  | A transmission acknowledgement or error. |
+| `tx_acknowledgment` | [`TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment) |  | A Tx acknowledgment or error. |
 
 ### <a name="ttn.lorawan.v3.ScheduleDownlinkErrorDetails">Message `ScheduleDownlinkErrorDetails`</a>
 
@@ -3242,6 +4125,9 @@ GatewayUp may contain zero or more uplink messages and/or a status message for t
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `delay` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | The amount of time between the message has been scheduled and it will be transmitted by the gateway. |
+| `downlink_path` | [`DownlinkPath`](#ttn.lorawan.v3.DownlinkPath) |  | Downlink path chosen by the Gateway Server. |
+| `rx1` | [`bool`](#bool) |  | Whether RX1 has been chosen for the downlink message. Both RX1 and RX2 can be used for transmitting the same message by the same gateway. |
+| `rx2` | [`bool`](#bool) |  | Whether RX2 has been chosen for the downlink message. Both RX1 and RX2 can be used for transmitting the same message by the same gateway. |
 
 #### Field Rules
 
@@ -3313,15 +4199,6 @@ The NsGs service connects a Network Server to a Gateway Server.
 | ----- | ----------- |
 | `client_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 
-### <a name="ttn.lorawan.v3.CombinedIdentifiers">Message `CombinedIdentifiers`</a>
-
-Combine the identifiers of multiple entities.
-The main purpose of this message is its use in events.
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `entity_identifiers` | [`EntityIdentifiers`](#ttn.lorawan.v3.EntityIdentifiers) | repeated |  |
-
 ### <a name="ttn.lorawan.v3.EndDeviceIdentifiers">Message `EndDeviceIdentifiers`</a>
 
 | Field | Type | Label | Description |
@@ -3338,6 +4215,28 @@ The main purpose of this message is its use in events.
 | ----- | ----------- |
 | `device_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 | `application_ids` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.EndDeviceVersionIdentifiers">Message `EndDeviceVersionIdentifiers`</a>
+
+Identifies an end device model with version information.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `brand_id` | [`string`](#string) |  |  |
+| `model_id` | [`string`](#string) |  |  |
+| `hardware_version` | [`string`](#string) |  |  |
+| `firmware_version` | [`string`](#string) |  |  |
+| `band_id` | [`string`](#string) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `brand_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `model_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `hardware_version` | <p>`string.max_len`: `32`</p> |
+| `firmware_version` | <p>`string.max_len`: `32`</p> |
+| `band_id` | <p>`string.max_len`: `32`</p> |
 
 ### <a name="ttn.lorawan.v3.EntityIdentifiers">Message `EntityIdentifiers`</a>
 
@@ -3364,6 +4263,23 @@ EntityIdentifiers contains one of the possible entity identifiers.
 | Field | Validations |
 | ----- | ----------- |
 | `gateway_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+
+### <a name="ttn.lorawan.v3.NetworkIdentifiers">Message `NetworkIdentifiers`</a>
+
+Identifies a Network Server.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `net_id` | [`bytes`](#bytes) |  | LoRa Alliance NetID. |
+| `tenant_id` | [`string`](#string) |  | Optional tenant identifier for multi-tenant deployments. |
+| `cluster_id` | [`string`](#string) |  | Cluster identifier of the Network Server. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `tenant_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$`</p> |
+| `cluster_id` | <p>`string.max_len`: `64`</p> |
 
 ### <a name="ttn.lorawan.v3.OrganizationIdentifiers">Message `OrganizationIdentifiers`</a>
 
@@ -3397,7 +4313,7 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Field | Validations |
 | ----- | ----------- |
-| `user_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `user_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){1,}$`</p> |
 
 ## <a name="lorawan-stack/api/identityserver.proto">File `lorawan-stack/api/identityserver.proto`</a>
 
@@ -3463,6 +4379,7 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 | `contact_info_validation` | [`IsConfiguration.UserRegistration.ContactInfoValidation`](#ttn.lorawan.v3.IsConfiguration.UserRegistration.ContactInfoValidation) |  |  |
 | `admin_approval` | [`IsConfiguration.UserRegistration.AdminApproval`](#ttn.lorawan.v3.IsConfiguration.UserRegistration.AdminApproval) |  |  |
 | `password_requirements` | [`IsConfiguration.UserRegistration.PasswordRequirements`](#ttn.lorawan.v3.IsConfiguration.UserRegistration.PasswordRequirements) |  |  |
+| `enabled` | [`bool`](#bool) |  |  |
 
 ### <a name="ttn.lorawan.v3.IsConfiguration.UserRegistration.AdminApproval">Message `IsConfiguration.UserRegistration.AdminApproval`</a>
 
@@ -3518,7 +4435,7 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `GetConfiguration` | [`GetIsConfigurationRequest`](#ttn.lorawan.v3.GetIsConfigurationRequest) | [`GetIsConfigurationResponse`](#ttn.lorawan.v3.GetIsConfigurationResponse) |  |
+| `GetConfiguration` | [`GetIsConfigurationRequest`](#ttn.lorawan.v3.GetIsConfigurationRequest) | [`GetIsConfigurationResponse`](#ttn.lorawan.v3.GetIsConfigurationResponse) | Get the configuration of the Identity Server. The response is typically used to enable or disable features in a user interface. |
 
 #### HTTP bindings
 
@@ -3603,11 +4520,11 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
-| `lorawan_version` | [`MACVersion`](#ttn.lorawan.v3.MACVersion) |  |  |
-| `payload` | [`bytes`](#bytes) |  |  |
-| `provisioner_id` | [`string`](#string) |  |  |
-| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
+| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  | End device identifiers for the cryptographic operation. |
+| `lorawan_version` | [`MACVersion`](#ttn.lorawan.v3.MACVersion) |  | LoRaWAN version to use for the cryptographic operation. |
+| `payload` | [`bytes`](#bytes) |  | Raw input payload. |
+| `provisioner_id` | [`string`](#string) |  | Provisioner that provisioned the end device. |
+| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  | Provisioning data for the provisioner. |
 
 #### Field Rules
 
@@ -3615,13 +4532,14 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 | ----- | ----------- |
 | `ids` | <p>`message.required`: `true`</p> |
 | `lorawan_version` | <p>`enum.defined_only`: `true`</p> |
+| `payload` | <p>`bytes.max_len`: `256`</p> |
 | `provisioner_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$`</p> |
 
 ### <a name="ttn.lorawan.v3.CryptoServicePayloadResponse">Message `CryptoServicePayloadResponse`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `payload` | [`bytes`](#bytes) |  |  |
+| `payload` | [`bytes`](#bytes) |  | Raw output payload. |
 
 ### <a name="ttn.lorawan.v3.DeleteApplicationActivationSettingsRequest">Message `DeleteApplicationActivationSettingsRequest`</a>
 
@@ -3633,13 +4551,13 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
-| `lorawan_version` | [`MACVersion`](#ttn.lorawan.v3.MACVersion) |  |  |
-| `join_nonce` | [`bytes`](#bytes) |  |  |
-| `dev_nonce` | [`bytes`](#bytes) |  |  |
-| `net_id` | [`bytes`](#bytes) |  |  |
-| `provisioner_id` | [`string`](#string) |  |  |
-| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
+| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  | End device identifiers to use for key derivation. The DevAddr must be set in this request. The DevEUI may need to be set, depending on the provisioner. |
+| `lorawan_version` | [`MACVersion`](#ttn.lorawan.v3.MACVersion) |  | LoRaWAN key derivation scheme. |
+| `join_nonce` | [`bytes`](#bytes) |  | LoRaWAN JoinNonce (or AppNonce). |
+| `dev_nonce` | [`bytes`](#bytes) |  | LoRaWAN DevNonce. |
+| `net_id` | [`bytes`](#bytes) |  | LoRaWAN NetID. |
+| `provisioner_id` | [`string`](#string) |  | Provisioner that provisioned the end device. |
+| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  | Provisioning data for the provisioner. |
 
 #### Field Rules
 
@@ -3660,9 +4578,9 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  |  |
-| `provisioner_id` | [`string`](#string) |  |  |
-| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
+| `ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) |  | End device identifiers to request the root keys for. |
+| `provisioner_id` | [`string`](#string) |  | Provisioner that provisioned the end device. |
+| `provisioning_data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  | Provisioning data for the provisioner. |
 
 #### Field Rules
 
@@ -3675,9 +4593,9 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `payload_request` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) |  |  |
-| `join_request_type` | [`RejoinType`](#ttn.lorawan.v3.RejoinType) |  |  |
-| `dev_nonce` | [`bytes`](#bytes) |  |  |
+| `payload_request` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) |  | Request data for the cryptographic operation. |
+| `join_request_type` | [`JoinRequestType`](#ttn.lorawan.v3.JoinRequestType) |  | LoRaWAN join-request type. |
+| `dev_nonce` | [`bytes`](#bytes) |  | LoRaWAN DevNonce. |
 
 #### Field Rules
 
@@ -3774,6 +4692,14 @@ OrganizationOrUserIdentifiers contains either organization or user identifiers.
 | `settings` | [`ApplicationActivationSettings`](#ttn.lorawan.v3.ApplicationActivationSettings) |  |  |
 | `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
 
+### <a name="ttn.lorawan.v3.AppJs">Service `AppJs`</a>
+
+The AppJs service connects an Application to a Join Server.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `GetAppSKey` | [`SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest) | [`AppSKeyResponse`](#ttn.lorawan.v3.AppSKeyResponse) | Request the application session key for a particular session. |
+
 ### <a name="ttn.lorawan.v3.ApplicationActivationSettingRegistry">Service `ApplicationActivationSettingRegistry`</a>
 
 The ApplicationActivationSettingRegistry service allows clients to manage their application activation settings.
@@ -3798,7 +4724,7 @@ Service for application layer cryptographic operations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `DeriveAppSKey` | [`DeriveSessionKeysRequest`](#ttn.lorawan.v3.DeriveSessionKeysRequest) | [`AppSKeyResponse`](#ttn.lorawan.v3.AppSKeyResponse) |  |
+| `DeriveAppSKey` | [`DeriveSessionKeysRequest`](#ttn.lorawan.v3.DeriveSessionKeysRequest) | [`AppSKeyResponse`](#ttn.lorawan.v3.AppSKeyResponse) | Derive the application session key (AppSKey). |
 | `GetAppKey` | [`GetRootKeysRequest`](#ttn.lorawan.v3.GetRootKeysRequest) | [`KeyEnvelope`](#ttn.lorawan.v3.KeyEnvelope) | Get the AppKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed. |
 
 ### <a name="ttn.lorawan.v3.AsJs">Service `AsJs`</a>
@@ -3807,13 +4733,13 @@ The AsJs service connects an Application Server to a Join Server.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `GetAppSKey` | [`SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest) | [`AppSKeyResponse`](#ttn.lorawan.v3.AppSKeyResponse) |  |
+| `GetAppSKey` | [`SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest) | [`AppSKeyResponse`](#ttn.lorawan.v3.AppSKeyResponse) | Request the application session key for a particular session. |
 
 ### <a name="ttn.lorawan.v3.Js">Service `Js`</a>
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `GetJoinEUIPrefixes` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`JoinEUIPrefixes`](#ttn.lorawan.v3.JoinEUIPrefixes) |  |
+| `GetJoinEUIPrefixes` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`JoinEUIPrefixes`](#ttn.lorawan.v3.JoinEUIPrefixes) | Request the JoinEUI prefixes that are configured for this Join Server. |
 
 #### HTTP bindings
 
@@ -3848,11 +4774,11 @@ Service for network layer cryptographic operations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `JoinRequestMIC` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) |  |
-| `JoinAcceptMIC` | [`JoinAcceptMICRequest`](#ttn.lorawan.v3.JoinAcceptMICRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) |  |
-| `EncryptJoinAccept` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) |  |
-| `EncryptRejoinAccept` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) |  |
-| `DeriveNwkSKeys` | [`DeriveSessionKeysRequest`](#ttn.lorawan.v3.DeriveSessionKeysRequest) | [`NwkSKeysResponse`](#ttn.lorawan.v3.NwkSKeysResponse) |  |
+| `JoinRequestMIC` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) | Calculate the join-request message MIC. |
+| `JoinAcceptMIC` | [`JoinAcceptMICRequest`](#ttn.lorawan.v3.JoinAcceptMICRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) | Calculate the join-accept message MIC. |
+| `EncryptJoinAccept` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) | Encrypt the join-accept payload. |
+| `EncryptRejoinAccept` | [`CryptoServicePayloadRequest`](#ttn.lorawan.v3.CryptoServicePayloadRequest) | [`CryptoServicePayloadResponse`](#ttn.lorawan.v3.CryptoServicePayloadResponse) | Encrypt the rejoin-accept payload. |
+| `DeriveNwkSKeys` | [`DeriveSessionKeysRequest`](#ttn.lorawan.v3.DeriveSessionKeysRequest) | [`NwkSKeysResponse`](#ttn.lorawan.v3.NwkSKeysResponse) | Derive network session keys (NwkSKey, or FNwkSKey, SNwkSKey and NwkSEncKey) |
 | `GetNwkKey` | [`GetRootKeysRequest`](#ttn.lorawan.v3.GetRootKeysRequest) | [`KeyEnvelope`](#ttn.lorawan.v3.KeyEnvelope) | Get the NwkKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed. |
 
 ### <a name="ttn.lorawan.v3.NsJs">Service `NsJs`</a>
@@ -3861,8 +4787,8 @@ The NsJs service connects a Network Server to a Join Server.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `HandleJoin` | [`JoinRequest`](#ttn.lorawan.v3.JoinRequest) | [`JoinResponse`](#ttn.lorawan.v3.JoinResponse) |  |
-| `GetNwkSKeys` | [`SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest) | [`NwkSKeysResponse`](#ttn.lorawan.v3.NwkSKeysResponse) |  |
+| `HandleJoin` | [`JoinRequest`](#ttn.lorawan.v3.JoinRequest) | [`JoinResponse`](#ttn.lorawan.v3.JoinResponse) | Handle a join-request message. |
+| `GetNwkSKeys` | [`SessionKeyRequest`](#ttn.lorawan.v3.SessionKeyRequest) | [`NwkSKeysResponse`](#ttn.lorawan.v3.NwkSKeysResponse) | Request the network session keys for a particular session. |
 
 ## <a name="lorawan-stack/api/keys.proto">File `lorawan-stack/api/keys.proto`</a>
 
@@ -3879,6 +4805,7 @@ The NsJs service connects a Network Server to a Join Server.
 | Field | Validations |
 | ----- | ----------- |
 | `kek_label` | <p>`string.max_len`: `2048`</p> |
+| `encrypted_key` | <p>`bytes.max_len`: `1024`</p> |
 
 ### <a name="ttn.lorawan.v3.RootKeys">Message `RootKeys`</a>
 
@@ -3972,7 +4899,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `rx1_dr_offset` | [`uint32`](#uint32) |  |  |
+| `rx1_dr_offset` | [`DataRateOffset`](#ttn.lorawan.v3.DataRateOffset) |  |  |
 | `rx2_dr` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  |  |
 | `opt_neg` | [`bool`](#bool) |  | OptNeg is set if Network Server implements LoRaWAN 1.1 or greater. |
 
@@ -3980,7 +4907,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 
 | Field | Validations |
 | ----- | ----------- |
-| `rx1_dr_offset` | <p>`uint32.lte`: `7`</p> |
+| `rx1_dr_offset` | <p>`enum.defined_only`: `true`</p> |
 | `rx2_dr` | <p>`enum.defined_only`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.DataRate">Message `DataRate`</a>
@@ -3989,12 +4916,37 @@ Only the components for which the keys were meant, will have the key-encryption-
 | ----- | ---- | ----- | ----------- |
 | `lora` | [`LoRaDataRate`](#ttn.lorawan.v3.LoRaDataRate) |  |  |
 | `fsk` | [`FSKDataRate`](#ttn.lorawan.v3.FSKDataRate) |  |  |
+| `lrfhss` | [`LRFHSSDataRate`](#ttn.lorawan.v3.LRFHSSDataRate) |  |  |
 
 ### <a name="ttn.lorawan.v3.DataRateIndexValue">Message `DataRateIndexValue`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `value` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `value` | <p>`enum.defined_only`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DataRateOffsetValue">Message `DataRateOffsetValue`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `value` | [`DataRateOffset`](#ttn.lorawan.v3.DataRateOffset) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `value` | <p>`enum.defined_only`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DeviceEIRPValue">Message `DeviceEIRPValue`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `value` | [`DeviceEIRP`](#ttn.lorawan.v3.DeviceEIRP) |  |  |
 
 #### Field Rules
 
@@ -4042,6 +4994,18 @@ Only the components for which the keys were meant, will have the key-encryption-
 | ----- | ---- | ----- | ----------- |
 | `bit_rate` | [`uint32`](#uint32) |  | Bit rate (bps). |
 
+### <a name="ttn.lorawan.v3.FrequencyValue">Message `FrequencyValue`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `value` | [`uint64`](#uint64) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `value` | <p>`uint64.gte`: `100000`</p> |
+
 ### <a name="ttn.lorawan.v3.GatewayAntennaIdentifiers">Message `GatewayAntennaIdentifiers`</a>
 
 | Field | Type | Label | Description |
@@ -4081,6 +5045,13 @@ Only the components for which the keys were meant, will have the key-encryption-
 | `join_eui` | [`bytes`](#bytes) |  |  |
 | `dev_eui` | [`bytes`](#bytes) |  |  |
 | `dev_nonce` | [`bytes`](#bytes) |  |  |
+
+### <a name="ttn.lorawan.v3.LRFHSSDataRate">Message `LRFHSSDataRate`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `modulation_type` | [`uint32`](#uint32) |  |  |
+| `operating_channel_width` | [`uint32`](#uint32) |  | Operating Channel Width (kHz). |
 
 ### <a name="ttn.lorawan.v3.LoRaDataRate">Message `LoRaDataRate`</a>
 
@@ -4265,7 +5236,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `rejoin_type` | [`RejoinType`](#ttn.lorawan.v3.RejoinType) |  |  |
+| `rejoin_type` | [`RejoinRequestType`](#ttn.lorawan.v3.RejoinRequestType) |  |  |
 | `data_rate_index` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  |  |
 | `max_retries` | [`uint32`](#uint32) |  |  |
 | `period_exponent` | [`RejoinPeriodExponent`](#ttn.lorawan.v3.RejoinPeriodExponent) |  | Exponent e that configures the rejoin period = 32 * 2^e + rand(0,32) seconds. |
@@ -4460,7 +5431,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `rx2_data_rate_index` | [`DataRateIndex`](#ttn.lorawan.v3.DataRateIndex) |  |  |
-| `rx1_data_rate_offset` | [`uint32`](#uint32) |  |  |
+| `rx1_data_rate_offset` | [`DataRateOffset`](#ttn.lorawan.v3.DataRateOffset) |  |  |
 | `rx2_frequency` | [`uint64`](#uint64) |  | Rx2 frequency (Hz). |
 
 #### Field Rules
@@ -4468,7 +5439,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 | Field | Validations |
 | ----- | ----------- |
 | `rx2_data_rate_index` | <p>`enum.defined_only`: `true`</p> |
-| `rx1_data_rate_offset` | <p>`uint32.lte`: `7`</p> |
+| `rx1_data_rate_offset` | <p>`enum.defined_only`: `true`</p> |
 | `rx2_frequency` | <p>`uint64.gte`: `100000`</p> |
 
 ### <a name="ttn.lorawan.v3.MACCommand.RxTimingSetupReq">Message `MACCommand.RxTimingSetupReq`</a>
@@ -4530,6 +5501,8 @@ Only the components for which the keys were meant, will have the key-encryption-
 
 ### <a name="ttn.lorawan.v3.Message">Message `Message`</a>
 
+Message represents a LoRaWAN message
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `m_hdr` | [`MHDR`](#ttn.lorawan.v3.MHDR) |  |  |
@@ -4562,7 +5535,7 @@ Only the components for which the keys were meant, will have the key-encryption-
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `rejoin_type` | [`RejoinType`](#ttn.lorawan.v3.RejoinType) |  |  |
+| `rejoin_type` | [`RejoinRequestType`](#ttn.lorawan.v3.RejoinRequestType) |  |  |
 | `net_id` | [`bytes`](#bytes) |  |  |
 | `join_eui` | [`bytes`](#bytes) |  |  |
 | `dev_eui` | [`bytes`](#bytes) |  |  |
@@ -4605,6 +5578,7 @@ Otherwise, the Gateway Server attempts to schedule the request and creates the T
 | `priority` | [`TxSchedulePriority`](#ttn.lorawan.v3.TxSchedulePriority) |  | Priority for scheduling. Requests with a higher priority are allocated more channel time than messages with a lower priority, in duty-cycle limited regions. A priority of HIGH or higher sets the HiPriorityFlag in the DLMetadata Object. |
 | `absolute_time` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Time when the downlink message should be transmitted. This value is only valid for class C downlink; class A downlink uses uplink tokens and class B downlink is scheduled on ping slots. This requires the gateway to have GPS time sychronization. If the absolute time is not set, the first available time will be used that does not conflict or violate regional limitations. |
 | `frequency_plan_id` | [`string`](#string) |  | Frequency plan ID from which the frequencies in this message are retrieved. |
+| `lorawan_phy_version` | [`PHYVersion`](#ttn.lorawan.v3.PHYVersion) |  | The regional parameters version used to interpret the data rate indices in this message. |
 | `advanced` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  | Advanced metadata fields - can be used for advanced information or experimental features that are not yet formally defined in the API - field names are written in snake_case |
 
 #### Field Rules
@@ -4616,6 +5590,7 @@ Otherwise, the Gateway Server attempts to schedule the request and creates the T
 | `rx2_data_rate_index` | <p>`enum.defined_only`: `true`</p> |
 | `priority` | <p>`enum.defined_only`: `true`</p> |
 | `frequency_plan_id` | <p>`string.max_len`: `64`</p> |
+| `lorawan_phy_version` | <p>`enum.defined_only`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.TxSettings">Message `TxSettings`</a>
 
@@ -4765,6 +5740,19 @@ Transmission settings for downlink.
 | `DATA_RATE_14` | 14 |  |
 | `DATA_RATE_15` | 15 |  |
 
+### <a name="ttn.lorawan.v3.DataRateOffset">Enum `DataRateOffset`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `DATA_RATE_OFFSET_0` | 0 |  |
+| `DATA_RATE_OFFSET_1` | 1 |  |
+| `DATA_RATE_OFFSET_2` | 2 |  |
+| `DATA_RATE_OFFSET_3` | 3 |  |
+| `DATA_RATE_OFFSET_4` | 4 |  |
+| `DATA_RATE_OFFSET_5` | 5 |  |
+| `DATA_RATE_OFFSET_6` | 6 |  |
+| `DATA_RATE_OFFSET_7` | 7 |  |
+
 ### <a name="ttn.lorawan.v3.DeviceEIRP">Enum `DeviceEIRP`</a>
 
 | Name | Number | Description |
@@ -4785,6 +5773,15 @@ Transmission settings for downlink.
 | `DEVICE_EIRP_30` | 13 | 30 dBm. |
 | `DEVICE_EIRP_33` | 14 | 33 dBm. |
 | `DEVICE_EIRP_36` | 15 | 36 dBm. |
+
+### <a name="ttn.lorawan.v3.JoinRequestType">Enum `JoinRequestType`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `REJOIN_CONTEXT` | 0 | Resets DevAddr, Session Keys, Frame Counters, Radio Parameters. |
+| `REJOIN_SESSION` | 1 | Equivalent to the initial JoinRequest. |
+| `REJOIN_KEYS` | 2 | Resets DevAddr, Session Keys, Frame Counters, while keeping the Radio Parameters. |
+| `JOIN` | 255 | Normal join-request. |
 
 ### <a name="ttn.lorawan.v3.MACCommandIdentifier">Enum `MACCommandIdentifier`</a>
 
@@ -4869,13 +5866,17 @@ Transmission settings for downlink.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | `PHY_UNKNOWN` | 0 |  |
-| `PHY_V1_0` | 1 |  |
-| `PHY_V1_0_1` | 2 |  |
-| `PHY_V1_0_2_REV_A` | 3 |  |
-| `PHY_V1_0_2_REV_B` | 4 |  |
-| `PHY_V1_1_REV_A` | 5 |  |
-| `PHY_V1_1_REV_B` | 6 |  |
-| `PHY_V1_0_3_REV_A` | 7 |  |
+| `TS001_V1_0` | 1 |  |
+| `TS001_V1_0_1` | 2 |  |
+| `RP001_V1_0_2` | 3 |  |
+| `RP001_V1_0_2_REV_B` | 4 |  |
+| `RP001_V1_1_REV_A` | 5 |  |
+| `RP001_V1_1_REV_B` | 6 |  |
+| `RP001_V1_0_3_REV_A` | 7 |  |
+| `RP002_V1_0_0` | 8 |  |
+| `RP002_V1_0_1` | 9 |  |
+| `RP002_V1_0_2` | 10 |  |
+| `RP002_V1_0_3` | 11 |  |
 
 ### <a name="ttn.lorawan.v3.PingSlotPeriod">Enum `PingSlotPeriod`</a>
 
@@ -4924,6 +5925,14 @@ Transmission settings for downlink.
 | `REJOIN_PERIOD_6` | 6 | Every 2048 to 2080 seconds. |
 | `REJOIN_PERIOD_7` | 7 | Every 4096 to 4128 seconds. |
 
+### <a name="ttn.lorawan.v3.RejoinRequestType">Enum `RejoinRequestType`</a>
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| `CONTEXT` | 0 | Resets DevAddr, Session Keys, Frame Counters, Radio Parameters. |
+| `SESSION` | 1 | Equivalent to the initial JoinRequest. |
+| `KEYS` | 2 | Resets DevAddr, Session Keys, Frame Counters, while keeping the Radio Parameters. |
+
 ### <a name="ttn.lorawan.v3.RejoinTimeExponent">Enum `RejoinTimeExponent`</a>
 
 | Name | Number | Description |
@@ -4944,14 +5953,6 @@ Transmission settings for downlink.
 | `REJOIN_TIME_13` | 13 | Every ~3.2 months. |
 | `REJOIN_TIME_14` | 14 | Every ~6.4 months. |
 | `REJOIN_TIME_15` | 15 | Every ~1.1 year. |
-
-### <a name="ttn.lorawan.v3.RejoinType">Enum `RejoinType`</a>
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| `CONTEXT` | 0 | Resets DevAddr, Session Keys, Frame Counters, Radio Parameters. |
-| `SESSION` | 1 | Equivalent to the initial JoinRequest. |
-| `KEYS` | 2 | Resets DevAddr, Session Keys, Frame Counters, while keeping the Radio Parameters. |
 
 ### <a name="ttn.lorawan.v3.RxDelay">Enum `RxDelay`</a>
 
@@ -5111,12 +6112,13 @@ Encodes and decodes uplink messages.
 | ----- | ---- | ----- | ----------- |
 | `downlinks` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) | repeated |  |
 | `last_f_cnt_down` | [`uint32`](#uint32) |  |  |
+| `session_key_id` | [`bytes`](#bytes) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
-| `downlinks` | <p>`repeated.min_items`: `1`</p> |
+| `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationJoinAccept">Message `ApplicationJoinAccept`</a>
 
@@ -5147,7 +6149,7 @@ Encodes and decodes uplink messages.
 | Field | Validations |
 | ----- | ----------- |
 | `location` | <p>`message.required`: `true`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationLocation.AttributesEntry">Message `ApplicationLocation.AttributesEntry`</a>
 
@@ -5164,6 +6166,8 @@ Encodes and decodes uplink messages.
 | `data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationUp">Message `ApplicationUp`</a>
+
+Application uplink message.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
@@ -5207,14 +6211,15 @@ Encodes and decodes uplink messages.
 | `confirmed` | [`bool`](#bool) |  |  |
 | `consumed_airtime` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Consumed airtime for the transmission of the uplink message. Calculated by Network Server using the RawPayload size and the transmission settings. |
 | `locations` | [`ApplicationUplink.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplink.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
-| `f_port` | <p>`uint32.lte`: `255`</p><p>`uint32.gte`: `1`</p><p>`uint32.not_in`: `[224]`</p> |
-| `rx_metadata` | <p>`repeated.min_items`: `1`</p> |
+| `f_port` | <p>`uint32.lte`: `255`</p><p>`uint32.not_in`: `[224]`</p> |
 | `settings` | <p>`message.required`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.ApplicationUplink.LocationsEntry">Message `ApplicationUplink.LocationsEntry`</a>
@@ -5236,12 +6241,32 @@ Downlink message from the network to the end device
 | `request` | [`TxRequest`](#ttn.lorawan.v3.TxRequest) |  |  |
 | `scheduled` | [`TxSettings`](#ttn.lorawan.v3.TxSettings) |  |  |
 | `correlation_ids` | [`string`](#string) | repeated |  |
+| `session_key_id` | [`bytes`](#bytes) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `correlation_ids` | <p>`repeated.items.string.max_len`: `100`</p> |
+| `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
+
+### <a name="ttn.lorawan.v3.DownlinkQueueOperationErrorDetails">Message `DownlinkQueueOperationErrorDetails`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `dev_addr` | [`bytes`](#bytes) |  |  |
+| `session_key_id` | [`bytes`](#bytes) |  |  |
+| `min_f_cnt_down` | [`uint32`](#uint32) |  |  |
+| `pending_dev_addr` | [`bytes`](#bytes) |  |  |
+| `pending_session_key_id` | [`bytes`](#bytes) |  |  |
+| `pending_min_f_cnt_down` | [`uint32`](#uint32) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
+| `pending_session_key_id` | <p>`bytes.max_len`: `2048`</p> |
 
 ### <a name="ttn.lorawan.v3.DownlinkQueueRequest">Message `DownlinkQueueRequest`</a>
 
@@ -5255,6 +6280,13 @@ Downlink message from the network to the end device
 | Field | Validations |
 | ----- | ----------- |
 | `downlinks` | <p>`repeated.max_items`: `100000`</p> |
+
+### <a name="ttn.lorawan.v3.GatewayTxAcknowledgment">Message `GatewayTxAcknowledgment`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gateway_ids` | [`GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers) |  |  |
+| `tx_ack` | [`TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment) |  |  |
 
 ### <a name="ttn.lorawan.v3.GatewayUplinkMessage">Message `GatewayUplinkMessage`</a>
 
@@ -5274,23 +6306,26 @@ Downlink message from the network to the end device
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `up_formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  | Payload formatter for uplink messages, must be set together with its parameter. |
-| `up_formatter_parameter` | [`string`](#string) |  | Parameter for the up_formatter, must be set together. |
+| `up_formatter_parameter` | [`string`](#string) |  | Parameter for the up_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration. |
 | `down_formatter` | [`PayloadFormatter`](#ttn.lorawan.v3.PayloadFormatter) |  | Payload formatter for downlink messages, must be set together with its parameter. |
-| `down_formatter_parameter` | [`string`](#string) |  | Parameter for the down_formatter, must be set together. |
+| `down_formatter_parameter` | [`string`](#string) |  | Parameter for the down_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `up_formatter` | <p>`enum.defined_only`: `true`</p> |
+| `up_formatter_parameter` | <p>`string.max_len`: `40960`</p> |
 | `down_formatter` | <p>`enum.defined_only`: `true`</p> |
+| `down_formatter_parameter` | <p>`string.max_len`: `40960`</p> |
 
 ### <a name="ttn.lorawan.v3.TxAcknowledgment">Message `TxAcknowledgment`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `correlation_ids` | [`string`](#string) | repeated |  |
+| `correlation_ids` | [`string`](#string) | repeated | Correlation IDs for the downlink message. Set automatically by the UDP and LBS frontends. For gRPC and the MQTT v3 frontends, the correlation IDs must match the ones of the downlink message the Tx acknowledgment message refers to. |
 | `result` | [`TxAcknowledgment.Result`](#ttn.lorawan.v3.TxAcknowledgment.Result) |  |  |
+| `downlink_message` | [`DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage) |  | The acknowledged downlink message. Set by the Gateway Server. |
 
 #### Field Rules
 
@@ -5375,9 +6410,12 @@ More payload formatters can be added. |
 | `message_id` | [`string`](#string) |  | Message identifier generated by Packet Broker Router. |
 | `forwarder_net_id` | [`bytes`](#bytes) |  | LoRa Alliance NetID of the Packet Broker Forwarder Member. |
 | `forwarder_tenant_id` | [`string`](#string) |  | Tenant ID managed by the Packet Broker Forwarder Member. |
-| `forwarder_id` | [`string`](#string) |  | Forwarder identifier issued by the Packet Broker Forwarder Member. |
+| `forwarder_cluster_id` | [`string`](#string) |  | Forwarder Cluster ID of the Packet Broker Forwarder. |
+| `forwarder_gateway_eui` | [`bytes`](#bytes) |  | Forwarder gateway EUI. |
+| `forwarder_gateway_id` | [`google.protobuf.StringValue`](#google.protobuf.StringValue) |  | Forwarder gateway ID. |
 | `home_network_net_id` | [`bytes`](#bytes) |  | LoRa Alliance NetID of the Packet Broker Home Network Member. |
 | `home_network_tenant_id` | [`string`](#string) |  | Tenant ID managed by the Packet Broker Home Network Member. This value is empty if it cannot be determined by the Packet Broker Router. |
+| `home_network_cluster_id` | [`string`](#string) |  | Home Network Cluster ID of the Packet Broker Home Network. |
 | `hops` | [`PacketBrokerRouteHop`](#ttn.lorawan.v3.PacketBrokerRouteHop) | repeated | Hops that the message passed. Each Packet Broker Router service appends an entry. |
 
 ### <a name="ttn.lorawan.v3.PacketBrokerRouteHop">Message `PacketBrokerRouteHop`</a>
@@ -5415,6 +6453,8 @@ a message corresponds to one RxMetadata.
 | `downlink_path_constraint` | [`DownlinkPathConstraint`](#ttn.lorawan.v3.DownlinkPathConstraint) |  | Gateway downlink path constraint; injected by the Gateway Server. |
 | `uplink_token` | [`bytes`](#bytes) |  | Uplink token to be included in the Tx request in class A downlink; injected by gateway, Gateway Server or fNS. |
 | `channel_index` | [`uint32`](#uint32) |  | Index of the gateway channel that received the message. |
+| `hopping_width` | [`uint32`](#uint32) |  | Hopping width; a number describing the number of steps of the LR-FHSS grid. |
+| `frequency_drift` | [`int32`](#int32) |  | Frequency drift in Hz between start and end of an LR-FHSS packet (signed). |
 | `advanced` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  | Advanced metadata fields - can be used for advanced information or experimental features that are not yet formally defined in the API - field names are written in snake_case |
 
 #### Field Rules
@@ -5464,9 +6504,27 @@ The connection information of an MQTT frontend.
 
 ### <a name="ttn.lorawan.v3.GenerateDevAddrResponse">Message `GenerateDevAddrResponse`</a>
 
+Response of GenerateDevAddr.
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `dev_addr` | [`bytes`](#bytes) |  |  |
+
+### <a name="ttn.lorawan.v3.GetDefaultMACSettingsRequest">Message `GetDefaultMACSettingsRequest`</a>
+
+Request of GetDefaultMACSettings.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `frequency_plan_id` | [`string`](#string) |  |  |
+| `lorawan_phy_version` | [`PHYVersion`](#ttn.lorawan.v3.PHYVersion) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `frequency_plan_id` | <p>`string.max_len`: `64`</p> |
+| `lorawan_phy_version` | <p>`enum.defined_only`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.AsNs">Service `AsNs`</a>
 
@@ -5474,10 +6532,9 @@ The AsNs service connects an Application Server to a Network Server.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `LinkApplication` | [`.google.protobuf.Empty`](#google.protobuf.Empty) _stream_ | [`ApplicationUp`](#ttn.lorawan.v3.ApplicationUp) _stream_ |  |
-| `DownlinkQueueReplace` | [`DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
-| `DownlinkQueuePush` | [`DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
-| `DownlinkQueueList` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`ApplicationDownlinks`](#ttn.lorawan.v3.ApplicationDownlinks) |  |
+| `DownlinkQueueReplace` | [`DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Replace the entire downlink queue with the specified messages. This can also be used to empty the queue by specifying no messages. Note that this will trigger an immediate downlink if a downlink slot is available. |
+| `DownlinkQueuePush` | [`DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Push downlink messages to the end of the downlink queue. Note that this will trigger an immediate downlink if a downlink slot is available. |
+| `DownlinkQueueList` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`ApplicationDownlinks`](#ttn.lorawan.v3.ApplicationDownlinks) | List the items currently in the downlink queue. |
 
 ### <a name="ttn.lorawan.v3.GsNs">Service `GsNs`</a>
 
@@ -5485,19 +6542,24 @@ The GsNs service connects a Gateway Server to a Network Server.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `HandleUplink` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
+| `HandleUplink` | [`UplinkMessage`](#ttn.lorawan.v3.UplinkMessage) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Called by the Gateway Server when an uplink message arrives. |
+| `ReportTxAcknowledgment` | [`GatewayTxAcknowledgment`](#ttn.lorawan.v3.GatewayTxAcknowledgment) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Called by the Gateway Server when a Tx acknowledgment arrives. |
 
 ### <a name="ttn.lorawan.v3.Ns">Service `Ns`</a>
+
+The Ns service manages the Network Server.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `GenerateDevAddr` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`GenerateDevAddrResponse`](#ttn.lorawan.v3.GenerateDevAddrResponse) | GenerateDevAddr requests a device address assignment from the Network Server. |
+| `GetDefaultMACSettings` | [`GetDefaultMACSettingsRequest`](#ttn.lorawan.v3.GetDefaultMACSettingsRequest) | [`MACSettings`](#ttn.lorawan.v3.MACSettings) | GetDefaultMACSettings retrieves the default MAC settings for a frequency plan. |
 
 #### HTTP bindings
 
 | Method Name | Method | Pattern | Body |
 | ----------- | ------ | ------- | ---- |
 | `GenerateDevAddr` | `GET` | `/api/v3/ns/dev_addr` |  |
+| `GetDefaultMACSettings` | `GET` | `/api/v3/ns/default_mac_settings/{frequency_plan_id}/{lorawan_phy_version}` |  |
 
 ### <a name="ttn.lorawan.v3.NsEndDeviceRegistry">Service `NsEndDeviceRegistry`</a>
 
@@ -5507,6 +6569,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | ----------- | ------------ | ------------- | ------------|
 | `Get` | [`GetEndDeviceRequest`](#ttn.lorawan.v3.GetEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Get returns the device that matches the given identifiers. If there are multiple matches, an error will be returned. |
 | `Set` | [`SetEndDeviceRequest`](#ttn.lorawan.v3.SetEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | Set creates or updates the device. |
+| `ResetFactoryDefaults` | [`ResetAndGetEndDeviceRequest`](#ttn.lorawan.v3.ResetAndGetEndDeviceRequest) | [`EndDevice`](#ttn.lorawan.v3.EndDevice) | ResetFactoryDefaults resets device state to factory defaults. |
 | `Delete` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete deletes the device that matches the given identifiers. If there are multiple matches, an error will be returned. |
 
 #### HTTP bindings
@@ -5516,6 +6579,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `Get` | `GET` | `/api/v3/ns/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}` |  |
 | `Set` | `PUT` | `/api/v3/ns/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}` | `*` |
 | `Set` | `POST` | `/api/v3/ns/applications/{end_device.ids.application_ids.application_id}/devices` | `*` |
+| `ResetFactoryDefaults` | `PATCH` | `/api/v3/ns/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/ns/applications/{application_ids.application_id}/devices/{device_id}` |  |
 
 ## <a name="lorawan-stack/api/oauth.proto">File `lorawan-stack/api/oauth.proto`</a>
@@ -5663,12 +6727,15 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 
 ### <a name="ttn.lorawan.v3.OAuthAuthorizationRegistry">Service `OAuthAuthorizationRegistry`</a>
 
+The OAuthAuthorizationRegistry service, exposed by the Identity Server,
+is used to manage OAuth client authorizations for users.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `List` | [`ListOAuthClientAuthorizationsRequest`](#ttn.lorawan.v3.ListOAuthClientAuthorizationsRequest) | [`OAuthClientAuthorizations`](#ttn.lorawan.v3.OAuthClientAuthorizations) |  |
-| `ListTokens` | [`ListOAuthAccessTokensRequest`](#ttn.lorawan.v3.ListOAuthAccessTokensRequest) | [`OAuthAccessTokens`](#ttn.lorawan.v3.OAuthAccessTokens) |  |
-| `Delete` | [`OAuthClientAuthorizationIdentifiers`](#ttn.lorawan.v3.OAuthClientAuthorizationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
-| `DeleteToken` | [`OAuthAccessTokenIdentifiers`](#ttn.lorawan.v3.OAuthAccessTokenIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
+| `List` | [`ListOAuthClientAuthorizationsRequest`](#ttn.lorawan.v3.ListOAuthClientAuthorizationsRequest) | [`OAuthClientAuthorizations`](#ttn.lorawan.v3.OAuthClientAuthorizations) | List OAuth clients that are authorized by the user. |
+| `ListTokens` | [`ListOAuthAccessTokensRequest`](#ttn.lorawan.v3.ListOAuthAccessTokensRequest) | [`OAuthAccessTokens`](#ttn.lorawan.v3.OAuthAccessTokens) | List OAuth access tokens issued to the OAuth client on behalf of the user. |
+| `Delete` | [`OAuthClientAuthorizationIdentifiers`](#ttn.lorawan.v3.OAuthClientAuthorizationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete (de-authorize) an OAuth client for the user. |
+| `DeleteToken` | [`OAuthAccessTokenIdentifiers`](#ttn.lorawan.v3.OAuthAccessTokenIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete (invalidate) an OAuth access token. |
 
 #### HTTP bindings
 
@@ -5688,6 +6755,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `organization_ids` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 #### Field Rules
 
@@ -5695,7 +6763,8 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | ----- | ----------- |
 | `organization_ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
-| `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
+| `rights` | <p>`repeated.min_items`: `1`</p><p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `expires_at` | <p>`timestamp.gt_now`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.CreateOrganizationRequest">Message `CreateOrganizationRequest`</a>
 
@@ -5790,6 +6859,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted organizations. |
 
 #### Field Rules
 
@@ -5805,6 +6875,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `ids` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) |  |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `deleted_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `description` | [`string`](#string) |  |  |
 | `attributes` | [`Organization.AttributesEntry`](#ttn.lorawan.v3.Organization.AttributesEntry) | repeated | Key-value attributes for this organization. Typically used for organizing organizations or for storing integration-specific data. |
@@ -5817,7 +6888,8 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
 
 ### <a name="ttn.lorawan.v3.Organization.AttributesEntry">Message `Organization.AttributesEntry`</a>
 
@@ -5852,6 +6924,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | ----- | ---- | ----- | ----------- |
 | `organization_ids` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) |  |  |
 | `api_key` | [`APIKey`](#ttn.lorawan.v3.APIKey) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the api key fields that should be updated. |
 
 #### Field Rules
 
@@ -5876,6 +6949,9 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 ## <a name="lorawan-stack/api/organization_services.proto">File `lorawan-stack/api/organization_services.proto`</a>
 
 ### <a name="ttn.lorawan.v3.OrganizationAccess">Service `OrganizationAccess`</a>
+
+The OrganizationAcces service, exposed by the Identity Server, is used to manage
+API keys and collaborators of organizations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
@@ -5904,6 +6980,9 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 
 ### <a name="ttn.lorawan.v3.OrganizationRegistry">Service `OrganizationRegistry`</a>
 
+The OrganizationRegistry service, exposed by the Identity Server, is used to manage
+organization registrations.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Create` | [`CreateOrganizationRequest`](#ttn.lorawan.v3.CreateOrganizationRequest) | [`Organization`](#ttn.lorawan.v3.Organization) | Create a new organization. This also sets the given user as first collaborator with all possible rights. |
@@ -5911,6 +6990,10 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `List` | [`ListOrganizationsRequest`](#ttn.lorawan.v3.ListOrganizationsRequest) | [`Organizations`](#ttn.lorawan.v3.Organizations) | List organizations where the given user or organization is a direct collaborator. If no user or organization is given, this returns the organizations the caller has access to. Similar to Get, this selects the fields given by the field mask. More or less fields may be returned, depending on the rights of the caller. |
 | `Update` | [`UpdateOrganizationRequest`](#ttn.lorawan.v3.UpdateOrganizationRequest) | [`Organization`](#ttn.lorawan.v3.Organization) | Update the organization, changing the fields specified by the field mask to the provided values. |
 | `Delete` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the organization. This may not release the organization ID for reuse. |
+| `Restore` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Restore a recently deleted organization.
+
+Deployment configuration may specify if, and for how long after deletion, entities can be restored. |
+| `Purge` | [`OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Purge the organization. This will release the organization ID for reuse. The user is responsible for clearing data from any (external) integrations that may store and expose data by user or organization ID. |
 
 #### HTTP bindings
 
@@ -5922,8 +7005,245 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `List` | `GET` | `/api/v3/users/{collaborator.user_ids.user_id}/organizations` |  |
 | `Update` | `PUT` | `/api/v3/organizations/{organization.ids.organization_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/organizations/{organization_id}` |  |
+| `Restore` | `POST` | `/api/v3/organizations/{organization_id}/restore` |  |
+| `Purge` | `DELETE` | `/api/v3/organizations/{organization_id}/purge` |  |
 
 ## <a name="lorawan-stack/api/packetbrokeragent.proto">File `lorawan-stack/api/packetbrokeragent.proto`</a>
+
+### <a name="ttn.lorawan.v3.ListForwarderRoutingPoliciesRequest">Message `ListForwarderRoutingPoliciesRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `home_network_id` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) |  | Packet Broker identifier of the Home Network. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+
+### <a name="ttn.lorawan.v3.ListHomeNetworkRoutingPoliciesRequest">Message `ListHomeNetworkRoutingPoliciesRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.ListPacketBrokerHomeNetworksRequest">Message `ListPacketBrokerHomeNetworksRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `tenant_id_contains` | [`string`](#string) |  | Filter by tenant ID. |
+| `name_contains` | [`string`](#string) |  | Filter by name. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+| `tenant_id_contains` | <p>`string.max_len`: `100`</p> |
+| `name_contains` | <p>`string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.ListPacketBrokerNetworksRequest">Message `ListPacketBrokerNetworksRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `with_routing_policy` | [`bool`](#bool) |  | If true, list only the Forwarders and Home Networks with whom a routing policy has been defined in either direction. |
+| `tenant_id_contains` | [`string`](#string) |  | Filter by tenant ID. |
+| `name_contains` | [`string`](#string) |  | Filter by name. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+| `tenant_id_contains` | <p>`string.max_len`: `100`</p> |
+| `name_contains` | <p>`string.max_len`: `100`</p> |
+
+### <a name="ttn.lorawan.v3.PacketBrokerDefaultRoutingPolicy">Message `PacketBrokerDefaultRoutingPolicy`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Timestamp when the policy got last updated. |
+| `uplink` | [`PacketBrokerRoutingPolicyUplink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink) |  | Uplink policy. |
+| `downlink` | [`PacketBrokerRoutingPolicyDownlink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink) |  | Downlink policy. |
+
+### <a name="ttn.lorawan.v3.PacketBrokerDevAddrBlock">Message `PacketBrokerDevAddrBlock`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `dev_addr_prefix` | [`DevAddrPrefix`](#ttn.lorawan.v3.DevAddrPrefix) |  |  |
+| `home_network_cluster_id` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.PacketBrokerGateway">Message `PacketBrokerGateway`</a>
+
+Gateway respresentation for Packet Broker.
+This is a subset and superset of the Gateway message using the same data types and field tags to achieve initial wire compatibility.
+There is no (longer) wire compatibility needed; new fields may use any tag.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `ids` | [`PacketBrokerGateway.GatewayIdentifiers`](#ttn.lorawan.v3.PacketBrokerGateway.GatewayIdentifiers) |  |  |
+| `contact_info` | [`ContactInfo`](#ttn.lorawan.v3.ContactInfo) | repeated |  |
+| `antennas` | [`GatewayAntenna`](#ttn.lorawan.v3.GatewayAntenna) | repeated |  |
+| `status_public` | [`bool`](#bool) |  |  |
+| `location_public` | [`bool`](#bool) |  |  |
+| `frequency_plan_ids` | [`string`](#string) | repeated |  |
+| `update_location_from_status` | [`bool`](#bool) |  |  |
+| `online` | [`bool`](#bool) |  |  |
+| `rx_rate` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Received packets rate (number of packets per hour). This field gets updated when a value is set. |
+| `tx_rate` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | Transmitted packets rate (number of packets per hour). This field gets updated when a value is set. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `ids` | <p>`message.required`: `true`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
+| `antennas` | <p>`repeated.max_items`: `8`</p> |
+| `frequency_plan_ids` | <p>`repeated.max_items`: `8`</p><p>`repeated.items.string.max_len`: `64`</p> |
+
+### <a name="ttn.lorawan.v3.PacketBrokerGateway.GatewayIdentifiers">Message `PacketBrokerGateway.GatewayIdentifiers`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gateway_id` | [`string`](#string) |  |  |
+| `eui` | [`bytes`](#bytes) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `gateway_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[_-]?[a-z0-9]){2,}$`</p> |
+
+### <a name="ttn.lorawan.v3.PacketBrokerInfo">Message `PacketBrokerInfo`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `registration` | [`PacketBrokerNetwork`](#ttn.lorawan.v3.PacketBrokerNetwork) |  | The current registration, unset if there isn't a registration. |
+| `forwarder_enabled` | [`bool`](#bool) |  | Whether the server is configured as Forwarder (with gateways). |
+| `home_network_enabled` | [`bool`](#bool) |  | Whether the server is configured as Home Network (with end devices). |
+
+### <a name="ttn.lorawan.v3.PacketBrokerNetwork">Message `PacketBrokerNetwork`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `id` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) |  | Packet Broker network identifier. |
+| `name` | [`string`](#string) |  | Name of the network. |
+| `dev_addr_blocks` | [`PacketBrokerDevAddrBlock`](#ttn.lorawan.v3.PacketBrokerDevAddrBlock) | repeated | DevAddr blocks that are assigned to this registration. |
+| `contact_info` | [`ContactInfo`](#ttn.lorawan.v3.ContactInfo) | repeated | Contact information. |
+| `listed` | [`bool`](#bool) |  | Whether the network is listed so it can be viewed by other networks. |
+
+### <a name="ttn.lorawan.v3.PacketBrokerNetworkIdentifier">Message `PacketBrokerNetworkIdentifier`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `net_id` | [`uint32`](#uint32) |  | LoRa Alliance NetID. |
+| `tenant_id` | [`string`](#string) |  | Tenant identifier if the registration leases DevAddr blocks from a NetID. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `tenant_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$`</p> |
+
+### <a name="ttn.lorawan.v3.PacketBrokerNetworks">Message `PacketBrokerNetworks`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `networks` | [`PacketBrokerNetwork`](#ttn.lorawan.v3.PacketBrokerNetwork) | repeated |  |
+
+### <a name="ttn.lorawan.v3.PacketBrokerRoutingPolicies">Message `PacketBrokerRoutingPolicies`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `policies` | [`PacketBrokerRoutingPolicy`](#ttn.lorawan.v3.PacketBrokerRoutingPolicy) | repeated |  |
+
+### <a name="ttn.lorawan.v3.PacketBrokerRoutingPolicy">Message `PacketBrokerRoutingPolicy`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `forwarder_id` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) |  | Packet Broker identifier of the Forwarder. |
+| `home_network_id` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) |  | Packet Broker identifier of the Home Network. |
+| `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Timestamp when the policy got last updated. |
+| `uplink` | [`PacketBrokerRoutingPolicyUplink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink) |  | Uplink policy. |
+| `downlink` | [`PacketBrokerRoutingPolicyDownlink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink) |  | Downlink policy. |
+
+### <a name="ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink">Message `PacketBrokerRoutingPolicyDownlink`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `join_accept` | [`bool`](#bool) |  | Allow join-accept messages. |
+| `mac_data` | [`bool`](#bool) |  | Allow downlink messages with FPort of 0. |
+| `application_data` | [`bool`](#bool) |  | Allow downlink messages with FPort between 1 and 255. |
+
+### <a name="ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink">Message `PacketBrokerRoutingPolicyUplink`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `join_request` | [`bool`](#bool) |  | Forward join-request messages. |
+| `mac_data` | [`bool`](#bool) |  | Forward uplink messages with FPort of 0. |
+| `application_data` | [`bool`](#bool) |  | Forward uplink messages with FPort between 1 and 255. |
+| `signal_quality` | [`bool`](#bool) |  | Forward RSSI and SNR. |
+| `localization` | [`bool`](#bool) |  | Forward gateway location, RSSI, SNR and fine timestamp. |
+
+### <a name="ttn.lorawan.v3.SetPacketBrokerDefaultRoutingPolicyRequest">Message `SetPacketBrokerDefaultRoutingPolicyRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `uplink` | [`PacketBrokerRoutingPolicyUplink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink) |  | Uplink policy. |
+| `downlink` | [`PacketBrokerRoutingPolicyDownlink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink) |  | Downlink policy. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `uplink` | <p>`message.required`: `true`</p> |
+| `downlink` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.SetPacketBrokerRoutingPolicyRequest">Message `SetPacketBrokerRoutingPolicyRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `home_network_id` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) |  | Packet Broker identifier of the Home Network. |
+| `uplink` | [`PacketBrokerRoutingPolicyUplink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyUplink) |  | Uplink policy. |
+| `downlink` | [`PacketBrokerRoutingPolicyDownlink`](#ttn.lorawan.v3.PacketBrokerRoutingPolicyDownlink) |  | Downlink policy. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `uplink` | <p>`message.required`: `true`</p> |
+| `downlink` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.UpdatePacketBrokerGatewayRequest">Message `UpdatePacketBrokerGatewayRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gateway` | [`PacketBrokerGateway`](#ttn.lorawan.v3.PacketBrokerGateway) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the gateway fields that are considered for update.
+
+Online status is only updated if status_public is set. If status_public is set and false, the status will be reset. If status_public is set and true, the online status is taken from the online field. The return message contains the duration online_ttl for how long the gateway is considered online.
+
+Location is only updated if location_public is set. If location_public is set and false, the location will be reset. If location_public is set and true, the first antenna location will be used as gateway location. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `gateway` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.UpdatePacketBrokerGatewayResponse">Message `UpdatePacketBrokerGatewayResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `online_ttl` | [`google.protobuf.Duration`](#google.protobuf.Duration) |  | Time to live of the online status. |
 
 ### <a name="ttn.lorawan.v3.GsPba">Service `GsPba`</a>
 
@@ -5932,6 +7252,7 @@ The GsPba service connects a Gateway Server to a Packet Broker Agent.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `PublishUplink` | [`GatewayUplinkMessage`](#ttn.lorawan.v3.GatewayUplinkMessage) | [`.google.protobuf.Empty`](#google.protobuf.Empty) |  |
+| `UpdateGateway` | [`UpdatePacketBrokerGatewayRequest`](#ttn.lorawan.v3.UpdatePacketBrokerGatewayRequest) | [`UpdatePacketBrokerGatewayResponse`](#ttn.lorawan.v3.UpdatePacketBrokerGatewayResponse) | Update the gateway, changing the fields specified by the field mask to the provided values. To mark a gateway as online, call this rpc setting online to true, include status_public in field_mask and keep calling this rpc before the returned online_ttl passes to keep the gateway online. |
 
 ### <a name="ttn.lorawan.v3.NsPba">Service `NsPba`</a>
 
@@ -5940,6 +7261,51 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `PublishDownlink` | [`DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | PublishDownlink instructs the Packet Broker Agent to publish a downlink message to Packet Broker Router. |
+
+### <a name="ttn.lorawan.v3.Pba">Service `Pba`</a>
+
+The Pba service allows clients to manage peering through Packet Broker.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `GetInfo` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`PacketBrokerInfo`](#ttn.lorawan.v3.PacketBrokerInfo) | Get information about the Packet Broker registration. Viewing Packet Packet information requires administrative access. |
+| `Register` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`PacketBrokerNetwork`](#ttn.lorawan.v3.PacketBrokerNetwork) | Register with Packet Broker. If no registration exists, it will be created. Any existing registration will be updated. All registration settings are taken from Packet Broker Agent configuration and caller context. Packet Broker registration requires administrative access. |
+| `Deregister` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Deregister from Packet Broker. Packet Broker deregistration requires administrative access. |
+| `GetHomeNetworkDefaultRoutingPolicy` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`PacketBrokerDefaultRoutingPolicy`](#ttn.lorawan.v3.PacketBrokerDefaultRoutingPolicy) | Get the default routing policy. Getting routing policies requires administrative access. |
+| `SetHomeNetworkDefaultRoutingPolicy` | [`SetPacketBrokerDefaultRoutingPolicyRequest`](#ttn.lorawan.v3.SetPacketBrokerDefaultRoutingPolicyRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Set the default routing policy. Setting routing policies requires administrative access. |
+| `DeleteHomeNetworkDefaultRoutingPolicy` | [`.google.protobuf.Empty`](#google.protobuf.Empty) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Deletes the default routing policy. Deleting routing policies requires administrative access. |
+| `ListHomeNetworkRoutingPolicies` | [`ListHomeNetworkRoutingPoliciesRequest`](#ttn.lorawan.v3.ListHomeNetworkRoutingPoliciesRequest) | [`PacketBrokerRoutingPolicies`](#ttn.lorawan.v3.PacketBrokerRoutingPolicies) | List the routing policies that Packet Broker Agent as Forwarder configured with Home Networks. Listing routing policies requires administrative access. |
+| `GetHomeNetworkRoutingPolicy` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) | [`PacketBrokerRoutingPolicy`](#ttn.lorawan.v3.PacketBrokerRoutingPolicy) | Get the routing policy for the given Home Network. Getting routing policies requires administrative access. |
+| `SetHomeNetworkRoutingPolicy` | [`SetPacketBrokerRoutingPolicyRequest`](#ttn.lorawan.v3.SetPacketBrokerRoutingPolicyRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Set the routing policy for the given Home Network. Setting routing policies requires administrative access. |
+| `DeleteHomeNetworkRoutingPolicy` | [`PacketBrokerNetworkIdentifier`](#ttn.lorawan.v3.PacketBrokerNetworkIdentifier) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the routing policy for the given Home Network. Deleting routing policies requires administrative access. |
+| `ListNetworks` | [`ListPacketBrokerNetworksRequest`](#ttn.lorawan.v3.ListPacketBrokerNetworksRequest) | [`PacketBrokerNetworks`](#ttn.lorawan.v3.PacketBrokerNetworks) | List all listed networks. Listing networks requires administrative access. |
+| `ListHomeNetworks` | [`ListPacketBrokerHomeNetworksRequest`](#ttn.lorawan.v3.ListPacketBrokerHomeNetworksRequest) | [`PacketBrokerNetworks`](#ttn.lorawan.v3.PacketBrokerNetworks) | List the listed home networks for which routing policies can be configured. Listing home networks requires administrative access. |
+| `ListForwarderRoutingPolicies` | [`ListForwarderRoutingPoliciesRequest`](#ttn.lorawan.v3.ListForwarderRoutingPoliciesRequest) | [`PacketBrokerRoutingPolicies`](#ttn.lorawan.v3.PacketBrokerRoutingPolicies) | List the routing policies that Forwarders configured with Packet Broker Agent as Home Network. Listing routing policies requires administrative access. |
+
+#### HTTP bindings
+
+| Method Name | Method | Pattern | Body |
+| ----------- | ------ | ------- | ---- |
+| `GetInfo` | `GET` | `/api/v3/pba/info` |  |
+| `Register` | `PUT` | `/api/v3/pba/registration` |  |
+| `Register` | `POST` | `/api/v3/pba/registration` |  |
+| `Deregister` | `DELETE` | `/api/v3/pba/registration` |  |
+| `GetHomeNetworkDefaultRoutingPolicy` | `GET` | `/api/v3/pba/home-networks/policies/default` |  |
+| `SetHomeNetworkDefaultRoutingPolicy` | `PUT` | `/api/v3/pba/home-networks/policies/default` | `*` |
+| `SetHomeNetworkDefaultRoutingPolicy` | `POST` | `/api/v3/pba/home-networks/policies/default` | `*` |
+| `DeleteHomeNetworkDefaultRoutingPolicy` | `DELETE` | `/api/v3/pba/home-networks/policies/default` |  |
+| `ListHomeNetworkRoutingPolicies` | `GET` | `/api/v3/pba/home-networks/policies` |  |
+| `GetHomeNetworkRoutingPolicy` | `GET` | `/api/v3/pba/home-networks/policies/{net_id}` |  |
+| `GetHomeNetworkRoutingPolicy` | `GET` | `/api/v3/pba/home-networks/policies/{net_id}/{tenant_id}` |  |
+| `SetHomeNetworkRoutingPolicy` | `PUT` | `/api/v3/pba/home-networks/policies/{home_network_id.net_id}` | `*` |
+| `SetHomeNetworkRoutingPolicy` | `POST` | `/api/v3/pba/home-networks/policies/{home_network_id.net_id}` | `*` |
+| `SetHomeNetworkRoutingPolicy` | `PUT` | `/api/v3/pba/home-networks/policies/{home_network_id.net_id}/{home_network_id.tenant_id}` | `*` |
+| `SetHomeNetworkRoutingPolicy` | `POST` | `/api/v3/pba/home-networks/policies/{home_network_id.net_id}/{home_network_id.tenant_id}` | `*` |
+| `DeleteHomeNetworkRoutingPolicy` | `DELETE` | `/api/v3/pba/home-networks/policies/{net_id}` |  |
+| `DeleteHomeNetworkRoutingPolicy` | `DELETE` | `/api/v3/pba/home-networks/policies/{net_id}/{tenant_id}` |  |
+| `ListNetworks` | `GET` | `/api/v3/pba/networks` |  |
+| `ListHomeNetworks` | `GET` | `/api/v3/pba/home-networks` |  |
+| `ListForwarderRoutingPolicies` | `GET` | `/api/v3/pba/forwarders/policies` |  |
 
 ## <a name="lorawan-stack/api/picture.proto">File `lorawan-stack/api/picture.proto`</a>
 
@@ -5963,6 +7329,13 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 | `mime_type` | [`string`](#string) |  | MIME type of the picture. |
 | `data` | [`bytes`](#bytes) |  | Picture data. A data URI can be constructed as follows: `data:<mime_type>;base64,<data>`. |
 
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mime_type` | <p>`string.max_len`: `32`</p> |
+| `data` | <p>`bytes.max_len`: `8388608`</p> |
+
 ### <a name="ttn.lorawan.v3.Picture.SizesEntry">Message `Picture.SizesEntry`</a>
 
 | Field | Type | Label | Description |
@@ -5976,9 +7349,9 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `format_id` | [`string`](#string) |  |  |
-| `end_device` | [`EndDevice`](#ttn.lorawan.v3.EndDevice) |  |  |
-| `image` | [`GenerateEndDeviceQRCodeRequest.Image`](#ttn.lorawan.v3.GenerateEndDeviceQRCodeRequest.Image) |  |  |
+| `format_id` | [`string`](#string) |  | QR code format identifier. Enumerate available formats with rpc ListFormats in the EndDeviceQRCodeGenerator service. |
+| `end_device` | [`EndDevice`](#ttn.lorawan.v3.EndDevice) |  | End device to use as input to generate the QR code. |
+| `image` | [`GenerateEndDeviceQRCodeRequest.Image`](#ttn.lorawan.v3.GenerateEndDeviceQRCodeRequest.Image) |  | If set, the server will render the QR code image according to these settings. |
 
 #### Field Rules
 
@@ -5991,7 +7364,7 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `image_size` | [`uint32`](#uint32) |  |  |
+| `image_size` | [`uint32`](#uint32) |  | Requested QR code image dimension in pixels. |
 
 #### Field Rules
 
@@ -6003,14 +7376,14 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `text` | [`string`](#string) |  |  |
+| `text` | [`string`](#string) |  | Text representation of the QR code contents. |
 | `image` | [`Picture`](#ttn.lorawan.v3.Picture) |  | QR code in PNG format, if requested. |
 
 ### <a name="ttn.lorawan.v3.GetQRCodeFormatRequest">Message `GetQRCodeFormatRequest`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `format_id` | [`string`](#string) |  |  |
+| `format_id` | [`string`](#string) |  | QR code format identifier. Enumerate available formats with rpc ListFormats in the EndDeviceQRCodeGenerator service. |
 
 #### Field Rules
 
@@ -6037,7 +7410,7 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `formats` | [`QRCodeFormats.FormatsEntry`](#ttn.lorawan.v3.QRCodeFormats.FormatsEntry) | repeated |  |
+| `formats` | [`QRCodeFormats.FormatsEntry`](#ttn.lorawan.v3.QRCodeFormats.FormatsEntry) | repeated | Available formats. The map key is the format identifier. |
 
 #### Field Rules
 
@@ -6123,6 +7496,9 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 | `key` | [`string`](#string) |  | Immutable and unique secret value of the API key. Generated by the Access Server. |
 | `name` | [`string`](#string) |  | User-defined (friendly) name for the API key. |
 | `rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated | Rights that are granted to this API key. |
+| `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 #### Field Rules
 
@@ -6130,6 +7506,7 @@ The NsPba service connects a Network Server to a Packet Broker Agent.
 | ----- | ----------- |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
+| `expires_at` | <p>`timestamp.gt_now`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.APIKeys">Message `APIKeys`</a>
 
@@ -6210,7 +7587,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_APPLICATION_TRAFFIC_READ` | 24 | The right to read application traffic (uplink and downlink). |
 | `RIGHT_APPLICATION_TRAFFIC_UP_WRITE` | 25 | The right to write uplink application traffic. |
 | `RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE` | 26 | The right to write downlink application traffic. |
-| `RIGHT_APPLICATION_LINK` | 27 | The right to link as Application to a Network Server for traffic exchange, i.e. read uplink and write downlink (API keys only). This right is typically only given to an Application Server. This right implies RIGHT_APPLICATION_INFO. |
+| `RIGHT_APPLICATION_LINK` | 27 | The right to link as Application to a Network Server for traffic exchange, i.e. read uplink and write downlink (API keys only). This right is typically only given to an Application Server. This right implies RIGHT_APPLICATION_INFO, RIGHT_APPLICATION_TRAFFIC_READ, and RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE. |
 | `RIGHT_APPLICATION_ALL` | 28 | The pseudo-right for all (current and future) application rights. |
 | `RIGHT_CLIENT_ALL` | 29 | The pseudo-right for all (current and future) OAuth client rights. |
 | `RIGHT_GATEWAY_INFO` | 30 | The right to view gateway information. |
@@ -6244,6 +7621,74 @@ Right is the enum that defines all the different rights to do something in the n
 
 ## <a name="lorawan-stack/api/search_services.proto">File `lorawan-stack/api/search_services.proto`</a>
 
+### <a name="ttn.lorawan.v3.SearchApplicationsRequest">Message `SearchApplicationsRequest`</a>
+
+This message is used for finding applications in the EntityRegistrySearch service.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `id_contains` | [`string`](#string) |  | Find applications where the ID contains this substring. |
+| `name_contains` | [`string`](#string) |  | Find applications where the name contains this substring. |
+| `description_contains` | [`string`](#string) |  | Find applications where the description contains this substring. |
+| `attributes_contain` | [`SearchApplicationsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchApplicationsRequest.AttributesContainEntry) | repeated | Find applications where the given attributes contain these substrings. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted applications. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.SearchApplicationsRequest.AttributesContainEntry">Message `SearchApplicationsRequest.AttributesContainEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.SearchClientsRequest">Message `SearchClientsRequest`</a>
+
+This message is used for finding OAuth clients in the EntityRegistrySearch service.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `id_contains` | [`string`](#string) |  | Find OAuth clients where the ID contains this substring. |
+| `name_contains` | [`string`](#string) |  | Find OAuth clients where the name contains this substring. |
+| `description_contains` | [`string`](#string) |  | Find OAuth clients where the description contains this substring. |
+| `attributes_contain` | [`SearchClientsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchClientsRequest.AttributesContainEntry) | repeated | Find OAuth clients where the given attributes contain these substrings. |
+| `state` | [`State`](#ttn.lorawan.v3.State) | repeated | Find OAuth clients where the state is any of these states. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted OAuth clients. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `state` | <p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.SearchClientsRequest.AttributesContainEntry">Message `SearchClientsRequest.AttributesContainEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
 ### <a name="ttn.lorawan.v3.SearchEndDevicesRequest">Message `SearchEndDevicesRequest`</a>
 
 | Field | Type | Label | Description |
@@ -6266,7 +7711,13 @@ Right is the enum that defines all the different rights to do something in the n
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
-| `attributes_contain` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `dev_eui_contains` | <p>`string.max_len`: `16`</p> |
+| `join_eui_contains` | <p>`string.max_len`: `16`</p> |
+| `dev_addr_contains` | <p>`string.max_len`: `8`</p> |
 | `limit` | <p>`uint32.lte`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.SearchEndDevicesRequest.AttributesContainEntry">Message `SearchEndDevicesRequest.AttributesContainEntry`</a>
@@ -6276,29 +7727,103 @@ Right is the enum that defines all the different rights to do something in the n
 | `key` | [`string`](#string) |  |  |
 | `value` | [`string`](#string) |  |  |
 
-### <a name="ttn.lorawan.v3.SearchEntitiesRequest">Message `SearchEntitiesRequest`</a>
+### <a name="ttn.lorawan.v3.SearchGatewaysRequest">Message `SearchGatewaysRequest`</a>
 
-This message is used for finding entities in the EntityRegistrySearch service.
+This message is used for finding gateways in the EntityRegistrySearch service.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `id_contains` | [`string`](#string) |  | Find entities where the ID contains this substring. |
-| `name_contains` | [`string`](#string) |  | Find entities where the name contains this substring. |
-| `description_contains` | [`string`](#string) |  | Find entities where the description contains this substring. |
-| `attributes_contain` | [`SearchEntitiesRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchEntitiesRequest.AttributesContainEntry) | repeated | Find entities where the given attributes contain these substrings. |
+| `id_contains` | [`string`](#string) |  | Find gateways where the ID contains this substring. |
+| `name_contains` | [`string`](#string) |  | Find gateways where the name contains this substring. |
+| `description_contains` | [`string`](#string) |  | Find gateways where the description contains this substring. |
+| `attributes_contain` | [`SearchGatewaysRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchGatewaysRequest.AttributesContainEntry) | repeated | Find gateways where the given attributes contain these substrings. |
+| `eui_contains` | [`string`](#string) |  | Find gateways where the (hexadecimal) EUI contains this substring. |
 | `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted gateways. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
-| `attributes_contain` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `eui_contains` | <p>`string.max_len`: `16`</p> |
 | `limit` | <p>`uint32.lte`: `1000`</p> |
 
-### <a name="ttn.lorawan.v3.SearchEntitiesRequest.AttributesContainEntry">Message `SearchEntitiesRequest.AttributesContainEntry`</a>
+### <a name="ttn.lorawan.v3.SearchGatewaysRequest.AttributesContainEntry">Message `SearchGatewaysRequest.AttributesContainEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.SearchOrganizationsRequest">Message `SearchOrganizationsRequest`</a>
+
+This message is used for finding organizations in the EntityRegistrySearch service.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `id_contains` | [`string`](#string) |  | Find organizations where the ID contains this substring. |
+| `name_contains` | [`string`](#string) |  | Find organizations where the name contains this substring. |
+| `description_contains` | [`string`](#string) |  | Find organizations where the description contains this substring. |
+| `attributes_contain` | [`SearchOrganizationsRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchOrganizationsRequest.AttributesContainEntry) | repeated | Find organizations where the given attributes contain these substrings. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted organizations. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.SearchOrganizationsRequest.AttributesContainEntry">Message `SearchOrganizationsRequest.AttributesContainEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.SearchUsersRequest">Message `SearchUsersRequest`</a>
+
+This message is used for finding users in the EntityRegistrySearch service.
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `id_contains` | [`string`](#string) |  | Find users where the ID contains this substring. |
+| `name_contains` | [`string`](#string) |  | Find users where the name contains this substring. |
+| `description_contains` | [`string`](#string) |  | Find users where the description contains this substring. |
+| `attributes_contain` | [`SearchUsersRequest.AttributesContainEntry`](#ttn.lorawan.v3.SearchUsersRequest.AttributesContainEntry) | repeated | Find users where the given attributes contain these substrings. |
+| `state` | [`State`](#ttn.lorawan.v3.State) | repeated | Find users where the state is any of these states. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted users. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `id_contains` | <p>`string.max_len`: `50`</p> |
+| `name_contains` | <p>`string.max_len`: `50`</p> |
+| `description_contains` | <p>`string.max_len`: `50`</p> |
+| `attributes_contain` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `50`</p> |
+| `state` | <p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.SearchUsersRequest.AttributesContainEntry">Message `SearchUsersRequest.AttributesContainEntry`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
@@ -6313,7 +7838,7 @@ This service is not implemented on all deployments.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `SearchEndDevices` | [`SearchEndDevicesRequest`](#ttn.lorawan.v3.SearchEndDevicesRequest) | [`EndDevices`](#ttn.lorawan.v3.EndDevices) |  |
+| `SearchEndDevices` | [`SearchEndDevicesRequest`](#ttn.lorawan.v3.SearchEndDevicesRequest) | [`EndDevices`](#ttn.lorawan.v3.EndDevices) | Search for end devices in the given application that match the conditions specified in the request. |
 
 #### HTTP bindings
 
@@ -6329,11 +7854,11 @@ This service is not implemented on all deployments.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| `SearchApplications` | [`SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest) | [`Applications`](#ttn.lorawan.v3.Applications) |  |
-| `SearchClients` | [`SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest) | [`Clients`](#ttn.lorawan.v3.Clients) |  |
-| `SearchGateways` | [`SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest) | [`Gateways`](#ttn.lorawan.v3.Gateways) |  |
-| `SearchOrganizations` | [`SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest) | [`Organizations`](#ttn.lorawan.v3.Organizations) |  |
-| `SearchUsers` | [`SearchEntitiesRequest`](#ttn.lorawan.v3.SearchEntitiesRequest) | [`Users`](#ttn.lorawan.v3.Users) |  |
+| `SearchApplications` | [`SearchApplicationsRequest`](#ttn.lorawan.v3.SearchApplicationsRequest) | [`Applications`](#ttn.lorawan.v3.Applications) | Search for applications that match the conditions specified in the request. Non-admin users will only match applications that they have rights on. |
+| `SearchClients` | [`SearchClientsRequest`](#ttn.lorawan.v3.SearchClientsRequest) | [`Clients`](#ttn.lorawan.v3.Clients) | Search for OAuth clients that match the conditions specified in the request. Non-admin users will only match OAuth clients that they have rights on. |
+| `SearchGateways` | [`SearchGatewaysRequest`](#ttn.lorawan.v3.SearchGatewaysRequest) | [`Gateways`](#ttn.lorawan.v3.Gateways) | Search for gateways that match the conditions specified in the request. Non-admin users will only match gateways that they have rights on. |
+| `SearchOrganizations` | [`SearchOrganizationsRequest`](#ttn.lorawan.v3.SearchOrganizationsRequest) | [`Organizations`](#ttn.lorawan.v3.Organizations) | Search for organizations that match the conditions specified in the request. Non-admin users will only match organizations that they have rights on. |
+| `SearchUsers` | [`SearchUsersRequest`](#ttn.lorawan.v3.SearchUsersRequest) | [`Users`](#ttn.lorawan.v3.Users) | Search for users that match the conditions specified in the request. This is only available to admin users. |
 
 #### HTTP bindings
 
@@ -6364,6 +7889,25 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 
 ## <a name="lorawan-stack/api/user.proto">File `lorawan-stack/api/user.proto`</a>
 
+### <a name="ttn.lorawan.v3.CreateLoginTokenRequest">Message `CreateLoginTokenRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `user_ids` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) |  |  |
+| `skip_email` | [`bool`](#bool) |  | Skip sending the login token to the user by email. This field is only effective when the login token is created by an admin user. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `user_ids` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.CreateLoginTokenResponse">Message `CreateLoginTokenResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `token` | [`string`](#string) |  | The token that can be used for logging in as the user. This field is only present if a token was created by an admin user for a non-admin user. |
+
 ### <a name="ttn.lorawan.v3.CreateTemporaryPasswordRequest">Message `CreateTemporaryPasswordRequest`</a>
 
 | Field | Type | Label | Description |
@@ -6383,6 +7927,7 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | `user_ids` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 
 #### Field Rules
 
@@ -6390,7 +7935,8 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | ----- | ----------- |
 | `user_ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
-| `rights` | <p>`repeated.items.enum.defined_only`: `true`</p> |
+| `rights` | <p>`repeated.min_items`: `1`</p><p>`repeated.unique`: `true`</p><p>`repeated.items.enum.defined_only`: `true`</p> |
+| `expires_at` | <p>`timestamp.gt_now`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.CreateUserRequest">Message `CreateUserRequest`</a>
 
@@ -6520,6 +8066,7 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
 | `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
 | `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+| `deleted` | [`bool`](#bool) |  | Only return recently deleted users. |
 
 #### Field Rules
 
@@ -6527,6 +8074,23 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | ----- | ----------- |
 | `order` | <p>`string.in`: `[ user_id -user_id name -name primary_email_address -primary_email_address state -state admin -admin created_at -created_at]`</p> |
 | `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.LoginToken">Message `LoginToken`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `user_ids` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) |  |  |
+| `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `token` | [`string`](#string) |  |  |
+| `used` | [`bool`](#bool) |  |  |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `user_ids` | <p>`message.required`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.SendInvitationRequest">Message `SendInvitationRequest`</a>
 
@@ -6546,6 +8110,7 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | ----- | ---- | ----- | ----------- |
 | `user_ids` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) |  |  |
 | `api_key` | [`APIKey`](#ttn.lorawan.v3.APIKey) |  |  |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the api key fields that should be updated. |
 
 #### Field Rules
 
@@ -6568,6 +8133,8 @@ Secret contains a secret value. It also contains the ID of the Encryption key us
 | Field | Validations |
 | ----- | ----------- |
 | `user_ids` | <p>`message.required`: `true`</p> |
+| `new` | <p>`string.max_len`: `1000`</p> |
+| `old` | <p>`string.max_len`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.UpdateUserRequest">Message `UpdateUserRequest`</a>
 
@@ -6591,6 +8158,7 @@ User is the message that defines a user on the network.
 | `ids` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) |  |  |
 | `created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
+| `deleted_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `name` | [`string`](#string) |  |  |
 | `description` | [`string`](#string) |  |  |
 | `attributes` | [`User.AttributesEntry`](#ttn.lorawan.v3.User.AttributesEntry) | repeated | Key-value attributes for this users. Typically used for storing integration-specific data. |
@@ -6601,6 +8169,7 @@ User is the message that defines a user on the network.
 | `password_updated_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `require_password_update` | [`bool`](#bool) |  |  |
 | `state` | [`State`](#ttn.lorawan.v3.State) |  | The reviewing state of the user. This field can only be modified by admins. |
+| `state_description` | [`string`](#string) |  | A description for the state field. This field can only be modified by admins, and should typically only be updated when also updating `state`. |
 | `admin` | [`bool`](#bool) |  | This user is an admin. This field can only be modified by other admins. |
 | `temporary_password` | [`string`](#string) |  | The temporary password can only be used to update a user's password; never returned on API calls. It is not returned on API calls, and can not be updated by updating the User. See the CreateTemporaryPassword method of the UserRegistry service for more information. |
 | `temporary_password_created_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
@@ -6614,9 +8183,13 @@ User is the message that defines a user on the network.
 | `ids` | <p>`message.required`: `true`</p> |
 | `name` | <p>`string.max_len`: `50`</p> |
 | `description` | <p>`string.max_len`: `2000`</p> |
-| `attributes` | <p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+| `contact_info` | <p>`repeated.max_items`: `10`</p> |
 | `primary_email_address` | <p>`string.email`: `true`</p> |
+| `password` | <p>`string.max_len`: `1000`</p> |
 | `state` | <p>`enum.defined_only`: `true`</p> |
+| `state_description` | <p>`string.max_len`: `128`</p> |
+| `temporary_password` | <p>`string.max_len`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.User.AttributesEntry">Message `User.AttributesEntry`</a>
 
@@ -6673,6 +8246,9 @@ User is the message that defines a user on the network.
 
 ### <a name="ttn.lorawan.v3.UserAccess">Service `UserAccess`</a>
 
+The UserAcces service, exposed by the Identity Server, is used to manage
+API keys of users.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `ListRights` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) | [`Rights`](#ttn.lorawan.v3.Rights) | List the rights the caller has on this user. |
@@ -6680,6 +8256,7 @@ User is the message that defines a user on the network.
 | `ListAPIKeys` | [`ListUserAPIKeysRequest`](#ttn.lorawan.v3.ListUserAPIKeysRequest) | [`APIKeys`](#ttn.lorawan.v3.APIKeys) | List the API keys for this user. |
 | `GetAPIKey` | [`GetUserAPIKeyRequest`](#ttn.lorawan.v3.GetUserAPIKeyRequest) | [`APIKey`](#ttn.lorawan.v3.APIKey) | Get a single API key of this user. |
 | `UpdateAPIKey` | [`UpdateUserAPIKeyRequest`](#ttn.lorawan.v3.UpdateUserAPIKeyRequest) | [`APIKey`](#ttn.lorawan.v3.APIKey) | Update the rights of an API key of the user. This method can also be used to delete the API key, by giving it no rights. The caller is required to have all assigned or/and removed rights. |
+| `CreateLoginToken` | [`CreateLoginTokenRequest`](#ttn.lorawan.v3.CreateLoginTokenRequest) | [`CreateLoginTokenResponse`](#ttn.lorawan.v3.CreateLoginTokenResponse) | Create a login token that can be used for a one-time login as a user. |
 
 #### HTTP bindings
 
@@ -6690,6 +8267,7 @@ User is the message that defines a user on the network.
 | `ListAPIKeys` | `GET` | `/api/v3/users/{user_ids.user_id}/api-keys` |  |
 | `GetAPIKey` | `GET` | `/api/v3/users/{user_ids.user_id}/api-keys/{key_id}` |  |
 | `UpdateAPIKey` | `PUT` | `/api/v3/users/{user_ids.user_id}/api-keys/{api_key.id}` | `*` |
+| `CreateLoginToken` | `POST` | `/api/v3/users/{user_ids.user_id}/login-tokens` |  |
 
 ### <a name="ttn.lorawan.v3.UserInvitationRegistry">Service `UserInvitationRegistry`</a>
 
@@ -6709,6 +8287,9 @@ User is the message that defines a user on the network.
 
 ### <a name="ttn.lorawan.v3.UserRegistry">Service `UserRegistry`</a>
 
+The UserRegistry service, exposed by the Identity Server, is used to manage
+user registrations.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | `Create` | [`CreateUserRequest`](#ttn.lorawan.v3.CreateUserRequest) | [`User`](#ttn.lorawan.v3.User) | Register a new user. This method may be restricted by network settings. |
@@ -6718,6 +8299,10 @@ User is the message that defines a user on the network.
 | `CreateTemporaryPassword` | [`CreateTemporaryPasswordRequest`](#ttn.lorawan.v3.CreateTemporaryPasswordRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Create a temporary password that can be used for updating a forgotten password. The generated password is sent to the user's email address. |
 | `UpdatePassword` | [`UpdateUserPasswordRequest`](#ttn.lorawan.v3.UpdateUserPasswordRequest) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Update the password of the user. |
 | `Delete` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Delete the user. This may not release the user ID for reuse. |
+| `Restore` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Restore a recently deleted user.
+
+Deployment configuration may specify if, and for how long after deletion, entities can be restored. |
+| `Purge` | [`UserIdentifiers`](#ttn.lorawan.v3.UserIdentifiers) | [`.google.protobuf.Empty`](#google.protobuf.Empty) | Purge the user. This will release the user ID for reuse. The user is responsible for clearing data from any (external) integrations that may store and expose data by user or organization ID. |
 
 #### HTTP bindings
 
@@ -6730,8 +8315,13 @@ User is the message that defines a user on the network.
 | `CreateTemporaryPassword` | `POST` | `/api/v3/users/{user_ids.user_id}/temporary_password` |  |
 | `UpdatePassword` | `PUT` | `/api/v3/users/{user_ids.user_id}/password` | `*` |
 | `Delete` | `DELETE` | `/api/v3/users/{user_id}` |  |
+| `Restore` | `POST` | `/api/v3/users/{user_id}/restore` |  |
+| `Purge` | `DELETE` | `/api/v3/users/{user_id}/purge` |  |
 
 ### <a name="ttn.lorawan.v3.UserSessionRegistry">Service `UserSessionRegistry`</a>
+
+The UserSessionRegistry service, exposed by the Identity Server, is used to manage
+(browser) sessions of the user.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|

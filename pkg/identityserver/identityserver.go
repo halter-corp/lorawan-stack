@@ -17,9 +17,11 @@ package identityserver
 import (
 	"context"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres" // Postgres database driver.
+	"go.thethings.network/lorawan-stack/v3/pkg/account"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
@@ -46,6 +48,7 @@ type IdentityServer struct {
 	db             *gorm.DB
 	redis          *redis.Client
 	emailTemplates *email.TemplateRegistry
+	account        account.Server
 	oauth          oauth.Server
 }
 
@@ -99,7 +102,21 @@ func New(c *component.Component, config *Config) (is *IdentityServer, err error)
 		return nil, err
 	}
 
+	if is.config.DevEUIBlock.Enabled {
+		err := store.Transact(is.Context(), is.db, func(db *gorm.DB) error {
+			err = store.GetEUIStore(db).CreateEUIBlock(is.Context(), "dev_eui", is.config.DevEUIBlock.Prefix, is.config.DevEUIBlock.InitCounter)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	is.config.OAuth.CSRFAuthKey = is.GetBaseConfig(is.Context()).HTTP.Cookie.HashKey
+	is.config.OAuth.UI.FrontendConfig.EnableUserRegistration = is.config.UserRegistration.Enabled
 	is.oauth, err = oauth.NewServer(c, struct {
 		store.UserStore
 		store.UserSessionStore
@@ -110,6 +127,16 @@ func New(c *component.Component, config *Config) (is *IdentityServer, err error)
 		UserSessionStore: store.GetUserSessionStore(is.db),
 		ClientStore:      store.GetClientStore(is.db),
 		OAuthStore:       store.GetOAuthStore(is.db),
+	}, is.config.OAuth)
+
+	is.account = account.NewServer(c, struct {
+		store.UserStore
+		store.LoginTokenStore
+		store.UserSessionStore
+	}{
+		UserStore:        store.GetUserStore(is.db),
+		LoginTokenStore:  store.GetLoginTokenStore(is.db),
+		UserSessionStore: store.GetUserSessionStore(is.db),
 	}, is.config.OAuth)
 	if err != nil {
 		return nil, err
@@ -141,6 +168,7 @@ func New(c *component.Component, config *Config) (is *IdentityServer, err error)
 		hooks.RegisterUnaryHook("/ttn.lorawan.v3.OrganizationAccess", hook.name, hook.middleware)
 		hooks.RegisterUnaryHook("/ttn.lorawan.v3.UserRegistry", hook.name, hook.middleware)
 		hooks.RegisterUnaryHook("/ttn.lorawan.v3.UserAccess", hook.name, hook.middleware)
+		hooks.RegisterUnaryHook("/ttn.lorawan.v3.UserSessionRegistry", hook.name, hook.middleware)
 	}
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.EntityAccess", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("identityserver"))
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.EntityAccess", cluster.HookName, c.ClusterAuthUnaryHook())
@@ -148,6 +176,7 @@ func New(c *component.Component, config *Config) (is *IdentityServer, err error)
 
 	c.RegisterGRPC(is)
 	c.RegisterWeb(is.oauth)
+	c.RegisterWeb(is.account)
 
 	return is, nil
 }
@@ -171,6 +200,7 @@ func (is *IdentityServer) RegisterServices(s *grpc.Server) {
 	ttnpb.RegisterOrganizationAccessServer(s, &organizationAccess{IdentityServer: is})
 	ttnpb.RegisterUserRegistryServer(s, &userRegistry{IdentityServer: is})
 	ttnpb.RegisterUserAccessServer(s, &userAccess{IdentityServer: is})
+	ttnpb.RegisterUserSessionRegistryServer(s, &userSessionRegistry{IdentityServer: is})
 	ttnpb.RegisterUserInvitationRegistryServer(s, &invitationRegistry{IdentityServer: is})
 	ttnpb.RegisterEntityRegistrySearchServer(s, &registrySearch{IdentityServer: is})
 	ttnpb.RegisterEndDeviceRegistrySearchServer(s, &registrySearch{IdentityServer: is})
@@ -193,6 +223,7 @@ func (is *IdentityServer) RegisterHandlers(s *runtime.ServeMux, conn *grpc.Clien
 	ttnpb.RegisterOrganizationAccessHandler(is.Context(), s, conn)
 	ttnpb.RegisterUserRegistryHandler(is.Context(), s, conn)
 	ttnpb.RegisterUserAccessHandler(is.Context(), s, conn)
+	ttnpb.RegisterUserSessionRegistryHandler(is.Context(), s, conn)
 	ttnpb.RegisterUserInvitationRegistryHandler(is.Context(), s, conn)
 	ttnpb.RegisterEntityRegistrySearchHandler(is.Context(), s, conn)
 	ttnpb.RegisterEndDeviceRegistrySearchHandler(is.Context(), s, conn)
@@ -214,3 +245,7 @@ func (is *IdentityServer) getMembershipStore(ctx context.Context, db *gorm.DB) s
 	}
 	return s
 }
+
+var softDeleteFieldMask = &pbtypes.FieldMask{Paths: []string{"deleted_at"}}
+
+var errRestoreWindowExpired = errors.DefineFailedPrecondition("restore_window_expired", "this entity can no longer be restored")

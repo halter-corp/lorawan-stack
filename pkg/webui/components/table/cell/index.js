@@ -21,18 +21,20 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './cell.styl'
 
-const Cell = function({
+const Cell = ({
   className,
   component: Component,
-  centered,
+  align,
   small,
   colSpan,
   width,
   children,
   ...rest
-}) {
+}) => {
   const cellClassNames = classnames(className, style.cell, {
-    [style.cellCentered]: centered,
+    [style.cellCentered]: align === 'center',
+    [style.cellLeft]: align === 'left',
+    [style.cellRight]: align === 'right',
     [style.cellSmall]: small,
   })
 
@@ -46,8 +48,8 @@ const Cell = function({
 }
 
 Cell.propTypes = {
-  /** A flag indicating whether the data in the cell should be centered. */
-  centered: PropTypes.bool,
+  /** A flag indicating how the text in the cell should be aligned. */
+  align: PropTypes.oneOf(['left', 'right', 'center']),
   children: PropTypes.node,
   className: PropTypes.string,
   /** The number of columns that the cell should occupy. */
@@ -61,7 +63,7 @@ Cell.propTypes = {
 }
 
 Cell.defaultProps = {
-  centered: false,
+  align: undefined,
   children: undefined,
   className: undefined,
   colSpan: 1,

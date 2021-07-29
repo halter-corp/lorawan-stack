@@ -36,7 +36,8 @@ func TestStatusPacket(t *testing.T) {
 		   "rxfw":0,
 		   "ackr":0.0,
 		   "dwnb":0,
-		   "txnb":0
+		   "txnb":0,
+		   "temp":-23.5
 		}
 	 }`
 	var d Data
@@ -49,6 +50,8 @@ func TestStatusPacket(t *testing.T) {
 	a.So(d, should.NotBeNil)
 	a.So(d.Stat, should.NotBeNil)
 	a.So(*d.Stat.Alti, should.Equal, 66)
+	a.So(*d.Stat.Temp, should.Equal, -23.5)
+	a.So(d.Stat.RxNb, should.Equal, 0)
 	a.So(d.Stat.RxNb, should.Equal, 0)
 	a.So(d.Stat.RxOk, should.Equal, 0)
 	a.So(d.Stat.RxFW, should.Equal, 0)
@@ -95,14 +98,63 @@ func TestUplinkPacket(t *testing.T) {
 	a.So(uplink.Stat, should.Equal, 1)
 	a.So(uplink.Modu, should.Equal, "LORA")
 	a.So(uplink.DatR, should.Resemble, datarate.DR{DataRate: ttnpb.DataRate{
-		Modulation: &ttnpb.DataRate_LoRa{
-			LoRa: &ttnpb.LoRaDataRate{
+		Modulation: &ttnpb.DataRate_Lora{
+			Lora: &ttnpb.LoRaDataRate{
 				SpreadingFactor: 7,
 				Bandwidth:       125000,
 			},
 		},
 	}})
 	a.So(uplink.CodR, should.Equal, "4/5")
+	a.So(uplink.LSNR, should.AlmostEqual, -12.0)
+	a.So(uplink.RSSI, should.Equal, -112)
+
+	var lrFHSSData Data
+	lrFHSSuplinkPacket := `{
+		"rxpk":[
+		   {
+			  "tmst":445526776,
+			  "chan":0,
+			  "rfch":0,
+			  "freq":868.099975,
+			  "stat":1,
+			  "modu":"LRFHSS",
+			  "datr":"M0CW123",
+			  "codr":"4/7",
+			  "lsnr":-12,
+			  "hpw":8,
+			  "rssi":-112,
+			  "size":61,
+			  "data":"tlJ+3kao1MjU3ol8kuTwhziot4L/wQGMXngnecZaq5dXGpqZFTHWkzg/Hea7Y4NEjZND1gARpWtPdwC1vQ=="
+		   }
+		]
+	 }`
+	err = json.Unmarshal([]byte(lrFHSSuplinkPacket), &lrFHSSData)
+	if err != nil {
+		t.Error("Couldn't unmarshal uplink data:", err)
+	}
+
+	a.So(lrFHSSData, should.NotBeNil)
+	a.So(lrFHSSData.RxPacket, should.NotBeNil)
+	a.So(len(lrFHSSData.RxPacket), should.Equal, 1)
+
+	uplink = lrFHSSData.RxPacket[0]
+	a.So(uplink.Freq, should.AlmostEqual, 868.099975)
+	a.So(uplink.Tmst, should.Equal, 445526776)
+	a.So(uplink.Chan, should.Equal, 0)
+	a.So(uplink.RFCh, should.Equal, 0)
+	a.So(uplink.Stat, should.Equal, 1)
+	a.So(uplink.Modu, should.Equal, "LRFHSS")
+	a.So(uplink.Hpw, should.Equal, 8)
+	a.So(uplink.DatR, should.Resemble, datarate.DR{DataRate: ttnpb.DataRate{
+		Modulation: &ttnpb.DataRate_Lrfhss{
+			Lrfhss: &ttnpb.LRFHSSDataRate{
+				ModulationType:        0,
+				OperatingChannelWidth: 123,
+			},
+		},
+	}})
+	a.So(uplink.CodR, should.Equal, "4/7")
 	a.So(uplink.LSNR, should.AlmostEqual, -12.0)
 	a.So(uplink.RSSI, should.Equal, -112)
 }
@@ -138,8 +190,8 @@ func TestDownlinkPacket(t *testing.T) {
 	a.So(tx.Powe, should.Equal, 14)
 	a.So(tx.Modu, should.Equal, "LORA")
 	a.So(tx.DatR, should.Resemble, datarate.DR{DataRate: ttnpb.DataRate{
-		Modulation: &ttnpb.DataRate_LoRa{
-			LoRa: &ttnpb.LoRaDataRate{
+		Modulation: &ttnpb.DataRate_Lora{
+			Lora: &ttnpb.LoRaDataRate{
 				SpreadingFactor: 11,
 				Bandwidth:       125000,
 			},

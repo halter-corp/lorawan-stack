@@ -16,7 +16,7 @@ import React from 'react'
 import { connect } from 'react-redux'
 import { Col, Row, Container } from 'react-grid-system'
 
-import PAGE_SIZES from '@console/constants/page-sizes'
+import PAGE_SIZES from '@ttn-lw/constants/page-sizes'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 
@@ -26,11 +26,9 @@ import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import { selectSelectedApplication } from '@console/store/selectors/applications'
 
-@connect(function(state, props) {
-  return {
-    application: selectSelectedApplication(state),
-  }
-})
+@connect((state, props) => ({
+  application: selectSelectedApplication(state),
+}))
 class ApplicationDeviceList extends React.Component {
   render() {
     return (

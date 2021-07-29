@@ -92,8 +92,8 @@ func init() {
 			ttnpb.DATA_RATE_5: makeLoRaDataRate(7, 125000, makeConstMaxMACPayloadSizeFunc(230)),
 			ttnpb.DATA_RATE_6: makeLoRaDataRate(8, 500000, makeConstMaxMACPayloadSizeFunc(230)),
 
-			ttnpb.DATA_RATE_8:  makeLoRaDataRate(12, 500000, makeConstMaxMACPayloadSizeFunc(41)),
-			ttnpb.DATA_RATE_9:  makeLoRaDataRate(11, 500000, makeConstMaxMACPayloadSizeFunc(117)),
+			ttnpb.DATA_RATE_8:  makeLoRaDataRate(12, 500000, makeConstMaxMACPayloadSizeFunc(61)),
+			ttnpb.DATA_RATE_9:  makeLoRaDataRate(11, 500000, makeConstMaxMACPayloadSizeFunc(137)),
 			ttnpb.DATA_RATE_10: makeLoRaDataRate(10, 500000, makeConstMaxMACPayloadSizeFunc(230)),
 			ttnpb.DATA_RATE_11: makeLoRaDataRate(9, 500000, makeConstMaxMACPayloadSizeFunc(230)),
 			ttnpb.DATA_RATE_12: makeLoRaDataRate(8, 500000, makeConstMaxMACPayloadSizeFunc(230)),
@@ -101,15 +101,15 @@ func init() {
 		},
 		MaxADRDataRateIndex: ttnpb.DATA_RATE_5,
 
-		ReceiveDelay1:    defaultReceiveDelay1,
-		ReceiveDelay2:    defaultReceiveDelay2,
-		JoinAcceptDelay1: defaultJoinAcceptDelay1,
-		JoinAcceptDelay2: defaultJoinAcceptDelay2,
-		MaxFCntGap:       defaultMaxFCntGap,
-		ADRAckLimit:      defaultADRAckLimit,
-		ADRAckDelay:      defaultADRAckDelay,
-		MinAckTimeout:    defaultAckTimeout - defaultAckTimeoutMargin,
-		MaxAckTimeout:    defaultAckTimeout + defaultAckTimeoutMargin,
+		ReceiveDelay1:        defaultReceiveDelay1,
+		ReceiveDelay2:        defaultReceiveDelay2,
+		JoinAcceptDelay1:     defaultJoinAcceptDelay1,
+		JoinAcceptDelay2:     defaultJoinAcceptDelay2,
+		MaxFCntGap:           defaultMaxFCntGap,
+		ADRAckLimit:          defaultADRAckLimit,
+		ADRAckDelay:          defaultADRAckDelay,
+		MinRetransmitTimeout: defaultRetransmitTimeout - defaultRetransmitTimeoutMargin,
+		MaxRetransmitTimeout: defaultRetransmitTimeout + defaultRetransmitTimeoutMargin,
 
 		DefaultMaxEIRP: 30,
 		TxOffset: []float32{
@@ -137,7 +137,7 @@ func init() {
 		CFListType:       ttnpb.CFListType_CHANNEL_MASKS,
 
 		Rx1Channel: channelIndexModulo(8),
-		Rx1DataRate: func(idx ttnpb.DataRateIndex, offset uint32, _ bool) (ttnpb.DataRateIndex, error) {
+		Rx1DataRate: func(idx ttnpb.DataRateIndex, offset ttnpb.DataRateOffset, _ bool) (ttnpb.DataRateIndex, error) {
 			if idx > ttnpb.DATA_RATE_6 {
 				return 0, errDataRateIndexTooHigh.WithAttributes("max", 6)
 			}
@@ -161,11 +161,14 @@ func init() {
 		TxParamSetupReqSupport: true,
 
 		// No LoRaWAN Regional Parameters 1.0
-		regionalParameters1_0_1: bandIdentity,
-		regionalParameters1_0_2RevA: func(b Band) Band {
+		regionalParameters1_v1_0_1: bandIdentity,
+		regionalParameters1_v1_0_2: func(b Band) Band {
 			dataRates := make(map[ttnpb.DataRateIndex]DataRate, len(b.DataRates)-2)
 			for drIdx := ttnpb.DATA_RATE_0; drIdx <= ttnpb.DATA_RATE_4; drIdx++ {
 				dataRates[drIdx] = b.DataRates[drIdx+2]
+			}
+			for drIdx := ttnpb.DATA_RATE_8; drIdx <= ttnpb.DATA_RATE_13; drIdx++ {
+				dataRates[drIdx] = b.DataRates[drIdx]
 			}
 			b.DataRates = dataRates
 
@@ -181,13 +184,13 @@ func init() {
 			b.MaxADRDataRateIndex = ttnpb.DATA_RATE_3
 			return b
 		},
-		regionalParameters1_0_2RevB: composeSwaps(
+		regionalParameters1_v1_0_2RevB: composeSwaps(
 			disableCFList,
 			disableChMaskCntl5,
 			disableTxParamSetupReq,
 			makeSetMaxTxPowerIndexFunc(10),
 		),
-		regionalParameters1_0_3RevA: composeSwaps(
+		regionalParameters1_v1_0_3RevA: composeSwaps(
 			enableTxParamSetupReq,
 			makeAddTxPowerFunc(-22),
 			makeAddTxPowerFunc(-24),
@@ -195,7 +198,7 @@ func init() {
 			makeAddTxPowerFunc(-28),
 			makeAddTxPowerFunc(-30),
 		),
-		regionalParameters1_1RevA: composeSwaps(
+		regionalParameters1_v1_1RevA: composeSwaps(
 			disableTxParamSetupReq,
 			makeSetBeaconDataRateIndex(ttnpb.DATA_RATE_10),
 			makeSetMaxTxPowerIndexFunc(10),

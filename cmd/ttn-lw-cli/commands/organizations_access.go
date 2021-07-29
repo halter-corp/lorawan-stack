@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ import (
 	"os"
 	"strings"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -75,6 +76,35 @@ var (
 			getTotal()
 
 			return io.Write(os.Stdout, config.OutputFormat, res.Collaborators)
+		},
+	}
+	organizationCollaboratorsGet = &cobra.Command{
+		Use:     "get",
+		Aliases: []string{"info"},
+		Short:   "Get an organization collaborator",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			orgID := getOrganizationID(cmd.Flags(), nil)
+			if orgID == nil {
+				return errNoOrganizationID
+			}
+			collaborator := getCollaborator(cmd.Flags())
+			if collaborator == nil {
+				return errNoCollaborator
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			res, err := ttnpb.NewOrganizationAccessClient(is).GetCollaborator(ctx, &ttnpb.GetOrganizationCollaboratorRequest{
+				OrganizationIdentifiers:       *orgID,
+				OrganizationOrUserIdentifiers: *collaborator,
+			})
+			if err != nil {
+				return err
+			}
+
+			return io.Write(os.Stdout, config.OutputFormat, res)
 		},
 	}
 	organizationCollaboratorsSet = &cobra.Command{
@@ -176,6 +206,35 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res.APIKeys)
 		},
 	}
+	organizationAPIKeysGet = &cobra.Command{
+		Use:     "get [organization-id] [api-key-id]",
+		Aliases: []string{"info"},
+		Short:   "Get an organization API key",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			orgID := getOrganizationID(cmd.Flags(), firstArgs(1, args...))
+			if orgID == nil {
+				return errNoOrganizationID
+			}
+			id := getAPIKeyID(cmd.Flags(), args, 1)
+			if id == "" {
+				return errNoAPIKeyID
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			res, err := ttnpb.NewOrganizationAccessClient(is).GetAPIKey(ctx, &ttnpb.GetOrganizationAPIKeyRequest{
+				OrganizationIdentifiers: *orgID,
+				KeyId:                   id,
+			})
+			if err != nil {
+				return err
+			}
+
+			return io.Write(os.Stdout, config.OutputFormat, res)
+		},
+	}
 	organizationAPIKeysCreate = &cobra.Command{
 		Use:     "create [organization-id]",
 		Aliases: []string{"add", "generate"},
@@ -192,6 +251,11 @@ var (
 				return errNoAPIKeyRights
 			}
 
+			expiryDate, err := getAPIKeyExpiry(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
 				return err
@@ -200,6 +264,7 @@ var (
 				OrganizationIdentifiers: *orgID,
 				Name:                    name,
 				Rights:                  rights,
+				ExpiresAt:               expiryDate,
 			})
 			if err != nil {
 				return err
@@ -214,9 +279,9 @@ var (
 		},
 	}
 	organizationAPIKeysUpdate = &cobra.Command{
-		Use:     "update [organization-id] [api-key-id]",
-		Aliases: []string{"set"},
-		Short:   "Update an organization API key",
+		Use:     "set [organization-id] [api-key-id]",
+		Aliases: []string{"update"},
+		Short:   "Set properties of an organization API key",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgID := getOrganizationID(cmd.Flags(), firstArgs(1, args...))
 			if orgID == nil {
@@ -228,9 +293,13 @@ var (
 			}
 			name, _ := cmd.Flags().GetString("name")
 
-			rights := getRights(cmd.Flags())
-			if len(rights) == 0 {
-				return errNoAPIKeyRights
+			rights, expiryDate, paths, err := getAPIKeyFields(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			if len(paths) == 0 {
+				logger.Warn("No fields selected, won't update anything")
+				return nil
 			}
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
@@ -240,10 +309,12 @@ var (
 			_, err = ttnpb.NewOrganizationAccessClient(is).UpdateAPIKey(ctx, &ttnpb.UpdateOrganizationAPIKeyRequest{
 				OrganizationIdentifiers: *orgID,
 				APIKey: ttnpb.APIKey{
-					ID:     id,
-					Name:   name,
-					Rights: rights,
+					ID:        id,
+					Name:      name,
+					Rights:    rights,
+					ExpiresAt: expiryDate,
 				},
+				FieldMask: &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -276,6 +347,7 @@ var (
 					ID:     id,
 					Rights: nil,
 				},
+				FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 			})
 			if err != nil {
 				return err
@@ -301,6 +373,8 @@ func init() {
 
 	organizationCollaboratorsList.Flags().AddFlagSet(paginationFlags())
 	organizationCollaborators.AddCommand(organizationCollaboratorsList)
+	organizationCollaboratorsGet.Flags().AddFlagSet(collaboratorFlags())
+	organizationCollaborators.AddCommand(organizationCollaboratorsGet)
 	organizationCollaboratorsSet.Flags().AddFlagSet(collaboratorFlags())
 	organizationCollaboratorsSet.Flags().AddFlagSet(organizationRightsFlags)
 	organizationCollaborators.AddCommand(organizationCollaboratorsSet)
@@ -311,12 +385,16 @@ func init() {
 
 	organizationAPIKeysList.Flags().AddFlagSet(paginationFlags())
 	organizationAPIKeys.AddCommand(organizationAPIKeysList)
+	organizationAPIKeysGet.Flags().String("api-key-id", "", "")
+	organizationAPIKeys.AddCommand(organizationAPIKeysGet)
 	organizationAPIKeysCreate.Flags().String("name", "", "")
 	organizationAPIKeysCreate.Flags().AddFlagSet(organizationRightsFlags)
+	organizationAPIKeysCreate.Flags().AddFlagSet(apiKeyExpiryFlag)
 	organizationAPIKeys.AddCommand(organizationAPIKeysCreate)
 	organizationAPIKeysUpdate.Flags().String("api-key-id", "", "")
 	organizationAPIKeysUpdate.Flags().String("name", "", "")
 	organizationAPIKeysUpdate.Flags().AddFlagSet(organizationRightsFlags)
+	organizationAPIKeysUpdate.Flags().AddFlagSet(apiKeyExpiryFlag)
 	organizationAPIKeys.AddCommand(organizationAPIKeysUpdate)
 	organizationAPIKeysDelete.Flags().String("api-key-id", "", "")
 	organizationAPIKeys.AddCommand(organizationAPIKeysDelete)

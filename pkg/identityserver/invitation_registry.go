@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth"
 	"go.thethings.network/lorawan-stack/v3/pkg/email"
@@ -53,10 +53,13 @@ func (is *IdentityServer) sendInvitation(ctx context.Context, in *ttnpb.SendInvi
 	if err != nil {
 		return nil, err
 	}
+	now := time.Now()
+	ttl := is.configFromContext(ctx).UserRegistration.Invitation.TokenTTL
+	expires := now.Add(ttl)
 	invitation := &ttnpb.Invitation{
 		Email:     in.Email,
 		Token:     token,
-		ExpiresAt: time.Now().Add(is.configFromContext(ctx).UserRegistration.Invitation.TokenTTL),
+		ExpiresAt: expires,
 	}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
 		invitation, err = store.GetInvitationStore(db).CreateInvitation(ctx, invitation)
@@ -71,6 +74,7 @@ func (is *IdentityServer) sendInvitation(ctx context.Context, in *ttnpb.SendInvi
 		return &emails.Invitation{
 			Data:            data,
 			InvitationToken: invitation.Token,
+			TTL:             ttl,
 		}
 	})
 	if err != nil {
@@ -98,7 +102,7 @@ func (is *IdentityServer) listInvitations(ctx context.Context, req *ttnpb.ListIn
 	return invitations, nil
 }
 
-func (is *IdentityServer) deleteInvitation(ctx context.Context, in *ttnpb.DeleteInvitationRequest) (*types.Empty, error) {
+func (is *IdentityServer) deleteInvitation(ctx context.Context, in *ttnpb.DeleteInvitationRequest) (*pbtypes.Empty, error) {
 	authInfo, err := is.authInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -127,6 +131,6 @@ func (ir *invitationRegistry) List(ctx context.Context, req *ttnpb.ListInvitatio
 	return ir.listInvitations(ctx, req)
 }
 
-func (ir *invitationRegistry) Delete(ctx context.Context, req *ttnpb.DeleteInvitationRequest) (*types.Empty, error) {
+func (ir *invitationRegistry) Delete(ctx context.Context, req *ttnpb.DeleteInvitationRequest) (*pbtypes.Empty, error) {
 	return ir.deleteInvitation(ctx, req)
 }

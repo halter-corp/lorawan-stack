@@ -17,7 +17,7 @@ package identityserver
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/email"
 	"go.thethings.network/lorawan-stack/v3/pkg/email/sendgrid"
@@ -30,6 +30,13 @@ import (
 
 func (is *IdentityServer) initEmailTemplates(ctx context.Context) (*email.TemplateRegistry, error) {
 	config := is.configFromContext(ctx).Email.Templates
+	if config.HTTPClient == nil {
+		httpClient, err := is.HTTPClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+		config.HTTPClient = httpClient
+	}
 	fetcher, err := config.Fetcher(ctx, is.Component.GetBaseConfig(ctx).Blob)
 	if err != nil {
 		return nil, err
@@ -78,7 +85,7 @@ func (is *IdentityServer) SendEmail(ctx context.Context, f func(emails.Data) ema
 func (is *IdentityServer) SendUserEmail(ctx context.Context, userIDs *ttnpb.UserIdentifiers, makeMessage func(emails.Data) email.MessageData) error {
 	var usr *ttnpb.User
 	err := is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		usr, err = store.GetUserStore(db).GetUser(ctx, userIDs, &types.FieldMask{
+		usr, err = store.GetUserStore(db).GetUser(ctx, userIDs, &pbtypes.FieldMask{
 			Paths: []string{"name", "primary_email_address"},
 		})
 		if err != nil {
@@ -103,7 +110,7 @@ func (is *IdentityServer) SendUserEmail(ctx context.Context, userIDs *ttnpb.User
 func (is *IdentityServer) SendAdminsEmail(ctx context.Context, makeMessage func(emails.Data) email.MessageData) error {
 	var users []*ttnpb.User
 	err := is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		users, err = store.GetUserStore(db).ListAdmins(ctx, &types.FieldMask{
+		users, err = store.GetUserStore(db).ListAdmins(ctx, &pbtypes.FieldMask{
 			Paths: []string{"name", "primary_email_address"},
 		})
 		if err != nil {
@@ -127,7 +134,7 @@ func (is *IdentityServer) SendAdminsEmail(ctx context.Context, makeMessage func(
 }
 
 // SendContactsEmail sends an email to the contacts of the given entity.
-func (is *IdentityServer) SendContactsEmail(ctx context.Context, ids *ttnpb.EntityIdentifiers, makeMessage func(emails.Data) email.MessageData) error {
+func (is *IdentityServer) SendContactsEmail(ctx context.Context, ids ttnpb.IDStringer, makeMessage func(emails.Data) email.MessageData) error {
 	var contacts []*ttnpb.ContactInfo
 	err := is.withDatabase(ctx, func(db *gorm.DB) (err error) {
 		contacts, err = store.GetContactInfoStore(db).GetContactInfo(ctx, ids)

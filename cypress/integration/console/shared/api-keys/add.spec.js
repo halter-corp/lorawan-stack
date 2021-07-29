@@ -32,10 +32,7 @@ describe('API keys', () => {
     const application = { ids: { application_id: applicationId } }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createApplication(application, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
@@ -71,10 +68,7 @@ describe('API keys', () => {
     const gateway = { ids: { gateway_id: gatewayId } }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createGateway(gateway, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
@@ -112,10 +106,7 @@ describe('API keys', () => {
     }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createOrganization(organization, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
@@ -143,6 +134,32 @@ describe('API keys', () => {
         'eq',
         `${Cypress.config('consoleRootPath')}/organizations/${organizationId}/api-keys`,
       )
+    })
+  })
+
+  describe('User', () => {
+    beforeEach(() => {
+      cy.loginConsole({ user_id: userId, password: user.password })
+      cy.visit(`${Cypress.config('consoleRootPath')}/user/api-keys/add`)
+    })
+
+    it('succeeds adding new api key', () => {
+      cy.findByLabelText('Name').type(apiKeyName)
+      cy.findByLabelText('Grant all current and future rights').check()
+      cy.findByRole('button', { name: 'Create API key' }).click()
+
+      cy.findByTestId('error-notification').should('not.exist')
+
+      cy.findByTestId('modal-window')
+        .should('be.visible')
+        .within(() => {
+          cy.findByText('Please copy newly created API key', { selector: 'h1' }).should(
+            'be.visible',
+          )
+          cy.findByRole('button', { name: /I have copied the key/ }).click()
+        })
+
+      cy.location('pathname').should('eq', `${Cypress.config('consoleRootPath')}/user/api-keys`)
     })
   })
 })

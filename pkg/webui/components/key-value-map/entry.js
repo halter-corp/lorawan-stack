@@ -15,6 +15,7 @@
 import React from 'react'
 import bind from 'autobind-decorator'
 import { defineMessages } from 'react-intl'
+import classnames from 'classnames'
 
 import Input from '@ttn-lw/components/input'
 import Button from '@ttn-lw/components/button'
@@ -43,18 +44,21 @@ class Entry extends React.Component {
   @bind
   handleRemoveButtonClicked(event) {
     const { onRemoveButtonClick, index } = this.props
+
     onRemoveButtonClick(index, event)
   }
 
   @bind
   handleKeyChanged(newKey) {
     const { onChange, index } = this.props
+
     onChange(index, { key: newKey })
   }
 
   @bind
   handleValueChanged(newValue) {
     const { onChange, index } = this.props
+
     onChange(index, { value: newValue })
   }
 
@@ -79,30 +83,32 @@ class Entry extends React.Component {
   }
 
   render() {
-    const { keyPlaceholder, valuePlaceholder, value } = this.props
+    const { keyPlaceholder, valuePlaceholder, value, indexAsKey } = this.props
 
     return (
       <div className={style.entriesRow}>
-        <Input
-          data-test-id={this._getKeyInputName()}
-          className={style.input}
-          name={this._getKeyInputName()}
-          placeholder={keyPlaceholder}
-          type="text"
-          onChange={this.handleKeyChanged}
-          onBlur={this.handleBlur}
-          value={value.key}
-          code
-        />
+        {!indexAsKey && (
+          <Input
+            data-test-id={this._getKeyInputName()}
+            className={style.input}
+            name={this._getKeyInputName()}
+            placeholder={keyPlaceholder}
+            type="text"
+            onChange={this.handleKeyChanged}
+            onBlur={this.handleBlur}
+            value={value.key}
+            code
+          />
+        )}
         <Input
           data-test-id={this._getValueInputName()}
-          className={style.input}
+          className={classnames(style.input, { [style.inputIndexAsKey]: indexAsKey })}
           name={this._getValueInputName()}
           placeholder={valuePlaceholder}
           type="text"
           onChange={this.handleValueChanged}
           onBlur={this.handleBlur}
-          value={value.value}
+          value={indexAsKey ? value : value.value}
           code
         />
         <Button
@@ -119,13 +125,24 @@ class Entry extends React.Component {
 
 Entry.propTypes = {
   index: PropTypes.number.isRequired,
+  indexAsKey: PropTypes.bool.isRequired,
   keyPlaceholder: PropTypes.message.isRequired,
   name: PropTypes.string.isRequired,
   onBlur: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
   onRemoveButtonClick: PropTypes.func.isRequired,
-  value: PropTypes.shape({ key: PropTypes.string, value: PropTypes.string }).isRequired,
+  value: PropTypes.oneOfType([
+    PropTypes.shape({
+      key: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }),
+    PropTypes.string,
+  ]),
   valuePlaceholder: PropTypes.message.isRequired,
+}
+
+Entry.defaultProps = {
+  value: undefined,
 }
 
 export default Entry

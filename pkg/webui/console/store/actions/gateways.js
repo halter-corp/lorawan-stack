@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
+import {
+  createPaginationRequestActions,
+  createPaginationBaseActionType,
+  createPaginationDeleteBaseActionType,
+  createPaginationDeleteActions,
+} from '@ttn-lw/lib/store/actions/pagination'
+
 import createGetRightsListRequestActions, { createGetRightsListActionType } from './rights'
-import { createRequestActions } from './lib'
 import {
   startEventsStream,
   createStartEventsStreamActionType,
@@ -31,13 +38,9 @@ import {
   createClearEventsActionType,
   createGetEventMessageSuccessActionType,
   getEventMessageSuccess,
+  createSetEventsFilterActionType,
+  setEventsFilter,
 } from './events'
-import {
-  createPaginationRequestActions,
-  createPaginationBaseActionType,
-  createPaginationDeleteBaseActionType,
-  createPaginationDeleteActions,
-} from './pagination'
 
 export const SHARED_NAME = 'GATEWAY'
 
@@ -45,7 +48,11 @@ export const GET_GTW_BASE = 'GET_GATEWAY'
 export const [
   { request: GET_GTW, success: GET_GTW_SUCCESS, failure: GET_GTW_FAILURE },
   { request: getGateway, success: getGatewaySuccess, failure: getGatewayFailure },
-] = createRequestActions(GET_GTW_BASE, id => ({ id }), (id, selector) => ({ selector }))
+] = createRequestActions(
+  GET_GTW_BASE,
+  id => ({ id }),
+  (id, selector) => ({ selector }),
+)
 
 export const UPDATE_GTW_BASE = 'UPDATE_GATEWAY'
 export const [
@@ -105,7 +112,11 @@ export const [
     success: startGatewayStatisticsSuccess,
     failure: startGatewayStatisticsFailure,
   },
-] = createRequestActions(START_GTW_STATS_BASE, id => ({ id }), (id, timeout) => ({ timeout }))
+] = createRequestActions(
+  START_GTW_STATS_BASE,
+  id => ({ id }),
+  (id, timeout) => ({ timeout }),
+)
 
 export const STOP_GTW_STATS = 'STOP_GATEWAY_STATISTICS'
 export const stopGatewayStatistics = () => ({ type: STOP_GTW_STATS })
@@ -118,6 +129,7 @@ export const RESUME_GTW_EVENT_STREAM = createResumeEventsStreamActionType(SHARED
 export const STOP_GTW_EVENT_STREAM = createStopEventsStreamActionType(SHARED_NAME)
 export const CLEAR_GTW_EVENTS = createClearEventsActionType(SHARED_NAME)
 export const GET_GTW_EVENT_MESSAGE_SUCCESS = createGetEventMessageSuccessActionType(SHARED_NAME)
+export const SET_GTW_EVENTS_FILTER = createSetEventsFilterActionType(SHARED_NAME)
 
 export const startGatewayEventsStream = startEventsStream(SHARED_NAME)
 export const startGatewayEventsStreamSuccess = startEventsStreamSuccess(SHARED_NAME)
@@ -127,3 +139,4 @@ export const resumeGatewayEventsStream = resumeEventsStream(SHARED_NAME)
 export const stopGatewayEventsStream = stopEventsStream(SHARED_NAME)
 export const clearGatewayEventsStream = clearEvents(SHARED_NAME)
 export const getGatewayEventMessageSuccess = getEventMessageSuccess(SHARED_NAME)
+export const setGatewayEventsFilter = setEventsFilter(SHARED_NAME)

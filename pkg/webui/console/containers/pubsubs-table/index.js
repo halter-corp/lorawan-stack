@@ -15,9 +15,9 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 
-import Message from '@ttn-lw/lib/components/message'
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
-import FetchTable from '@console/containers/fetch-table'
+import Message from '@ttn-lw/lib/components/message'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -44,7 +44,7 @@ const headers = [
     width: 40,
   },
   {
-    getValue(row) {
+    getValue: row => {
       if (row.nats) {
         const res = row.nats.server_url.match(natsUrlRegexp)
         return res ? res[8] : ''
@@ -62,7 +62,7 @@ const headers = [
     width: 9,
   },
   {
-    getValue(row) {
+    getValue: row => {
       if (row.nats) {
         return 'NATS'
       } else if (row.mqtt) {

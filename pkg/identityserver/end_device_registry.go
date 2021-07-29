@@ -18,8 +18,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
+	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
@@ -59,7 +60,7 @@ func (is *IdentityServer) createEndDevice(ctx context.Context, req *ttnpb.Create
 	if err = rights.RequireApplication(ctx, req.EndDeviceIdentifiers.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
 		return nil, err
 	}
-	if err = blacklist.Check(ctx, req.DeviceID); err != nil {
+	if err = blacklist.Check(ctx, req.DeviceId); err != nil {
 		return nil, err
 	}
 
@@ -80,20 +81,20 @@ func (is *IdentityServer) createEndDevice(ctx context.Context, req *ttnpb.Create
 	if err != nil {
 		if errors.IsAlreadyExists(err) && errors.Resemble(err, store.ErrEUITaken) {
 			if ids, err := is.getEndDeviceIdentifiersForEUIs(ctx, &ttnpb.GetEndDeviceIdentifiersForEUIsRequest{
-				JoinEUI: *req.JoinEUI,
-				DevEUI:  *req.DevEUI,
+				JoinEui: *req.JoinEui,
+				DevEui:  *req.DevEui,
 			}); err == nil {
 				return nil, errEndDeviceEUIsTaken.WithAttributes(
-					"join_eui", req.JoinEUI.String(),
-					"dev_eui", req.DevEUI.String(),
-					"device_id", ids.GetDeviceID(),
-					"application_id", ids.GetApplicationID(),
+					"join_eui", req.JoinEui.String(),
+					"dev_eui", req.DevEui.String(),
+					"device_id", ids.GetDeviceId(),
+					"application_id", ids.GetApplicationId(),
 				)
 			}
 		}
 		return nil, err
 	}
-	events.Publish(evtCreateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDeviceIdentifiers, nil))
+	events.Publish(evtCreateEndDevice.NewWithIdentifiersAndData(ctx, &req.EndDeviceIdentifiers, nil))
 	return dev, nil
 }
 
@@ -102,13 +103,13 @@ func (is *IdentityServer) getEndDevice(ctx context.Context, req *ttnpb.GetEndDev
 		return nil, err
 	}
 
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
-	if ttnpb.HasAnyField(ttnpb.TopLevelFields(req.FieldMask.Paths), "picture") {
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask, getPaths, nil)
+	if ttnpb.HasAnyField(ttnpb.TopLevelFields(req.FieldMask.GetPaths()), "picture") {
 		defer func() { is.setFullEndDevicePictureURL(ctx, dev) }()
 	}
 
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		dev, err = store.GetEndDeviceStore(db).GetEndDevice(ctx, &req.EndDeviceIdentifiers, &req.FieldMask)
+		dev, err = store.GetEndDeviceStore(db).GetEndDevice(ctx, &req.EndDeviceIdentifiers, req.FieldMask)
 		return err
 	})
 	if err != nil {
@@ -123,9 +124,9 @@ func (is *IdentityServer) getEndDeviceIdentifiersForEUIs(ctx context.Context, re
 	}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
 		dev, err := store.GetEndDeviceStore(db).GetEndDevice(ctx, &ttnpb.EndDeviceIdentifiers{
-			JoinEUI: &req.JoinEUI,
-			DevEUI:  &req.DevEUI,
-		}, &types.FieldMask{Paths: []string{"ids.application_ids.application_id", "ids.device_id", "ids.join_eui", "ids.dev_eui"}})
+			JoinEui: &req.JoinEui,
+			DevEui:  &req.DevEui,
+		}, &pbtypes.FieldMask{Paths: []string{"ids.application_ids.application_id", "ids.device_id", "ids.join_eui", "ids.dev_eui"}})
 		if err != nil {
 			return err
 		}
@@ -142,7 +143,7 @@ func (is *IdentityServer) listEndDevices(ctx context.Context, req *ttnpb.ListEnd
 	if err = rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_READ); err != nil {
 		return nil, err
 	}
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask, getPaths, nil)
 	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
@@ -153,7 +154,7 @@ func (is *IdentityServer) listEndDevices(ctx context.Context, req *ttnpb.ListEnd
 	}()
 	devs = &ttnpb.EndDevices{}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		devs.EndDevices, err = store.GetEndDeviceStore(db).ListEndDevices(ctx, &req.ApplicationIdentifiers, &req.FieldMask)
+		devs.EndDevices, err = store.GetEndDeviceStore(db).ListEndDevices(ctx, &req.ApplicationIdentifiers, req.FieldMask)
 		if err != nil {
 			return err
 		}
@@ -181,17 +182,24 @@ func (is *IdentityServer) setFullEndDevicePictureURL(ctx context.Context, dev *t
 }
 
 func (is *IdentityServer) updateEndDevice(ctx context.Context, req *ttnpb.UpdateEndDeviceRequest) (dev *ttnpb.EndDevice, err error) {
-	if err = rights.RequireApplication(ctx, req.EndDeviceIdentifiers.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
+	if clusterauth.Authorized(ctx) == nil {
+		req.FieldMask = cleanFieldMaskPaths([]string{"activated_at", "locations"}, req.FieldMask, nil, getPaths)
+	} else if err = rights.RequireApplication(ctx, req.EndDeviceIdentifiers.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
 		return nil, err
 	}
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask.Paths, nil, getPaths)
-	if len(req.FieldMask.Paths) == 0 {
-		req.FieldMask.Paths = updatePaths
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask, nil, getPaths)
+	if len(req.FieldMask.GetPaths()) == 0 {
+		req.FieldMask = &pbtypes.FieldMask{Paths: updatePaths}
 	}
 
-	if ttnpb.HasAnyField(ttnpb.TopLevelFields(req.FieldMask.Paths), "picture") {
-		if !ttnpb.HasAnyField(req.FieldMask.Paths, "picture") {
-			req.FieldMask.Paths = append(req.FieldMask.Paths, "picture")
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "activated_at") && req.ActivatedAt == nil {
+		// The end device activation state may not be unset once set.
+		req.FieldMask = cleanFieldMaskPaths(ttnpb.EndDeviceFieldPathsNested, req.FieldMask, nil, []string{"activated_at"})
+	}
+
+	if ttnpb.HasAnyField(ttnpb.TopLevelFields(req.FieldMask.GetPaths()), "picture") {
+		if !ttnpb.HasAnyField(req.FieldMask.GetPaths(), "picture") {
+			req.FieldMask.Paths = append(req.FieldMask.GetPaths(), "picture")
 		}
 		if req.EndDevice.Picture != nil {
 			if err = is.processEndDevicePicture(ctx, &req.EndDevice); err != nil {
@@ -202,17 +210,17 @@ func (is *IdentityServer) updateEndDevice(ctx context.Context, req *ttnpb.Update
 	}
 
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		dev, err = store.GetEndDeviceStore(db).UpdateEndDevice(ctx, &req.EndDevice, &req.FieldMask)
+		dev, err = store.GetEndDeviceStore(db).UpdateEndDevice(ctx, &req.EndDevice, req.FieldMask)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, req.EndDeviceIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateEndDevice.NewWithIdentifiersAndData(ctx, &req.EndDeviceIdentifiers, req.FieldMask.GetPaths()))
 	return dev, nil
 }
 
-func (is *IdentityServer) deleteEndDevice(ctx context.Context, ids *ttnpb.EndDeviceIdentifiers) (*types.Empty, error) {
+func (is *IdentityServer) deleteEndDevice(ctx context.Context, ids *ttnpb.EndDeviceIdentifiers) (*pbtypes.Empty, error) {
 	if err := rights.RequireApplication(ctx, ids.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
 		return nil, err
 	}
@@ -250,6 +258,6 @@ func (dr *endDeviceRegistry) Update(ctx context.Context, req *ttnpb.UpdateEndDev
 	return dr.updateEndDevice(ctx, req)
 }
 
-func (dr *endDeviceRegistry) Delete(ctx context.Context, req *ttnpb.EndDeviceIdentifiers) (*types.Empty, error) {
+func (dr *endDeviceRegistry) Delete(ctx context.Context, req *ttnpb.EndDeviceIdentifiers) (*pbtypes.Empty, error) {
 	return dr.deleteEndDevice(ctx, req)
 }

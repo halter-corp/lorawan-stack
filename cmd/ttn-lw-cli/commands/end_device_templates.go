@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,12 @@ import (
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
-)
-
-var (
-	endDeviceTemplateFlattenPaths = []string{"end_device.provisioning_data"}
 )
 
 func templateFormatIDFlags() *pflag.FlagSet {
@@ -85,7 +81,7 @@ var (
 				if err != nil {
 					return err
 				}
-				paths = append(paths, res.FieldMask.Paths...)
+				paths = append(paths, res.FieldMask.GetPaths()...)
 			}
 
 			if mappingKey, _ := cmd.Flags().GetString("mapping-key"); mappingKey != "" {
@@ -95,7 +91,7 @@ var (
 				return err
 			}
 			res.EndDevice.Attributes = mergeAttributes(res.EndDevice.Attributes, cmd.Flags())
-			res.FieldMask.Paths = ttnpb.BottomLevelFields(paths)
+			res.FieldMask = &pbtypes.FieldMask{Paths: ttnpb.BottomLevelFields(paths)}
 
 			return io.Write(os.Stdout, config.OutputFormat, &res)
 		}),
@@ -153,7 +149,7 @@ This command takes end devices from stdin.`,
 
 			mappingKey, _ := cmd.Flags().GetString("mapping-key")
 			res := &ttnpb.EndDeviceTemplate{
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: paths,
 				},
 				MappingKey: mappingKey,
@@ -185,7 +181,7 @@ This command takes end device templates from stdin.`,
 			}
 
 			var device ttnpb.EndDevice
-			device.SetFields(&input.EndDevice, input.FieldMask.Paths...)
+			device.SetFields(&input.EndDevice, input.FieldMask.GetPaths()...)
 			if err := util.SetFields(&device, setEndDeviceFlags); err != nil {
 				return err
 			}
@@ -257,14 +253,16 @@ This command takes end device templates from stdin.`,
 					binary.BigEndian.PutUint64(devEUI[:], devEUIInt)
 					devEUIInt++
 
-					res.EndDevice.DeviceID = fmt.Sprintf("eui-%s", strings.ToLower(devEUI.String()))
-					res.EndDevice.JoinEUI = &joinEUI
-					res.EndDevice.DevEUI = &devEUI
-					res.FieldMask.Paths = ttnpb.BottomLevelFields(append(res.FieldMask.Paths,
-						"ids.device_id",
-						"ids.join_eui",
-						"ids.dev_eui",
-					))
+					res.EndDevice.DeviceId = fmt.Sprintf("eui-%s", strings.ToLower(devEUI.String()))
+					res.EndDevice.JoinEui = &joinEUI
+					res.EndDevice.DevEui = &devEUI
+					res.FieldMask = &pbtypes.FieldMask{
+						Paths: ttnpb.BottomLevelFields(append(res.FieldMask.GetPaths(),
+							"ids.device_id",
+							"ids.join_eui",
+							"ids.dev_eui",
+						)),
+					}
 
 					if err := io.Write(os.Stdout, config.OutputFormat, &res); err != nil {
 						return err
@@ -405,9 +403,9 @@ command to assign EUIs to map to end device templates.`,
 				for _, e := range mapping {
 					switch {
 					case e.MappingKey != "" && e.MappingKey == inputEntry.MappingKey:
-					case e.EndDevice.ApplicationID != "" && e.EndDevice.ApplicationID == inputEntry.EndDevice.ApplicationID &&
-						e.EndDevice.DeviceID != "" && e.EndDevice.DeviceID == inputEntry.EndDevice.DeviceID:
-					case e.EndDevice.DevEUI != nil && inputEntry.EndDevice.DevEUI != nil && e.EndDevice.DevEUI.Equal(*inputEntry.EndDevice.DevEUI):
+					case e.EndDevice.ApplicationId != "" && e.EndDevice.ApplicationId == inputEntry.EndDevice.ApplicationId &&
+						e.EndDevice.DeviceId != "" && e.EndDevice.DeviceId == inputEntry.EndDevice.DeviceId:
+					case e.EndDevice.DevEui != nil && inputEntry.EndDevice.DevEui != nil && e.EndDevice.DevEui.Equal(*inputEntry.EndDevice.DevEui):
 					case e.EndDevice.EndDeviceIdentifiers.IsZero():
 					default:
 						continue
@@ -423,9 +421,9 @@ command to assign EUIs to map to end device templates.`,
 				}
 
 				var res ttnpb.EndDeviceTemplate
-				res.EndDevice.SetFields(&inputEntry.EndDevice, inputEntry.FieldMask.Paths...)
-				res.EndDevice.SetFields(&mappedEntry.EndDevice, mappedEntry.FieldMask.Paths...)
-				res.FieldMask.Paths = ttnpb.BottomLevelFields(append(inputEntry.FieldMask.Paths, mappedEntry.FieldMask.Paths...))
+				res.EndDevice.SetFields(&inputEntry.EndDevice, inputEntry.FieldMask.GetPaths()...)
+				res.EndDevice.SetFields(&mappedEntry.EndDevice, mappedEntry.FieldMask.GetPaths()...)
+				res.FieldMask = &pbtypes.FieldMask{Paths: ttnpb.BottomLevelFields(append(inputEntry.FieldMask.GetPaths(), mappedEntry.FieldMask.GetPaths()...))}
 
 				if err := io.Write(os.Stdout, config.OutputFormat, &res); err != nil {
 					return err

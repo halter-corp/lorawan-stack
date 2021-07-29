@@ -16,8 +16,9 @@ package identityserver
 
 import (
 	"context"
+	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -47,22 +48,44 @@ var (
 		events.WithAuthFromContext(),
 		events.WithClientInfoFromContext(),
 	)
+	evtRestoreApplication = events.Define(
+		"application.restore", "restore application",
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
+	)
+	evtPurgeApplication = events.Define(
+		"application.purge", "purge application",
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
+	)
+	evtIssueDevEUIForApplication = events.Define(
+		"application.issue_dev_eui", "issue DevEUI for application",
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_INFO),
+		events.WithAuthFromContext(),
+		events.WithClientInfoFromContext(),
+	)
 )
 
-var errAdminsCreateApplications = errors.DefinePermissionDenied("admins_create_applications", "applications may only be created by admins, or in organizations")
+var (
+	errAdminsCreateApplications = errors.DefinePermissionDenied("admins_create_applications", "applications may only be created by admins, or in organizations")
+	errAdminsPurgeApplications  = errors.DefinePermissionDenied("admins_purge_applications", "applications may only be purged by admins")
+	errDevEUIIssuingNotEnabled  = errors.DefineInvalidArgument("dev_eui_issuing_not_enabled", "DevEUI issuing not configured")
+)
 
 func (is *IdentityServer) createApplication(ctx context.Context, req *ttnpb.CreateApplicationRequest) (app *ttnpb.Application, err error) {
-	if err = blacklist.Check(ctx, req.ApplicationID); err != nil {
+	if err = blacklist.Check(ctx, req.ApplicationId); err != nil {
 		return nil, err
 	}
-	if usrIDs := req.Collaborator.GetUserIDs(); usrIDs != nil {
+	if usrIDs := req.Collaborator.GetUserIds(); usrIDs != nil {
 		if !is.IsAdmin(ctx) && !is.configFromContext(ctx).UserRights.CreateApplications {
 			return nil, errAdminsCreateApplications
 		}
 		if err = rights.RequireUser(ctx, *usrIDs, ttnpb.RIGHT_USER_APPLICATIONS_CREATE); err != nil {
 			return nil, err
 		}
-	} else if orgIDs := req.Collaborator.GetOrganizationIDs(); orgIDs != nil {
+	} else if orgIDs := req.Collaborator.GetOrganizationIds(); orgIDs != nil {
 		if err = rights.RequireOrganization(ctx, *orgIDs, ttnpb.RIGHT_ORGANIZATION_APPLICATIONS_CREATE); err != nil {
 			return nil, err
 		}
@@ -78,7 +101,7 @@ func (is *IdentityServer) createApplication(ctx context.Context, req *ttnpb.Crea
 		if err = is.getMembershipStore(ctx, db).SetMember(
 			ctx,
 			&req.Collaborator,
-			app.ApplicationIdentifiers,
+			app.ApplicationIdentifiers.GetEntityIdentifiers(),
 			ttnpb.RightsFrom(ttnpb.RIGHT_ALL),
 		); err != nil {
 			return err
@@ -95,7 +118,7 @@ func (is *IdentityServer) createApplication(ctx context.Context, req *ttnpb.Crea
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtCreateApplication.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, nil))
+	events.Publish(evtCreateApplication.NewWithIdentifiersAndData(ctx, &req.ApplicationIdentifiers, nil))
 	return app, nil
 }
 
@@ -103,20 +126,20 @@ func (is *IdentityServer) getApplication(ctx context.Context, req *ttnpb.GetAppl
 	if err = is.RequireAuthenticated(ctx); err != nil {
 		return nil, err
 	}
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask, getPaths, nil)
 	if err = rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_INFO); err != nil {
-		if ttnpb.HasOnlyAllowedFields(req.FieldMask.Paths, ttnpb.PublicApplicationFields...) {
+		if ttnpb.HasOnlyAllowedFields(req.FieldMask.GetPaths(), ttnpb.PublicApplicationFields...) {
 			defer func() { app = app.PublicSafe() }()
 		} else {
 			return nil, err
 		}
 	}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		app, err = store.GetApplicationStore(db).GetApplication(ctx, &req.ApplicationIdentifiers, &req.FieldMask)
+		app, err = store.GetApplicationStore(db).GetApplication(ctx, &req.ApplicationIdentifiers, req.FieldMask)
 		if err != nil {
 			return err
 		}
-		if ttnpb.HasAnyField(req.FieldMask.Paths, "contact_info") {
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "contact_info") {
 			app.ContactInfo, err = store.GetContactInfoStore(db).GetContactInfo(ctx, app.ApplicationIdentifiers)
 			if err != nil {
 				return err
@@ -131,7 +154,7 @@ func (is *IdentityServer) getApplication(ctx context.Context, req *ttnpb.GetAppl
 }
 
 func (is *IdentityServer) listApplications(ctx context.Context, req *ttnpb.ListApplicationsRequest) (apps *ttnpb.Applications, err error) {
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask.Paths, getPaths, nil)
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask, getPaths, nil)
 	var includeIndirect bool
 	if req.Collaborator == nil {
 		authInfo, err := is.authInfo(ctx)
@@ -145,14 +168,17 @@ func (is *IdentityServer) listApplications(ctx context.Context, req *ttnpb.ListA
 		req.Collaborator = collaborator
 		includeIndirect = true
 	}
-	if usrIDs := req.Collaborator.GetUserIDs(); usrIDs != nil {
+	if usrIDs := req.Collaborator.GetUserIds(); usrIDs != nil {
 		if err = rights.RequireUser(ctx, *usrIDs, ttnpb.RIGHT_USER_APPLICATIONS_LIST); err != nil {
 			return nil, err
 		}
-	} else if orgIDs := req.Collaborator.GetOrganizationIDs(); orgIDs != nil {
+	} else if orgIDs := req.Collaborator.GetOrganizationIds(); orgIDs != nil {
 		if err = rights.RequireOrganization(ctx, *orgIDs, ttnpb.RIGHT_ORGANIZATION_APPLICATIONS_LIST); err != nil {
 			return nil, err
 		}
+	}
+	if req.Deleted {
+		ctx = store.WithSoftDeleted(ctx, true)
 	}
 	ctx = store.WithOrder(ctx, req.Order)
 	var total uint64
@@ -173,11 +199,11 @@ func (is *IdentityServer) listApplications(ctx context.Context, req *ttnpb.ListA
 		}
 		appIDs := make([]*ttnpb.ApplicationIdentifiers, 0, len(ids))
 		for _, id := range ids {
-			if appID := id.EntityIdentifiers().GetApplicationIDs(); appID != nil {
+			if appID := id.GetEntityIdentifiers().GetApplicationIds(); appID != nil {
 				appIDs = append(appIDs, appID)
 			}
 		}
-		apps.Applications, err = store.GetApplicationStore(db).FindApplications(ctx, appIDs, &req.FieldMask)
+		apps.Applications, err = store.GetApplicationStore(db).FindApplications(ctx, appIDs, req.FieldMask)
 		if err != nil {
 			return err
 		}
@@ -200,21 +226,21 @@ func (is *IdentityServer) updateApplication(ctx context.Context, req *ttnpb.Upda
 	if err = rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC); err != nil {
 		return nil, err
 	}
-	req.FieldMask.Paths = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask.Paths, nil, getPaths)
-	if len(req.FieldMask.Paths) == 0 {
-		req.FieldMask.Paths = updatePaths
+	req.FieldMask = cleanFieldMaskPaths(ttnpb.ApplicationFieldPathsNested, req.FieldMask, nil, getPaths)
+	if len(req.FieldMask.GetPaths()) == 0 {
+		req.FieldMask = &pbtypes.FieldMask{Paths: updatePaths}
 	}
-	if ttnpb.HasAnyField(req.FieldMask.Paths, "contact_info") {
+	if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "contact_info") {
 		if err := validateContactInfo(req.Application.ContactInfo); err != nil {
 			return nil, err
 		}
 	}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		app, err = store.GetApplicationStore(db).UpdateApplication(ctx, &req.Application, &req.FieldMask)
+		app, err = store.GetApplicationStore(db).UpdateApplication(ctx, &req.Application, req.FieldMask)
 		if err != nil {
 			return err
 		}
-		if ttnpb.HasAnyField(req.FieldMask.Paths, "contact_info") {
+		if ttnpb.HasAnyField(req.FieldMask.GetPaths(), "contact_info") {
 			cleanContactInfo(req.ContactInfo)
 			app.ContactInfo, err = store.GetContactInfoStore(db).SetContactInfo(ctx, app.ApplicationIdentifiers, req.ContactInfo)
 			if err != nil {
@@ -226,13 +252,13 @@ func (is *IdentityServer) updateApplication(ctx context.Context, req *ttnpb.Upda
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtUpdateApplication.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, req.FieldMask.Paths))
+	events.Publish(evtUpdateApplication.NewWithIdentifiersAndData(ctx, &req.ApplicationIdentifiers, req.FieldMask.GetPaths()))
 	return app, nil
 }
 
 var errApplicationHasDevices = errors.DefineFailedPrecondition("application_has_devices", "application still has `{count}` devices")
 
-func (is *IdentityServer) deleteApplication(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*types.Empty, error) {
+func (is *IdentityServer) deleteApplication(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
 	if err := rights.RequireApplication(ctx, *ids, ttnpb.RIGHT_APPLICATION_DELETE); err != nil {
 		return nil, err
 	}
@@ -251,6 +277,90 @@ func (is *IdentityServer) deleteApplication(ctx context.Context, ids *ttnpb.Appl
 	}
 	events.Publish(evtDeleteApplication.NewWithIdentifiersAndData(ctx, ids, nil))
 	return ttnpb.Empty, nil
+}
+
+func (is *IdentityServer) restoreApplication(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
+	if err := rights.RequireApplication(store.WithSoftDeleted(ctx, false), *ids, ttnpb.RIGHT_APPLICATION_DELETE); err != nil {
+		return nil, err
+	}
+	err := is.withDatabase(ctx, func(db *gorm.DB) error {
+		appStore := store.GetApplicationStore(db)
+		app, err := appStore.GetApplication(store.WithSoftDeleted(ctx, true), ids, softDeleteFieldMask)
+		if err != nil {
+			return err
+		}
+		if app.DeletedAt == nil {
+			panic("store.WithSoftDeleted(ctx, true) returned result that is not deleted")
+		}
+		if time.Since(*app.DeletedAt) > is.configFromContext(ctx).Delete.Restore {
+			return errRestoreWindowExpired.New()
+		}
+		return appStore.RestoreApplication(ctx, ids)
+	})
+	if err != nil {
+		return nil, err
+	}
+	events.Publish(evtRestoreApplication.NewWithIdentifiersAndData(ctx, ids, nil))
+	return ttnpb.Empty, nil
+}
+
+func (is *IdentityServer) purgeApplication(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
+	if !is.IsAdmin(ctx) {
+		return nil, errAdminsPurgeApplications
+	}
+	err := is.withDatabase(ctx, func(db *gorm.DB) error {
+		total, err := store.GetEndDeviceStore(db).CountEndDevices(ctx, ids)
+		if err != nil {
+			return err
+		}
+		if total > 0 {
+			return errApplicationHasDevices.WithAttributes("count", int(total))
+		}
+		// delete related API keys before purging the application
+		err = store.GetAPIKeyStore(db).DeleteEntityAPIKeys(ctx, ids.GetEntityIdentifiers())
+		if err != nil {
+			return err
+		}
+		// delete related memberships before purging the application
+		err = store.GetMembershipStore(db).DeleteEntityMembers(ctx, ids.GetEntityIdentifiers())
+		if err != nil {
+			return err
+		}
+		// delete related contact info before purging the application
+		err = store.GetContactInfoStore(db).DeleteEntityContactInfo(ctx, ids)
+		if err != nil {
+			return err
+		}
+		return store.GetApplicationStore(db).PurgeApplication(ctx, ids)
+	})
+	if err != nil {
+		return nil, err
+	}
+	events.Publish(evtPurgeApplication.NewWithIdentifiersAndData(ctx, ids, nil))
+	return ttnpb.Empty, nil
+}
+
+func (is *IdentityServer) issueDevEUI(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*ttnpb.IssueDevEUIResponse, error) {
+	if err := rights.RequireApplication(store.WithSoftDeleted(ctx, false), *ids, ttnpb.RIGHT_APPLICATION_DEVICES_WRITE); err != nil {
+		return nil, err
+	}
+	if !is.config.DevEUIBlock.Enabled {
+		return nil, errDevEUIIssuingNotEnabled.New()
+	}
+	res := &ttnpb.IssueDevEUIResponse{}
+	err := is.withDatabase(ctx, func(db *gorm.DB) error {
+		devEUI, err := store.GetEUIStore(db).IssueDevEUIForApplication(ctx, ids, is.config.DevEUIBlock.ApplicationLimit)
+		if err != nil {
+			return err
+		}
+		res.DevEui = *devEUI
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	events.Publish(evtIssueDevEUIForApplication.NewWithIdentifiersAndData(ctx, ids, nil))
+	return res, nil
 }
 
 type applicationRegistry struct {
@@ -273,6 +383,18 @@ func (ar *applicationRegistry) Update(ctx context.Context, req *ttnpb.UpdateAppl
 	return ar.updateApplication(ctx, req)
 }
 
-func (ar *applicationRegistry) Delete(ctx context.Context, req *ttnpb.ApplicationIdentifiers) (*types.Empty, error) {
+func (ar *applicationRegistry) Delete(ctx context.Context, req *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
 	return ar.deleteApplication(ctx, req)
+}
+
+func (ar *applicationRegistry) Purge(ctx context.Context, req *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
+	return ar.purgeApplication(ctx, req)
+}
+
+func (ar *applicationRegistry) Restore(ctx context.Context, req *ttnpb.ApplicationIdentifiers) (*pbtypes.Empty, error) {
+	return ar.restoreApplication(ctx, req)
+}
+
+func (ar *applicationRegistry) IssueDevEUI(ctx context.Context, req *ttnpb.ApplicationIdentifiers) (*ttnpb.IssueDevEUIResponse, error) {
+	return ar.issueDevEUI(ctx, req)
 }

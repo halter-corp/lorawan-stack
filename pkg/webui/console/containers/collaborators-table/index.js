@@ -18,9 +18,9 @@ import { connect } from 'react-redux'
 
 import Icon from '@ttn-lw/components/icon'
 
-import Message from '@ttn-lw/lib/components/message'
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
-import FetchTable from '@console/containers/fetch-table'
+import Message from '@ttn-lw/lib/components/message'
 
 import { getCollaboratorId } from '@ttn-lw/lib/selectors/id'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
@@ -48,7 +48,7 @@ export default class CollaboratorsTable extends Component {
       {
         name: 'ids',
         displayName: m.id,
-        render(ids) {
+        render: ids => {
           const isUser = 'user_ids' in ids
           const collaboratorId = getCollaboratorId({ ids })
           if (isUser && collaboratorId === props.currentUserId) {
@@ -65,7 +65,7 @@ export default class CollaboratorsTable extends Component {
       {
         name: 'ids',
         displayName: sharedMessages.type,
-        render(ids) {
+        render: ids => {
           const isUser = 'user_ids' in ids
           const icon = isUser ? 'user' : 'organization'
 
@@ -80,7 +80,7 @@ export default class CollaboratorsTable extends Component {
       {
         name: 'rights',
         displayName: sharedMessages.rights,
-        render(rights) {
+        render: rights => {
           for (let i = 0; i < rights.length; i++) {
             if (rights[i].includes('_ALL')) {
               return <Message content={sharedMessages.all} />

@@ -43,7 +43,7 @@ func (s *oauthStore) ListAuthorizations(ctx context.Context, userIDs *ttnpb.User
 	})
 	query = query.Order(orderFromContext(ctx, "client_authorizations", "created_at", "DESC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
-		countTotal(ctx, query.Model(UserSession{}))
+		countTotal(ctx, query.Model(ClientAuthorization{}))
 		query = query.Limit(limit).Offset(offset)
 	}
 	err = query.Preload("Client").Find(&authModels).Error
@@ -54,7 +54,7 @@ func (s *oauthStore) ListAuthorizations(ctx context.Context, userIDs *ttnpb.User
 	authProtos := make([]*ttnpb.OAuthClientAuthorization, len(authModels))
 	for i, authModel := range authModels {
 		authProto := authModel.toPB()
-		authProto.UserIDs.UserID = userIDs.UserID
+		authProto.UserIds.UserId = userIDs.UserId
 		authProtos[i] = authProto
 	}
 	return authProtos, nil
@@ -77,23 +77,23 @@ func (s *oauthStore) GetAuthorization(ctx context.Context, userIDs *ttnpb.UserId
 	}).First(&authModel).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, errAuthorizationNotFound.WithAttributes("user_id", userIDs.UserID, "client_id", clientIDs.ClientID)
+			return nil, errAuthorizationNotFound.WithAttributes("user_id", userIDs.UserId, "client_id", clientIDs.ClientId)
 		}
 		return nil, err
 	}
 	authProto := authModel.toPB()
-	authProto.ClientIDs.ClientID = clientIDs.ClientID
-	authProto.UserIDs.UserID = userIDs.UserID
+	authProto.ClientIds.ClientId = clientIDs.ClientId
+	authProto.UserIds.UserId = userIDs.UserId
 	return authProto, nil
 }
 
 func (s *oauthStore) Authorize(ctx context.Context, authorization *ttnpb.OAuthClientAuthorization) (*ttnpb.OAuthClientAuthorization, error) {
 	defer trace.StartRegion(ctx, "create or update authorization").End()
-	client, err := s.findEntity(ctx, authorization.ClientIDs, "id")
+	client, err := s.findEntity(ctx, authorization.ClientIds, "id")
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.findEntity(ctx, authorization.UserIDs, "id")
+	user, err := s.findEntity(ctx, authorization.UserIds, "id")
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func (s *oauthStore) Authorize(ctx context.Context, authorization *ttnpb.OAuthCl
 		return nil, query.Error
 	}
 	authProto := authModel.toPB()
-	authProto.ClientIDs = authorization.ClientIDs
-	authProto.UserIDs = authorization.UserIDs
+	authProto.ClientIds = authorization.ClientIds
+	authProto.UserIds = authorization.UserIds
 	return authProto, nil
 }
 
@@ -140,13 +140,59 @@ func (s *oauthStore) DeleteAuthorization(ctx context.Context, userIDs *ttnpb.Use
 	return err
 }
 
-func (s *oauthStore) CreateAuthorizationCode(ctx context.Context, code *ttnpb.OAuthAuthorizationCode) error {
-	defer trace.StartRegion(ctx, "create authorization code").End()
-	client, err := s.findEntity(ctx, code.ClientIDs, "id")
+func (s *oauthStore) DeleteUserAuthorizations(ctx context.Context, userIDs *ttnpb.UserIdentifiers) error {
+	defer trace.StartRegion(ctx, "delete user authorizations").End()
+	user, err := s.findDeletedEntity(ctx, userIDs, "id")
 	if err != nil {
 		return err
 	}
-	user, err := s.findEntity(ctx, code.UserIDs, "id")
+	err = s.query(ctx, ClientAuthorization{}).Where(ClientAuthorization{
+		UserID: user.PrimaryKey(),
+	}).Delete(&ClientAuthorization{}).Error
+	if err != nil {
+		return err
+	}
+	err = s.query(ctx, AuthorizationCode{}).Where(AuthorizationCode{
+		UserID: user.PrimaryKey(),
+	}).Delete(&AuthorizationCode{}).Error
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, AccessToken{}).Where(AccessToken{
+		UserID: user.PrimaryKey(),
+	}).Delete(&AccessToken{}).Error
+}
+
+func (s *oauthStore) DeleteClientAuthorizations(ctx context.Context, clientIDs *ttnpb.ClientIdentifiers) error {
+	defer trace.StartRegion(ctx, "delete client authorizations").End()
+	client, err := s.findDeletedEntity(ctx, clientIDs, "id")
+	if err != nil {
+		return err
+	}
+	err = s.query(ctx, ClientAuthorization{}).Where(ClientAuthorization{
+		ClientID: client.PrimaryKey(),
+	}).Delete(&ClientAuthorization{}).Error
+	if err != nil {
+		return err
+	}
+	err = s.query(ctx, AuthorizationCode{}).Where(AuthorizationCode{
+		ClientID: client.PrimaryKey(),
+	}).Delete(&AuthorizationCode{}).Error
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, AccessToken{}).Where(AccessToken{
+		ClientID: client.PrimaryKey(),
+	}).Delete(&AccessToken{}).Error
+}
+
+func (s *oauthStore) CreateAuthorizationCode(ctx context.Context, code *ttnpb.OAuthAuthorizationCode) error {
+	defer trace.StartRegion(ctx, "create authorization code").End()
+	client, err := s.findEntity(ctx, code.ClientIds, "id")
+	if err != nil {
+		return err
+	}
+	user, err := s.findEntity(ctx, code.UserIds, "id")
 	if err != nil {
 		return err
 	}
@@ -169,7 +215,7 @@ func (s *oauthStore) CreateAuthorizationCode(ctx context.Context, code *ttnpb.OA
 func (s *oauthStore) GetAuthorizationCode(ctx context.Context, code string) (*ttnpb.OAuthAuthorizationCode, error) {
 	defer trace.StartRegion(ctx, "get authorization code").End()
 	if code == "" {
-		return nil, errAuthorizationCodeNotFound.New()
+		return nil, errAuthorizationCodeNotFound.WithAttributes("authorization_code", code)
 	}
 	var codeModel AuthorizationCode
 	err := s.query(ctx, AuthorizationCode{}).Where(AuthorizationCode{
@@ -177,7 +223,7 @@ func (s *oauthStore) GetAuthorizationCode(ctx context.Context, code string) (*tt
 	}).Preload("Client").Preload("User.Account").First(&codeModel).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, errAuthorizationCodeNotFound.New()
+			return nil, errAuthorizationCodeNotFound.WithAttributes("authorization_code", code)
 		}
 	}
 	return codeModel.toPB(), nil
@@ -185,7 +231,7 @@ func (s *oauthStore) GetAuthorizationCode(ctx context.Context, code string) (*tt
 
 func (s *oauthStore) DeleteAuthorizationCode(ctx context.Context, code string) error {
 	if code == "" {
-		return errAuthorizationCodeNotFound.New()
+		return errAuthorizationCodeNotFound.WithAttributes("authorization_code", code)
 	}
 	defer trace.StartRegion(ctx, "delete authorization code").End()
 	err := s.query(ctx, AuthorizationCode{}).Where(AuthorizationCode{
@@ -193,7 +239,7 @@ func (s *oauthStore) DeleteAuthorizationCode(ctx context.Context, code string) e
 	}).Delete(&AuthorizationCode{}).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return errAuthorizationCodeNotFound.New()
+			return errAuthorizationCodeNotFound.WithAttributes("authorization_code", code)
 		}
 		return err
 	}
@@ -202,11 +248,11 @@ func (s *oauthStore) DeleteAuthorizationCode(ctx context.Context, code string) e
 
 func (s *oauthStore) CreateAccessToken(ctx context.Context, token *ttnpb.OAuthAccessToken, previousID string) error {
 	defer trace.StartRegion(ctx, "create access token").End()
-	client, err := s.findEntity(ctx, token.ClientIDs, "id")
+	client, err := s.findEntity(ctx, token.ClientIds, "id")
 	if err != nil {
 		return err
 	}
-	user, err := s.findEntity(ctx, token.UserIDs, "id")
+	user, err := s.findEntity(ctx, token.UserIds, "id")
 	if err != nil {
 		return err
 	}
@@ -244,7 +290,7 @@ func (s *oauthStore) ListAccessTokens(ctx context.Context, userIDs *ttnpb.UserId
 	})
 	query = query.Order(orderFromContext(ctx, "access_tokens", "created_at", "DESC"))
 	if limit, offset := limitAndOffsetFromContext(ctx); limit != 0 {
-		countTotal(ctx, query.Model(UserSession{}))
+		countTotal(ctx, query.Model(AccessToken{}))
 		query = query.Limit(limit).Offset(offset)
 	}
 	err = query.Find(&tokenModels).Error
@@ -255,8 +301,8 @@ func (s *oauthStore) ListAccessTokens(ctx context.Context, userIDs *ttnpb.UserId
 	tokenProtos := make([]*ttnpb.OAuthAccessToken, len(tokenModels))
 	for i, tokenModel := range tokenModels {
 		tokenProto := tokenModel.toPB()
-		tokenProto.ClientIDs.ClientID = clientIDs.ClientID
-		tokenProto.UserIDs.UserID = userIDs.UserID
+		tokenProto.ClientIds.ClientId = clientIDs.ClientId
+		tokenProto.UserIds.UserId = userIDs.UserId
 		tokenProtos[i] = tokenProto
 	}
 	return tokenProtos, nil
@@ -264,7 +310,7 @@ func (s *oauthStore) ListAccessTokens(ctx context.Context, userIDs *ttnpb.UserId
 
 func (s *oauthStore) GetAccessToken(ctx context.Context, id string) (*ttnpb.OAuthAccessToken, error) {
 	if id == "" {
-		return nil, errAccessTokenNotFound.New()
+		return nil, errAccessTokenNotFound.WithAttributes("access_token_id", id)
 	}
 	defer trace.StartRegion(ctx, "get access token").End()
 	var tokenModel struct {
@@ -279,18 +325,18 @@ func (s *oauthStore) GetAccessToken(ctx context.Context, id string) (*ttnpb.OAut
 		Where(AccessToken{TokenID: id}).Scan(&tokenModel).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, errAccessTokenNotFound.New()
+			return nil, errAccessTokenNotFound.WithAttributes("access_token_id", id)
 		}
 	}
 	tokenProto := tokenModel.AccessToken.toPB()
-	tokenProto.ClientIDs.ClientID = tokenModel.FriendlyClientID
-	tokenProto.UserIDs.UserID = tokenModel.FriendlyUserID
+	tokenProto.ClientIds.ClientId = tokenModel.FriendlyClientID
+	tokenProto.UserIds.UserId = tokenModel.FriendlyUserID
 	return tokenProto, nil
 }
 
 func (s *oauthStore) DeleteAccessToken(ctx context.Context, id string) error {
 	if id == "" {
-		return errAccessTokenNotFound.New()
+		return errAccessTokenNotFound.WithAttributes("access_token_id", id)
 	}
 	defer trace.StartRegion(ctx, "delete access token").End()
 	err := s.query(ctx, AccessToken{}).Where(AccessToken{
@@ -298,7 +344,7 @@ func (s *oauthStore) DeleteAccessToken(ctx context.Context, id string) error {
 	}).Delete(&AccessToken{}).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return errAccessTokenNotFound.New()
+			return errAccessTokenNotFound.WithAttributes("access_token_id", id)
 		}
 		return err
 	}

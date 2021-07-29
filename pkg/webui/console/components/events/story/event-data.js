@@ -925,7 +925,7 @@ export const deviceEvents = [
       raw_payload: 'QAsAACeCygADAwHUcPJPkw==',
       payload: {
         m_hdr: {
-          m_type: 'UNCONFIRMED_UP',
+          m_type: 'CONFIRMED_UP',
         },
         mic: 'cPJPkw==',
         mac_payload: {
@@ -995,6 +995,160 @@ export const deviceEvents = [
     },
     unique_id: '01EK2R8FQNEB3B8SFNH0G68KH3',
   },
+  {
+    name: 'as.up.data.forward',
+    time: '2021-07-07T10:50:00.680482189Z',
+    identifiers: [
+      {
+        device_ids: {
+          device_id: 'test-dev-01',
+          application_ids: {
+            application_id: 'tti-ch-test-app',
+          },
+        },
+      },
+      {
+        device_ids: {
+          device_id: 'test-dev-01',
+          application_ids: {
+            application_id: 'tti-ch-test-app',
+          },
+          dev_eui: '0004A30B001C1452',
+          join_eui: '800000000000000C',
+          dev_addr: '26001B76',
+        },
+      },
+    ],
+    data: {
+      '@type': 'type.googleapis.com/ttn.lorawan.v3.ApplicationUp',
+      end_device_ids: {
+        device_id: 'test-dev-01',
+        application_ids: {
+          application_id: 'tti-ch-test-app',
+        },
+        dev_eui: '0004A30B001C1452',
+        join_eui: '800000000000000C',
+        dev_addr: '26001B76',
+      },
+      correlation_ids: [
+        'as:up:01FA09DFHJ0FSWAPWDD3E1RDG6',
+        'gs:conn:01FA04C0D25ZM679FXF7QWM6KP',
+        'gs:up:host:01FA04C0DNXVBNVWGSE75FVSA6',
+        'gs:uplink:01FA09DF9YWNEX9JG4HEHWFH7P',
+        'ns:uplink:01FA09DFA04J4K1MNR9BRR965B',
+        'rpc:/ttn.lorawan.v3.GsNs/HandleUplink:01FA09DFA0AX0HZF8K14SY5FGD',
+        'rpc:/ttn.lorawan.v3.NsAs/HandleUplink:01FA09DFGTZGDEHM5SVR1N8GTH',
+      ],
+      received_at: '2021-07-07T10:50:00.647244290Z',
+      uplink_message: {
+        session_key_id: 'AXp0WUMkz75V+jY5OX88DA==',
+        f_port: 1,
+        f_cnt: 420,
+        frm_payload: 'AQ==',
+        decoded_payload: {
+          bytes: [1],
+        },
+        rx_metadata: [
+          {
+            gateway_ids: {
+              gateway_id: 'ttig-12e8',
+              eui: '58A0CBFFFE8012E8',
+            },
+            time: '2021-07-07T10:50:00.328195095Z',
+            timestamp: 994712508,
+            rssi: -89,
+            channel_rssi: -89,
+            snr: 9,
+            uplink_token:
+              'ChcKFQoJdHRpZy0xMmU4EghYoMv//oAS6BC8t6jaAxoMCNiNlocGEJy7s7YBIOCs8cv5mQE=',
+          },
+        ],
+        settings: {
+          data_rate: {
+            lora: {
+              bandwidth: 125000,
+              spreading_factor: 7,
+            },
+          },
+          data_rate_index: 5,
+          coding_rate: '4/5',
+          frequency: '867900000',
+          timestamp: 994712508,
+          time: '2021-07-07T10:50:00.328195095Z',
+        },
+        received_at: '2021-07-07T10:50:00.384736040Z',
+        consumed_airtime: '0.046336s',
+      },
+    },
+    correlation_ids: [
+      'as:up:01FA09DFHJ0FSWAPWDD3E1RDG6',
+      'gs:conn:01FA04C0D25ZM679FXF7QWM6KP',
+      'gs:up:host:01FA04C0DNXVBNVWGSE75FVSA6',
+      'gs:uplink:01FA09DF9YWNEX9JG4HEHWFH7P',
+      'ns:uplink:01FA09DFA04J4K1MNR9BRR965B',
+      'rpc:/ttn.lorawan.v3.GsNs/HandleUplink:01FA09DFA0AX0HZF8K14SY5FGD',
+      'rpc:/ttn.lorawan.v3.NsAs/HandleUplink:01FA09DFGTZGDEHM5SVR1N8GTH',
+    ],
+    origin: 'ip-redacted.eu-west-1.compute.internal',
+    context: {
+      'tenant-id': 'CgN0dGk=',
+    },
+    visibility: {
+      rights: ['RIGHT_APPLICATION_TRAFFIC_READ', 'RIGHT_APPLICATION_TRAFFIC_READ'],
+    },
+    unique_id: '01FA09DFK84FJP29A5SGZT4AXP',
+  },
+  {
+    name: 'as.down.data.forward',
+    time: '2021-07-07T16:05:48.130282074Z',
+    identifiers: [
+      {
+        device_ids: {
+          device_id: 'ttn-uno',
+          application_ids: {
+            application_id: 'tti-playground',
+          },
+        },
+      },
+      {
+        device_ids: {
+          device_id: 'ttn-uno',
+          application_ids: {
+            application_id: 'tti-playground',
+          },
+        },
+      },
+    ],
+    data: {
+      '@type': 'type.googleapis.com/ttn.lorawan.v3.ApplicationDownlink',
+      f_port: 1,
+      frm_payload: 'EjRWeA==',
+      correlation_ids: [
+        'as:downlink:01FA0VFPY8V67MGSEVGFAZ6TMV',
+        'rpc:/ttn.lorawan.v3.AppAs/DownlinkQueuePush:d394eb5c-0d7b-403b-afc1-6da77b84f8c4',
+      ],
+    },
+    correlation_ids: [
+      'as:downlink:01FA0VFPY8V67MGSEVGFAZ6TMV',
+      'rpc:/ttn.lorawan.v3.AppAs/DownlinkQueuePush:d394eb5c-0d7b-403b-afc1-6da77b84f8c4',
+    ],
+    origin: 'ip-redacted.eu-west-1.compute.internal',
+    context: {
+      'tenant-id': 'CgN0dGk=',
+    },
+    visibility: {
+      rights: ['RIGHT_APPLICATION_TRAFFIC_READ', 'RIGHT_APPLICATION_TRAFFIC_READ'],
+    },
+    authentication: {
+      type: 'Bearer',
+      token_type: 'AccessToken',
+      token_id: '7IGVW7HUOO6YUHHVB7INWYXFXJSXBXKGINAKYYI',
+    },
+    remote_ip: '11.111.1.111',
+    user_agent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36',
+    unique_id: '01FA0VFPZ2SZ66BXHT3HZJFAEC',
+  },
 ].reverse()
 
 export const events = [
@@ -1020,6 +1174,60 @@ export const events = [
 ]
 
 export const gatewayEvents = [
+  {
+    name: 'gs.down.send',
+    time: '2021-04-29T10:14:05.406196093Z',
+    identifiers: [
+      {
+        gateway_ids: {
+          gateway_id: 'tektelic-adrian-ci392',
+          eui: '647FDAFFFE0078B8',
+        },
+      },
+    ],
+    data: {
+      '@type': 'type.googleapis.com/ttn.lorawan.v3.DownlinkMessage',
+      raw_payload: 'oGJQCCaAcgUBIGSB4tU=',
+      request: {
+        downlink_paths: [
+          {
+            uplink_token:
+              'ChsKGQoNdGVrdGVsaWMta29uYRIIZH/a//4Ae9QQ/OH4swwaDAjrjaqEBhCPxrzRAyDgsL3n9a0R',
+          },
+        ],
+        rx1_delay: 5,
+        rx1_data_rate_index: 5,
+        rx1_frequency: '868100000',
+        rx2_data_rate_index: 3,
+        rx2_frequency: '869525000',
+        frequency_plan_id: 'EU_863_870_TTN',
+      },
+      correlation_ids: [
+        'as:downlink:01F4EHY37VFHS2NH33XWQZ7K8T',
+        'gs:conn:01F4C94B13YZRGP62GET7TP2GR',
+        'gs:up:host:01F4C94B1BM14V4Y6MER7VA470',
+        'gs:uplink:01F4EHY2E8PRMKEQWCB2DV96M5',
+        'ns:downlink:01F4EHY3TWB2HBDQ6YBMFV2TZ6',
+        'ns:uplink:01F4EHY2F2SQ93K4KPGEHBQT7T',
+        'rpc:/ttn.lorawan.v3.AppAs/DownlinkQueueReplace:5f808fba-45f1-44c9-a496-b7d3a516c20e',
+        'rpc:/ttn.lorawan.v3.GsNs/HandleUplink:01F4EHY2F2EQ9F0RKDWHSCK5RG',
+        'gs:conn:01F4C94B13YZRGP62GET7TP2GR',
+        'rpc:/ttn.lorawan.v3.NsGs/ScheduleDownlink:01F4EHY3TYKZV59V52SJEMVQMW',
+      ],
+    },
+    correlation_ids: [
+      'gs:conn:01F4C94B13YZRGP62GET7TP2GR',
+      'rpc:/ttn.lorawan.v3.NsGs/ScheduleDownlink:01F4EHY3TYKZV59V52SJEMVQMW',
+    ],
+    origin: 'ip-10-23-13-196.eu-west-1.compute.internal',
+    context: {
+      'tenant-id': '',
+    },
+    visibility: {
+      rights: ['RIGHT_GATEWAY_TRAFFIC_READ'],
+    },
+    unique_id: '01F4EHY3TYN2ESW7P5TKNFQ7T7',
+  },
   {
     name: 'gs.up.forward',
     time: '2020-09-25T13:22:00.095877998Z',
@@ -1266,92 +1474,6 @@ export const gatewayEvents = [
       rights: ['RIGHT_GATEWAY_TRAFFIC_READ'],
     },
     unique_id: '01EK2PTNW492RXB0MJ2Y0G57P2',
-  },
-  {
-    name: 'gs.status.forward',
-    time: '2020-09-25T13:21:47.730782632Z',
-    identifiers: [
-      {
-        gateway_ids: {
-          gateway_id: 'tektelic-adrian-ci392',
-          eui: '647FDAFFFE0078B8',
-        },
-      },
-    ],
-    data: {
-      '@type': 'type.googleapis.com/ttn.lorawan.v3.GatewayStatus',
-      time: '2020-09-25T13:21:47Z',
-      boot_time: '0001-01-01T00:00:00Z',
-      versions: {
-        'ttn-lw-gateway-server': 'v3.9.4-SNAPSHOT-2d993aba1',
-      },
-      ip: ['31.201.88.79'],
-      metrics: {
-        ackr: 20,
-        rxfw: 4,
-        rxin: 5,
-        rxok: 4,
-        temp: 60,
-        txin: 3,
-        txok: 2,
-      },
-    },
-    correlation_ids: [
-      'gs:conn:01EK0M776NK47SSRM7TTPE27C5',
-      'gs:status:01EK2PTJ6HA7YGQCQ3MZEBZQ92',
-      'gs:up:host:01EK0M777XK3QN2Z2ZWV97K5ZZ',
-    ],
-    origin: 'ip-10-20-7-189.eu-west-1.compute.internal',
-    context: {
-      'tenant-id': 'CgN0dGk=',
-    },
-    visibility: {
-      rights: ['RIGHT_GATEWAY_STATUS_READ'],
-    },
-    unique_id: '01EK2PTJ6J3DQT56YD475EFC9A',
-  },
-  {
-    name: 'gs.status.forward',
-    time: '2020-09-25T13:21:47.730782452Z',
-    identifiers: [
-      {
-        gateway_ids: {
-          gateway_id: 'tektelic-adrian-ci392',
-          eui: '647FDAFFFE0078B8',
-        },
-      },
-    ],
-    data: {
-      '@type': 'type.googleapis.com/ttn.lorawan.v3.GatewayStatus',
-      time: '2020-09-25T13:21:47Z',
-      boot_time: '0001-01-01T00:00:00Z',
-      versions: {
-        'ttn-lw-gateway-server': 'v3.9.4-SNAPSHOT-2d993aba1',
-      },
-      ip: ['31.201.88.79'],
-      metrics: {
-        ackr: 20,
-        rxfw: 4,
-        rxin: 5,
-        rxok: 4,
-        temp: 60,
-        txin: 3,
-        txok: 2,
-      },
-    },
-    correlation_ids: [
-      'gs:conn:01EK0M776NK47SSRM7TTPE27C5',
-      'gs:status:01EK2PTJ6HA7YGQCQ3MZEBZQ92',
-      'gs:up:host:01EK0M777XJ65ZQXMSQ6GX04N4',
-    ],
-    origin: 'ip-10-20-7-189.eu-west-1.compute.internal',
-    context: {
-      'tenant-id': 'CgN0dGk=',
-    },
-    visibility: {
-      rights: ['RIGHT_GATEWAY_STATUS_READ'],
-    },
-    unique_id: '01EK2PTJ6J52QTD16HF84R2C89',
   },
   {
     name: 'gs.status.receive',

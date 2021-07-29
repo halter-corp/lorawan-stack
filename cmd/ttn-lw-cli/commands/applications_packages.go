@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
@@ -38,6 +38,10 @@ var (
 
 	selectAllApplicationPackageAssociationsFlags        = util.SelectAllFlagSet("application package association")
 	selectAllApplicationPackageDefaultAssociationsFlags = util.SelectAllFlagSet("application package default association")
+
+	packageNeedsData = map[string]struct{}{
+		"lora-cloud-device-management-v1": {},
+	}
 )
 
 func applicationPackageAssociationIDFlags() *pflag.FlagSet {
@@ -95,8 +99,8 @@ func getApplicationPackageAssociationID(flagSet *pflag.FlagSet, args []string) (
 	}
 	return &ttnpb.ApplicationPackageAssociationIdentifiers{
 		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: applicationID},
-			DeviceID:               deviceID,
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: applicationID},
+			DeviceId:               deviceID,
 		},
 		FPort: uint32(fport),
 	}, nil
@@ -132,7 +136,7 @@ func getApplicationPackageDefaultAssociationID(flagSet *pflag.FlagSet, args []st
 		return nil, errNoFPort
 	}
 	return &ttnpb.ApplicationPackageDefaultAssociationIdentifiers{
-		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: applicationID},
+		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: applicationID},
 		FPort:                  uint32(fport),
 	}, nil
 }
@@ -185,7 +189,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPackageRegistry/GetAssociation"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPackageRegistry/GetAssociation"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -193,7 +197,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPackageRegistryClient(as).GetAssociation(ctx, &ttnpb.GetApplicationPackageAssociationRequest{
 				ApplicationPackageAssociationIdentifiers: *assocID,
-				FieldMask:                                types.FieldMask{Paths: paths},
+				FieldMask:                                &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -218,7 +222,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPackageRegistry/ListAssociations"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPackageRegistry/ListAssociations"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -229,7 +233,7 @@ var (
 				EndDeviceIdentifiers: *devID,
 				Limit:                limit,
 				Page:                 page,
-				FieldMask:            types.FieldMask{Paths: paths},
+				FieldMask:            &pbtypes.FieldMask{Paths: paths},
 			}, opt)
 			if err != nil {
 				return err
@@ -258,9 +262,11 @@ var (
 
 			reader, err := getDataReader("data", cmd.Flags())
 			if err != nil {
-				logger.WithError(err).Warn("Package data not available")
+				if _, needsData := packageNeedsData[association.PackageName]; needsData {
+					logger.WithError(err).Warn("Package data not available")
+				}
 			} else {
-				var st types.Struct
+				var st pbtypes.Struct
 				err := jsonpb.TTN().NewDecoder(reader).Decode(&st)
 				if err != nil {
 					return err
@@ -276,7 +282,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPackageRegistryClient(as).SetAssociation(ctx, &ttnpb.SetApplicationPackageAssociationRequest{
 				ApplicationPackageAssociation: association,
-				FieldMask:                     types.FieldMask{Paths: paths},
+				FieldMask:                     &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -328,7 +334,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPackageRegistry/GetDefaultAssociation"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPackageRegistry/GetDefaultAssociation"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -336,7 +342,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPackageRegistryClient(as).GetDefaultAssociation(ctx, &ttnpb.GetApplicationPackageDefaultAssociationRequest{
 				ApplicationPackageDefaultAssociationIdentifiers: *assocID,
-				FieldMask: types.FieldMask{Paths: paths},
+				FieldMask: &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -361,7 +367,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.ApplicationPackageRegistry/ListDefaultAssociations"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationPackageRegistry/ListDefaultAssociations"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -372,7 +378,7 @@ var (
 				ApplicationIdentifiers: *appID,
 				Limit:                  limit,
 				Page:                   page,
-				FieldMask:              types.FieldMask{Paths: paths},
+				FieldMask:              &pbtypes.FieldMask{Paths: paths},
 			}, opt)
 			if err != nil {
 				return err
@@ -401,9 +407,11 @@ var (
 
 			reader, err := getDataReader("data", cmd.Flags())
 			if err != nil {
-				logger.WithError(err).Warn("Package data not available")
+				if _, needsData := packageNeedsData[association.PackageName]; needsData {
+					logger.WithError(err).Warn("Package data not available")
+				}
 			} else {
-				var st types.Struct
+				var st pbtypes.Struct
 				err := jsonpb.TTN().NewDecoder(reader).Decode(&st)
 				if err != nil {
 					return err
@@ -419,7 +427,7 @@ var (
 			}
 			res, err := ttnpb.NewApplicationPackageRegistryClient(as).SetDefaultAssociation(ctx, &ttnpb.SetApplicationPackageDefaultAssociationRequest{
 				ApplicationPackageDefaultAssociation: association,
-				FieldMask:                            types.FieldMask{Paths: paths},
+				FieldMask:                            &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err

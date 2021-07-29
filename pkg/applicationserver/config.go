@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/bluele/gcache"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/distribution"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages"
 	loraclouddevicemanagementv1 "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages/loradms/v1"
+	loracloudgeolocationv3 "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages/loragls/v3"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
@@ -30,16 +32,6 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
-)
-
-// LinkMode defines how applications are linked to their Network Server.
-type LinkMode int
-
-const (
-	// LinkAll links all applications in the link registry to their Network Server automatically.
-	LinkAll LinkMode = iota
-	// LinkExplicit links applications on request.
-	LinkExplicit
 )
 
 // InteropClient is a client, which Application Server can use for interoperability.
@@ -55,8 +47,10 @@ type InteropConfig struct {
 
 // EndDeviceFetcherConfig represents configuration for the end device fetcher in Application Server.
 type EndDeviceFetcherConfig struct {
-	Fetcher EndDeviceFetcher            `name:"-"`
-	Cache   EndDeviceFetcherCacheConfig `name:"cache" description:"Cache configuration options for the end device fetcher"`
+	Fetcher        EndDeviceFetcher                     `name:"-"`
+	Timeout        time.Duration                        `name:"timeout" description:"Timeout of the end device retrival operation"`
+	Cache          EndDeviceFetcherCacheConfig          `name:"cache" description:"Cache configuration options for the end device fetcher"`
+	CircuitBreaker EndDeviceFetcherCircuitBreakerConfig `name:"circuit-breaker" description:"Circuit breaker options for the end device fetcher"`
 }
 
 // EndDeviceFetcherCacheConfig represents configuration for device information caching in Application Server.
@@ -66,11 +60,24 @@ type EndDeviceFetcherCacheConfig struct {
 	Size   int           `name:"size" description:"Cache size"`
 }
 
+type EndDeviceFetcherCircuitBreakerConfig struct {
+	Enable    bool          `name:"enable" description:"Enable circuit breaker behavior on burst errors"`
+	Timeout   time.Duration `name:"timeout" description:"Timeout after which the circuit breaker closes"`
+	Threshold int           `name:"threshold" description:"Number of failed fetching attempts after which the circuit breaker opens"`
+}
+
+type FormattersConfig struct {
+	MaxParameterLength int `name:"max-parameter-length" description:"Maximum allowed size for length of formatter parameters (payload formatter scripts)"`
+}
+
 // Config represents the ApplicationServer configuration.
 type Config struct {
-	LinkMode         string                    `name:"link-mode" description:"Mode to link applications to their Network Server (all, explicit)"`
+	LinkMode         string                    `name:"link-mode" description:"Deprecated - mode to link applications to their Network Server (all, explicit)"`
 	Devices          DeviceRegistry            `name:"-"`
 	Links            LinkRegistry              `name:"-"`
+	UplinkStorage    UplinkStorageConfig       `name:"uplink-storage" description:"Application uplinks storage configuration"`
+	Formatters       FormattersConfig          `name:"formatters" description:"Payload formatters configuration"`
+	Distribution     DistributionConfig        `name:"distribution" description:"Distribution configuration"`
 	EndDeviceFetcher EndDeviceFetcherConfig    `name:"fetcher" description:"End Device fetcher configuration"`
 	MQTT             config.MQTT               `name:"mqtt" description:"MQTT configuration"`
 	Webhooks         WebhooksConfig            `name:"webhooks" description:"Webhooks configuration"`
@@ -80,17 +87,9 @@ type Config struct {
 	DeviceKEKLabel   string                    `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`
 }
 
-var errLinkMode = errors.DefineInvalidArgument("link_mode", "invalid link mode `{value}`")
-
-// GetLinkMode returns the converted configuration's link mode to LinkMode.
-func (c Config) GetLinkMode() (LinkMode, error) {
-	switch c.LinkMode {
-	case "all":
-		return LinkAll, nil
-	case "explicit":
-		return LinkExplicit, nil
-	default:
-		return LinkMode(0), errLinkMode.WithAttributes("value", c.LinkMode)
+func (c Config) toProto() *ttnpb.AsConfiguration {
+	return &ttnpb.AsConfiguration{
+		Pubsub: c.PubSub.toProto(),
 	}
 }
 
@@ -98,6 +97,12 @@ var (
 	errWebhooksRegistry = errors.DefineInvalidArgument("webhooks_registry", "invalid webhooks registry")
 	errWebhooksTarget   = errors.DefineInvalidArgument("webhooks_target", "invalid webhooks target `{target}`")
 )
+
+// UplinkStorageConfig defines the configuration of the application uplinks storage used by integrations.
+type UplinkStorageConfig struct {
+	Registry ApplicationUplinkRegistry `name:"-"`
+	Limit    int64                     `name:"limit" description:"Number of application uplinks to be stored"`
+}
 
 // WebhooksConfig defines the configuration of the webhooks integration.
 type WebhooksConfig struct {
@@ -110,9 +115,42 @@ type WebhooksConfig struct {
 	Downlinks web.DownlinksConfig `name:"downlink" description:"The downlink queue operations configuration"`
 }
 
+// DistributionConfig contains the upstream traffic distribution configuration of the Application Server.
+type DistributionConfig struct {
+	PubSub  distribution.PubSub `name:"-"`
+	Timeout time.Duration       `name:"timeout" description:"Wait timeout of an empty subscription set"`
+}
+
 // PubSubConfig contains go-cloud pub/sub configuration of the Application Server.
 type PubSubConfig struct {
 	Registry pubsub.Registry `name:"-"`
+
+	Providers map[string]string `name:"providers" description:"Controls the status of each provider (enabled, disabled, warning)"`
+}
+
+func (c PubSubConfig) toProto() *ttnpb.AsConfiguration_PubSub {
+	toStatus := func(s string) ttnpb.AsConfiguration_PubSub_Providers_Status {
+		switch s {
+		case "enabled":
+			return ttnpb.AsConfiguration_PubSub_Providers_ENABLED
+		case "warning":
+			return ttnpb.AsConfiguration_PubSub_Providers_WARNING
+		case "disabled":
+			return ttnpb.AsConfiguration_PubSub_Providers_DISABLED
+		default:
+			panic("unknown provider status")
+		}
+	}
+	providers := &ttnpb.AsConfiguration_PubSub_Providers{}
+	if status, ok := c.Providers["mqtt"]; ok {
+		providers.Mqtt = toStatus(status)
+	}
+	if status, ok := c.Providers["nats"]; ok {
+		providers.Nats = toStatus(status)
+	}
+	return &ttnpb.AsConfiguration_PubSub{
+		Providers: providers,
+	}
 }
 
 // ApplicationPackagesConfig contains application packages associations configuration.
@@ -129,10 +167,13 @@ func (c WebhooksConfig) NewWebhooks(ctx context.Context, server io.Server) (web.
 	case "":
 		return nil, nil
 	case "direct":
+		client, err := server.HTTPClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+		client.Timeout = c.Timeout
 		target = &web.HTTPClientSink{
-			Client: &http.Client{
-				Timeout: c.Timeout,
-			},
+			Client: client,
 		}
 	default:
 		return nil, errWebhooksTarget.WithAttributes("target", c.Target)
@@ -154,7 +195,7 @@ func (c WebhooksConfig) NewWebhooks(ctx context.Context, server io.Server) (web.
 			}
 		}()
 	}
-	return web.NewWebhooks(ctx, server, c.Registry, target, c.Downlinks), nil
+	return web.NewWebhooks(ctx, server, c.Registry, target, c.Downlinks)
 }
 
 // NewPubSub returns a new pubsub.PubSub based on the configuration.
@@ -163,7 +204,11 @@ func (c PubSubConfig) NewPubSub(comp *component.Component, server io.Server) (*p
 	if c.Registry == nil {
 		return nil, nil
 	}
-	return pubsub.New(comp, server, c.Registry)
+	statuses, err := pubsub.ProviderStatusesFromMap(comp.Context(), c.Providers)
+	if err != nil {
+		return nil, err
+	}
+	return pubsub.New(comp, server, c.Registry, statuses)
 }
 
 // NewApplicationPackages returns a new applications packages frontend based on the configuration.
@@ -175,19 +220,31 @@ func (c ApplicationPackagesConfig) NewApplicationPackages(ctx context.Context, s
 	handlers := make(map[string]packages.ApplicationPackageHandler)
 
 	// Initialize LoRa Cloud Device Management v1 package handler
-	loradmsHandler := loraclouddevicemanagementv1.New(server, c.Registry)
-	handlers[loradmsHandler.Package().Name] = loradmsHandler
+	handlers[loraclouddevicemanagementv1.PackageName] = loraclouddevicemanagementv1.New(server, c.Registry)
 
-	return packages.New(ctx, server, c.Registry, handlers)
+	// Initialize LoRa Cloud Geolocation v3 package handler
+	handlers[loracloudgeolocationv3.PackageName] = loracloudgeolocationv3.New(server, c.Registry)
+
+	return packages.New(ctx, server, c.Registry, handlers, c.Workers, c.Timeout)
 }
 
 var (
-	errInvalidTTL = errors.DefineInvalidArgument("invalid_ttl", "Invalid TTL `{ttl}`")
+	errInvalidTTL       = errors.DefineInvalidArgument("invalid_ttl", "invalid TTL `{ttl}`")
+	errInvalidThreshold = errors.DefineInvalidArgument("invalid_threshold", "invalid threshold `{threshold}`")
 )
 
 // NewFetcher creates an EndDeviceFetcher from config.
 func (c EndDeviceFetcherConfig) NewFetcher(comp *component.Component) (EndDeviceFetcher, error) {
 	fetcher := NewRegistryEndDeviceFetcher(comp)
+	if c.Timeout != 0 {
+		fetcher = NewTimeoutEndDeviceFetcher(fetcher, c.Timeout)
+	}
+	if c.CircuitBreaker.Enable {
+		if c.CircuitBreaker.Threshold <= 0 {
+			return nil, errInvalidThreshold.WithAttributes("threshold", c.CircuitBreaker.Threshold)
+		}
+		fetcher = NewCircuitBreakerEndDeviceFetcher(fetcher, uint64(c.CircuitBreaker.Threshold), c.CircuitBreaker.Timeout)
+	}
 	if c.Cache.Enable {
 		if c.Cache.TTL <= 0 {
 			return nil, errInvalidTTL.WithAttributes("ttl", c.Cache.TTL)
@@ -201,6 +258,7 @@ func (c EndDeviceFetcherConfig) NewFetcher(comp *component.Component) (EndDevice
 		builder = builder.Expiration(c.Cache.TTL)
 		fetcher = NewCachedEndDeviceFetcher(fetcher, builder.Build())
 	}
+	fetcher = NewSingleFlightEndDeviceFetcher(fetcher)
 
 	return fetcher, nil
 }

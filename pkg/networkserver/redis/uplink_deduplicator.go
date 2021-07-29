@@ -17,9 +17,9 @@ package redis
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
@@ -37,8 +37,7 @@ func NewUplinkDeduplicator(cl *ttnredis.Client) *UplinkDeduplicator {
 }
 
 func uplinkHash(ctx context.Context, up *ttnpb.UplinkMessage) (string, error) {
-	drBytes := make([]byte, up.Settings.DataRate.Modulation.Size())
-	_, err := up.Settings.DataRate.Modulation.MarshalTo(drBytes)
+	drBytes, err := proto.Marshal(&up.Settings.DataRate)
 	if err != nil {
 		return "", err
 	}

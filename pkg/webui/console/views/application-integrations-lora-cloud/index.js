@@ -17,92 +17,107 @@ import { Container, Col, Row } from 'react-grid-system'
 import { defineMessages } from 'react-intl'
 import { useSelector } from 'react-redux'
 
+import LORA_CLOUD_DAS from '@console/constants/lora-cloud-das'
+import LORA_CLOUD_GLS from '@console/constants/lora-cloud-gls'
 import LoRaCloudImage from '@assets/misc/lora-cloud.png'
 
 import PageTitle from '@ttn-lw/components/page-title'
 import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
 import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 import Link from '@ttn-lw/components/link'
+import Collapse from '@ttn-lw/components/collapse'
 
 import Message from '@ttn-lw/lib/components/message'
 import ErrorView from '@ttn-lw/lib/components/error-view'
+import RequireRequest from '@ttn-lw/lib/components/require-request'
 
-import LoRaCloudForm from '@console/containers/lora-cloud-form'
+import LoRaCloudDASForm from '@console/containers/lora-cloud-das-form'
+import LoRaCloudGLSForm from '@console/containers/lora-cloud-gls-form'
 
 import Require from '@console/lib/components/require'
 
-import SubViewError from '@console/views/error/sub-view'
+import SubViewError from '@console/views/sub-view-error'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import { mayViewOrEditApplicationPackages } from '@console/lib/feature-checks'
+
+import { getAppPkgDefaultAssoc } from '@console/store/actions/application-packages'
 
 import { selectSelectedApplicationId } from '@console/store/selectors/applications'
 
 import style from './application-integrations-lora-cloud.styl'
 
 const m = defineMessages({
+  loraCloudInfoText:
+    'Lora Cloud provides value added APIs that enable simple solutions for common tasks related to LoRaWAN networks and LoRa-based devices. You can setup our LoRaCloud integrations below.',
   officialLoRaCloudDocumentation: 'Official LoRa Cloud documentation',
-  loRaCloudInfoText: `With the LoRa Cloud Device & Application Services protocol, you can manage common device functionality at the application layer for LoRaWAN®-enabled devices. This protocol consists of a set of messages that are exchanged on a predefined device management LoRaWAN port (199 by default). The purpose of these messages is three-fold:
-<ol><li>Periodically communicate info messages</li><li>Trigger client-initiated management commands</li><li>Run advanced, application-layer protocols which solve common LoRaWAN use cases</li></ol>`,
   furtherResources: 'Further resources',
   setToken: 'Set LoRa Cloud token',
+  dasDescription:
+    'With the LoRa Cloud Device & Application Services protocol, you can manage common device functionality at the application layer for LoRaWAN-enabled devices.',
+  glsDescription:
+    'LoRa Cloud Geolocation is a simple cloud API that can be easily integrated with The Things Stack to enable estimating the location of any LoRa-based device.',
 })
 
 const LoRaCloud = () => {
   const appId = useSelector(selectSelectedApplicationId)
+  const selector = ['data']
+
   return (
     <Require
       featureCheck={mayViewOrEditApplicationPackages}
       otherwise={{ redirect: `/applications/${appId}` }}
     >
-      <ErrorView ErrorComponent={SubViewError}>
-        <Container>
-          <PageTitle title="LoRa Cloud Device & Application Services" />
-          <Row>
-            <Col lg={8} md={12}>
-              <img className={style.logo} src={LoRaCloudImage} alt="LoRa Cloud" />
-              <Message
-                content={m.loRaCloudInfoText}
-                className={style.info}
-                values={{
-                  ol: msg => <ol key="list">{msg}</ol>,
-                  li: msg => <li>{msg}</li>,
-                }}
-              />
-              <div>
-                <Message
-                  component="h4"
-                  content={m.furtherResources}
-                  className={style.furtherResources}
-                />
-                <Link.DocLink
-                  path="/integrations/application-packages/lora-cloud-device-and-application-services/"
-                  secondary
-                >
-                  LoRa Cloud Device & Application Services
-                </Link.DocLink>
-                {' | '}
-                <Link.Anchor
-                  href="https://www.loracloud.com/documentation/device_management"
-                  external
-                  secondary
-                >
-                  <Message content={m.officialLoRaCloudDocumentation} />
-                </Link.Anchor>
-              </div>
-              <hr className={style.hRule} />
-              <Message component="h3" content={m.setToken} />
-              <LoRaCloudForm />
-            </Col>
-          </Row>
-        </Container>
-      </ErrorView>
+      <RequireRequest
+        requestAction={[
+          getAppPkgDefaultAssoc(appId, LORA_CLOUD_DAS.DEFAULT_PORT, selector),
+          getAppPkgDefaultAssoc(appId, LORA_CLOUD_GLS.DEFAULT_PORT, selector),
+        ]}
+      >
+        <ErrorView ErrorComponent={SubViewError}>
+          <Container>
+            <PageTitle title="LoRa Cloud Device & Application Services" />
+            <Row>
+              <Col lg={8} md={12}>
+                <img className={style.logo} src={LoRaCloudImage} alt="LoRa Cloud" />
+                <Message content={m.loraCloudInfoText} className={style.info} />
+                <div>
+                  <Message
+                    component="h4"
+                    content={m.furtherResources}
+                    className={style.furtherResources}
+                  />
+                  <Link.DocLink
+                    path="/integrations/application-packages/lora-cloud-device-and-application-services/"
+                    secondary
+                  >
+                    Device & Application Services
+                  </Link.DocLink>
+                  {' | '}
+                  <Link.Anchor href="https://www.loracloud.com" external secondary>
+                    <Message content={m.officialLoRaCloudDocumentation} />
+                  </Link.Anchor>
+                </div>
+                <hr className={style.hRule} />
+                <Collapse title="Geolocation" description={m.glsDescription}>
+                  <Message component="h3" content={m.setToken} />
+                  <LoRaCloudGLSForm />
+                </Collapse>
+                <Collapse title="Device & Application Services" description={m.dasDescription}>
+                  <Message component="h3" content={m.setToken} />
+                  <LoRaCloudDASForm />
+                </Collapse>
+              </Col>
+            </Row>
+          </Container>
+        </ErrorView>
+      </RequireRequest>
     </Require>
   )
 }
 
-export default withBreadcrumb('apps.single.integrations.lora-cloud', function(props) {
+export default withBreadcrumb('apps.single.integrations.lora-cloud', props => {
   const { appId } = props
 
   return (

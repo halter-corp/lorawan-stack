@@ -16,33 +16,75 @@ package io
 
 import (
 	"context"
+	"net/http"
 
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"google.golang.org/grpc"
 )
 
 const bufferSize = 32
 
-// Server represents the Application Server to application frontends.
-type Server interface {
-	// GetBaseConfig returns the component configuration.
-	GetBaseConfig(ctx context.Context) config.ServiceBase
-	// FillContext fills the given context.
-	// This method should only be used for request contexts.
-	FillContext(ctx context.Context) context.Context
-	// SendUp sends upstream traffic to the Application Server.
-	SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error
+// PubSub represents the Application Server Pub/Sub capabilities to application frontends.
+type PubSub interface {
+	// Publish publishes upstream traffic to the Application Server.
+	Publish(ctx context.Context, up *ttnpb.ApplicationUp) error
 	// Subscribe subscribes an application or integration by its identifiers to the Application Server, and returns a
-	// Subscription for traffic and control.
-	Subscribe(ctx context.Context, protocol string, ids ttnpb.ApplicationIdentifiers) (*Subscription, error)
+	// Subscription for traffic and control. If the cluster parameter is true, the subscription receives all of the
+	// traffic of the application. Otherwise, only traffic that was processed locally is sent.
+	Subscribe(ctx context.Context, protocol string, ids *ttnpb.ApplicationIdentifiers, cluster bool) (*Subscription, error)
+}
+
+// DownlinkQueueOperator represents the Application Server downlink queue operations to application frontends.
+type DownlinkQueueOperator interface {
 	// DownlinkQueuePush pushes the given downlink messages to the end device's application downlink queue.
 	DownlinkQueuePush(context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error
 	// DownlinkQueueReplace replaces the end device's application downlink queue with the given downlink messages.
 	DownlinkQueueReplace(context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error
 	// DownlinkQueueList lists the application downlink queue of the given end device.
 	DownlinkQueueList(context.Context, ttnpb.EndDeviceIdentifiers) ([]*ttnpb.ApplicationDownlink, error)
+}
+
+// UplinkStorage represents the Application Server uplink storage to application frontends.
+type UplinkStorage interface {
+	// RangeUplinks ranges the application uplinks and calls the callback function, until false is returned.
+	RangeUplinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, paths []string, f func(ctx context.Context, up *ttnpb.ApplicationUplink) bool) error
+}
+
+// Cluster represents the Application Server cluster peers to application frontends.
+type Cluster interface {
+	// GetPeers returns peers with the given role.
+	GetPeers(ctx context.Context, role ttnpb.ClusterRole) ([]cluster.Peer, error)
+	// GetPeer returns a peer with the given role, and a responsibility for the
+	// given identifiers. If the identifiers are nil, this function returns a random
+	// peer from the list that would be returned by GetPeers.
+	GetPeer(ctx context.Context, role ttnpb.ClusterRole, ids cluster.EntityIdentifiers) (cluster.Peer, error)
+	// GetPeerConn returns the gRPC client connection of a peer, if the peer is available as
+	// as per GetPeer.
+	GetPeerConn(ctx context.Context, role ttnpb.ClusterRole, ids cluster.EntityIdentifiers) (*grpc.ClientConn, error)
+}
+
+// Server represents the Application Server to application frontends.
+type Server interface {
+	component.TaskStarter
+	PubSub
+	DownlinkQueueOperator
+	UplinkStorage
+	Cluster
+	// GetBaseConfig returns the component configuration.
+	GetBaseConfig(ctx context.Context) config.ServiceBase
+	// FillContext fills the given context.
+	// This method should only be used for request contexts.
+	FillContext(ctx context.Context) context.Context
+	// HTTPClient returns a configured *http.Client.
+	HTTPClient(context.Context) (*http.Client, error)
+	// RateLimiter returns the rate limiter instance.
+	RateLimiter() ratelimit.Interface
 }
 
 // ContextualApplicationUp represents an ttnpb.ApplicationUp with its context.
@@ -90,9 +132,9 @@ func (s *Subscription) ApplicationIDs() *ttnpb.ApplicationIdentifiers { return s
 
 var errBufferFull = errors.DefineResourceExhausted("buffer_full", "buffer is full")
 
-// SendUp sends an upstream message.
+// Publish publishes an upstream message.
 // This method returns immediately, returning nil if the message is buffered, or with an error when the buffer is full.
-func (s *Subscription) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
+func (s *Subscription) Publish(ctx context.Context, up *ttnpb.ApplicationUp) error {
 	ctxUp := &ContextualApplicationUp{
 		Context:       ctx,
 		ApplicationUp: up,
@@ -117,6 +159,7 @@ func CleanDownlinks(items []*ttnpb.ApplicationDownlink) []*ttnpb.ApplicationDown
 	res := make([]*ttnpb.ApplicationDownlink, 0, len(items))
 	for _, item := range items {
 		res = append(res, &ttnpb.ApplicationDownlink{
+			SessionKeyID:   item.SessionKeyID, // SessionKeyID must be set when skipping application payload crypto.
 			FPort:          item.FPort,
 			FCnt:           item.FCnt, // FCnt must be set when skipping application payload crypto.
 			FRMPayload:     item.FRMPayload,

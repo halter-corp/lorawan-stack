@@ -6,6 +6,7 @@ var OrganizationFieldPathsNested = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
 	"ids",
 	"ids.organization_id",
@@ -17,6 +18,7 @@ var OrganizationFieldPathsTopLevel = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
 	"ids",
 	"name",
@@ -47,6 +49,7 @@ var ListOrganizationsRequestFieldPathsNested = []string{
 	"collaborator.ids.user_ids",
 	"collaborator.ids.user_ids.email",
 	"collaborator.ids.user_ids.user_id",
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -55,6 +58,7 @@ var ListOrganizationsRequestFieldPathsNested = []string{
 
 var ListOrganizationsRequestFieldPathsTopLevel = []string{
 	"collaborator",
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -72,6 +76,7 @@ var CreateOrganizationRequestFieldPathsNested = []string{
 	"organization.attributes",
 	"organization.contact_info",
 	"organization.created_at",
+	"organization.deleted_at",
 	"organization.description",
 	"organization.ids",
 	"organization.ids.organization_id",
@@ -89,6 +94,7 @@ var UpdateOrganizationRequestFieldPathsNested = []string{
 	"organization.attributes",
 	"organization.contact_info",
 	"organization.created_at",
+	"organization.deleted_at",
 	"organization.description",
 	"organization.ids",
 	"organization.ids.organization_id",
@@ -123,6 +129,7 @@ var GetOrganizationAPIKeyRequestFieldPathsTopLevel = []string{
 	"organization_ids",
 }
 var CreateOrganizationAPIKeyRequestFieldPathsNested = []string{
+	"expires_at",
 	"name",
 	"organization_ids",
 	"organization_ids.organization_id",
@@ -130,22 +137,28 @@ var CreateOrganizationAPIKeyRequestFieldPathsNested = []string{
 }
 
 var CreateOrganizationAPIKeyRequestFieldPathsTopLevel = []string{
+	"expires_at",
 	"name",
 	"organization_ids",
 	"rights",
 }
 var UpdateOrganizationAPIKeyRequestFieldPathsNested = []string{
 	"api_key",
+	"api_key.created_at",
+	"api_key.expires_at",
 	"api_key.id",
 	"api_key.key",
 	"api_key.name",
 	"api_key.rights",
+	"api_key.updated_at",
+	"field_mask",
 	"organization_ids",
 	"organization_ids.organization_id",
 }
 
 var UpdateOrganizationAPIKeyRequestFieldPathsTopLevel = []string{
 	"api_key",
+	"field_mask",
 	"organization_ids",
 }
 var ListOrganizationCollaboratorsRequestFieldPathsNested = []string{

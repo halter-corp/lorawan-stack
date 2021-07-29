@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createRequestActions } from './lib'
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
 import {
   createPaginationRequestActions,
   createPaginationBaseActionType,
   createPaginationDeleteBaseActionType,
   createPaginationDeleteActions,
-} from './pagination'
+} from '@ttn-lw/lib/store/actions/pagination'
+
 import {
   startEventsStream,
   createStartEventsStreamActionType,
@@ -34,6 +35,8 @@ import {
   createStopEventsStreamActionType,
   clearEvents,
   createClearEventsActionType,
+  createSetEventsFilterActionType,
+  setEventsFilter,
 } from './events'
 import createGetRightsListRequestActions, { createGetRightsListActionType } from './rights'
 
@@ -53,7 +56,11 @@ export const GET_ORG_BASE = 'GET_ORGANIZATION'
 export const [
   { request: GET_ORG, success: GET_ORG_SUCCESS, failure: GET_ORG_FAILURE },
   { request: getOrganization, success: getOrganizationSuccess, failure: getOrganizationFailure },
-] = createRequestActions(GET_ORG_BASE, id => ({ id }), (id, selector) => ({ selector }))
+] = createRequestActions(
+  GET_ORG_BASE,
+  id => ({ id }),
+  (id, selector) => ({ selector }),
+)
 
 export const CREATE_ORG_BASE = 'CREATE_ORGANIZATION'
 export const [
@@ -106,6 +113,7 @@ export const PAUSE_ORG_EVENT_STREAM = createPauseEventsStreamActionType(SHARED_N
 export const RESUME_ORG_EVENT_STREAM = createResumeEventsStreamActionType(SHARED_NAME)
 export const STOP_ORG_EVENT_STREAM = createStopEventsStreamActionType(SHARED_NAME)
 export const CLEAR_ORG_EVENTS = createClearEventsActionType(SHARED_NAME)
+export const SET_ORG_EVENTS_FILTER = createSetEventsFilterActionType(SHARED_NAME)
 
 export const startOrganizationEventsStream = startEventsStream(SHARED_NAME)
 export const startOrganizationEventsStreamSuccess = startEventsStreamSuccess(SHARED_NAME)
@@ -114,3 +122,4 @@ export const pauseOrganizationEventsStream = pauseEventsStream(SHARED_NAME)
 export const resumeOrganizationEventsStream = resumeEventsStream(SHARED_NAME)
 export const stopOrganizationEventsStream = stopEventsStream(SHARED_NAME)
 export const clearOrganizationEventsStream = clearEvents(SHARED_NAME)
+export const setOrganizationEventsFilter = setEventsFilter(SHARED_NAME)

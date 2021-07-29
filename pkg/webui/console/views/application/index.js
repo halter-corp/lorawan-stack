@@ -29,7 +29,6 @@ import NotFoundRoute from '@ttn-lw/lib/components/not-found-route'
 import ApplicationOverview from '@console/views/application-overview'
 import ApplicationGeneralSettings from '@console/views/application-general-settings'
 import ApplicationApiKeys from '@console/views/application-api-keys'
-import ApplicationLink from '@console/views/application-link'
 import ApplicationCollaborators from '@console/views/application-collaborators'
 import ApplicationData from '@console/views/application-data'
 import ApplicationPayloadFormatters from '@console/views/application-payload-formatters'
@@ -45,7 +44,7 @@ import sharedMessages from '@ttn-lw/lib/shared-messages'
 import {
   mayViewApplicationInfo,
   mayViewApplicationEvents,
-  mayLinkApplication,
+  maySetApplicationPayloadFormatters,
   mayViewApplicationDevices,
   mayCreateOrEditApplicationIntegrations,
   mayEditBasicApplicationInfo,
@@ -70,19 +69,17 @@ import {
 } from '@console/store/selectors/applications'
 
 @connect(
-  (state, props) => {
-    return {
-      appId: props.match.params.appId,
-      fetching: selectApplicationFetching(state) || selectApplicationRightsFetching(state),
-      application: selectSelectedApplication(state),
-      error: selectApplicationError(state) || selectApplicationRightsError(state),
-      rights: selectApplicationRights(state),
-    }
-  },
+  (state, props) => ({
+    appId: props.match.params.appId,
+    fetching: selectApplicationFetching(state) || selectApplicationRightsFetching(state),
+    application: selectSelectedApplication(state),
+    error: selectApplicationError(state) || selectApplicationRightsError(state),
+    rights: selectApplicationRights(state),
+  }),
   dispatch => ({
     stopStream: id => dispatch(stopApplicationEventsStream(id)),
     loadData: id => {
-      dispatch(getApplication(id, 'name,description,attributes'))
+      dispatch(getApplication(id, 'name,description,attributes,dev_eui_counter'))
       dispatch(getApplicationsRightsList(id))
     },
   }),
@@ -91,7 +88,7 @@ import {
   ({ appId, loadData }) => loadData(appId),
   ({ fetching, application }) => fetching || !Boolean(application),
 )
-@withBreadcrumb('apps.single', function(props) {
+@withBreadcrumb('apps.single', props => {
   const {
     appId,
     application: { name },
@@ -157,14 +154,7 @@ export default class Application extends React.Component {
               icon="data"
             />
           )}
-          {mayLinkApplication.check(rights) && (
-            <SideNavigation.Item
-              title={sharedMessages.link}
-              path={`${matchedUrl}/link`}
-              icon="link"
-            />
-          )}
-          {mayLinkApplication.check(rights) && (
+          {maySetApplicationPayloadFormatters.check(rights) && (
             <SideNavigation.Item title={sharedMessages.payloadFormatters} icon="code">
               <SideNavigation.Item
                 title={sharedMessages.uplink}
@@ -230,7 +220,6 @@ export default class Application extends React.Component {
           <Route exact path={`${path}`} component={ApplicationOverview} />
           <Route path={`${path}/general-settings`} component={ApplicationGeneralSettings} />
           <Route path={`${path}/api-keys`} component={ApplicationApiKeys} />
-          <Route path={`${path}/link`} component={ApplicationLink} />
           <Route path={`${path}/devices`} component={Devices} />
           <Route path={`${path}/collaborators`} component={ApplicationCollaborators} />
           <Route path={`${path}/data`} component={ApplicationData} />

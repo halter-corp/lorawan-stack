@@ -30,6 +30,7 @@ import FormInfoField from './field/info'
 import FormSubmit from './submit'
 import FormCollapseSection from './section'
 import FormSubTitle from './sub-title'
+import FormFieldContainer from './field/container'
 
 import style from './form.styl'
 
@@ -38,18 +39,20 @@ class InnerForm extends React.PureComponent {
     children: PropTypes.node.isRequired,
     className: PropTypes.string,
     formError: PropTypes.error,
+    formErrorTitle: PropTypes.message,
     formInfo: PropTypes.message,
+    formInfoTitle: PropTypes.message,
     handleSubmit: PropTypes.func.isRequired,
-    horizontal: PropTypes.bool,
     isSubmitting: PropTypes.bool.isRequired,
     isValid: PropTypes.bool.isRequired,
   }
 
   static defaultProps = {
     className: undefined,
-    formError: '',
-    formInfo: '',
-    horizontal: true,
+    formError: undefined,
+    formErrorTitle: undefined,
+    formInfo: undefined,
+    formInfoTitle: undefined,
   }
 
   constructor(props) {
@@ -82,8 +85,9 @@ class InnerForm extends React.PureComponent {
       className,
       children,
       formError,
+      formErrorTitle,
       formInfo,
-      horizontal,
+      formInfoTitle,
       handleSubmit,
       ...rest
     } = this.props
@@ -92,14 +96,13 @@ class InnerForm extends React.PureComponent {
       <form className={classnames(style.container, className)} onSubmit={handleSubmit}>
         {(formError || formInfo) && (
           <div style={{ outline: 'none' }} ref={this.notificationRef} tabIndex="-1">
-            {formError && <ErrorNotification content={formError} small />}
-            {formInfo && <Notification content={formInfo} info small />}
+            {formError && <ErrorNotification content={formError} title={formErrorTitle} small />}
+            {formInfo && <Notification content={formInfo} title={formInfoTitle} info small />}
           </div>
         )}
         <FormContext.Provider
           value={{
             ...rest,
-            horizontal,
           }}
         >
           {children}
@@ -109,33 +112,33 @@ class InnerForm extends React.PureComponent {
   }
 }
 
-const formRenderer = ({ children, ...rest }) =>
-  function(renderProps) {
-    const { className, horizontal, error, info, disabled } = rest
-    const { handleSubmit, ...restFormikProps } = renderProps
+const formRenderer = ({ children, ...rest }) => renderProps => {
+  const { className, error, errorTitle, info, infoTitle, disabled } = rest
+  const { handleSubmit, ...restFormikProps } = renderProps
 
-    return (
-      <InnerForm
-        className={className}
-        horizontal={horizontal}
-        formError={error}
-        formInfo={info}
-        handleSubmit={handleSubmit}
-        disabled={disabled}
-        {...restFormikProps}
-      >
-        {children}
-      </InnerForm>
-    )
-  }
+  return (
+    <InnerForm
+      className={className}
+      formError={error}
+      formErrorTitle={errorTitle}
+      formInfo={info}
+      formInfoTitle={infoTitle}
+      handleSubmit={handleSubmit}
+      disabled={disabled}
+      {...restFormikProps}
+    >
+      {children}
+    </InnerForm>
+  )
+}
 
 class Form extends React.PureComponent {
   static propTypes = {
     enableReinitialize: PropTypes.bool,
-    formikRef: PropTypes.shape({ current: PropTypes.any }),
+    formikRef: PropTypes.shape({ current: PropTypes.shape({}) }),
     initialValues: PropTypes.shape({}),
     onReset: PropTypes.func,
-    onSubmit: PropTypes.func.isRequired,
+    onSubmit: PropTypes.func,
     validateOnMount: PropTypes.bool,
     validateOnBlur: PropTypes.bool,
     validateOnChange: PropTypes.bool,
@@ -155,6 +158,7 @@ class Form extends React.PureComponent {
     validationSchema: undefined,
     validationContext: {},
     validateSync: true,
+    onSubmit: () => null,
   }
 
   @bind
@@ -235,5 +239,6 @@ Form.InfoField = FormInfoField
 Form.Submit = FormSubmit
 Form.CollapseSection = FormCollapseSection
 Form.SubTitle = FormSubTitle
+Form.FieldContainer = FormFieldContainer
 
 export { Form as default, useFormikContext as useFormContext }

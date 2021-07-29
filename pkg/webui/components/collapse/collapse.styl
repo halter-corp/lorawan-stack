@@ -21,18 +21,19 @@
   position: relative
   padding: $ls.s 0
 
-  .content
+  &-content
     padding-right: $cs.s
 
   .title
     margin-top:0
-    margin-bottom: $cs.s
 
   .description
     text-margin-top()
+    text-margin-bottom($cs.s)
 
   .expand-button
     min-width: 5.5rem
 
 .content
   display: block
+  padding-bottom: $ls.s

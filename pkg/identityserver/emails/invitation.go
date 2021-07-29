@@ -14,10 +14,18 @@
 
 package emails
 
+import "time"
+
 // Invitation is the email that is sent when a user is invited to the network.
 type Invitation struct {
 	Data
 	InvitationToken string
+	TTL             time.Duration
+}
+
+// FormatTTL formats the TTL.
+func (i Invitation) FormatTTL() string {
+	return formatTTL(i.TTL)
 }
 
 // TemplateName returns the name of the template to use for this email.
@@ -29,13 +37,18 @@ const invitationText = `Hello,
 
 You have been invited to join {{ .Network.Name }}.
 
-Your Invitation Token is: {{ .InvitationToken }}
+You can now go to {{ .Network.IdentityServerURL }}/register?invitation_token={{ .InvitationToken }} to register your user.
 
-You can use this token for the "--invitation-token" flag when creating a user from the command-line interface.
+If you prefer to use the command-line interface, you can add "--invitation-token {{ .InvitationToken }}" when running the "ttn-lw-cli users create" command.
 
-If you wish to register using web interface, follow the link below:
+{{- if .TTL }}
 
-{{ .Network.IdentityServerURL }}/register?invitation_token={{ .InvitationToken }}
+Your invitation expires {{ .FormatTTL }}, so register your user before then.
+{{- end }}
+
+After successful registration, you can go to {{ .Network.ConsoleURL }} to start adding devices and gateways.
+
+For more information on how how to get started, please refer to the documentation: {{ documentation_url "/getting-started/" }}.
 `
 
 // DefaultTemplates returns the default templates for this email.

@@ -86,6 +86,18 @@ func (m *Client) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "deleted_at":
+
+			if v, ok := interface{}(m.GetDeletedAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ClientValidationError{
+						field:  "deleted_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		case "name":
 
 			if utf8.RuneCountInString(m.GetName()) > 50 {
@@ -106,6 +118,13 @@ func (m *Client) ValidateFields(paths ...string) error {
 
 		case "attributes":
 
+			if len(m.GetAttributes()) > 10 {
+				return ClientValidationError{
+					field:  "attributes",
+					reason: "value must contain no more than 10 pair(s)",
+				}
+			}
+
 			for key, val := range m.GetAttributes() {
 				_ = val
 
@@ -123,10 +142,23 @@ func (m *Client) ValidateFields(paths ...string) error {
 					}
 				}
 
-				// no validation rules for Attributes[key]
+				if utf8.RuneCountInString(val) > 200 {
+					return ClientValidationError{
+						field:  fmt.Sprintf("attributes[%v]", key),
+						reason: "value length must be at most 200 runes",
+					}
+				}
+
 			}
 
 		case "contact_info":
+
+			if len(m.GetContactInfo()) > 10 {
+				return ClientValidationError{
+					field:  "contact_info",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
 
 			for idx, item := range m.GetContactInfo() {
 				_, _ = idx, item
@@ -144,10 +176,55 @@ func (m *Client) ValidateFields(paths ...string) error {
 			}
 
 		case "secret":
-			// no validation rules for Secret
+
+			if utf8.RuneCountInString(m.GetSecret()) > 128 {
+				return ClientValidationError{
+					field:  "secret",
+					reason: "value length must be at most 128 runes",
+				}
+			}
+
 		case "redirect_uris":
 
+			if len(m.GetRedirectURIs()) > 10 {
+				return ClientValidationError{
+					field:  "redirect_uris",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetRedirectURIs() {
+				_, _ = idx, item
+
+				if utf8.RuneCountInString(item) > 128 {
+					return ClientValidationError{
+						field:  fmt.Sprintf("redirect_uris[%v]", idx),
+						reason: "value length must be at most 128 runes",
+					}
+				}
+
+			}
+
 		case "logout_redirect_uris":
+
+			if len(m.GetLogoutRedirectURIs()) > 10 {
+				return ClientValidationError{
+					field:  "logout_redirect_uris",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
+
+			for idx, item := range m.GetLogoutRedirectURIs() {
+				_, _ = idx, item
+
+				if utf8.RuneCountInString(item) > 128 {
+					return ClientValidationError{
+						field:  fmt.Sprintf("logout_redirect_uris[%v]", idx),
+						reason: "value length must be at most 128 runes",
+					}
+				}
+
+			}
 
 		case "state":
 
@@ -155,6 +232,15 @@ func (m *Client) ValidateFields(paths ...string) error {
 				return ClientValidationError{
 					field:  "state",
 					reason: "value must be one of the defined enum values",
+				}
+			}
+
+		case "state_description":
+
+			if utf8.RuneCountInString(m.GetStateDescription()) > 128 {
+				return ClientValidationError{
+					field:  "state_description",
+					reason: "value length must be at most 128 runes",
 				}
 			}
 
@@ -381,7 +467,7 @@ func (m *GetClientRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetClientRequestValidationError{
 						field:  "field_mask",
@@ -484,7 +570,7 @@ func (m *ListClientsRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListClientsRequestValidationError{
 						field:  "field_mask",
@@ -514,6 +600,8 @@ func (m *ListClientsRequest) ValidateFields(paths ...string) error {
 
 		case "page":
 			// no validation rules for Page
+		case "deleted":
+			// no validation rules for Deleted
 		default:
 			return ListClientsRequestValidationError{
 				field:  name,
@@ -724,7 +812,7 @@ func (m *UpdateClientRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateClientRequestValidationError{
 						field:  "field_mask",

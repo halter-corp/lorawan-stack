@@ -19,13 +19,14 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
-	"google.golang.org/grpc"
 )
 
 func firstArgs(i int, args ...string) []string {
@@ -57,14 +58,20 @@ func getCollaborator(flagSet *pflag.FlagSet) *ttnpb.OrganizationOrUserIdentifier
 		logger.Warn("Don't set organization ID and user ID at the same time, assuming user ID")
 	}
 	if userID != "" {
-		return ttnpb.UserIdentifiers{UserID: userID}.OrganizationOrUserIdentifiers()
+		return ttnpb.UserIdentifiers{UserId: userID}.OrganizationOrUserIdentifiers()
 	}
-	return ttnpb.OrganizationIdentifiers{OrganizationID: organizationID}.OrganizationOrUserIdentifiers()
+	return ttnpb.OrganizationIdentifiers{OrganizationId: organizationID}.OrganizationOrUserIdentifiers()
 }
 
 func attributesFlags() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
 	flagSet.StringSlice("attributes", nil, "key=value")
+	return flagSet
+}
+
+func forceFlags() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.Bool("force", false, "")
 	return flagSet
 }
 
@@ -114,8 +121,10 @@ func getRights(flagSet *pflag.FlagSet) (rights []ttnpb.Right) {
 }
 
 var (
-	errNoAPIKeyID     = errors.DefineInvalidArgument("no_api_key_id", "no API key ID set")
-	errNoAPIKeyRights = errors.DefineInvalidArgument("no_api_key_rights", "no API key rights set")
+	errNoAPIKeyID        = errors.DefineInvalidArgument("no_api_key_id", "no API key ID set")
+	errNoAPIKeyRights    = errors.DefineInvalidArgument("no_api_key_rights", "no API key rights set")
+	errExpiryDateInPast  = errors.DefineInvalidArgument("expiry_date_invalid", "expiry date is in the past")
+	errInvalidDateFormat = errors.DefineInvalidArgument("expiry_date_format_invalid", "invalid expiry date format (RFC3339: YYYY-MM-DDTHH:MM:SSZ)")
 )
 
 func getAPIKeyID(flagSet *pflag.FlagSet, args []string, i int) string {
@@ -131,66 +140,61 @@ func getAPIKeyID(flagSet *pflag.FlagSet, args []string, i int) string {
 	return apiKeyID
 }
 
-func searchFlags() *pflag.FlagSet {
+var apiKeyExpiryFlag = func() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
-	flagSet.String("id-contains", "", "")
-	flagSet.String("name-contains", "", "")
-	flagSet.String("description-contains", "", "")
-	flagSet.StringToString("attributes-contain", nil, "(key=value)")
+	util.AddField(flagSet, "api-key-expiry", reflect.TypeOf(time.Time{}), false)
+	return flagSet
+}()
+
+func getAPIKeyExpiry(flagSet *pflag.FlagSet) (*time.Time, error) {
+	expiry, _ := flagSet.GetString("api-key-expiry")
+	if expiry != "" {
+		expiryDate, err := time.Parse(time.RFC3339, expiry)
+		if err != nil {
+			return nil, errInvalidDateFormat
+		}
+		if expiryDate.Before(time.Now()) {
+			return nil, errExpiryDateInPast
+		}
+		return &expiryDate, nil
+	}
+	return nil, nil
+}
+
+func getAPIKeyFields(flagSet *pflag.FlagSet) ([]ttnpb.Right, *time.Time, []string, error) {
+	rights := getRights(flagSet)
+	paths := []string{}
+	if len(rights) > 0 {
+		paths = append(paths, "rights")
+	}
+	expiryDate, err := getAPIKeyExpiry(flagSet)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if flagSet.Changed("api-key-expiry") {
+		paths = append(paths, "expires_at")
+	}
+	if flagSet.Changed("name") {
+		paths = append(paths, "name")
+	}
+	return rights, expiryDate, paths, nil
+}
+
+var searchFlags = func() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	// NOTE: These flags need to be named with underscores, not dashes!
+	flagSet.String("id_contains", "", "")
+	flagSet.String("name_contains", "", "")
+	flagSet.String("description_contains", "", "")
+	flagSet.StringToString("attributes_contain", nil, "(key=value)")
 	flagSet.AddFlagSet(paginationFlags())
 	flagSet.AddFlagSet(orderFlags())
 	return flagSet
-}
-
-func getSearchEntitiesRequest(flagSet *pflag.FlagSet) (req *ttnpb.SearchEntitiesRequest, opt grpc.CallOption, getTotal func() uint64) {
-	idContains, _ := flagSet.GetString("id-contains")
-	nameContains, _ := flagSet.GetString("name-contains")
-	descriptionContains, _ := flagSet.GetString("description-contains")
-	attributesContain, _ := flagSet.GetStringToString("attributes-contain")
-	limit, page, opt, getTotal := withPagination(flagSet)
-	return &ttnpb.SearchEntitiesRequest{
-		IDContains:          idContains,
-		NameContains:        nameContains,
-		DescriptionContains: descriptionContains,
-		AttributesContain:   attributesContain,
-		Limit:               limit,
-		Page:                page,
-		Order:               getOrder(flagSet),
-	}, opt, getTotal
-}
-
-func searchEndDevicesFlags() *pflag.FlagSet {
-	flagSet := &pflag.FlagSet{}
-	flagSet.String("dev-eui-contains", "", "")
-	flagSet.String("join-eui-contains", "", "")
-	flagSet.String("dev-addr-contains", "", "")
-	flagSet.Lookup("dev-addr-contains").Hidden = true // Part of the API but not actually supported.
-	flagSet.AddFlagSet(searchFlags())
-	return flagSet
-}
-
-func getSearchEndDevicesRequest(flagSet *pflag.FlagSet) (req *ttnpb.SearchEndDevicesRequest, opt grpc.CallOption, getTotal func() uint64) {
-	baseReq, opt, getTotal := getSearchEntitiesRequest(flagSet)
-	devEUIContains, _ := flagSet.GetString("dev-eui-contains")
-	joinEUIContains, _ := flagSet.GetString("join-eui-contains")
-	devAddrContains, _ := flagSet.GetString("dev-addr-contains")
-	return &ttnpb.SearchEndDevicesRequest{
-		IDContains:          baseReq.IDContains,
-		NameContains:        baseReq.NameContains,
-		DescriptionContains: baseReq.DescriptionContains,
-		AttributesContain:   baseReq.AttributesContain,
-		DevEUIContains:      devEUIContains,
-		JoinEUIContains:     joinEUIContains,
-		DevAddrContains:     devAddrContains,
-		Limit:               baseReq.Limit,
-		Page:                baseReq.Page,
-		Order:               baseReq.Order,
-	}, opt, getTotal
-}
+}()
 
 var errNoIDs = errors.DefineInvalidArgument("no_ids", "no IDs set")
 
-func combinedIdentifiersFlags() *pflag.FlagSet {
+func entityIdentifiersSliceFlags() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
 	flagSet.StringSlice("application-id", nil, "")
 	flagSet.StringSlice("client-id", nil, "")
@@ -201,7 +205,7 @@ func combinedIdentifiersFlags() *pflag.FlagSet {
 	return flagSet
 }
 
-func getCombinedIdentifiers(flagSet *pflag.FlagSet) *ttnpb.CombinedIdentifiers {
+func getEntityIdentifiersSlice(flagSet *pflag.FlagSet) []*ttnpb.EntityIdentifiers {
 	applicationIDs, _ := flagSet.GetStringSlice("application-id")
 	clientIDs, _ := flagSet.GetStringSlice("client-id")
 	deviceIDs, _ := flagSet.GetStringSlice("device-id")
@@ -209,37 +213,39 @@ func getCombinedIdentifiers(flagSet *pflag.FlagSet) *ttnpb.CombinedIdentifiers {
 	organizationIDs, _ := flagSet.GetStringSlice("organization-id")
 	userIDs, _ := flagSet.GetStringSlice("user-id")
 
-	ids := &ttnpb.CombinedIdentifiers{}
+	var ids []*ttnpb.EntityIdentifiers
+
 	if len(deviceIDs) > 0 {
 		if len(clientIDs)+len(gatewayIDs)+len(organizationIDs)+len(userIDs) > 0 {
 			logger.Warn("considering only devices")
 		}
 		for _, deviceID := range deviceIDs {
 			for _, applicationID := range applicationIDs {
-				ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.EndDeviceIdentifiers{
-					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: applicationID},
-					DeviceID:               deviceID,
-				}.EntityIdentifiers())
+				ids = append(ids, (&ttnpb.EndDeviceIdentifiers{
+					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: applicationID},
+					DeviceId:               deviceID,
+				}).GetEntityIdentifiers())
 			}
 		}
 		return ids
 	}
 
 	for _, applicationID := range applicationIDs {
-		ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.ApplicationIdentifiers{ApplicationID: applicationID}.EntityIdentifiers())
+		ids = append(ids, (&ttnpb.ApplicationIdentifiers{ApplicationId: applicationID}).GetEntityIdentifiers())
 	}
 	for _, clientID := range clientIDs {
-		ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.ClientIdentifiers{ClientID: clientID}.EntityIdentifiers())
+		ids = append(ids, (&ttnpb.ClientIdentifiers{ClientId: clientID}).GetEntityIdentifiers())
 	}
 	for _, gatewayID := range gatewayIDs {
-		ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.GatewayIdentifiers{GatewayID: gatewayID}.EntityIdentifiers())
+		ids = append(ids, (&ttnpb.GatewayIdentifiers{GatewayId: gatewayID}).GetEntityIdentifiers())
 	}
 	for _, organizationID := range organizationIDs {
-		ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.OrganizationIdentifiers{OrganizationID: organizationID}.EntityIdentifiers())
+		ids = append(ids, (&ttnpb.OrganizationIdentifiers{OrganizationId: organizationID}).GetEntityIdentifiers())
 	}
 	for _, userID := range userIDs {
-		ids.EntityIdentifiers = append(ids.EntityIdentifiers, ttnpb.UserIdentifiers{UserID: userID}.EntityIdentifiers())
+		ids = append(ids, (&ttnpb.UserIdentifiers{UserId: userID}).GetEntityIdentifiers())
 	}
+
 	return ids
 }
 
@@ -309,8 +315,12 @@ func parseTime(s string, location *time.Location) (*time.Time, error) {
 	return &t, nil
 }
 
+func utcTimestampFlagName(name string) string {
+	return fmt.Sprintf("%s-utc", name)
+}
+
 func getTimestampFlags(flags *pflag.FlagSet, name string) (*time.Time, error) {
-	utcName := fmt.Sprintf("%s-utc", name)
+	utcName := utcTimestampFlagName(name)
 	if flags.Changed(utcName) {
 		s, _ := flags.GetString(utcName)
 		return parseTime(s, time.UTC)
@@ -320,4 +330,19 @@ func getTimestampFlags(flags *pflag.FlagSet, name string) (*time.Time, error) {
 		return parseTime(s, time.Local)
 	}
 	return nil, nil
+}
+
+func hasTimestampFlags(flags *pflag.FlagSet, name string) bool {
+	return flags.Changed(name) || flags.Changed(utcTimestampFlagName(name))
+}
+
+var deletedFlags = func() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.Bool("deleted", false, "return recently deleted")
+	return flagSet
+}()
+
+func getDeleted(flagSet *pflag.FlagSet) bool {
+	deleted, _ := flagSet.GetBool("deleted")
+	return deleted
 }

@@ -5,8 +5,6 @@ package ttnpb
 import (
 	fmt "fmt"
 	time "time"
-
-	types "github.com/gogo/protobuf/types"
 )
 
 func (dst *Client) SetFields(src *Client, paths ...string) error {
@@ -49,6 +47,15 @@ func (dst *Client) SetFields(src *Client, paths ...string) error {
 			} else {
 				var zero time.Time
 				dst.UpdatedAt = zero
+			}
+		case "deleted_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DeletedAt = src.DeletedAt
+			} else {
+				dst.DeletedAt = nil
 			}
 		case "name":
 			if len(subs) > 0 {
@@ -125,6 +132,16 @@ func (dst *Client) SetFields(src *Client, paths ...string) error {
 			} else {
 				var zero State
 				dst.State = zero
+			}
+		case "state_description":
+			if len(subs) > 0 {
+				return fmt.Errorf("'state_description' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.StateDescription = src.StateDescription
+			} else {
+				var zero string
+				dst.StateDescription = zero
 			}
 		case "skip_authorization":
 			if len(subs) > 0 {
@@ -220,8 +237,7 @@ func (dst *GetClientRequest) SetFields(src *GetClientRequest, paths ...string) e
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -266,8 +282,7 @@ func (dst *ListClientsRequest) SetFields(src *ListClientsRequest, paths ...strin
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 		case "order":
 			if len(subs) > 0 {
@@ -298,6 +313,16 @@ func (dst *ListClientsRequest) SetFields(src *ListClientsRequest, paths ...strin
 			} else {
 				var zero uint32
 				dst.Page = zero
+			}
+		case "deleted":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Deleted = src.Deleted
+			} else {
+				var zero bool
+				dst.Deleted = zero
 			}
 
 		default:
@@ -382,8 +407,7 @@ func (dst *UpdateClientRequest) SetFields(src *UpdateClientRequest, paths ...str
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:

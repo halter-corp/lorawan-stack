@@ -16,37 +16,18 @@ package applicationserver
 
 import (
 	"context"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"google.golang.org/grpc/peer"
 )
 
 var (
-	evtLinkStart = events.Define(
-		"as.link.start", "start link",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_LINK),
-	)
-	evtLinkStop = events.Define(
-		"as.link.stop", "stop link",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_LINK),
-	)
-	evtLinkFail = events.Define(
-		"as.link.fail", "fail link",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_LINK),
-		events.WithErrorDataType(),
-	)
-	evtApplicationSubscribe = events.Define(
-		"as.application.subscribe", "subscribe application",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_LINK),
-	)
-	evtApplicationUnsubscribe = events.Define(
-		"as.application.unsubscribe", "unsubscribe application",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_LINK),
-	)
 	evtReceiveDataUp = events.Define(
 		"as.up.data.receive", "receive uplink data message",
 		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
@@ -82,6 +63,16 @@ var (
 	)
 	evtForwardJoinAccept = events.Define(
 		"as.up.join.forward", "forward join-accept message",
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
+		events.WithDataType(&ttnpb.ApplicationUp{}),
+	)
+	evtForwardLocationSolved = events.Define(
+		"as.up.location.forward", "forward location solved message",
+		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
+		events.WithDataType(&ttnpb.ApplicationUp{}),
+	)
+	evtForwardServiceData = events.Define(
+		"as.up.service.forward", "forward service data message",
 		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
 		events.WithDataType(&ttnpb.ApplicationUp{}),
 	)
@@ -124,16 +115,6 @@ var (
 		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
 		events.WithDataType(&ttnpb.ApplicationDownlink{}),
 	)
-	evtLostQueueDataDown = events.Define(
-		"as.down.data.queue.lost", "lose downlink data queue",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
-		events.WithErrorDataType(),
-	)
-	evtInvalidQueueDataDown = events.Define(
-		"as.down.data.queue.invalid", "invalid downlink data queue",
-		events.WithVisibility(ttnpb.RIGHT_APPLICATION_TRAFFIC_READ),
-		events.WithErrorDataType(),
-	)
 )
 
 const (
@@ -145,46 +126,6 @@ const (
 )
 
 var asMetrics = &messageMetrics{
-	linksStarted: metrics.NewContextualCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: subsystem,
-			Name:      "links_started_total",
-			Help:      "Number of links started",
-		},
-		[]string{networkServer},
-	),
-	linksStopped: metrics.NewContextualCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: subsystem,
-			Name:      "links_stopped_total",
-			Help:      "Number of links stopped",
-		},
-		[]string{networkServer},
-	),
-	linksFailed: metrics.NewContextualCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: subsystem,
-			Name:      "links_failed_total",
-			Help:      "Number of links failed",
-		},
-		[]string{networkServer},
-	),
-	subscriptionsStarted: metrics.NewContextualCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: subsystem,
-			Name:      "subscriptions_started_total",
-			Help:      "Number of subscriptions started",
-		},
-		[]string{protocol},
-	),
-	subscriptionsStopped: metrics.NewContextualCounterVec(
-		prometheus.CounterOpts{
-			Subsystem: subsystem,
-			Name:      "subscriptions_stopped_total",
-			Help:      "Number of subscriptions stopped",
-		},
-		[]string{protocol},
-	),
 	uplinkReceived: metrics.NewContextualCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: subsystem,
@@ -208,6 +149,24 @@ var asMetrics = &messageMetrics{
 			Help:      "Total number of dropped uplinks (join-accepts and data)",
 		},
 		[]string{"error"},
+	),
+	nsAsUplinkLatency: metrics.NewContextualHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: "ns_as",
+			Name:      "uplink_latency_seconds",
+			Help:      "Histogram of uplink latency (seconds) between the Network Server and Application Server, including deduplication",
+			Buckets:   []float64{0.2, 0.4, 0.6, 0.8, 1.0, 2.0},
+		},
+		nil,
+	),
+	gtwAsUplinkLatency: metrics.NewContextualHistogramVec(
+		prometheus.HistogramOpts{
+			Subsystem: "gtw_as",
+			Name:      "uplink_latency_seconds",
+			Help:      "Histogram of uplink latency (seconds) between the Gateway and Application Server",
+			Buckets:   []float64{0.2, 0.4, 0.6, 0.8, 1.0, 2.0},
+		},
+		nil,
 	),
 	downlinkReceived: metrics.NewContextualCounterVec(
 		prometheus.CounterOpts{
@@ -240,88 +199,48 @@ func init() {
 }
 
 type messageMetrics struct {
-	linksStarted         *metrics.ContextualCounterVec
-	linksStopped         *metrics.ContextualCounterVec
-	linksFailed          *metrics.ContextualCounterVec
-	subscriptionsStarted *metrics.ContextualCounterVec
-	subscriptionsStopped *metrics.ContextualCounterVec
-	uplinkReceived       *metrics.ContextualCounterVec
-	uplinkForwarded      *metrics.ContextualCounterVec
-	uplinkDropped        *metrics.ContextualCounterVec
-	downlinkReceived     *metrics.ContextualCounterVec
-	downlinkForwarded    *metrics.ContextualCounterVec
-	downlinkDropped      *metrics.ContextualCounterVec
+	uplinkReceived     *metrics.ContextualCounterVec
+	uplinkForwarded    *metrics.ContextualCounterVec
+	uplinkDropped      *metrics.ContextualCounterVec
+	nsAsUplinkLatency  *metrics.ContextualHistogramVec
+	gtwAsUplinkLatency *metrics.ContextualHistogramVec
+	downlinkReceived   *metrics.ContextualCounterVec
+	downlinkForwarded  *metrics.ContextualCounterVec
+	downlinkDropped    *metrics.ContextualCounterVec
 }
 
 func (m messageMetrics) Describe(ch chan<- *prometheus.Desc) {
-	m.linksStarted.Describe(ch)
-	m.linksStopped.Describe(ch)
-	m.linksFailed.Describe(ch)
-	m.subscriptionsStarted.Describe(ch)
-	m.subscriptionsStopped.Describe(ch)
 	m.uplinkReceived.Describe(ch)
 	m.uplinkForwarded.Describe(ch)
 	m.uplinkDropped.Describe(ch)
+	m.nsAsUplinkLatency.Describe(ch)
+	m.gtwAsUplinkLatency.Describe(ch)
 	m.downlinkReceived.Describe(ch)
 	m.downlinkForwarded.Describe(ch)
 	m.downlinkDropped.Describe(ch)
 }
 
 func (m messageMetrics) Collect(ch chan<- prometheus.Metric) {
-	m.linksStarted.Collect(ch)
-	m.linksStopped.Collect(ch)
-	m.linksFailed.Collect(ch)
-	m.subscriptionsStarted.Collect(ch)
-	m.subscriptionsStopped.Collect(ch)
 	m.uplinkReceived.Collect(ch)
 	m.uplinkForwarded.Collect(ch)
 	m.uplinkDropped.Collect(ch)
+	m.nsAsUplinkLatency.Collect(ch)
+	m.gtwAsUplinkLatency.Collect(ch)
 	m.downlinkReceived.Collect(ch)
 	m.downlinkForwarded.Collect(ch)
 	m.downlinkDropped.Collect(ch)
 }
 
-func registerLinkStart(ctx context.Context, link *link) {
-	events.Publish(evtLinkStart.NewWithIdentifiersAndData(ctx, link.ApplicationIdentifiers, nil))
-	asMetrics.linksStarted.WithLabelValues(ctx, link.NetworkServerAddress).Inc()
-	asMetrics.linksStopped.WithLabelValues(ctx, link.NetworkServerAddress) // Initialize the "stopped" counter.
-}
-
-func registerLinkStop(ctx context.Context, link *link) {
-	events.Publish(evtLinkStop.NewWithIdentifiersAndData(ctx, link.ApplicationIdentifiers, nil))
-	asMetrics.linksStopped.WithLabelValues(ctx, link.NetworkServerAddress).Inc()
-}
-
-func registerLinkFail(ctx context.Context, link *link, err error) {
-	events.Publish(evtLinkFail.NewWithIdentifiersAndData(ctx, link.ApplicationIdentifiers, err))
-	asMetrics.linksFailed.WithLabelValues(ctx, link.NetworkServerAddress).Inc()
-}
-
-func registerSubscribe(ctx context.Context, sub *io.Subscription) {
-	var ids ttnpb.Identifiers
-	if appIDs := sub.ApplicationIDs(); appIDs != nil {
-		ids = appIDs
+func registerReceiveUp(ctx context.Context, msg *ttnpb.ApplicationUp) {
+	ns := "application"
+	if peer, ok := peer.FromContext(ctx); ok {
+		ns = peer.Addr.String()
 	}
-	events.Publish(evtApplicationSubscribe.NewWithIdentifiersAndData(ctx, ids, nil))
-	asMetrics.subscriptionsStarted.WithLabelValues(ctx, sub.Protocol()).Inc()
-	asMetrics.subscriptionsStopped.WithLabelValues(ctx, sub.Protocol()) // Initialize the "stopped" counter.
-}
-
-func registerUnsubscribe(ctx context.Context, sub *io.Subscription) {
-	var ids ttnpb.Identifiers
-	if appIDs := sub.ApplicationIDs(); appIDs != nil {
-		ids = appIDs
-	}
-	events.Publish(evtApplicationUnsubscribe.NewWithIdentifiersAndData(ctx, ids, nil))
-	asMetrics.subscriptionsStopped.WithLabelValues(ctx, sub.Protocol()).Inc()
-}
-
-func registerReceiveUp(ctx context.Context, msg *ttnpb.ApplicationUp, ns string) {
 	switch msg.Up.(type) {
 	case *ttnpb.ApplicationUp_JoinAccept:
-		events.Publish(evtReceiveJoinAccept.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, nil))
+		events.Publish(evtReceiveJoinAccept.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, nil))
 	case *ttnpb.ApplicationUp_UplinkMessage:
-		events.Publish(evtReceiveDataUp.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, nil))
+		events.Publish(evtReceiveDataUp.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, nil))
 	default:
 		return
 	}
@@ -331,21 +250,25 @@ func registerReceiveUp(ctx context.Context, msg *ttnpb.ApplicationUp, ns string)
 func registerForwardUp(ctx context.Context, msg *ttnpb.ApplicationUp) {
 	switch msg.Up.(type) {
 	case *ttnpb.ApplicationUp_JoinAccept:
-		events.Publish(evtForwardJoinAccept.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, msg))
+		events.Publish(evtForwardJoinAccept.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, msg))
 	case *ttnpb.ApplicationUp_UplinkMessage:
-		events.Publish(evtForwardDataUp.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, msg))
+		events.Publish(evtForwardDataUp.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, msg))
+	case *ttnpb.ApplicationUp_LocationSolved:
+		events.Publish(evtForwardLocationSolved.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, msg))
+	case *ttnpb.ApplicationUp_ServiceData:
+		events.Publish(evtForwardServiceData.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, msg))
 	default:
 		return
 	}
-	asMetrics.uplinkForwarded.WithLabelValues(ctx, msg.ApplicationID).Inc()
+	asMetrics.uplinkForwarded.WithLabelValues(ctx, msg.ApplicationId).Inc()
 }
 
 func registerDropUp(ctx context.Context, msg *ttnpb.ApplicationUp, err error) {
 	switch msg.Up.(type) {
 	case *ttnpb.ApplicationUp_JoinAccept:
-		events.Publish(evtDropJoinAccept.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, err))
+		events.Publish(evtDropJoinAccept.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, err))
 	case *ttnpb.ApplicationUp_UplinkMessage:
-		events.Publish(evtDropDataUp.NewWithIdentifiersAndData(ctx, msg.EndDeviceIdentifiers, err))
+		events.Publish(evtDropDataUp.NewWithIdentifiersAndData(ctx, &msg.EndDeviceIdentifiers, err))
 	default:
 		return
 	}
@@ -356,21 +279,73 @@ func registerDropUp(ctx context.Context, msg *ttnpb.ApplicationUp, err error) {
 	}
 }
 
+func registerUplinkLatency(ctx context.Context, msg *ttnpb.ApplicationUplink) {
+	asMetrics.nsAsUplinkLatency.WithLabelValues(ctx).Observe(time.Since(msg.ReceivedAt).Seconds())
+	for _, meta := range msg.RxMetadata {
+		if meta.Time != nil && !meta.Time.IsZero() {
+			asMetrics.gtwAsUplinkLatency.WithLabelValues(ctx).Observe(time.Since(*meta.Time).Seconds())
+		}
+	}
+}
+
 func registerReceiveDownlink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, msg *ttnpb.ApplicationDownlink) {
-	events.Publish(evtReceiveDataDown.NewWithIdentifiersAndData(ctx, ids, msg))
-	asMetrics.downlinkReceived.WithLabelValues(ctx, ids.ApplicationID).Inc()
+	events.Publish(evtReceiveDataDown.NewWithIdentifiersAndData(ctx, &ids, msg))
+	asMetrics.downlinkReceived.WithLabelValues(ctx, ids.ApplicationId).Inc()
+}
+
+func registerReceiveDownlinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, items []*ttnpb.ApplicationDownlink) {
+	for _, item := range items {
+		registerReceiveDownlink(ctx, ids, item)
+	}
 }
 
 func registerForwardDownlink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, msg *ttnpb.ApplicationDownlink, ns string) {
-	events.Publish(evtForwardDataDown.NewWithIdentifiersAndData(ctx, ids, msg))
+	events.Publish(evtForwardDataDown.NewWithIdentifiersAndData(ctx, &ids, msg))
 	asMetrics.downlinkForwarded.WithLabelValues(ctx, ns).Inc()
 }
 
 func registerDropDownlink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, msg *ttnpb.ApplicationDownlink, err error) {
-	events.Publish(evtDropDataDown.NewWithIdentifiersAndData(ctx, ids, err))
+	events.Publish(evtDropDataDown.NewWithIdentifiersAndData(ctx, &ids, err))
 	if ttnErr, ok := errors.From(err); ok {
 		asMetrics.downlinkDropped.WithLabelValues(ctx, ttnErr.FullName()).Inc()
 	} else {
 		asMetrics.downlinkDropped.WithLabelValues(ctx, unknown).Inc()
+	}
+}
+
+func (as *ApplicationServer) registerDropDownlinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, items []*ttnpb.ApplicationDownlink, err error) {
+	var errorDetails ttnpb.ErrorDetails
+	if ttnErr, ok := err.(errors.ErrorDetails); ok {
+		errorDetails = *ttnpb.ErrorDetailsToProto(ttnErr)
+	}
+	for _, item := range items {
+		if err := as.publishUp(ctx, &ttnpb.ApplicationUp{
+			EndDeviceIdentifiers: ids,
+			CorrelationIDs:       item.CorrelationIDs,
+			Up: &ttnpb.ApplicationUp_DownlinkFailed{
+				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{
+					ApplicationDownlink: *item,
+					Error:               errorDetails,
+				},
+			},
+		}); err != nil {
+			log.FromContext(ctx).WithError(err).Warn("Failed to send upstream message")
+		}
+		registerDropDownlink(ctx, ids, item, err)
+	}
+}
+
+func (as *ApplicationServer) registerForwardDownlinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, items []*ttnpb.ApplicationDownlink, peerName string) {
+	for _, item := range items {
+		if err := as.publishUp(ctx, &ttnpb.ApplicationUp{
+			EndDeviceIdentifiers: ids,
+			CorrelationIDs:       item.CorrelationIDs,
+			Up: &ttnpb.ApplicationUp_DownlinkQueued{
+				DownlinkQueued: item,
+			},
+		}); err != nil {
+			log.FromContext(ctx).WithError(err).Warn("Failed to send upstream message")
+		}
+		registerForwardDownlink(ctx, ids, item, peerName)
 	}
 }

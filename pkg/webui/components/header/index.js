@@ -24,13 +24,11 @@ import ProfileDropdown from '@ttn-lw/components/profile-dropdown'
 import MobileMenu from '@ttn-lw/components/mobile-menu'
 import Input from '@ttn-lw/components/input'
 
-import Logo from '@ttn-lw/containers/logo'
-
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './header.styl'
 
-const Header = function({
+const Header = ({
   className,
   dropdownItems,
   navigationEntries,
@@ -41,7 +39,7 @@ const Header = function({
   onLogout,
   onSearchRequest,
   ...rest
-}) {
+}) => {
   const isGuest = !Boolean(user)
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -73,10 +71,11 @@ const Header = function({
               className={style.profileDropdown}
               userName={user.name || user.ids.user_id}
               data-test-id="profile-dropdown"
+              profilePicture={user.profile_picture}
             >
               {dropdownItems}
             </ProfileDropdown>
-            <button onClick={handleMobileMenuClick} className={style.mobileMenu}>
+            <button onClick={handleMobileMenuClick} className={style.mobileMenuButton}>
               <Icon className={style.preloadIcons} icon="." />
               <div className={style.hamburger}>
                 <img src={hamburgerGraphic} alt="Open Mobile Menu" />
@@ -86,7 +85,12 @@ const Header = function({
         )}
       </div>
       {mobileMenuOpen && (
-        <MobileMenu onItemsClick={handleMobileMenuItemsClick} onLogout={onLogout} user={user}>
+        <MobileMenu
+          className={style.mobileMenu}
+          onItemsClick={handleMobileMenuItemsClick}
+          onLogout={onLogout}
+          user={user}
+        >
           {mobileDropdownItems}
         </MobileMenu>
       )}
@@ -99,7 +103,8 @@ Header.propTypes = {
   className: PropTypes.string,
   /** The child node of the dropdown component. */
   dropdownItems: ProfileDropdown.propTypes.children,
-  logo: PropTypes.node,
+  /** The logo component. */
+  logo: PropTypes.node.isRequired,
   /** The child node of the mobile dropdown. */
   mobileDropdownItems: PropTypes.node.isRequired,
   /** The Child node of the navigation bar. */
@@ -122,7 +127,6 @@ Header.defaultProps = {
   dropdownItems: undefined,
   navigationEntries: undefined,
   onSearchRequest: () => null,
-  logo: <Logo />,
   searchable: false,
   user: undefined,
 }

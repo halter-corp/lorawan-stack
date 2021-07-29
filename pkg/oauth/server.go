@@ -22,11 +22,13 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	"github.com/openshift/osin"
+	"go.thethings.network/lorawan-stack/v3/pkg/account/session"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	web_errors "go.thethings.network/lorawan-stack/v3/pkg/errors/web"
 	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/web"
 	"go.thethings.network/lorawan-stack/v3/pkg/web/middleware"
 	"go.thethings.network/lorawan-stack/v3/pkg/webui"
@@ -36,9 +38,6 @@ import (
 type Server interface {
 	web.Registerer
 
-	Login(c echo.Context) error
-	CurrentUser(c echo.Context) error
-	Logout(c echo.Context) error
 	Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc
 	Token(c echo.Context) error
 }
@@ -48,6 +47,7 @@ type server struct {
 	config     Config
 	osinConfig *osin.ServerConfig
 	store      Store
+	session    session.Session
 }
 
 // Store used by the OAuth server.
@@ -64,9 +64,10 @@ type Store interface {
 // NewServer returns a new OAuth server on top of the given store.
 func NewServer(c *component.Component, store Store, config Config) (Server, error) {
 	s := &server{
-		c:      c,
-		config: config,
-		store:  store,
+		c:       c,
+		config:  config,
+		store:   store,
+		session: session.Session{Store: store},
 	}
 
 	if s.config.Mount == "" {
@@ -116,12 +117,41 @@ func (s *server) oauth2(ctx context.Context) *osin.Server {
 	oauth2.AuthorizeTokenGen = s
 	oauth2.AccessTokenGen = s
 	oauth2.Now = s.now
-	oauth2.Logger = s
+	oauth2.Logger = &osinLogger{ctx: ctx}
 	return oauth2
 }
 
-func (s *server) Printf(format string, v ...interface{}) {
-	log.FromContext(s.c.Context()).Warnf(format, v...)
+const (
+	osinErrorFormat             = "error=%v, internal_error=%#v "
+	osinAuthCodeErrorFormat     = "auth_code_request=%s"
+	osinRefreshTokenErrorFormat = "refresh_token=%s"
+)
+
+type osinLogger struct {
+	ctx context.Context
+}
+
+func (l *osinLogger) Printf(format string, v ...interface{}) {
+	logger := log.FromContext(l.ctx)
+	if strings.HasPrefix(format, osinErrorFormat) && len(v) >= 2 {
+		format = strings.TrimPrefix(format, osinErrorFormat)
+		logger = logger.WithField("oauth_error", v[0])
+		if err, ok := v[1].(error); ok {
+			logger = logger.WithField("oauth_error_cause", err)
+		}
+		v = v[2:]
+		if len(v) >= 1 {
+			switch format {
+			case osinAuthCodeErrorFormat:
+				logger.WithField("oauth_error_message", v[0]).Warn("OAuth authorization_code error")
+				return
+			case osinRefreshTokenErrorFormat:
+				logger.WithField("oauth_error_message", v[0]).Warn("OAuth refresh_token error")
+				return
+			}
+		}
+	}
+	logger.Warnf("OAuth internal error: "+format, v...)
 }
 
 // These errors map to errors in the osin library.
@@ -202,6 +232,7 @@ func (s *server) output(c echo.Context, resp *osin.Response) error {
 func (s *server) RegisterRoutes(server *web.Server) {
 	root := server.Group(
 		s.config.Mount,
+		ratelimit.EchoMiddleware(s.c.RateLimiter(), "http:oauth"),
 		func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
 				config := s.configFromContext(c.Request().Context())
@@ -223,18 +254,14 @@ func (s *server) RegisterRoutes(server *web.Server) {
 
 	csrfMiddleware := middleware.CSRF("_csrf", "/", s.config.CSRFAuthKey)
 
-	api := root.Group("/api", csrfMiddleware)
-	api.POST("/auth/login", s.Login)
-	api.POST("/auth/logout", s.Logout, s.requireLogin)
-	api.GET("/me", s.CurrentUser, s.requireLogin)
-
 	page := root.Group("", csrfMiddleware)
-	page.GET("/login", webui.Template.Handler, s.redirectToNext)
+
+	// The logout route is currently in use by existing OAuth clients. As part of
+	// the public API it should not be removed in this major.
 	page.GET("/logout", s.ClientLogout)
+
 	page.GET("/authorize", s.Authorize(webui.Template.Handler), s.redirectToLogin)
 	page.POST("/authorize", s.Authorize(webui.Template.Handler), s.redirectToLogin)
-	page.GET("/", webui.Template.Handler, s.redirectToLogin)
-	page.GET("/*", webui.Template.Handler)
 
 	root.GET("/local-callback", s.redirectToLocal)
 

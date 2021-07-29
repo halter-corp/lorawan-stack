@@ -110,14 +110,14 @@ func TestMarshalJSON(t *testing.T) {
 
 func TestJoinRequest(t *testing.T) {
 	gtwID := ttnpb.GatewayIdentifiers{
-		GatewayID: "eui-1122334455667788",
-		EUI:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+		GatewayId: "eui-1122334455667788",
+		Eui:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
 	}
 
 	for _, tc := range []struct {
 		Name                  string
 		JoinRequest           JoinRequest
-		GatewayIDs            ttnpb.GatewayIdentifiers
+		GatewayIds            ttnpb.GatewayIdentifiers
 		BandID                string
 		ExpectedUplinkMessage ttnpb.UplinkMessage
 		ErrorAssertion        func(err error) bool
@@ -141,7 +141,7 @@ func TestJoinRequest(t *testing.T) {
 					},
 				},
 			},
-			GatewayIDs:     gtwID,
+			GatewayIds:     gtwID,
 			BandID:         "EU_86_870",
 			ErrorAssertion: errors.IsInvalidArgument,
 		},
@@ -164,22 +164,22 @@ func TestJoinRequest(t *testing.T) {
 					},
 				},
 			},
-			GatewayIDs:     gtwID,
+			GatewayIds:     gtwID,
 			BandID:         "EU_868_870",
 			ErrorAssertion: errors.IsInvalidArgument,
 		},
 		{
 			Name:        "EmptyJoinRequest",
 			JoinRequest: JoinRequest{},
-			GatewayIDs:  gtwID,
+			GatewayIds:  gtwID,
 			BandID:      "EU_863_870",
 			ExpectedUplinkMessage: ttnpb.UplinkMessage{
 				Payload: &ttnpb.Message{
 					MIC:  []byte{0, 0, 0, 0},
 					MHDR: ttnpb.MHDR{MType: ttnpb.MType_JOIN_REQUEST, Major: ttnpb.Major_LORAWAN_R1},
 					Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-						JoinEUI:  types.EUI64{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-						DevEUI:   types.EUI64{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+						JoinEui:  types.EUI64{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+						DevEui:   types.EUI64{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 						DevNonce: [2]byte{0x00, 0x00},
 					}},
 				},
@@ -188,7 +188,7 @@ func TestJoinRequest(t *testing.T) {
 				}},
 				Settings: ttnpb.TxSettings{
 					CodingRate: "4/5",
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 12,
 						Bandwidth:       125000,
 					}}},
@@ -214,15 +214,15 @@ func TestJoinRequest(t *testing.T) {
 					},
 				},
 			},
-			GatewayIDs: gtwID,
+			GatewayIds: gtwID,
 			BandID:     "EU_863_870",
 			ExpectedUplinkMessage: ttnpb.UplinkMessage{
 				Payload: &ttnpb.Message{
 					MHDR: ttnpb.MHDR{MType: ttnpb.MType_JOIN_REQUEST, Major: ttnpb.Major_LORAWAN_R1},
 					MIC:  []byte{0x4E, 0x61, 0xBC, 0x00},
 					Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-						JoinEUI:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
-						DevEUI:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+						JoinEui:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
+						DevEui:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
 						DevNonce: [2]byte{0x46, 0x50},
 					}},
 				},
@@ -241,7 +241,7 @@ func TestJoinRequest(t *testing.T) {
 					Time:       &[]time.Time{time.Unix(1548059982, 0)}[0],
 					Timestamp:  (uint32)(12666373963464220 & 0xFFFFFFFF),
 					CodingRate: "4/5",
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -251,7 +251,7 @@ func TestJoinRequest(t *testing.T) {
 	} {
 		t.Run(tc.Name, func(t *testing.T) {
 			a := assertions.New(t)
-			msg, err := tc.JoinRequest.toUplinkMessage(tc.GatewayIDs, tc.BandID, time.Time{})
+			msg, err := tc.JoinRequest.toUplinkMessage(tc.GatewayIds, tc.BandID, time.Time{})
 			if err != nil {
 				if tc.ErrorAssertion == nil || !a.So(tc.ErrorAssertion(err), should.BeTrue) {
 					t.Fatalf("Unexpected error: %v", err)
@@ -275,14 +275,14 @@ func TestJoinRequest(t *testing.T) {
 
 func TestUplinkDataFrame(t *testing.T) {
 	gtwID := ttnpb.GatewayIdentifiers{
-		GatewayID: "eui-1122334455667788",
-		EUI:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+		GatewayId: "eui-1122334455667788",
+		Eui:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
 	}
 
 	for _, tc := range []struct {
 		Name                  string
 		UplinkDataFrame       UplinkDataFrame
-		GatewayIDs            ttnpb.GatewayIdentifiers
+		GatewayIds            ttnpb.GatewayIdentifiers
 		FrequencyPlanID       string
 		ExpectedUplinkMessage ttnpb.UplinkMessage
 		ErrorAssertion        func(err error) bool
@@ -290,7 +290,7 @@ func TestUplinkDataFrame(t *testing.T) {
 		{
 			Name:                  "Empty",
 			UplinkDataFrame:       UplinkDataFrame{},
-			GatewayIDs:            gtwID,
+			GatewayIds:            gtwID,
 			FrequencyPlanID:       "EU_863_870",
 			ExpectedUplinkMessage: ttnpb.UplinkMessage{},
 			ErrorAssertion: func(err error) bool {
@@ -319,7 +319,7 @@ func TestUplinkDataFrame(t *testing.T) {
 					},
 				},
 			},
-			GatewayIDs:      gtwID,
+			GatewayIds:      gtwID,
 			FrequencyPlanID: "EU_863_870",
 			ExpectedUplinkMessage: ttnpb.UplinkMessage{
 				Payload: &ttnpb.Message{
@@ -354,7 +354,7 @@ func TestUplinkDataFrame(t *testing.T) {
 					Time:       &[]time.Time{time.Unix(1548059982, 0)}[0],
 					CodingRate: "4/5",
 					Frequency:  868300000,
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -383,7 +383,7 @@ func TestUplinkDataFrame(t *testing.T) {
 					},
 				},
 			},
-			GatewayIDs:      gtwID,
+			GatewayIds:      gtwID,
 			FrequencyPlanID: "EU_863_870",
 			ExpectedUplinkMessage: ttnpb.UplinkMessage{
 				Payload: &ttnpb.Message{
@@ -418,7 +418,7 @@ func TestUplinkDataFrame(t *testing.T) {
 					Timestamp:  (uint32)(12666373963464220 & 0xFFFFFFFF),
 					Time:       &[]time.Time{time.Unix(1548059982, 0)}[0],
 					CodingRate: "4/5",
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -428,7 +428,7 @@ func TestUplinkDataFrame(t *testing.T) {
 	} {
 		t.Run(tc.Name, func(t *testing.T) {
 			a := assertions.New(t)
-			msg, err := tc.UplinkDataFrame.toUplinkMessage(tc.GatewayIDs, tc.FrequencyPlanID, time.Time{})
+			msg, err := tc.UplinkDataFrame.toUplinkMessage(tc.GatewayIds, tc.FrequencyPlanID, time.Time{})
 			if err != nil {
 				if tc.ErrorAssertion == nil || !a.So(tc.ErrorAssertion(err), should.BeTrue) {
 					t.Fatalf("Unexpected error: %v", err)
@@ -447,14 +447,14 @@ func TestUplinkDataFrame(t *testing.T) {
 
 func TestFromUplinkDataFrame(t *testing.T) {
 	gtwID := ttnpb.GatewayIdentifiers{
-		GatewayID: "eui-1122334455667788",
-		EUI:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+		GatewayId: "eui-1122334455667788",
+		Eui:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
 	}
 
 	for _, tc := range []struct {
 		Name                    string
 		UplinkMessage           ttnpb.UplinkMessage
-		GatewayIDs              ttnpb.GatewayIdentifiers
+		GatewayIds              ttnpb.GatewayIdentifiers
 		FrequencyPlanID         string
 		ExpectedUplinkDataFrame UplinkDataFrame
 		ErrorAssertion          func(err error) bool
@@ -478,8 +478,8 @@ func TestFromUplinkDataFrame(t *testing.T) {
 						FHDR: ttnpb.FHDR{
 							DevAddr: types.DevAddr{0x42, 0xff, 0xff, 0xff},
 							FCtrl: ttnpb.FCtrl{
-								ADR:       true,
-								ADRAckReq: false,
+								Adr:       true,
+								AdrAckReq: false,
 								Ack:       true,
 								ClassB:    true,
 								FPending:  false,
@@ -503,7 +503,7 @@ func TestFromUplinkDataFrame(t *testing.T) {
 				},
 				Settings: ttnpb.TxSettings{
 					Frequency: 868300000,
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -553,8 +553,8 @@ func TestFromUplinkDataFrame(t *testing.T) {
 
 func TestJreqFromUplinkDataFrame(t *testing.T) {
 	gtwID := ttnpb.GatewayIdentifiers{
-		GatewayID: "eui-1122334455667788",
-		EUI:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+		GatewayId: "eui-1122334455667788",
+		Eui:       &types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
 	}
 
 	for _, tc := range []struct {
@@ -580,8 +580,8 @@ func TestJreqFromUplinkDataFrame(t *testing.T) {
 				Payload: &ttnpb.Message{
 					MHDR: ttnpb.MHDR{MType: ttnpb.MType_JOIN_REQUEST, Major: 0},
 					Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-						JoinEUI:  types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-						DevEUI:   types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+						JoinEui:  types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+						DevEui:   types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
 						DevNonce: types.DevNonce{0x42, 0xff},
 					}},
 					MIC: []byte{0x42, 0xff, 0xff, 0x0f},
@@ -597,7 +597,7 @@ func TestJreqFromUplinkDataFrame(t *testing.T) {
 				},
 				Settings: ttnpb.TxSettings{
 					Frequency: 868300000,
-					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+					DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 						SpreadingFactor: 11,
 						Bandwidth:       125000,
 					}}},
@@ -648,14 +648,18 @@ func TestTxAck(t *testing.T) {
 		Diid:    1,
 		RefTime: 0,
 	}
-	correlationIDs := []string{"i3N84kvunPAS8wOmiEKbhsP62wNMRdmn", "deK3h59wUZhR0xb17eumTkauGQxoB5xn"}
+	msg := &ttnpb.DownlinkMessage{
+		RawPayload:     []byte{0x00, 0x00},
+		CorrelationIDs: []string{"cid:1", "cid:2"},
+	}
 	var lnsLNS lbsLNS
 	now := time.Now()
-	lnsLNS.tokens.Next(correlationIDs, time.Unix(int64(0), 0))
+	lnsLNS.tokens.Next(msg, time.Unix(int64(0), 0))
 	txAck := txConf.ToTxAck(context.Background(), lnsLNS.tokens, now)
 	if !a.So(txAck, should.Resemble, &ttnpb.TxAcknowledgment{
-		CorrelationIDs: correlationIDs,
-		Result:         ttnpb.TxAcknowledgment_SUCCESS,
+		DownlinkMessage: msg,
+		CorrelationIDs:  msg.CorrelationIDs,
+		Result:          ttnpb.TxAcknowledgment_SUCCESS,
 	}) {
 		t.Fatalf("Unexpected TxAck: %v", txAck)
 	}

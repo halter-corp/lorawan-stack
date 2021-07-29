@@ -28,7 +28,7 @@ import ApplicationWebhookChoose from '@console/views/application-integrations-we
 import ApplicationWebhookEdit from '@console/views/application-integrations-webhook-edit'
 import ApplicationWebhookAdd from '@console/views/application-integrations-webhook-add'
 import ApplicationWebhooksList from '@console/views/application-integrations-webhooks-list'
-import SubViewError from '@console/views/error/sub-view'
+import SubViewError from '@console/views/sub-view-error'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -45,15 +45,26 @@ import {
 } from '@console/store/selectors/webhook-templates'
 
 const selector = [
+  'base_url',
+  'create_downlink_api_key',
   'description',
-  'logo_url',
-  'info_url',
   'documentation_url',
+  'downlink_ack',
+  'downlink_failed',
+  'downlink_nack',
+  'downlink_queue_invalidated',
+  'downlink_queued',
+  'downlink_sent',
   'fields',
   'format',
   'headers',
-  'create_downlink_api_key',
-  'base_url',
+  'ids',
+  'info_url',
+  'join_accept',
+  'location_solved',
+  'logo_url',
+  'name',
+  'service_data',
   'uplink_message',
 ]
 

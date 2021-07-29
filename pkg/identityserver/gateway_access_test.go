@@ -17,6 +17,7 @@ package identityserver
 import (
 	"testing"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -42,6 +43,8 @@ func init() {
 			ttnpb.RIGHT_GATEWAY_ALL,
 		}
 	}
+	userGateways(&defaultUser.UserIdentifiers).Gateways[0].StatusPublic = false
+	userGateways(&defaultUser.UserIdentifiers).Gateways[0].LocationPublic = false
 }
 
 func TestGatewayAccessNotFound(t *testing.T) {
@@ -61,7 +64,7 @@ func TestGatewayAccessNotFound(t *testing.T) {
 
 		got, err := reg.GetAPIKey(ctx, &ttnpb.GetGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
-			KeyID:              apiKey.ID,
+			KeyId:              apiKey.ID,
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -72,6 +75,7 @@ func TestGatewayAccessNotFound(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
 			APIKey:             apiKey,
+			FieldMask:          &pbtypes.FieldMask{Paths: []string{"name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -115,6 +119,7 @@ func TestGatewayAccessRightsPermissionDenied(t *testing.T) {
 				Name:   APIKey.Name,
 				Rights: []ttnpb.Right{right},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -157,7 +162,7 @@ func TestGatewayAccessPermissionDenied(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
-			KeyID:              APIKeyID,
+			KeyId:              APIKeyID,
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -179,7 +184,7 @@ func TestGatewayAccessPermissionDenied(t *testing.T) {
 		})
 
 		if a.So(err, should.NotBeNil) {
-			a.So(errors.IsPermissionDenied(err), should.BeTrue)
+			a.So(errors.IsUnauthenticated(err), should.BeTrue)
 		}
 		a.So(collaborators, should.BeNil)
 
@@ -200,6 +205,7 @@ func TestGatewayAccessPermissionDenied(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
 			APIKey:             *APIKey,
+			FieldMask:          &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -259,7 +265,7 @@ func TestGatewayAccessCRUD(t *testing.T) {
 		}
 
 		modifiedGatewayID := gatewayID
-		modifiedGatewayID.GatewayID = reverse(modifiedGatewayID.GatewayID)
+		modifiedGatewayID.GatewayId = reverse(modifiedGatewayID.GatewayId)
 
 		rights, err = reg.ListRights(ctx, &modifiedGatewayID, creds)
 
@@ -273,7 +279,7 @@ func TestGatewayAccessCRUD(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
-			KeyID:              gatewayKey.ID,
+			KeyId:              gatewayKey.ID,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -321,6 +327,7 @@ func TestGatewayAccessCRUD(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
 			APIKey:             *APIKey,
+			FieldMask:          &pbtypes.FieldMask{Paths: []string{"name"}},
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -427,6 +434,7 @@ func TestGatewayAccessRights(t *testing.T) {
 					ttnpb.RIGHT_GATEWAY_SETTINGS_COLLABORATORS,
 				},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -452,6 +460,7 @@ func TestGatewayAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, usrCreds)
 
 		a.So(err, should.BeNil)
@@ -466,6 +475,7 @@ func TestGatewayAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
@@ -503,6 +513,7 @@ func TestGatewayAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Sub(ttnpb.RightsFrom(ttnpb.RIGHT_GATEWAY_DELETE)).Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -516,7 +527,6 @@ func TestGatewayAccessRights(t *testing.T) {
 
 		if a.So(err, should.BeNil) {
 			a.So(res.Rights, should.Resemble, newRights.Rights)
-
 		}
 
 		// Delete collaborator with more rights
@@ -546,13 +556,14 @@ func TestGatewayAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: []ttnpb.Right{},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
 
 		_, err = reg.GetAPIKey(ctx, &ttnpb.GetGatewayAPIKeyRequest{
 			GatewayIdentifiers: gatewayID,
-			KeyID:              APIKey.ID,
+			KeyId:              APIKey.ID,
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {

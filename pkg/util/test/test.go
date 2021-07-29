@@ -21,7 +21,88 @@ import (
 	"time"
 
 	"github.com/smartystreets/assertions"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/crypto/cryptoutil"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
+)
+
+const (
+	DefaultApplicationID = "test-app-id"
+	DefaultDeviceID      = "test-dev-id"
+
+	DefaultRootKeyID = "test-root-key-id"
+)
+
+var (
+	ErrInternal = errors.DefineInternal("test_internal", "test error")
+	ErrNotFound = errors.DefineNotFound("test_not_found", "test error")
+
+	DefaultApplicationIdentifiers = ttnpb.ApplicationIdentifiers{
+		ApplicationId: DefaultApplicationID,
+	}
+
+	DefaultJoinEUI = types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	DefaultDevEUI  = types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+
+	DefaultAppKey = types.AES128Key{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	DefaultNwkKey = types.AES128Key{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+
+	DefaultJoinNonce = types.JoinNonce{0x42, 0xff, 0xff}
+	DefaultDevNonce  = types.DevNonce{0x42, 0xff}
+
+	DefaultSessionKeyID = []byte("test-session-key-id")
+
+	DefaultKEK      = types.AES128Key{0x42, 0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	DefaultKEKLabel = "test-kek-label"
+
+	DefaultKeyVault = config.KeyVault{
+		Provider: "static",
+		Static: map[string][]byte{
+			DefaultKEKLabel: DefaultKEK[:],
+		},
+	}
+
+	DefaultAppSKey     = crypto.DeriveAppSKey(DefaultNwkKey, DefaultJoinNonce, DefaultJoinEUI, DefaultDevNonce)
+	DefaultFNwkSIntKey = crypto.DeriveFNwkSIntKey(DefaultNwkKey, DefaultJoinNonce, DefaultJoinEUI, DefaultDevNonce)
+	DefaultNwkSEncKey  = crypto.DeriveNwkSEncKey(DefaultNwkKey, DefaultJoinNonce, DefaultJoinEUI, DefaultDevNonce)
+	DefaultSNwkSIntKey = crypto.DeriveSNwkSIntKey(DefaultNwkKey, DefaultJoinNonce, DefaultJoinEUI, DefaultDevNonce)
+
+	DefaultAppSKeyEnvelope = &ttnpb.KeyEnvelope{
+		Key: &DefaultAppSKey,
+	}
+	DefaultFNwkSIntKeyEnvelope = &ttnpb.KeyEnvelope{
+		Key: &DefaultFNwkSIntKey,
+	}
+	DefaultNwkSEncKeyEnvelope = &ttnpb.KeyEnvelope{
+		Key: &DefaultNwkSEncKey,
+	}
+	DefaultSNwkSIntKeyEnvelope = &ttnpb.KeyEnvelope{
+		Key: &DefaultSNwkSIntKey,
+	}
+
+	DefaultAppSKeyEnvelopeWrapped     = Must(cryptoutil.WrapAES128KeyWithKEK(Context(), DefaultAppSKey, DefaultKEKLabel, DefaultKEK)).(*ttnpb.KeyEnvelope)
+	DefaultFNwkSIntKeyEnvelopeWrapped = Must(cryptoutil.WrapAES128KeyWithKEK(Context(), DefaultFNwkSIntKey, DefaultKEKLabel, DefaultKEK)).(*ttnpb.KeyEnvelope)
+	DefaultNwkSEncKeyEnvelopeWrapped  = Must(cryptoutil.WrapAES128KeyWithKEK(Context(), DefaultNwkSEncKey, DefaultKEKLabel, DefaultKEK)).(*ttnpb.KeyEnvelope)
+	DefaultSNwkSIntKeyEnvelopeWrapped = Must(cryptoutil.WrapAES128KeyWithKEK(Context(), DefaultSNwkSIntKey, DefaultKEKLabel, DefaultKEK)).(*ttnpb.KeyEnvelope)
+
+	DefaultAppSKeyWrapped     = DefaultAppSKeyEnvelopeWrapped.EncryptedKey
+	DefaultFNwkSIntKeyWrapped = DefaultFNwkSIntKeyEnvelopeWrapped.EncryptedKey
+	DefaultNwkSEncKeyWrapped  = DefaultNwkSEncKeyEnvelopeWrapped.EncryptedKey
+	DefaultSNwkSIntKeyWrapped = DefaultSNwkSIntKeyEnvelopeWrapped.EncryptedKey
+
+	DefaultNetID   = Must(types.NewNetID(2, []byte{0x00, 0x42, 0xff})).(types.NetID)
+	DefaultDevAddr = Must(types.NewDevAddr(DefaultNetID, []byte{0x00, 0x02, 0xff, 0xff})).(types.DevAddr)
+
+	DefaultLegacyAppSKey = crypto.DeriveLegacyAppSKey(DefaultNwkKey, DefaultJoinNonce, DefaultNetID, DefaultDevNonce)
+	DefaultLegacyNwkSKey = crypto.DeriveLegacyNwkSKey(DefaultNwkKey, DefaultJoinNonce, DefaultNetID, DefaultDevNonce)
+
+	DefaultMACVersion      = ttnpb.MAC_V1_1
+	DefaultPHYVersion      = ttnpb.RP001_V1_1_REV_B
+	DefaultFrequencyPlanID = EUFrequencyPlanID
 )
 
 func NewWithContext(ctx context.Context, tb testing.TB) (*assertions.Assertion, context.Context) {

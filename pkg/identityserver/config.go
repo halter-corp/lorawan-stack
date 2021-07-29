@@ -16,9 +16,11 @@ package identityserver
 
 import (
 	"context"
+	"net/http"
+	"os"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/email"
 	"go.thethings.network/lorawan-stack/v3/pkg/email/sendgrid"
@@ -26,28 +28,33 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/fetch"
 	"go.thethings.network/lorawan-stack/v3/pkg/oauth"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	ttntypes "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // Config for the Identity Server
 type Config struct {
 	DatabaseURI      string `name:"database-uri" description:"Database connection URI"`
 	UserRegistration struct {
+		Enabled    bool `name:"enabled" description:"Enable user registration"`
 		Invitation struct {
 			Required bool          `name:"required" description:"Require invitations for new users"`
 			TokenTTL time.Duration `name:"token-ttl" description:"TTL of user invitation tokens"`
 		} `name:"invitation"`
 		ContactInfoValidation struct {
-			Required bool `name:"required" description:"Require contact info validation for new users"`
+			Required bool          `name:"required" description:"Require contact info validation for new users"`
+			TokenTTL time.Duration `name:"token-ttl" description:"TTL of contact info validation tokens"`
 		} `name:"contact-info-validation"`
 		AdminApproval struct {
 			Required bool `name:"required" description:"Require admin approval for new users"`
 		} `name:"admin-approval"`
 		PasswordRequirements struct {
-			MinLength    int `name:"min-length" description:"Minimum password length"`
-			MaxLength    int `name:"max-length" description:"Maximum password length"`
-			MinUppercase int `name:"min-uppercase" description:"Minimum number of uppercase letters"`
-			MinDigits    int `name:"min-digits" description:"Minimum number of digits"`
-			MinSpecial   int `name:"min-special" description:"Minimum number of special characters"`
+			MinLength    int  `name:"min-length" description:"Minimum password length"`
+			MaxLength    int  `name:"max-length" description:"Maximum password length"`
+			MinUppercase int  `name:"min-uppercase" description:"Minimum number of uppercase letters"`
+			MinDigits    int  `name:"min-digits" description:"Minimum number of digits"`
+			MinSpecial   int  `name:"min-special" description:"Minimum number of special characters"`
+			RejectUserID bool `name:"reject-user-id" description:"Reject passwords that contain user ID"`
+			RejectCommon bool `name:"reject-common" description:"Reject common passwords"`
 		} `name:"password-requirements"`
 	} `name:"user-registration"`
 	AuthCache struct {
@@ -71,6 +78,13 @@ type Config struct {
 		CreateGateways      bool `name:"create-gateways" description:"Allow non-admin users to create gateways in their user account"`
 		CreateOrganizations bool `name:"create-organizations" description:"Allow non-admin users to create organizations in their user account"`
 	} `name:"user-rights"`
+	AdminRights struct {
+		All bool `name:"all" description:"Grant all rights to admins, including _KEYS and _ALL"`
+	} `name:"admin-rights"`
+	LoginTokens struct {
+		Enabled  bool          `name:"enabled" description:"enable users requesting login tokens"`
+		TokenTTL time.Duration `name:"token-ttl" description:"TTL of login tokens"`
+	} `name:"login-tokens"`
 	Email struct {
 		email.Config `name:",squash"`
 		SendGrid     sendgrid.Config      `name:"sendgrid"`
@@ -80,6 +94,15 @@ type Config struct {
 	Gateways struct {
 		EncryptionKeyID string `name:"encryption-key-id" description:"ID of the key used to encrypt gateway secrets at rest"`
 	} `name:"gateways"`
+	Delete struct {
+		Restore time.Duration `name:"restore" description:"How long after soft-deletion an entity can be restored"`
+	} `name:"delete"`
+	DevEUIBlock struct {
+		Enabled          bool                 `name:"enabled" description:"Enable DevEUI address issuing from IEEE MAC block"`
+		ApplicationLimit int                  `name:"application-limit" description:"Maximum DevEUI addresses to be issued per application"`
+		Prefix           ttntypes.EUI64Prefix `name:"prefix" description:"DevEUI block prefix"`
+		InitCounter      int64                `name:"init-counter" description:"Initial counter value for the addresses to be issued (default 0)"`
+	} `name:"dev-eui-block" description:"IEEE MAC block used to issue DevEUI's to devices that are not yet programmed"`
 }
 
 type emailTemplatesConfig struct {
@@ -90,6 +113,8 @@ type emailTemplatesConfig struct {
 	Blob      config.BlobPathConfig `name:"blob"`
 
 	Includes []string `name:"includes" description:"The email templates that will be preloaded on startup"`
+
+	HTTPClient *http.Client `name:"-"`
 }
 
 // Fetcher returns a fetch.Interface based on the configuration.
@@ -101,7 +126,11 @@ func (c emailTemplatesConfig) Fetcher(ctx context.Context, blobConf config.BlobC
 		case c.Static != nil:
 			c.Source = "static"
 		case c.Directory != "":
-			c.Source = "directory"
+			if stat, err := os.Stat(c.Directory); err == nil && stat.IsDir() {
+				c.Source = "directory"
+				break
+			}
+			fallthrough
 		case c.URL != "":
 			c.Source = "url"
 		case !c.Blob.IsZero():
@@ -114,7 +143,7 @@ func (c emailTemplatesConfig) Fetcher(ctx context.Context, blobConf config.BlobC
 	case "directory":
 		return fetch.FromFilesystem(c.Directory), nil
 	case "url":
-		return fetch.FromHTTP(c.URL, true)
+		return fetch.FromHTTP(c.HTTPClient, c.URL, true)
 	case "blob":
 		b, err := blobConf.Bucket(ctx, c.Blob.Bucket)
 		if err != nil {
@@ -129,36 +158,37 @@ func (c emailTemplatesConfig) Fetcher(ctx context.Context, blobConf config.BlobC
 func (c Config) toProto() *ttnpb.IsConfiguration {
 	return &ttnpb.IsConfiguration{
 		UserRegistration: &ttnpb.IsConfiguration_UserRegistration{
+			Enabled: c.UserRegistration.Enabled,
 			Invitation: &ttnpb.IsConfiguration_UserRegistration_Invitation{
-				Required: &types.BoolValue{Value: c.UserRegistration.Invitation.Required},
+				Required: &pbtypes.BoolValue{Value: c.UserRegistration.Invitation.Required},
 				TokenTTL: &c.UserRegistration.Invitation.TokenTTL,
 			},
 			ContactInfoValidation: &ttnpb.IsConfiguration_UserRegistration_ContactInfoValidation{
-				Required: &types.BoolValue{Value: c.UserRegistration.ContactInfoValidation.Required},
+				Required: &pbtypes.BoolValue{Value: c.UserRegistration.ContactInfoValidation.Required},
 			},
 			AdminApproval: &ttnpb.IsConfiguration_UserRegistration_AdminApproval{
-				Required: &types.BoolValue{Value: c.UserRegistration.AdminApproval.Required},
+				Required: &pbtypes.BoolValue{Value: c.UserRegistration.AdminApproval.Required},
 			},
 			PasswordRequirements: &ttnpb.IsConfiguration_UserRegistration_PasswordRequirements{
-				MinLength:    &types.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinLength)},
-				MaxLength:    &types.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MaxLength)},
-				MinUppercase: &types.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinUppercase)},
-				MinDigits:    &types.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinDigits)},
-				MinSpecial:   &types.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinSpecial)},
+				MinLength:    &pbtypes.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinLength)},
+				MaxLength:    &pbtypes.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MaxLength)},
+				MinUppercase: &pbtypes.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinUppercase)},
+				MinDigits:    &pbtypes.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinDigits)},
+				MinSpecial:   &pbtypes.UInt32Value{Value: uint32(c.UserRegistration.PasswordRequirements.MinSpecial)},
 			},
 		},
 		ProfilePicture: &ttnpb.IsConfiguration_ProfilePicture{
-			DisableUpload: &types.BoolValue{Value: c.ProfilePicture.DisableUpload},
-			UseGravatar:   &types.BoolValue{Value: c.ProfilePicture.UseGravatar},
+			DisableUpload: &pbtypes.BoolValue{Value: c.ProfilePicture.DisableUpload},
+			UseGravatar:   &pbtypes.BoolValue{Value: c.ProfilePicture.UseGravatar},
 		},
 		EndDevicePicture: &ttnpb.IsConfiguration_EndDevicePicture{
-			DisableUpload: &types.BoolValue{Value: c.ProfilePicture.DisableUpload},
+			DisableUpload: &pbtypes.BoolValue{Value: c.ProfilePicture.DisableUpload},
 		},
 		UserRights: &ttnpb.IsConfiguration_UserRights{
-			CreateApplications:  &types.BoolValue{Value: c.UserRights.CreateApplications},
-			CreateClients:       &types.BoolValue{Value: c.UserRights.CreateClients},
-			CreateGateways:      &types.BoolValue{Value: c.UserRights.CreateGateways},
-			CreateOrganizations: &types.BoolValue{Value: c.UserRights.CreateOrganizations},
+			CreateApplications:  &pbtypes.BoolValue{Value: c.UserRights.CreateApplications},
+			CreateClients:       &pbtypes.BoolValue{Value: c.UserRights.CreateClients},
+			CreateGateways:      &pbtypes.BoolValue{Value: c.UserRights.CreateGateways},
+			CreateOrganizations: &pbtypes.BoolValue{Value: c.UserRights.CreateOrganizations},
 		},
 	}
 }

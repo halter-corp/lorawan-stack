@@ -61,7 +61,7 @@ func TestGenerateEndDeviceQRCode(t *testing.T) {
 	a.So(formats.Formats["test"], should.Resemble, &ttnpb.QRCodeFormat{
 		Name:        "Test",
 		Description: "Test",
-		FieldMask: pbtypes.FieldMask{
+		FieldMask: &pbtypes.FieldMask{
 			Paths: []string{"ids"},
 		},
 	})
@@ -69,11 +69,11 @@ func TestGenerateEndDeviceQRCode(t *testing.T) {
 	dev := ttnpb.EndDevice{
 		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-				ApplicationID: "test",
+				ApplicationId: "test",
 			},
-			DeviceID: "test",
-			JoinEUI:  eui64Ptr(types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00}),
-			DevEUI:   eui64Ptr(types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}),
+			DeviceId: "test",
+			JoinEui:  eui64Ptr(types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00}),
+			DevEui:   eui64Ptr(types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}),
 		},
 	}
 

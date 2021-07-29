@@ -17,6 +17,7 @@ package identityserver
 import (
 	"testing"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -61,7 +62,7 @@ func TestApplicationAccessNotFound(t *testing.T) {
 
 		got, err := reg.GetAPIKey(ctx, &ttnpb.GetApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
-			KeyID:                  apiKey.ID,
+			KeyId:                  apiKey.ID,
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -72,6 +73,7 @@ func TestApplicationAccessNotFound(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
 			APIKey:                 apiKey,
+			FieldMask:              &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -115,6 +117,7 @@ func TestApplicationAccessRightsPermissionDenied(t *testing.T) {
 				Name:   APIKey.Name,
 				Rights: []ttnpb.Right{right},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -157,7 +160,7 @@ func TestApplicationAccessPermissionDenied(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
-			KeyID:                  APIKeyID,
+			KeyId:                  APIKeyID,
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -179,7 +182,7 @@ func TestApplicationAccessPermissionDenied(t *testing.T) {
 		})
 
 		if a.So(err, should.NotBeNil) {
-			a.So(errors.IsPermissionDenied(err), should.BeTrue)
+			a.So(errors.IsUnauthenticated(err), should.BeTrue)
 		}
 		a.So(collaborators, should.BeNil)
 
@@ -200,6 +203,7 @@ func TestApplicationAccessPermissionDenied(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
 			APIKey:                 *APIKey,
+			FieldMask:              &pbtypes.FieldMask{Paths: []string{"name", "rights"}},
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -259,7 +263,7 @@ func TestApplicationAccessCRUD(t *testing.T) {
 		}
 
 		modifiedApplicationID := applicationID
-		modifiedApplicationID.ApplicationID = reverse(modifiedApplicationID.ApplicationID)
+		modifiedApplicationID.ApplicationId = reverse(modifiedApplicationID.ApplicationId)
 
 		rights, err = reg.ListRights(ctx, &modifiedApplicationID, creds)
 
@@ -273,7 +277,7 @@ func TestApplicationAccessCRUD(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
-			KeyID:                  applicationKey.ID,
+			KeyId:                  applicationKey.ID,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -321,6 +325,7 @@ func TestApplicationAccessCRUD(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
 			APIKey:                 *APIKey,
+			FieldMask:              &pbtypes.FieldMask{Paths: []string{"name"}},
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -427,6 +432,7 @@ func TestApplicationAccessRights(t *testing.T) {
 					ttnpb.RIGHT_APPLICATION_SETTINGS_COLLABORATORS,
 				},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -452,6 +458,7 @@ func TestApplicationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, usrCreds)
 
 		a.So(err, should.BeNil)
@@ -466,6 +473,7 @@ func TestApplicationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
@@ -503,6 +511,7 @@ func TestApplicationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Sub(ttnpb.RightsFrom(ttnpb.RIGHT_APPLICATION_DELETE)).Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -545,13 +554,14 @@ func TestApplicationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: []ttnpb.Right{},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
 
 		_, err = reg.GetAPIKey(ctx, &ttnpb.GetApplicationAPIKeyRequest{
 			ApplicationIdentifiers: applicationID,
-			KeyID:                  APIKey.ID,
+			KeyId:                  APIKey.ID,
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {

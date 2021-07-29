@@ -26,7 +26,7 @@ const PLACEHOLDER_CHAR = '·'
 const hex = /[0-9a-f]/i
 
 const masks = {}
-const mask = function(min, max, showPerChar = false) {
+const mask = (min, max, showPerChar = false) => {
   const key = `${min}-${max}`
   if (masks[key]) {
     return masks[key]
@@ -50,13 +50,9 @@ const mask = function(min, max, showPerChar = false) {
   return r
 }
 
-const upper = function(str) {
-  return str.toUpperCase()
-}
+const upper = str => str.toUpperCase()
 
-const clean = function(str) {
-  return str.replace(new RegExp(`[ ${PLACEHOLDER_CHAR}]`, 'g'), '')
-}
+const clean = str => str.replace(new RegExp(`[ ${PLACEHOLDER_CHAR}]`, 'g'), '')
 
 export default class ByteInput extends React.Component {
   static propTypes = {
@@ -138,7 +134,7 @@ export default class ByteInput extends React.Component {
         i = inputElement.value.length
       }
 
-      setTimeout(function() {
+      setTimeout(() => {
         inputElement.focus()
         inputElement.setSelectionRange(i, i)
       }, 0)
@@ -150,7 +146,7 @@ export default class ByteInput extends React.Component {
     const { max, showPerChar } = this.props
     const { data } = evt.nativeEvent
 
-    let value = clean(event.target.value)
+    let value = clean(evt.target.value)
     const normalizedMax = showPerChar ? Math.ceil(max / 2) : max
 
     // Check if the value already has length equal to `max`.

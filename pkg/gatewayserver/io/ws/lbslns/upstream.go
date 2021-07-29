@@ -147,8 +147,8 @@ func (req *JoinRequest) toUplinkMessage(ids ttnpb.GatewayIdentifiers, bandID str
 		MHDR: parsedMHDR,
 		MIC:  micBytes,
 		Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-			JoinEUI:  req.JoinEUI.EUI64,
-			DevEUI:   req.DevEUI.EUI64,
+			JoinEui:  req.JoinEUI.EUI64,
+			DevEui:   req.DevEUI.EUI64,
 			DevNonce: [2]byte{byte(req.DevNonce >> 8), byte(req.DevNonce)},
 		}},
 	}
@@ -214,11 +214,11 @@ func (req *JoinRequest) FromUplinkMessage(up *ttnpb.UplinkMessage, bandID string
 	}
 
 	req.DevEUI = basicstation.EUI{
-		EUI64: jreqPayload.DevEUI,
+		EUI64: jreqPayload.DevEui,
 	}
 
 	req.JoinEUI = basicstation.EUI{
-		EUI64: jreqPayload.JoinEUI,
+		EUI64: jreqPayload.JoinEui,
 	}
 
 	devNonce, err := jreqPayload.DevNonce.Marshal()
@@ -409,12 +409,13 @@ func (updf *UplinkDataFrame) FromUplinkMessage(up *ttnpb.UplinkMessage, bandID s
 // ToTxAck converts the LoRa Basics Station TxConfirmation message to ttnpb.TxAcknowledgment
 func (conf TxConfirmation) ToTxAck(ctx context.Context, tokens io.DownlinkTokens, receivedAt time.Time) *ttnpb.TxAcknowledgment {
 	var txAck ttnpb.TxAcknowledgment
-	if cids, _, ok := tokens.Get(uint16(conf.Diid), receivedAt); ok {
-		txAck.CorrelationIDs = cids
+	if msg, _, ok := tokens.Get(uint16(conf.Diid), receivedAt); ok && msg != nil {
+		txAck.DownlinkMessage = msg
+		txAck.CorrelationIDs = msg.CorrelationIDs
 		txAck.Result = ttnpb.TxAcknowledgment_SUCCESS
 	} else {
 		logger := log.FromContext(ctx)
-		logger.WithField("diid", conf.Diid).Debug("Tx acknowledgement either does not correspond to a downlink message or arrived too late")
+		logger.WithField("diid", conf.Diid).Debug("Tx acknowledgment either does not correspond to a downlink message or arrived too late")
 	}
 	return &txAck
 }
@@ -431,11 +432,9 @@ func (f *lbsLNS) HandleUp(ctx context.Context, raw []byte, ids ttnpb.GatewayIden
 		"upstream_type", typ,
 	))
 
-	recordTime := func(refTime float64, xTime int64, server time.Time) {
-		sec, nsec := math.Modf(refTime)
-		if sec != 0 {
-			ref := time.Unix(int64(sec), int64(nsec*1e9))
-			conn.RecordRTT(server.Sub(ref), server)
+	recordTime := func(recordRTT bool, refTime float64, xTime int64, server time.Time) {
+		if recordRTT {
+			conn.RecordRTT(server.Sub(getTimeFromFloat64(refTime)), server)
 		}
 		conn.SyncWithGatewayConcentrator(
 			// The concentrator timestamp is the 32 LSB.
@@ -485,7 +484,7 @@ func (f *lbsLNS) HandleUp(ctx context.Context, raw []byte, ids ttnpb.GatewayIden
 			ID: int32(jreq.UpInfo.XTime >> 48),
 		}
 		session.DataMu.Unlock()
-		recordTime(jreq.RefTime, jreq.UpInfo.XTime, receivedAt)
+		recordTime(false, jreq.RefTime, jreq.UpInfo.XTime, receivedAt)
 
 	case TypeUpstreamUplinkDataFrame:
 		var updf UplinkDataFrame
@@ -512,7 +511,7 @@ func (f *lbsLNS) HandleUp(ctx context.Context, raw []byte, ids ttnpb.GatewayIden
 			ID: int32(updf.UpInfo.XTime >> 48),
 		}
 		session.DataMu.Unlock()
-		recordTime(updf.RefTime, updf.UpInfo.XTime, receivedAt)
+		recordTime(false, updf.RefTime, updf.UpInfo.XTime, receivedAt)
 
 	case TypeUpstreamTxConfirmation:
 		var txConf TxConfirmation
@@ -533,7 +532,14 @@ func (f *lbsLNS) HandleUp(ctx context.Context, raw []byte, ids ttnpb.GatewayIden
 			ID: int32(txConf.XTime >> 48),
 		}
 		session.DataMu.Unlock()
-		recordTime(txConf.RefTime, txConf.XTime, receivedAt)
+		recordRTT := true
+		refTime := getTimeFromFloat64(txConf.RefTime)
+		delta := receivedAt.Sub(refTime)
+		if delta > f.maxRoundTripDelay {
+			logger.WithField("delta", delta).Warn("Gateway reported reftime greater than the valid maximum. Skip RTT measurement")
+			recordRTT = false
+		}
+		recordTime(recordRTT, txConf.RefTime, txConf.XTime, receivedAt)
 
 	case TypeUpstreamProprietaryDataFrame, TypeUpstreamRemoteShell, TypeUpstreamTimeSync:
 		logger.WithField("message_type", typ).Debug("Message type not implemented")
@@ -543,4 +549,9 @@ func (f *lbsLNS) HandleUp(ctx context.Context, raw []byte, ids ttnpb.GatewayIden
 
 	}
 	return nil, nil
+}
+
+func getTimeFromFloat64(timeInFloat float64) time.Time {
+	sec, nsec := math.Modf(timeInFloat)
+	return time.Unix(int64(sec), int64(nsec*1e9))
 }

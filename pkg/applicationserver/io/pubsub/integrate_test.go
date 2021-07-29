@@ -19,7 +19,6 @@ import (
 	"time"
 
 	pbtypes "github.com/gogo/protobuf/types"
-	"github.com/smartystreets/assertions"
 	mock_server "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
@@ -38,14 +37,13 @@ import (
 )
 
 func TestIntegrate(t *testing.T) {
-	a := assertions.New(t)
-	ctx := test.Context()
+	a, ctx := test.New(t)
 
 	is, isAddr := startMockIS(ctx)
 	is.add(ctx, registeredApplicationID, registeredApplicationKey)
 
 	mockProvider, err := provider.GetProvider(&ttnpb.ApplicationPubSub{
-		Provider: &ttnpb.ApplicationPubSub_NATS{},
+		Provider: &ttnpb.ApplicationPubSub_Nats{},
 	})
 	a.So(mockProvider, should.NotBeNil)
 	a.So(err, should.BeNil)
@@ -59,13 +57,13 @@ func TestIntegrate(t *testing.T) {
 	// ps1 is added to the pubsub registry, app2 will be integrated at runtime.
 	ps1 := ttnpb.ApplicationPubSubIdentifiers{
 		ApplicationIdentifiers: registeredApplicationID,
-		PubSubID:               "ps1",
+		PubSubId:               "ps1",
 	}
 	ps2 := ttnpb.ApplicationPubSubIdentifiers{
 		ApplicationIdentifiers: registeredApplicationID,
-		PubSubID:               "ps2",
+		PubSubId:               "ps2",
 	}
-	redisClient, flush := test.NewRedis(t, "applicationserver_test")
+	redisClient, flush := test.NewRedis(ctx, "applicationserver_test")
 	defer flush()
 	defer redisClient.Close()
 	pubsubRegistry := &redis.PubSubRegistry{Redis: redisClient}
@@ -73,9 +71,9 @@ func TestIntegrate(t *testing.T) {
 		return &ttnpb.ApplicationPubSub{
 			ApplicationPubSubIdentifiers: ps1,
 			Format:                       "json",
-			Provider: &ttnpb.ApplicationPubSub_NATS{
-				NATS: &ttnpb.ApplicationPubSub_NATSProvider{
-					ServerURL: "nats://localhost",
+			Provider: &ttnpb.ApplicationPubSub_Nats{
+				Nats: &ttnpb.ApplicationPubSub_NATSProvider{
+					ServerUrl: "nats://localhost",
 				},
 			},
 		}, append(paths, "ids.application_ids", "ids.pub_sub_id"), nil
@@ -94,7 +92,7 @@ func TestIntegrate(t *testing.T) {
 		},
 	})
 	io := mock_server.NewServer(c)
-	srv, err := pubsub.New(c, io, pubsubRegistry)
+	srv, err := pubsub.New(c, io, pubsubRegistry, make(pubsub.ProviderStatuses))
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
@@ -132,9 +130,9 @@ func TestIntegrate(t *testing.T) {
 		integration := ttnpb.ApplicationPubSub{
 			ApplicationPubSubIdentifiers: ps2,
 			Format:                       "json",
-			Provider: &ttnpb.ApplicationPubSub_NATS{
-				NATS: &ttnpb.ApplicationPubSub_NATSProvider{
-					ServerURL: "nats://localhost",
+			Provider: &ttnpb.ApplicationPubSub_Nats{
+				Nats: &ttnpb.ApplicationPubSub_NATSProvider{
+					ServerUrl: "nats://localhost",
 				},
 			},
 		}
@@ -142,7 +140,7 @@ func TestIntegrate(t *testing.T) {
 		// Expect no integration.
 		_, err := ps.Get(ctx, &ttnpb.GetApplicationPubSubRequest{
 			ApplicationPubSubIdentifiers: ps2,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: paths,
 			},
 		}, creds)
@@ -153,7 +151,7 @@ func TestIntegrate(t *testing.T) {
 		// Set integration, expect integration to establish.
 		_, err = ps.Set(ctx, &ttnpb.SetApplicationPubSubRequest{
 			ApplicationPubSub: integration,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: paths,
 			},
 		}, creds)
@@ -168,7 +166,7 @@ func TestIntegrate(t *testing.T) {
 		}
 		actual, err := ps.Get(ctx, &ttnpb.GetApplicationPubSubRequest{
 			ApplicationPubSubIdentifiers: ps2,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: paths,
 			},
 		}, creds)
@@ -192,7 +190,7 @@ func TestIntegrate(t *testing.T) {
 		}
 		_, err = ps.Get(ctx, &ttnpb.GetApplicationPubSubRequest{
 			ApplicationPubSubIdentifiers: ps2,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: paths,
 			},
 		}, creds)

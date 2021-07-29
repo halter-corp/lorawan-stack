@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -75,7 +75,7 @@ var (
 			if err != nil {
 				return err
 			}
-			req = req.WithEndDeviceIDs(ids)
+			req = req.WithEndDeviceIds(ids)
 			client, err := ttnpb.NewApplicationUpStorageClient(as).GetStoredApplicationUp(ctx, req)
 			if err != nil {
 				return err
@@ -105,7 +105,7 @@ var (
 			if ids == nil {
 				return err
 			}
-			req = req.WithApplicationIDs(ids)
+			req = req.WithApplicationIds(ids)
 			client, err := ttnpb.NewApplicationUpStorageClient(as).GetStoredApplicationUp(ctx, req)
 			if err != nil {
 				return err

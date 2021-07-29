@@ -38,15 +38,15 @@ type LoRaAllianceTR005Draft2 struct {
 
 // Encode implements the Data interface.
 func (m *LoRaAllianceTR005Draft2) Encode(dev *ttnpb.EndDevice) error {
-	if dev.JoinEUI == nil {
+	if dev.JoinEui == nil {
 		return errNoJoinEUI.New()
 	}
-	if dev.DevEUI == nil {
+	if dev.DevEui == nil {
 		return errNoDevEUI.New()
 	}
 	*m = LoRaAllianceTR005Draft2{
-		JoinEUI:              *dev.JoinEUI,
-		DevEUI:               *dev.DevEUI,
+		JoinEUI:              *dev.JoinEui,
+		DevEUI:               *dev.DevEui,
 		DeviceValidationCode: dev.GetClaimAuthenticationCode().GetValue(),
 	}
 	return nil
@@ -149,14 +149,13 @@ func (m *LoRaAllianceTR005Draft2) AuthenticatedEndDeviceIdentifiers() (joinEUI, 
 	return m.JoinEUI, m.DevEUI, m.DeviceValidationCode
 }
 
-type loRaAllianceTR005Draft2Format struct {
-}
+type loRaAllianceTR005Draft2Format struct{}
 
 func (loRaAllianceTR005Draft2Format) Format() *ttnpb.QRCodeFormat {
 	return &ttnpb.QRCodeFormat{
-		Name:        "LoRa Alliance TR005 Draft 2",
+		Name:        "LoRa Alliance TR005 Draft 2 (DEPRECATED)",
 		Description: "Standard QR code format defined by LoRa Alliance.",
-		FieldMask: pbtypes.FieldMask{
+		FieldMask: &pbtypes.FieldMask{
 			Paths: []string{
 				"claim_authentication_code.value",
 				"ids.dev_eui",

@@ -4,9 +4,8 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	time "time"
-
 	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
+	time "time"
 )
 
 func (dst *Message) SetFields(src *Message, paths ...string) error {
@@ -364,20 +363,20 @@ func (dst *FCtrl) SetFields(src *FCtrl, paths ...string) error {
 				return fmt.Errorf("'adr' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADR = src.ADR
+				dst.Adr = src.Adr
 			} else {
 				var zero bool
-				dst.ADR = zero
+				dst.Adr = zero
 			}
 		case "adr_ack_req":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_ack_req' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRAckReq = src.ADRAckReq
+				dst.AdrAckReq = src.AdrAckReq
 			} else {
 				var zero bool
-				dst.ADRAckReq = zero
+				dst.AdrAckReq = zero
 			}
 		case "ack":
 			if len(subs) > 0 {
@@ -425,20 +424,20 @@ func (dst *JoinRequestPayload) SetFields(src *JoinRequestPayload, paths ...strin
 				return fmt.Errorf("'join_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.JoinEUI = src.JoinEUI
+				dst.JoinEui = src.JoinEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.JoinEUI = zero
+				dst.JoinEui = zero
 			}
 		case "dev_eui":
 			if len(subs) > 0 {
 				return fmt.Errorf("'dev_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.DevEUI = src.DevEUI
+				dst.DevEui = src.DevEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.DevEUI = zero
+				dst.DevEui = zero
 			}
 		case "dev_nonce":
 			if len(subs) > 0 {
@@ -468,7 +467,7 @@ func (dst *RejoinRequestPayload) SetFields(src *RejoinRequestPayload, paths ...s
 			if src != nil {
 				dst.RejoinType = src.RejoinType
 			} else {
-				var zero RejoinType
+				var zero RejoinRequestType
 				dst.RejoinType = zero
 			}
 		case "net_id":
@@ -476,30 +475,30 @@ func (dst *RejoinRequestPayload) SetFields(src *RejoinRequestPayload, paths ...s
 				return fmt.Errorf("'net_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.NetID = src.NetID
+				dst.NetId = src.NetId
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
-				dst.NetID = zero
+				dst.NetId = zero
 			}
 		case "join_eui":
 			if len(subs) > 0 {
 				return fmt.Errorf("'join_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.JoinEUI = src.JoinEUI
+				dst.JoinEui = src.JoinEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.JoinEUI = zero
+				dst.JoinEui = zero
 			}
 		case "dev_eui":
 			if len(subs) > 0 {
 				return fmt.Errorf("'dev_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.DevEUI = src.DevEUI
+				dst.DevEui = src.DevEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.DevEUI = zero
+				dst.DevEui = zero
 			}
 		case "rejoin_cnt":
 			if len(subs) > 0 {
@@ -546,10 +545,10 @@ func (dst *JoinAcceptPayload) SetFields(src *JoinAcceptPayload, paths ...string)
 				return fmt.Errorf("'net_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.NetID = src.NetID
+				dst.NetId = src.NetId
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
-				dst.NetID = zero
+				dst.NetId = zero
 			}
 		case "dev_addr":
 			if len(subs) > 0 {
@@ -632,7 +631,7 @@ func (dst *DLSettings) SetFields(src *DLSettings, paths ...string) error {
 			if src != nil {
 				dst.Rx1DROffset = src.Rx1DROffset
 			} else {
-				var zero uint32
+				var zero DataRateOffset
 				dst.Rx1DROffset = zero
 			}
 		case "rx2_dr":
@@ -754,6 +753,37 @@ func (dst *FSKDataRate) SetFields(src *FSKDataRate, paths ...string) error {
 	return nil
 }
 
+func (dst *LRFHSSDataRate) SetFields(src *LRFHSSDataRate, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "modulation_type":
+			if len(subs) > 0 {
+				return fmt.Errorf("'modulation_type' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ModulationType = src.ModulationType
+			} else {
+				var zero uint32
+				dst.ModulationType = zero
+			}
+		case "operating_channel_width":
+			if len(subs) > 0 {
+				return fmt.Errorf("'operating_channel_width' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.OperatingChannelWidth = src.OperatingChannelWidth
+			} else {
+				var zero uint32
+				dst.OperatingChannelWidth = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *DataRate) SetFields(src *DataRate, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -774,11 +804,11 @@ func (dst *DataRate) SetFields(src *DataRate, paths ...string) error {
 			for oneofName, oneofSubs := range subPathMap {
 				switch oneofName {
 				case "lora":
-					_, srcOk := src.Modulation.(*DataRate_LoRa)
+					_, srcOk := src.Modulation.(*DataRate_Lora)
 					if !srcOk && src.Modulation != nil {
 						return fmt.Errorf("attempt to set oneof 'lora', while different oneof is set in source")
 					}
-					_, dstOk := dst.Modulation.(*DataRate_LoRa)
+					_, dstOk := dst.Modulation.(*DataRate_Lora)
 					if !dstOk && dst.Modulation != nil {
 						return fmt.Errorf("attempt to set oneof 'lora', while different oneof is set in destination")
 					}
@@ -788,13 +818,13 @@ func (dst *DataRate) SetFields(src *DataRate, paths ...string) error {
 							continue
 						}
 						if srcOk {
-							newSrc = src.Modulation.(*DataRate_LoRa).LoRa
+							newSrc = src.Modulation.(*DataRate_Lora).Lora
 						}
 						if dstOk {
-							newDst = dst.Modulation.(*DataRate_LoRa).LoRa
+							newDst = dst.Modulation.(*DataRate_Lora).Lora
 						} else {
 							newDst = &LoRaDataRate{}
-							dst.Modulation = &DataRate_LoRa{LoRa: newDst}
+							dst.Modulation = &DataRate_Lora{Lora: newDst}
 						}
 						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
 							return err
@@ -828,6 +858,39 @@ func (dst *DataRate) SetFields(src *DataRate, paths ...string) error {
 						} else {
 							newDst = &FSKDataRate{}
 							dst.Modulation = &DataRate_FSK{FSK: newDst}
+						}
+						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
+							return err
+						}
+					} else {
+						if src != nil {
+							dst.Modulation = src.Modulation
+						} else {
+							dst.Modulation = nil
+						}
+					}
+				case "lrfhss":
+					_, srcOk := src.Modulation.(*DataRate_Lrfhss)
+					if !srcOk && src.Modulation != nil {
+						return fmt.Errorf("attempt to set oneof 'lrfhss', while different oneof is set in source")
+					}
+					_, dstOk := dst.Modulation.(*DataRate_Lrfhss)
+					if !dstOk && dst.Modulation != nil {
+						return fmt.Errorf("attempt to set oneof 'lrfhss', while different oneof is set in destination")
+					}
+					if len(oneofSubs) > 0 {
+						var newDst, newSrc *LRFHSSDataRate
+						if !srcOk && !dstOk {
+							continue
+						}
+						if srcOk {
+							newSrc = src.Modulation.(*DataRate_Lrfhss).Lrfhss
+						}
+						if dstOk {
+							newDst = dst.Modulation.(*DataRate_Lrfhss).Lrfhss
+						} else {
+							newDst = &LRFHSSDataRate{}
+							dst.Modulation = &DataRate_Lrfhss{Lrfhss: newDst}
 						}
 						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
 							return err
@@ -1246,6 +1309,16 @@ func (dst *TxRequest) SetFields(src *TxRequest, paths ...string) error {
 				var zero string
 				dst.FrequencyPlanID = zero
 			}
+		case "lorawan_phy_version":
+			if len(subs) > 0 {
+				return fmt.Errorf("'lorawan_phy_version' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.LorawanPhyVersion = src.LorawanPhyVersion
+			} else {
+				var zero PHYVersion
+				dst.LorawanPhyVersion = zero
+			}
 		case "advanced":
 			if len(subs) > 0 {
 				return fmt.Errorf("'advanced' has no subfields, but %s were specified", subs)
@@ -1409,11 +1482,11 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 						}
 					}
 				case "link_adr_req":
-					_, srcOk := src.Payload.(*MACCommand_LinkADRReq_)
+					_, srcOk := src.Payload.(*MACCommand_LinkAdrReq)
 					if !srcOk && src.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'link_adr_req', while different oneof is set in source")
 					}
-					_, dstOk := dst.Payload.(*MACCommand_LinkADRReq_)
+					_, dstOk := dst.Payload.(*MACCommand_LinkAdrReq)
 					if !dstOk && dst.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'link_adr_req', while different oneof is set in destination")
 					}
@@ -1423,13 +1496,13 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 							continue
 						}
 						if srcOk {
-							newSrc = src.Payload.(*MACCommand_LinkADRReq_).LinkADRReq
+							newSrc = src.Payload.(*MACCommand_LinkAdrReq).LinkAdrReq
 						}
 						if dstOk {
-							newDst = dst.Payload.(*MACCommand_LinkADRReq_).LinkADRReq
+							newDst = dst.Payload.(*MACCommand_LinkAdrReq).LinkAdrReq
 						} else {
 							newDst = &MACCommand_LinkADRReq{}
-							dst.Payload = &MACCommand_LinkADRReq_{LinkADRReq: newDst}
+							dst.Payload = &MACCommand_LinkAdrReq{LinkAdrReq: newDst}
 						}
 						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
 							return err
@@ -1442,11 +1515,11 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 						}
 					}
 				case "link_adr_ans":
-					_, srcOk := src.Payload.(*MACCommand_LinkADRAns_)
+					_, srcOk := src.Payload.(*MACCommand_LinkAdrAns)
 					if !srcOk && src.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'link_adr_ans', while different oneof is set in source")
 					}
-					_, dstOk := dst.Payload.(*MACCommand_LinkADRAns_)
+					_, dstOk := dst.Payload.(*MACCommand_LinkAdrAns)
 					if !dstOk && dst.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'link_adr_ans', while different oneof is set in destination")
 					}
@@ -1456,13 +1529,13 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 							continue
 						}
 						if srcOk {
-							newSrc = src.Payload.(*MACCommand_LinkADRAns_).LinkADRAns
+							newSrc = src.Payload.(*MACCommand_LinkAdrAns).LinkAdrAns
 						}
 						if dstOk {
-							newDst = dst.Payload.(*MACCommand_LinkADRAns_).LinkADRAns
+							newDst = dst.Payload.(*MACCommand_LinkAdrAns).LinkAdrAns
 						} else {
 							newDst = &MACCommand_LinkADRAns{}
-							dst.Payload = &MACCommand_LinkADRAns_{LinkADRAns: newDst}
+							dst.Payload = &MACCommand_LinkAdrAns{LinkAdrAns: newDst}
 						}
 						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
 							return err
@@ -1871,11 +1944,11 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 						}
 					}
 				case "adr_param_setup_req":
-					_, srcOk := src.Payload.(*MACCommand_ADRParamSetupReq_)
+					_, srcOk := src.Payload.(*MACCommand_AdrParamSetupReq)
 					if !srcOk && src.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'adr_param_setup_req', while different oneof is set in source")
 					}
-					_, dstOk := dst.Payload.(*MACCommand_ADRParamSetupReq_)
+					_, dstOk := dst.Payload.(*MACCommand_AdrParamSetupReq)
 					if !dstOk && dst.Payload != nil {
 						return fmt.Errorf("attempt to set oneof 'adr_param_setup_req', while different oneof is set in destination")
 					}
@@ -1885,13 +1958,13 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 							continue
 						}
 						if srcOk {
-							newSrc = src.Payload.(*MACCommand_ADRParamSetupReq_).ADRParamSetupReq
+							newSrc = src.Payload.(*MACCommand_AdrParamSetupReq).AdrParamSetupReq
 						}
 						if dstOk {
-							newDst = dst.Payload.(*MACCommand_ADRParamSetupReq_).ADRParamSetupReq
+							newDst = dst.Payload.(*MACCommand_AdrParamSetupReq).AdrParamSetupReq
 						} else {
 							newDst = &MACCommand_ADRParamSetupReq{}
-							dst.Payload = &MACCommand_ADRParamSetupReq_{ADRParamSetupReq: newDst}
+							dst.Payload = &MACCommand_AdrParamSetupReq{AdrParamSetupReq: newDst}
 						}
 						if err := newDst.SetFields(newSrc, oneofSubs...); err != nil {
 							return err
@@ -2312,6 +2385,48 @@ func (dst *MACCommand) SetFields(src *MACCommand, paths ...string) error {
 	return nil
 }
 
+func (dst *FrequencyValue) SetFields(src *FrequencyValue, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "value":
+			if len(subs) > 0 {
+				return fmt.Errorf("'value' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Value = src.Value
+			} else {
+				var zero uint64
+				dst.Value = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *DataRateOffsetValue) SetFields(src *DataRateOffsetValue, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "value":
+			if len(subs) > 0 {
+				return fmt.Errorf("'value' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Value = src.Value
+			} else {
+				var zero DataRateOffset
+				dst.Value = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *DataRateIndexValue) SetFields(src *DataRateIndexValue, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -2428,6 +2543,27 @@ func (dst *ADRAckDelayExponentValue) SetFields(src *ADRAckDelayExponentValue, pa
 				dst.Value = src.Value
 			} else {
 				var zero ADRAckDelayExponent
+				dst.Value = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *DeviceEIRPValue) SetFields(src *DeviceEIRPValue, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "value":
+			if len(subs) > 0 {
+				return fmt.Errorf("'value' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Value = src.Value
+			} else {
+				var zero DeviceEIRP
 				dst.Value = zero
 			}
 
@@ -2694,7 +2830,7 @@ func (dst *MACCommand_RxParamSetupReq) SetFields(src *MACCommand_RxParamSetupReq
 			if src != nil {
 				dst.Rx1DataRateOffset = src.Rx1DataRateOffset
 			} else {
-				var zero uint32
+				var zero DataRateOffset
 				dst.Rx1DataRateOffset = zero
 			}
 		case "rx2_frequency":
@@ -3043,20 +3179,20 @@ func (dst *MACCommand_ADRParamSetupReq) SetFields(src *MACCommand_ADRParamSetupR
 				return fmt.Errorf("'adr_ack_limit_exponent' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRAckLimitExponent = src.ADRAckLimitExponent
+				dst.AdrAckLimitExponent = src.AdrAckLimitExponent
 			} else {
 				var zero ADRAckLimitExponent
-				dst.ADRAckLimitExponent = zero
+				dst.AdrAckLimitExponent = zero
 			}
 		case "adr_ack_delay_exponent":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_ack_delay_exponent' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRAckDelayExponent = src.ADRAckDelayExponent
+				dst.AdrAckDelayExponent = src.AdrAckDelayExponent
 			} else {
 				var zero ADRAckDelayExponent
-				dst.ADRAckDelayExponent = zero
+				dst.AdrAckDelayExponent = zero
 			}
 
 		default:
@@ -3097,7 +3233,7 @@ func (dst *MACCommand_ForceRejoinReq) SetFields(src *MACCommand_ForceRejoinReq, 
 			if src != nil {
 				dst.RejoinType = src.RejoinType
 			} else {
-				var zero RejoinType
+				var zero RejoinRequestType
 				dst.RejoinType = zero
 			}
 		case "data_rate_index":

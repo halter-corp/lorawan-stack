@@ -26,7 +26,7 @@ const formatOptions = options =>
 
 const { component, ...fieldPropTypes } = Field.propTypes
 
-export default function({
+export default ({
   optionsSelector,
   errorSelector,
   fetchingSelector,
@@ -35,21 +35,21 @@ export default function({
   defaultTitle,
   optionsFormatter = formatOptions,
   defaultDescription,
-}) {
+  additionalOptions = [],
+}) => {
   @storeConnect(
-    function(state) {
-      return {
-        options: optionsFormatter(optionsSelector(state)),
-        error: errorSelector(state),
-        fetching: fetchingSelector(state),
-      }
-    },
+    state => ({
+      options: optionsFormatter(optionsSelector(state)),
+      error: errorSelector(state),
+      fetching: fetchingSelector(state),
+    }),
     { fetchOptions },
   )
   class FetchSelect extends React.PureComponent {
     static propTypes = {
       ...fieldPropTypes,
       ...Select.propTypes,
+      defaultWarning: PropTypes.message,
       description: PropTypes.message,
       fetchOptions: PropTypes.func.isRequired,
       menuPlacement: PropTypes.oneOf(['top', 'bottom', 'auto']),
@@ -67,7 +67,8 @@ export default function({
       onChange: () => null,
       options: [],
       title: defaultTitle,
-      warning: defaultWarning,
+      warning: undefined,
+      defaultWarning,
     }
 
     componentDidMount() {
@@ -84,14 +85,14 @@ export default function({
     }
 
     render() {
-      const { error, fetching, warning, ...rest } = this.props
+      const { error, fetching, warning, defaultWarning, ...rest } = this.props
 
       return (
         <Field
           {...rest}
           component={Select}
           isLoading={fetching}
-          warning={Boolean(error) ? warning : undefined}
+          warning={Boolean(error) ? defaultWarning : warning}
           onChange={this.handleChange}
         />
       )

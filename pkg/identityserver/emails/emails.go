@@ -50,17 +50,17 @@ type Data struct {
 // SetUser sets the user's ID, name and primary email address to the email data.
 // If the user's name is unknown, its ID is used as name.
 func (d *Data) SetUser(user *ttnpb.User) {
-	d.User.ID = user.UserID
+	d.User.ID = user.UserId
 	if user.Name != "" {
 		d.User.Name = user.Name
 	} else {
-		d.User.Name = user.UserID
+		d.User.Name = user.UserId
 	}
 	d.User.Email = user.PrimaryEmailAddress
 }
 
 // SetEntity sets the entity that the email is about.
-func (d *Data) SetEntity(ids *ttnpb.EntityIdentifiers) {
+func (d *Data) SetEntity(ids ttnpb.IDStringer) {
 	d.Entity.Type = ids.EntityType()
 	d.Entity.ID = ids.IDString()
 }

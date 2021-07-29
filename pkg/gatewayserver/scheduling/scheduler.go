@@ -220,6 +220,9 @@ func (s *Scheduler) gc(ctx context.Context) error {
 			for _, subBand := range s.subBands {
 				subBand.gc(to)
 			}
+			s.mu.Lock()
+			s.emissions = s.emissions.GreaterThan(to)
+			s.mu.Unlock()
 		}
 	}
 }
@@ -259,7 +262,7 @@ func (s *Scheduler) syncWithUplinkToken(token *ttnpb.UplinkToken) bool {
 }
 
 var (
-	errConflict              = errors.DefineResourceExhausted("conflict", "scheduling conflict")
+	errConflict              = errors.DefineAlreadyExists("conflict", "scheduling conflict")
 	errTooLate               = errors.DefineFailedPrecondition("too_late", "too late to transmission scheduled time (delta is `{delta}`)")
 	errNoClockSync           = errors.DefineUnavailable("no_clock_sync", "no clock sync")
 	errNoAbsoluteGatewayTime = errors.DefineAborted("no_absolute_gateway_time", "no absolute gateway time")
@@ -280,8 +283,8 @@ type Options struct {
 func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, error) {
 	defer trace.StartRegion(ctx, "schedule transmission").End()
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if opts.UplinkToken != nil {
 		s.syncWithUplinkToken(opts.UplinkToken)
 	}
@@ -357,8 +360,8 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (Emission, err
 func (s *Scheduler) ScheduleAnytime(ctx context.Context, opts Options) (Emission, error) {
 	defer trace.StartRegion(ctx, "schedule transmission at any time").End()
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if opts.UplinkToken != nil {
 		s.syncWithUplinkToken(opts.UplinkToken)
 	}

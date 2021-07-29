@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"runtime/trace"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -37,19 +37,19 @@ type organizationStore struct {
 }
 
 // selectOrganizationFields selects relevant fields (based on fieldMask) and preloads details if needed.
-func selectOrganizationFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func selectOrganizationFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	if len(fieldMask.GetPaths()) == 0 {
 		return query.Preload("Attributes").Select([]string{"accounts.uid", "organizations.*"})
 	}
 	var organizationColumns []string
 	var notFoundPaths []string
-	organizationColumns = append(organizationColumns, "accounts.uid")
+	organizationColumns = append(organizationColumns, "organizations.deleted_at", "accounts.uid")
 	for _, column := range modelColumns {
 		organizationColumns = append(organizationColumns, "organizations."+column)
 	}
-	for _, path := range ttnpb.TopLevelFields(fieldMask.Paths) {
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
 		switch path {
-		case "ids", "created_at", "updated_at":
+		case "ids", "created_at", "updated_at", "deleted_at":
 			// always selected
 		case attributesField:
 			query = query.Preload("Attributes")
@@ -70,7 +70,7 @@ func selectOrganizationFields(ctx context.Context, query *gorm.DB, fieldMask *ty
 func (s *organizationStore) CreateOrganization(ctx context.Context, org *ttnpb.Organization) (*ttnpb.Organization, error) {
 	defer trace.StartRegion(ctx, "create organization").End()
 	orgModel := Organization{
-		Account: Account{UID: org.OrganizationID}, // The ID is not mutated by fromPB.
+		Account: Account{UID: org.OrganizationId}, // The ID is not mutated by fromPB.
 	}
 	orgModel.fromPB(org, nil)
 	if err := s.createEntity(ctx, &orgModel); err != nil {
@@ -81,11 +81,11 @@ func (s *organizationStore) CreateOrganization(ctx context.Context, org *ttnpb.O
 	return &orgProto, nil
 }
 
-func (s *organizationStore) FindOrganizations(ctx context.Context, ids []*ttnpb.OrganizationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Organization, error) {
+func (s *organizationStore) FindOrganizations(ctx context.Context, ids []*ttnpb.OrganizationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Organization, error) {
 	defer trace.StartRegion(ctx, "find organizations").End()
 	idStrings := make([]string, len(ids))
 	for i, id := range ids {
-		idStrings[i] = id.GetOrganizationID()
+		idStrings[i] = id.GetOrganizationId()
 	}
 	query := s.query(ctx, Organization{}, withOrganizationID(idStrings...))
 	query = selectOrganizationFields(ctx, query, fieldMask)
@@ -109,9 +109,9 @@ func (s *organizationStore) FindOrganizations(ctx context.Context, ids []*ttnpb.
 	return orgProtos, nil
 }
 
-func (s *organizationStore) GetOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Organization, error) {
+func (s *organizationStore) GetOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Organization, error) {
 	defer trace.StartRegion(ctx, "get organization").End()
-	query := s.query(ctx, Organization{}, withOrganizationID(id.GetOrganizationID()))
+	query := s.query(ctx, Organization{}, withOrganizationID(id.GetOrganizationId()))
 	query = selectOrganizationFields(ctx, query, fieldMask)
 	var orgModel organizationWithUID
 	if err := query.First(&orgModel).Error; err != nil {
@@ -125,9 +125,9 @@ func (s *organizationStore) GetOrganization(ctx context.Context, id *ttnpb.Organ
 	return orgProto, nil
 }
 
-func (s *organizationStore) UpdateOrganization(ctx context.Context, org *ttnpb.Organization, fieldMask *types.FieldMask) (updated *ttnpb.Organization, err error) {
+func (s *organizationStore) UpdateOrganization(ctx context.Context, org *ttnpb.Organization, fieldMask *pbtypes.FieldMask) (updated *ttnpb.Organization, err error) {
 	defer trace.StartRegion(ctx, "update organization").End()
-	query := s.query(ctx, Organization{}, withOrganizationID(org.GetOrganizationID()))
+	query := s.query(ctx, Organization{}, withOrganizationID(org.GetOrganizationId()))
 	query = selectOrganizationFields(ctx, query, fieldMask)
 	var orgModel organizationWithUID
 	if err = query.First(&orgModel).Error; err != nil {
@@ -157,4 +157,41 @@ func (s *organizationStore) UpdateOrganization(ctx context.Context, org *ttnpb.O
 func (s *organizationStore) DeleteOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) (err error) {
 	defer trace.StartRegion(ctx, "delete organization").End()
 	return s.deleteEntity(ctx, id)
+}
+
+func (s *organizationStore) RestoreOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) (err error) {
+	defer trace.StartRegion(ctx, "restore organization").End()
+	return s.restoreEntity(ctx, id)
+}
+
+func (s *organizationStore) PurgeOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) (err error) {
+	defer trace.StartRegion(ctx, "purge organization").End()
+
+	query := s.query(ctx, Organization{}, withSoftDeleted(), withOrganizationID(id.GetOrganizationId()))
+	query = selectOrganizationFields(ctx, query, nil)
+	var orgModel organizationWithUID
+	if err = query.First(&orgModel).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errNotFoundForID(id)
+		}
+		return err
+	}
+	if err := ctx.Err(); err != nil { // Early exit if context canceled
+		return err
+	}
+	if len(orgModel.Attributes) > 0 {
+		if err := s.replaceAttributes(ctx, "organization", orgModel.ID, orgModel.Attributes, nil); err != nil {
+			return err
+		}
+	}
+
+	err = s.purgeEntity(ctx, id)
+	if err != nil {
+		return err
+	}
+	// Purge account after purging organization because it is necessary for organization query
+	return s.query(ctx, Account{}, withSoftDeleted()).Where(Account{
+		UID:         id.IDString(),
+		AccountType: id.EntityType(),
+	}).Delete(Account{}).Error
 }

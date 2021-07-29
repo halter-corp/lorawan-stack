@@ -13,19 +13,20 @@
 // limitations under the License.
 
 import {
+  createPaginationIdsSelectorByEntity,
+  createPaginationTotalCountSelectorByEntity,
+} from '@ttn-lw/lib/store/selectors/pagination'
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+
+import { GET_APP_LINK_BASE } from '@console/store/actions/link'
+import {
   GET_APPS_LIST_BASE,
   GET_APPS_RIGHTS_LIST_BASE,
   GET_APP_BASE,
   GET_APP_DEV_COUNT_BASE,
 } from '@console/store/actions/applications'
-import { GET_APP_LINK_BASE } from '@console/store/actions/link'
 
-import { selectDeviceDerivedStore } from '@console/store/selectors/devices'
-
-import {
-  createPaginationIdsSelectorByEntity,
-  createPaginationTotalCountSelectorByEntity,
-} from './pagination'
 import {
   createEventsSelector,
   createEventsErrorSelector,
@@ -33,19 +34,21 @@ import {
   createEventsInterruptedSelector,
   createEventsPausedSelector,
   createEventsTruncatedSelector,
+  createEventsFilterSelector,
 } from './events'
 import { createRightsSelector, createPseudoRightsSelector } from './rights'
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
 
 const ENTITY = 'applications'
 
 // Application.
 export const selectApplicationStore = state => state.applications
 export const selectApplicationEntitiesStore = state => selectApplicationStore(state).entities
+export const selectApplicationDerivedStore = state => selectApplicationStore(state).derived
+export const selectApplicationDerivedById = (state, id) => selectApplicationDerivedStore(state)[id]
 export const selectApplicationById = (state, id) => selectApplicationEntitiesStore(state)[id]
 export const selectSelectedApplicationId = state =>
   selectApplicationStore(state).selectedApplication
+export const selectApplicationNameById = (state, id) => (selectApplicationById(state) || {}).name
 export const selectSelectedApplication = state =>
   selectApplicationById(state, selectSelectedApplicationId(state))
 export const selectApplicationFetching = createFetchingSelector(GET_APP_BASE)
@@ -54,6 +57,10 @@ export const selectApplicationDeviceCount = state =>
   selectApplicationStore(state).applicationDeviceCount
 export const selectApplicationDevicesFetching = createFetchingSelector(GET_APP_DEV_COUNT_BASE)
 export const selectApplicationDevicesError = createErrorSelector(GET_APP_DEV_COUNT_BASE)
+export const selectApplicationDerivedLastSeen = (state, id) =>
+  (selectApplicationDerivedById(state, id) || {}).lastSeen
+export const selectApplicationDevEUICount = state =>
+  selectApplicationById(state, selectSelectedApplicationId(state)).dev_eui_counter || 0
 
 // Applications.
 const selectAppsIds = createPaginationIdsSelectorByEntity(ENTITY)
@@ -74,6 +81,7 @@ export const selectApplicationEventsStatus = createEventsStatusSelector(ENTITY)
 export const selectApplicationEventsInterrupted = createEventsInterruptedSelector(ENTITY)
 export const selectApplicationEventsPaused = createEventsPausedSelector(ENTITY)
 export const selectApplicationEventsTruncated = createEventsTruncatedSelector(ENTITY)
+export const selectApplicationEventsFilter = createEventsFilterSelector(ENTITY)
 
 // Rights.
 export const selectApplicationRights = createRightsSelector(ENTITY)
@@ -84,50 +92,16 @@ export const selectApplicationRightsFetching = createFetchingSelector(GET_APPS_R
 // Link.
 const selectLinkStore = state => state.link
 export const selectApplicationLink = state => selectLinkStore(state).link
-export const selectApplicationLinkIndicator = state => selectLinkStore(state).linked
-export const selectApplicationLinkStats = state => selectLinkStore(state).stats
 export const selectApplicationLinkFetching = createFetchingSelector(GET_APP_LINK_BASE)
 export const selectApplicationLinkError = createErrorSelector(GET_APP_LINK_BASE)
-export const selectApplicationLinkFormatters = function(state) {
+export const selectApplicationLinkFormatters = state => {
   const link = selectApplicationLink(state) || {}
 
   return link.default_formatters
 }
-export const selectApplicationIsLinked = function(state) {
-  const linkStore = selectLinkStore(state)
+
+export const selectApplicationLinkSkipPayloadCrypto = state => {
   const link = selectApplicationLink(state) || {}
-  const error = selectApplicationLinkError(state)
-  const stats = selectApplicationLinkStats(state)
 
-  const hasBase = Boolean(link.api_key)
-  const hasError = Boolean(error)
-  const isLinked = linkStore.linked
-  const hasStats = Boolean(stats)
-
-  return hasBase && !hasError && isLinked && hasStats
-}
-
-// Composite.
-export const selectApplicationLastSeen = state => {
-  const deviceDerived = selectDeviceDerivedStore(state)
-  const linkStats = selectApplicationLinkStats(state)
-  const appId = selectSelectedApplicationId(state)
-  const {
-    last_up_received_at: lastUplinkSeenAt = null,
-    last_downlink_forwarded_at: lastDownlinkSeenAt = null,
-  } = linkStats || {}
-
-  let lastSeen =
-    Boolean(lastUplinkSeenAt) || Boolean(lastDownlinkSeenAt)
-      ? Math.max(new Date(lastUplinkSeenAt), new Date(lastDownlinkSeenAt))
-      : new Date(null)
-
-  for (const device in deviceDerived) {
-    const derived = deviceDerived[device]
-    if (device.startsWith(appId) && derived.lastSeen) {
-      lastSeen = Math.max(new Date(derived.lastSeen), lastSeen)
-    }
-  }
-
-  return lastSeen > new Date(null) ? new Date(lastSeen).toISOString() : undefined
+  return link.skip_payload_crypto || false
 }

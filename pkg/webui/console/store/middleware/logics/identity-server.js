@@ -14,15 +14,13 @@
 
 import api from '@console/api'
 
-import * as is from '@console/store/actions/identity-server'
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
-import createRequestLogic from './lib'
+import * as is from '@console/store/actions/identity-server'
 
 const getIsConfigurationLogic = createRequestLogic({
   type: is.GET_IS_CONFIGURATION,
-  async process() {
-    return api.is.getConfiguration()
-  },
+  process: async () => api.is.getConfiguration(),
 })
 
 export default [getIsConfigurationLogic]

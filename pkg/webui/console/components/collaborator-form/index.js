@@ -13,17 +13,17 @@
 // limitations under the License.
 
 import React, { Component } from 'react'
+import { connect } from 'react-redux'
 import bind from 'autobind-decorator'
 
 import Form from '@ttn-lw/components/form'
 import Input from '@ttn-lw/components/input'
+import Notification from '@ttn-lw/components/notification'
 import Radio from '@ttn-lw/components/radio-button'
 import SubmitBar from '@ttn-lw/components/submit-bar'
 import SubmitButton from '@ttn-lw/components/submit-button'
 import toast from '@ttn-lw/components/toast'
 import ModalButton from '@ttn-lw/components/button/modal-button'
-
-import Message from '@ttn-lw/lib/components/message'
 
 import RightsGroup from '@console/components/rights-group'
 
@@ -33,6 +33,8 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import { id as collaboratorIdRegexp } from '@console/lib/regexp'
+
+import { selectUserId } from '@console/store/selectors/user'
 
 const validationSchema = Yup.object().shape({
   collaborator_id: Yup.string()
@@ -44,9 +46,13 @@ const validationSchema = Yup.object().shape({
 
 const isUser = collaborator => collaborator.ids && 'user_ids' in collaborator.ids
 
+@connect(state => ({
+  currentUserId: selectUserId(state),
+}))
 export default class CollaboratorForm extends Component {
   static propTypes = {
     collaborator: PropTypes.collaborator,
+    currentUserId: PropTypes.string.isRequired,
     error: PropTypes.error,
     onDelete: PropTypes.func,
     onDeleteFailure: PropTypes.func,
@@ -150,21 +156,34 @@ export default class CollaboratorForm extends Component {
   }
 
   render() {
-    const { collaborator, rights, pseudoRights, error: passedError, update } = this.props
+    const {
+      currentUserId,
+      collaborator,
+      rights,
+      pseudoRights,
+      error: passedError,
+      update,
+    } = this.props
 
     const { error: submitError } = this.state
 
     const error = passedError || submitError
 
+    const isYou =
+      Boolean(collaborator) &&
+      isUser(collaborator) &&
+      getCollaboratorId(collaborator) === currentUserId
+
     return (
       <Form
-        horizontal
         error={error}
         onSubmit={this.handleSubmit}
         initialValues={this.computeInitialValues()}
         validationSchema={validationSchema}
       >
-        <Message component="h4" content={sharedMessages.generalInformation} />
+        {update && isYou ? (
+          <Notification small warning content={sharedMessages.collaboratorWarningSelf} />
+        ) : null}
         <Form.Field
           name="collaborator_id"
           component={Input}
@@ -178,7 +197,6 @@ export default class CollaboratorForm extends Component {
           name="collaborator_type"
           title={sharedMessages.type}
           component={Radio.Group}
-          horizontal={false}
           disabled={update}
           required
         >
@@ -191,7 +209,7 @@ export default class CollaboratorForm extends Component {
           required
           component={RightsGroup}
           rights={rights}
-          pseudoRight={pseudoRights[0]}
+          pseudoRight={pseudoRights}
           entityTypeMessage={sharedMessages.collaborator}
         />
         <SubmitBar>
@@ -205,12 +223,16 @@ export default class CollaboratorForm extends Component {
               icon="delete"
               danger
               naked
-              message={sharedMessages.removeCollaborator}
+              message={
+                isYou ? sharedMessages.removeCollaboratorSelf : sharedMessages.removeCollaborator
+              }
               modalData={{
-                message: {
-                  values: { collaboratorId: getCollaboratorId(collaborator) },
-                  ...sharedMessages.collaboratorModalWarning,
-                },
+                message: isYou
+                  ? sharedMessages.collaboratorModalWarningSelf
+                  : {
+                      values: { collaboratorId: getCollaboratorId(collaborator) },
+                      ...sharedMessages.collaboratorModalWarning,
+                    },
               }}
               onApprove={this.handleDelete}
             />

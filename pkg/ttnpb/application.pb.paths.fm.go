@@ -6,7 +6,9 @@ var ApplicationFieldPathsNested = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
+	"dev_eui_counter",
 	"ids",
 	"ids.application_id",
 	"name",
@@ -17,7 +19,9 @@ var ApplicationFieldPathsTopLevel = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
+	"dev_eui_counter",
 	"ids",
 	"name",
 	"updated_at",
@@ -28,6 +32,13 @@ var ApplicationsFieldPathsNested = []string{
 
 var ApplicationsFieldPathsTopLevel = []string{
 	"applications",
+}
+var IssueDevEUIResponseFieldPathsNested = []string{
+	"dev_eui",
+}
+
+var IssueDevEUIResponseFieldPathsTopLevel = []string{
+	"dev_eui",
 }
 var GetApplicationRequestFieldPathsNested = []string{
 	"application_ids",
@@ -47,6 +58,7 @@ var ListApplicationsRequestFieldPathsNested = []string{
 	"collaborator.ids.user_ids",
 	"collaborator.ids.user_ids.email",
 	"collaborator.ids.user_ids.user_id",
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -55,6 +67,7 @@ var ListApplicationsRequestFieldPathsNested = []string{
 
 var ListApplicationsRequestFieldPathsTopLevel = []string{
 	"collaborator",
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -65,7 +78,9 @@ var CreateApplicationRequestFieldPathsNested = []string{
 	"application.attributes",
 	"application.contact_info",
 	"application.created_at",
+	"application.deleted_at",
 	"application.description",
+	"application.dev_eui_counter",
 	"application.ids",
 	"application.ids.application_id",
 	"application.name",
@@ -88,7 +103,9 @@ var UpdateApplicationRequestFieldPathsNested = []string{
 	"application.attributes",
 	"application.contact_info",
 	"application.created_at",
+	"application.deleted_at",
 	"application.description",
+	"application.dev_eui_counter",
 	"application.ids",
 	"application.ids.application_id",
 	"application.name",
@@ -125,28 +142,35 @@ var GetApplicationAPIKeyRequestFieldPathsTopLevel = []string{
 var CreateApplicationAPIKeyRequestFieldPathsNested = []string{
 	"application_ids",
 	"application_ids.application_id",
+	"expires_at",
 	"name",
 	"rights",
 }
 
 var CreateApplicationAPIKeyRequestFieldPathsTopLevel = []string{
 	"application_ids",
+	"expires_at",
 	"name",
 	"rights",
 }
 var UpdateApplicationAPIKeyRequestFieldPathsNested = []string{
 	"api_key",
+	"api_key.created_at",
+	"api_key.expires_at",
 	"api_key.id",
 	"api_key.key",
 	"api_key.name",
 	"api_key.rights",
+	"api_key.updated_at",
 	"application_ids",
 	"application_ids.application_id",
+	"field_mask",
 }
 
 var UpdateApplicationAPIKeyRequestFieldPathsTopLevel = []string{
 	"api_key",
 	"application_ids",
+	"field_mask",
 }
 var ListApplicationCollaboratorsRequestFieldPathsNested = []string{
 	"application_ids",

@@ -37,15 +37,15 @@ func TestEndDeviceStore(t *testing.T) {
 		store := GetEndDeviceStore(db)
 
 		deviceID := ttnpb.EndDeviceIdentifiers{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test"},
-			JoinEUI:                &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
-			DevEUI:                 &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
-			DeviceID:               "foo",
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test"},
+			JoinEui:                &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+			DevEui:                 &types.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+			DeviceId:               "foo",
 		}
 
 		deviceNewID := ttnpb.EndDeviceIdentifiers{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test"},
-			DeviceID:               "bar",
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test"},
+			DeviceId:               "bar",
 		}
 
 		created, err := store.CreateEndDevice(ctx, &ttnpb.EndDevice{
@@ -70,7 +70,7 @@ func TestEndDeviceStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(created, should.NotBeNil) {
-			a.So(created.DeviceID, should.Equal, deviceID.DeviceID)
+			a.So(created.DeviceId, should.Equal, deviceID.DeviceId)
 			a.So(created.Name, should.Equal, "Foo EndDevice")
 			a.So(created.Description, should.Equal, "The Amazing Foo EndDevice")
 			a.So(created.Attributes, should.HaveLength, 3)
@@ -88,7 +88,7 @@ func TestEndDeviceStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.DeviceID, should.Equal, deviceID.DeviceID)
+			a.So(got.DeviceId, should.Equal, deviceID.DeviceId)
 			a.So(got.Name, should.Equal, "Foo EndDevice")
 			a.So(got.Description, should.BeEmpty)
 			a.So(got.Attributes, should.HaveLength, 3)
@@ -144,7 +144,7 @@ func TestEndDeviceStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.DeviceID, should.Equal, created.DeviceID)
+			a.So(got.DeviceId, should.Equal, created.DeviceId)
 			a.So(got.Name, should.Equal, created.Name)
 			a.So(got.Description, should.Equal, updated.Description)
 			a.So(got.Attributes, should.Resemble, updated.Attributes)
@@ -194,7 +194,7 @@ func TestEndDeviceStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(createdNew, should.NotBeNil) {
-			a.So(createdNew.DeviceID, should.Equal, deviceNewID.DeviceID)
+			a.So(createdNew.DeviceId, should.Equal, deviceNewID.DeviceId)
 			a.So(createdNew.Name, should.Equal, "Bar EndDevice")
 			a.So(createdNew.Description, should.Equal, "The Amazing Bar EndDevice")
 			a.So(createdNew.Attributes, should.HaveLength, 3)
@@ -270,8 +270,8 @@ func TestEndDeviceStore(t *testing.T) {
 			[]*ttnpb.EndDeviceIdentifiers{
 				&deviceID,
 				{
-					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test-another"},
-					DeviceID:               "baz",
+					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test-another"},
+					DeviceId:               "baz",
 				},
 			},
 			nil)

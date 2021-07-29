@@ -15,7 +15,7 @@
 package store
 
 import (
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/lib/pq"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
@@ -37,7 +37,8 @@ type Client struct {
 	RedirectURIs       pq.StringArray `gorm:"type:VARCHAR ARRAY;column:redirect_uris"`
 	LogoutRedirectURIs pq.StringArray `gorm:"type:VARCHAR ARRAY;column:logout_redirect_uris"`
 
-	State int `gorm:"not null"`
+	State            int    `gorm:"not null"`
+	StateDescription string `gorm:"type:VARCHAR"`
 
 	SkipAuthorization bool `gorm:"not null"`
 	Endorsed          bool `gorm:"not null"`
@@ -59,6 +60,7 @@ var clientPBSetters = map[string]func(*ttnpb.Client, *Client){
 	redirectURIsField:       func(pb *ttnpb.Client, cli *Client) { pb.RedirectURIs = cli.RedirectURIs },
 	logoutRedirectURIsField: func(pb *ttnpb.Client, cli *Client) { pb.LogoutRedirectURIs = cli.LogoutRedirectURIs },
 	stateField:              func(pb *ttnpb.Client, cli *Client) { pb.State = ttnpb.State(cli.State) },
+	stateDescriptionField:   func(pb *ttnpb.Client, cli *Client) { pb.StateDescription = cli.StateDescription },
 	skipAuthorizationField:  func(pb *ttnpb.Client, cli *Client) { pb.SkipAuthorization = cli.SkipAuthorization },
 	endorsedField:           func(pb *ttnpb.Client, cli *Client) { pb.Endorsed = cli.Endorsed },
 	grantsField:             func(pb *ttnpb.Client, cli *Client) { pb.Grants = cli.Grants },
@@ -76,6 +78,7 @@ var clientModelSetters = map[string]func(*Client, *ttnpb.Client){
 	redirectURIsField:       func(cli *Client, pb *ttnpb.Client) { cli.RedirectURIs = pq.StringArray(pb.RedirectURIs) },
 	logoutRedirectURIsField: func(cli *Client, pb *ttnpb.Client) { cli.LogoutRedirectURIs = pq.StringArray(pb.LogoutRedirectURIs) },
 	stateField:              func(cli *Client, pb *ttnpb.Client) { cli.State = int(pb.State) },
+	stateDescriptionField:   func(cli *Client, pb *ttnpb.Client) { cli.StateDescription = pb.StateDescription },
 	skipAuthorizationField:  func(cli *Client, pb *ttnpb.Client) { cli.SkipAuthorization = pb.SkipAuthorization },
 	endorsedField:           func(cli *Client, pb *ttnpb.Client) { cli.Endorsed = pb.Endorsed },
 	grantsField:             func(cli *Client, pb *ttnpb.Client) { cli.Grants = pb.Grants },
@@ -83,7 +86,7 @@ var clientModelSetters = map[string]func(*Client, *ttnpb.Client){
 }
 
 // fieldMask to use if a nil or empty fieldmask is passed.
-var defaultClientFieldMask = &types.FieldMask{}
+var defaultClientFieldMask = &pbtypes.FieldMask{}
 
 func init() {
 	paths := make([]string, 0, len(clientPBSetters))
@@ -105,17 +108,19 @@ var clientColumnNames = map[string][]string{
 	redirectURIsField:       {redirectURIsField},
 	logoutRedirectURIsField: {logoutRedirectURIsField},
 	stateField:              {stateField},
+	stateDescriptionField:   {stateDescriptionField},
 	skipAuthorizationField:  {skipAuthorizationField},
 	endorsedField:           {endorsedField},
 	grantsField:             {grantsField},
 	rightsField:             {rightsField},
 }
 
-func (cli Client) toPB(pb *ttnpb.Client, fieldMask *types.FieldMask) {
-	pb.ClientIdentifiers.ClientID = cli.ClientID
+func (cli Client) toPB(pb *ttnpb.Client, fieldMask *pbtypes.FieldMask) {
+	pb.ClientIdentifiers.ClientId = cli.ClientID
 	pb.CreatedAt = cleanTime(cli.CreatedAt)
 	pb.UpdatedAt = cleanTime(cli.UpdatedAt)
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	pb.DeletedAt = cleanTimePtr(cli.DeletedAt)
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultClientFieldMask
 	}
 	for _, path := range fieldMask.Paths {
@@ -125,8 +130,8 @@ func (cli Client) toPB(pb *ttnpb.Client, fieldMask *types.FieldMask) {
 	}
 }
 
-func (cli *Client) fromPB(pb *ttnpb.Client, fieldMask *types.FieldMask) (columns []string) {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func (cli *Client) fromPB(pb *ttnpb.Client, fieldMask *pbtypes.FieldMask) (columns []string) {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultClientFieldMask
 	}
 	for _, path := range fieldMask.Paths {

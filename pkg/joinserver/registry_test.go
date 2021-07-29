@@ -15,6 +15,7 @@
 package joinserver_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -37,16 +38,14 @@ func CopyEndDevice(pb *ttnpb.EndDevice) *ttnpb.EndDevice {
 
 // handleDeviceRegistryTest runs a test suite on reg.
 func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
-	a := assertions.New(t)
-
-	ctx := test.Context()
+	a, ctx := test.New(t)
 
 	pb := &ttnpb.EndDevice{
 		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-			JoinEUI:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			DevEUI:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
-			DeviceID:               "test-dev",
+			JoinEui:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			DevEui:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"},
+			DeviceId:               "test-dev",
 		},
 		ProvisionerID: "mock",
 		ProvisioningData: &pbtypes.Struct{
@@ -60,7 +59,7 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 		},
 	}
 
-	retCtx, err := reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEUI, *pb.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err := reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEui, *pb.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.NotBeNil) || !a.So(errors.IsNotFound(err), should.BeTrue) {
 		t.Fatalf("Error received: %v", err)
 	}
@@ -68,7 +67,7 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 
 	start := time.Now()
 
-	ret, err := reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceID,
+	ret, err := reg.SetByID(ctx, pb.ApplicationIdentifiers, pb.DeviceId,
 		[]string{
 			"provisioner_id",
 			"provisioning_data",
@@ -97,23 +96,23 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 	pb.UpdatedAt = ret.UpdatedAt
 	a.So(ret, should.HaveEmptyDiff, pb)
 
-	retCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEUI, *pb.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEui, *pb.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.BeNil) {
 		t.Fatalf("Failed to get device: %s", err)
 	}
 	a.So(retCtx.EndDevice, should.HaveEmptyDiff, pb)
 
 	pbOther := CopyEndDevice(pb)
-	pbOther.DeviceID = "other-device"
-	pbOther.DevEUI = &types.EUI64{0x43, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	pbOther.DeviceId = "other-device"
+	pbOther.DevEui = &types.EUI64{0x43, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
-	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEUI, *pbOther.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEui, *pbOther.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.NotBeNil) || !a.So(errors.IsNotFound(err), should.BeTrue) {
 		t.Fatalf("Error received: %v", err)
 	}
 	a.So(retCtx, should.BeNil)
 
-	ret, err = reg.SetByID(ctx, pbOther.ApplicationIdentifiers, pbOther.DeviceID,
+	_, err = reg.SetByID(ctx, pbOther.ApplicationIdentifiers, pbOther.DeviceId,
 		[]string{
 			"provisioner_id",
 			"provisioning_data",
@@ -136,18 +135,18 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 		t.Fatal("Device with conflicting provisioner unique ID created")
 	}
 
-	err = DeleteDevice(ctx, reg, pb.ApplicationIdentifiers, pb.DeviceID)
+	err = DeleteDevice(ctx, reg, pb.ApplicationIdentifiers, pb.DeviceId)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
 
-	retCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEUI, *pb.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err = reg.GetByEUI(ctx, *pb.EndDeviceIdentifiers.JoinEui, *pb.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.NotBeNil) || !a.So(errors.IsNotFound(err), should.BeTrue) {
 		t.Fatalf("Error received: %v", err)
 	}
 	a.So(retCtx, should.BeNil)
 
-	ret, err = reg.SetByID(ctx, pbOther.ApplicationIdentifiers, pbOther.DeviceID,
+	ret, err = reg.SetByID(ctx, pbOther.ApplicationIdentifiers, pbOther.DeviceId,
 		[]string{
 			"provisioner_id",
 			"provisioning_data",
@@ -177,18 +176,18 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 	pbOther.UpdatedAt = ret.UpdatedAt
 	a.So(ret, should.HaveEmptyDiff, pbOther)
 
-	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEUI, *pbOther.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEui, *pbOther.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
 	a.So(retCtx.EndDevice, should.HaveEmptyDiff, pbOther)
 
-	err = DeleteDevice(ctx, reg, pbOther.ApplicationIdentifiers, pbOther.DeviceID)
+	err = DeleteDevice(ctx, reg, pbOther.ApplicationIdentifiers, pbOther.DeviceId)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
 
-	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEUI, *pbOther.EndDeviceIdentifiers.DevEUI, ttnpb.EndDeviceFieldPathsTopLevel)
+	retCtx, err = reg.GetByEUI(ctx, *pbOther.EndDeviceIdentifiers.JoinEui, *pbOther.EndDeviceIdentifiers.DevEui, ttnpb.EndDeviceFieldPathsTopLevel)
 	if !a.So(err, should.NotBeNil) || !a.So(errors.IsNotFound(err), should.BeTrue) {
 		t.Fatalf("Error received: %v", err)
 	}
@@ -208,38 +207,42 @@ func TestDeviceRegistries(t *testing.T) {
 
 	for _, tc := range []struct {
 		Name string
-		New  func(t testing.TB) (reg DeviceRegistry, closeFn func() error)
+		New  func(ctx context.Context) (reg DeviceRegistry, closeFn func() error)
 		N    uint16
 	}{
 		{
 			Name: "Redis",
-			New: func(t testing.TB) (DeviceRegistry, func() error) {
-				cl, flush := test.NewRedis(t, namespace[:]...)
-				reg := &redis.DeviceRegistry{Redis: cl}
-				return reg, func() error {
-					flush()
-					return cl.Close()
-				}
+			New: func(ctx context.Context) (DeviceRegistry, func() error) {
+				cl, flush := test.NewRedis(ctx, namespace[:]...)
+				return &redis.DeviceRegistry{
+						Redis: cl,
+					}, func() error {
+						flush()
+						return cl.Close()
+					}
 			},
 			N: 8,
 		},
 	} {
 		for i := 0; i < int(tc.N); i++ {
-			t.Run(fmt.Sprintf("%s/%d", tc.Name, i), func(t *testing.T) {
-				t.Parallel()
-				reg, closeFn := tc.New(t)
-				if closeFn != nil {
-					defer func() {
-						if err := closeFn(); err != nil {
-							t.Errorf("Failed to close registry: %s", err)
-						}
-					}()
-				}
-				t.Run("1st run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
-				if t.Failed() {
-					t.Skip("Skipping 2nd run")
-				}
-				t.Run("2nd run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+			test.RunSubtest(t, test.SubtestConfig{
+				Name:     fmt.Sprintf("%s/%d", tc.Name, i),
+				Parallel: true,
+				Func: func(ctx context.Context, t *testing.T, _ *assertions.Assertion) {
+					reg, closeFn := tc.New(ctx)
+					if closeFn != nil {
+						defer func() {
+							if err := closeFn(); err != nil {
+								t.Errorf("Failed to close registry: %s", err)
+							}
+						}()
+					}
+					t.Run("1st run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+					if t.Failed() {
+						t.Skip("Skipping 2nd run")
+					}
+					t.Run("2nd run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+				},
 			})
 		}
 	}
@@ -253,8 +256,13 @@ func handleKeyRegistryTest(t *testing.T, reg KeyRegistry) {
 
 	joinEUI := types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 	devEUI := types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	pb := ttnpb.NewPopulatedSessionKeys(test.Randy, false)
-	pb.SessionKeyID = []byte{0x11, 0x22, 0x33, 0x44}
+	pb := &ttnpb.SessionKeys{
+		SessionKeyID: []byte{0x11, 0x22, 0x33, 0x44},
+		FNwkSIntKey:  test.DefaultFNwkSIntKeyEnvelope,
+		SNwkSIntKey:  test.DefaultSNwkSIntKeyEnvelope,
+		NwkSEncKey:   test.DefaultNwkSEncKeyEnvelope,
+		AppSKey:      test.DefaultAppSKeyEnvelope,
+	}
 
 	ret, err := reg.GetByID(ctx, joinEUI, devEUI, pb.SessionKeyID, ttnpb.SessionKeysFieldPathsTopLevel)
 	if !a.So(err, should.NotBeNil) || !a.So(errors.IsNotFound(err), should.BeTrue) {
@@ -362,38 +370,42 @@ func TestSessionKeyRegistries(t *testing.T) {
 
 	for _, tc := range []struct {
 		Name string
-		New  func(t testing.TB) (reg KeyRegistry, closeFn func() error)
+		New  func(ctx context.Context) (reg KeyRegistry, closeFn func() error)
 		N    uint16
 	}{
 		{
 			Name: "Redis",
-			New: func(t testing.TB) (KeyRegistry, func() error) {
-				cl, flush := test.NewRedis(t, namespace[:]...)
-				reg := &redis.KeyRegistry{Redis: cl}
-				return reg, func() error {
-					flush()
-					return cl.Close()
-				}
+			New: func(ctx context.Context) (KeyRegistry, func() error) {
+				cl, flush := test.NewRedis(ctx, namespace[:]...)
+				return &redis.KeyRegistry{
+						Redis: cl,
+					}, func() error {
+						flush()
+						return cl.Close()
+					}
 			},
 			N: 8,
 		},
 	} {
 		for i := 0; i < int(tc.N); i++ {
-			t.Run(fmt.Sprintf("%s/%d", tc.Name, i), func(t *testing.T) {
-				t.Parallel()
-				reg, closeFn := tc.New(t)
-				if closeFn != nil {
-					defer func() {
-						if err := closeFn(); err != nil {
-							t.Errorf("Failed to close registry: %s", err)
-						}
-					}()
-				}
-				t.Run("1st run", func(t *testing.T) { handleKeyRegistryTest(t, reg) })
-				if t.Failed() {
-					t.Skip("Skipping 2nd run")
-				}
-				t.Run("2nd run", func(t *testing.T) { handleKeyRegistryTest(t, reg) })
+			test.RunSubtest(t, test.SubtestConfig{
+				Name:     fmt.Sprintf("%s/%d", tc.Name, i),
+				Parallel: true,
+				Func: func(ctx context.Context, t *testing.T, _ *assertions.Assertion) {
+					reg, closeFn := tc.New(ctx)
+					if closeFn != nil {
+						defer func() {
+							if err := closeFn(); err != nil {
+								t.Errorf("Failed to close registry: %s", err)
+							}
+						}()
+					}
+					t.Run("1st run", func(t *testing.T) { handleKeyRegistryTest(t, reg) })
+					if t.Failed() {
+						t.Skip("Skipping 2nd run")
+					}
+					t.Run("2nd run", func(t *testing.T) { handleKeyRegistryTest(t, reg) })
+				},
 			})
 		}
 	}

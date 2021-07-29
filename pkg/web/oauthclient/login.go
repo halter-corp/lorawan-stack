@@ -37,5 +37,13 @@ func (oc *OAuthClient) HandleLogin(c echo.Context) error {
 		return err
 	}
 
-	return c.Redirect(http.StatusFound, oc.oauth(c).AuthCodeURL(state.Secret))
+	conf, err := oc.oauth(c)
+	if err != nil {
+		return err
+	}
+	opts, err := oc.authCodeURLOpts(c)
+	if err != nil {
+		return err
+	}
+	return c.Redirect(http.StatusFound, conf.AuthCodeURL(state.Secret, opts...))
 }

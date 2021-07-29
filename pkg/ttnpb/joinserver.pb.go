@@ -7,12 +7,6 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -23,6 +17,10 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -41,9 +39,9 @@ type SessionKeyRequest struct {
 	// Join Server issued identifier for the session keys.
 	SessionKeyID []byte `protobuf:"bytes,1,opt,name=session_key_id,json=sessionKeyId,proto3" json:"session_key_id,omitempty"`
 	// LoRaWAN DevEUI.
-	DevEUI go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,2,opt,name=dev_eui,json=devEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"dev_eui"`
+	DevEui go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,2,opt,name=dev_eui,json=devEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"dev_eui"`
 	// The LoRaWAN JoinEUI (AppEUI until LoRaWAN 1.0.3 end devices).
-	JoinEUI              go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,3,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui"`
+	JoinEui              go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,3,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui"`
 	XXX_NoUnkeyedLiteral struct{}                                              `json:"-"`
 	XXX_sizecache        int32                                                 `json:"-"`
 }
@@ -54,25 +52,16 @@ func (*SessionKeyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{0}
 }
 func (m *SessionKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_SessionKeyRequest.Unmarshal(m, b)
 }
 func (m *SessionKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SessionKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_SessionKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *SessionKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SessionKeyRequest.Merge(m, src)
 }
 func (m *SessionKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_SessionKeyRequest.Size(m)
 }
 func (m *SessionKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_SessionKeyRequest.DiscardUnknown(m)
@@ -104,25 +93,16 @@ func (*NwkSKeysResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{1}
 }
 func (m *NwkSKeysResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_NwkSKeysResponse.Unmarshal(m, b)
 }
 func (m *NwkSKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_NwkSKeysResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_NwkSKeysResponse.Marshal(b, m, deterministic)
 }
 func (m *NwkSKeysResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_NwkSKeysResponse.Merge(m, src)
 }
 func (m *NwkSKeysResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_NwkSKeysResponse.Size(m)
 }
 func (m *NwkSKeysResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_NwkSKeysResponse.DiscardUnknown(m)
@@ -164,25 +144,16 @@ func (*AppSKeyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{2}
 }
 func (m *AppSKeyResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_AppSKeyResponse.Unmarshal(m, b)
 }
 func (m *AppSKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AppSKeyResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_AppSKeyResponse.Marshal(b, m, deterministic)
 }
 func (m *AppSKeyResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AppSKeyResponse.Merge(m, src)
 }
 func (m *AppSKeyResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_AppSKeyResponse.Size(m)
 }
 func (m *AppSKeyResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_AppSKeyResponse.DiscardUnknown(m)
@@ -198,10 +169,15 @@ func (m *AppSKeyResponse) GetAppSKey() KeyEnvelope {
 }
 
 type CryptoServicePayloadRequest struct {
+	// End device identifiers for the cryptographic operation.
 	EndDeviceIdentifiers `protobuf:"bytes,1,opt,name=ids,proto3,embedded=ids" json:"ids"`
-	LoRaWANVersion       MACVersion    `protobuf:"varint,2,opt,name=lorawan_version,json=lorawanVersion,proto3,enum=ttn.lorawan.v3.MACVersion" json:"lorawan_version,omitempty"`
-	Payload              []byte        `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	ProvisionerID        string        `protobuf:"bytes,4,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
+	// LoRaWAN version to use for the cryptographic operation.
+	LorawanVersion MACVersion `protobuf:"varint,2,opt,name=lorawan_version,json=lorawanVersion,proto3,enum=ttn.lorawan.v3.MACVersion" json:"lorawan_version,omitempty"`
+	// Raw input payload.
+	Payload []byte `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	// Provisioner that provisioned the end device.
+	ProvisionerID string `protobuf:"bytes,4,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
+	// Provisioning data for the provisioner.
 	ProvisioningData     *types.Struct `protobuf:"bytes,5,opt,name=provisioning_data,json=provisioningData,proto3" json:"provisioning_data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -213,25 +189,16 @@ func (*CryptoServicePayloadRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{3}
 }
 func (m *CryptoServicePayloadRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CryptoServicePayloadRequest.Unmarshal(m, b)
 }
 func (m *CryptoServicePayloadRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CryptoServicePayloadRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CryptoServicePayloadRequest.Marshal(b, m, deterministic)
 }
 func (m *CryptoServicePayloadRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CryptoServicePayloadRequest.Merge(m, src)
 }
 func (m *CryptoServicePayloadRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CryptoServicePayloadRequest.Size(m)
 }
 func (m *CryptoServicePayloadRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CryptoServicePayloadRequest.DiscardUnknown(m)
@@ -239,9 +206,9 @@ func (m *CryptoServicePayloadRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CryptoServicePayloadRequest proto.InternalMessageInfo
 
-func (m *CryptoServicePayloadRequest) GetLoRaWANVersion() MACVersion {
+func (m *CryptoServicePayloadRequest) GetLorawanVersion() MACVersion {
 	if m != nil {
-		return m.LoRaWANVersion
+		return m.LorawanVersion
 	}
 	return MAC_UNKNOWN
 }
@@ -268,6 +235,7 @@ func (m *CryptoServicePayloadRequest) GetProvisioningData() *types.Struct {
 }
 
 type CryptoServicePayloadResponse struct {
+	// Raw output payload.
 	Payload              []byte   `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -279,25 +247,16 @@ func (*CryptoServicePayloadResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{4}
 }
 func (m *CryptoServicePayloadResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CryptoServicePayloadResponse.Unmarshal(m, b)
 }
 func (m *CryptoServicePayloadResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CryptoServicePayloadResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CryptoServicePayloadResponse.Marshal(b, m, deterministic)
 }
 func (m *CryptoServicePayloadResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CryptoServicePayloadResponse.Merge(m, src)
 }
 func (m *CryptoServicePayloadResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CryptoServicePayloadResponse.Size(m)
 }
 func (m *CryptoServicePayloadResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_CryptoServicePayloadResponse.DiscardUnknown(m)
@@ -313,11 +272,14 @@ func (m *CryptoServicePayloadResponse) GetPayload() []byte {
 }
 
 type JoinAcceptMICRequest struct {
+	// Request data for the cryptographic operation.
 	CryptoServicePayloadRequest `protobuf:"bytes,1,opt,name=payload_request,json=payloadRequest,proto3,embedded=payload_request" json:"payload_request"`
-	JoinRequestType             RejoinType                                               `protobuf:"varint,2,opt,name=join_request_type,json=joinRequestType,proto3,enum=ttn.lorawan.v3.RejoinType" json:"join_request_type,omitempty"`
-	DevNonce                    go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce `protobuf:"bytes,3,opt,name=dev_nonce,json=devNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.DevNonce" json:"dev_nonce"`
-	XXX_NoUnkeyedLiteral        struct{}                                                 `json:"-"`
-	XXX_sizecache               int32                                                    `json:"-"`
+	// LoRaWAN join-request type.
+	JoinRequestType JoinRequestType `protobuf:"varint,2,opt,name=join_request_type,json=joinRequestType,proto3,enum=ttn.lorawan.v3.JoinRequestType" json:"join_request_type,omitempty"`
+	// LoRaWAN DevNonce.
+	DevNonce             go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce `protobuf:"bytes,3,opt,name=dev_nonce,json=devNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.DevNonce" json:"dev_nonce"`
+	XXX_NoUnkeyedLiteral struct{}                                                 `json:"-"`
+	XXX_sizecache        int32                                                    `json:"-"`
 }
 
 func (m *JoinAcceptMICRequest) Reset()      { *m = JoinAcceptMICRequest{} }
@@ -326,25 +288,16 @@ func (*JoinAcceptMICRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{5}
 }
 func (m *JoinAcceptMICRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_JoinAcceptMICRequest.Unmarshal(m, b)
 }
 func (m *JoinAcceptMICRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JoinAcceptMICRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_JoinAcceptMICRequest.Marshal(b, m, deterministic)
 }
 func (m *JoinAcceptMICRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_JoinAcceptMICRequest.Merge(m, src)
 }
 func (m *JoinAcceptMICRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_JoinAcceptMICRequest.Size(m)
 }
 func (m *JoinAcceptMICRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_JoinAcceptMICRequest.DiscardUnknown(m)
@@ -352,23 +305,31 @@ func (m *JoinAcceptMICRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_JoinAcceptMICRequest proto.InternalMessageInfo
 
-func (m *JoinAcceptMICRequest) GetJoinRequestType() RejoinType {
+func (m *JoinAcceptMICRequest) GetJoinRequestType() JoinRequestType {
 	if m != nil {
 		return m.JoinRequestType
 	}
-	return RejoinType_CONTEXT
+	return JoinRequestType_REJOIN_CONTEXT
 }
 
 type DeriveSessionKeysRequest struct {
+	// End device identifiers to use for key derivation.
+	// The DevAddr must be set in this request. The DevEUI may need to be set, depending on the provisioner.
 	EndDeviceIdentifiers `protobuf:"bytes,1,opt,name=ids,proto3,embedded=ids" json:"ids"`
-	LoRaWANVersion       MACVersion                                                `protobuf:"varint,2,opt,name=lorawan_version,json=lorawanVersion,proto3,enum=ttn.lorawan.v3.MACVersion" json:"lorawan_version,omitempty"`
-	JoinNonce            go_thethings_network_lorawan_stack_v3_pkg_types.JoinNonce `protobuf:"bytes,3,opt,name=join_nonce,json=joinNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.JoinNonce" json:"join_nonce"`
-	DevNonce             go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce  `protobuf:"bytes,4,opt,name=dev_nonce,json=devNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.DevNonce" json:"dev_nonce"`
-	NetID                go_thethings_network_lorawan_stack_v3_pkg_types.NetID     `protobuf:"bytes,5,opt,name=net_id,json=netId,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.NetID" json:"net_id"`
-	ProvisionerID        string                                                    `protobuf:"bytes,6,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
-	ProvisioningData     *types.Struct                                             `protobuf:"bytes,7,opt,name=provisioning_data,json=provisioningData,proto3" json:"provisioning_data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                                                  `json:"-"`
-	XXX_sizecache        int32                                                     `json:"-"`
+	// LoRaWAN key derivation scheme.
+	LorawanVersion MACVersion `protobuf:"varint,2,opt,name=lorawan_version,json=lorawanVersion,proto3,enum=ttn.lorawan.v3.MACVersion" json:"lorawan_version,omitempty"`
+	// LoRaWAN JoinNonce (or AppNonce).
+	JoinNonce go_thethings_network_lorawan_stack_v3_pkg_types.JoinNonce `protobuf:"bytes,3,opt,name=join_nonce,json=joinNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.JoinNonce" json:"join_nonce"`
+	// LoRaWAN DevNonce.
+	DevNonce go_thethings_network_lorawan_stack_v3_pkg_types.DevNonce `protobuf:"bytes,4,opt,name=dev_nonce,json=devNonce,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.DevNonce" json:"dev_nonce"`
+	// LoRaWAN NetID.
+	NetId go_thethings_network_lorawan_stack_v3_pkg_types.NetID `protobuf:"bytes,5,opt,name=net_id,json=netId,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.NetID" json:"net_id"`
+	// Provisioner that provisioned the end device.
+	ProvisionerID string `protobuf:"bytes,6,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
+	// Provisioning data for the provisioner.
+	ProvisioningData     *types.Struct `protobuf:"bytes,7,opt,name=provisioning_data,json=provisioningData,proto3" json:"provisioning_data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *DeriveSessionKeysRequest) Reset()      { *m = DeriveSessionKeysRequest{} }
@@ -377,25 +338,16 @@ func (*DeriveSessionKeysRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{6}
 }
 func (m *DeriveSessionKeysRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_DeriveSessionKeysRequest.Unmarshal(m, b)
 }
 func (m *DeriveSessionKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DeriveSessionKeysRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_DeriveSessionKeysRequest.Marshal(b, m, deterministic)
 }
 func (m *DeriveSessionKeysRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DeriveSessionKeysRequest.Merge(m, src)
 }
 func (m *DeriveSessionKeysRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_DeriveSessionKeysRequest.Size(m)
 }
 func (m *DeriveSessionKeysRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_DeriveSessionKeysRequest.DiscardUnknown(m)
@@ -403,9 +355,9 @@ func (m *DeriveSessionKeysRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DeriveSessionKeysRequest proto.InternalMessageInfo
 
-func (m *DeriveSessionKeysRequest) GetLoRaWANVersion() MACVersion {
+func (m *DeriveSessionKeysRequest) GetLorawanVersion() MACVersion {
 	if m != nil {
-		return m.LoRaWANVersion
+		return m.LorawanVersion
 	}
 	return MAC_UNKNOWN
 }
@@ -425,8 +377,11 @@ func (m *DeriveSessionKeysRequest) GetProvisioningData() *types.Struct {
 }
 
 type GetRootKeysRequest struct {
+	// End device identifiers to request the root keys for.
 	EndDeviceIdentifiers `protobuf:"bytes,1,opt,name=ids,proto3,embedded=ids" json:"ids"`
-	ProvisionerID        string        `protobuf:"bytes,2,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
+	// Provisioner that provisioned the end device.
+	ProvisionerID string `protobuf:"bytes,2,opt,name=provisioner_id,json=provisionerId,proto3" json:"provisioner_id,omitempty"`
+	// Provisioning data for the provisioner.
 	ProvisioningData     *types.Struct `protobuf:"bytes,3,opt,name=provisioning_data,json=provisioningData,proto3" json:"provisioning_data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -438,25 +393,16 @@ func (*GetRootKeysRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{7}
 }
 func (m *GetRootKeysRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetRootKeysRequest.Unmarshal(m, b)
 }
 func (m *GetRootKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetRootKeysRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetRootKeysRequest.Marshal(b, m, deterministic)
 }
 func (m *GetRootKeysRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetRootKeysRequest.Merge(m, src)
 }
 func (m *GetRootKeysRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetRootKeysRequest.Size(m)
 }
 func (m *GetRootKeysRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetRootKeysRequest.DiscardUnknown(m)
@@ -500,25 +446,16 @@ func (*ProvisionEndDevicesRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{8}
 }
 func (m *ProvisionEndDevicesRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ProvisionEndDevicesRequest.Unmarshal(m, b)
 }
 func (m *ProvisionEndDevicesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProvisionEndDevicesRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ProvisionEndDevicesRequest.Marshal(b, m, deterministic)
 }
 func (m *ProvisionEndDevicesRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProvisionEndDevicesRequest.Merge(m, src)
 }
 func (m *ProvisionEndDevicesRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ProvisionEndDevicesRequest.Size(m)
 }
 func (m *ProvisionEndDevicesRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProvisionEndDevicesRequest.DiscardUnknown(m)
@@ -529,7 +466,6 @@ var xxx_messageInfo_ProvisionEndDevicesRequest proto.InternalMessageInfo
 type isProvisionEndDevicesRequest_EndDevices interface {
 	isProvisionEndDevicesRequest_EndDevices()
 	Equal(interface{}) bool
-	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
@@ -599,8 +535,8 @@ func (*ProvisionEndDevicesRequest) XXX_OneofWrappers() []interface{} {
 }
 
 type ProvisionEndDevicesRequest_IdentifiersList struct {
-	JoinEUI              *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
-	EndDeviceIDs         []EndDeviceIdentifiers                                 `protobuf:"bytes,2,rep,name=end_device_ids,json=endDeviceIds,proto3" json:"end_device_ids"`
+	JoinEui              *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
+	EndDeviceIds         []EndDeviceIdentifiers                                 `protobuf:"bytes,2,rep,name=end_device_ids,json=endDeviceIds,proto3" json:"end_device_ids"`
 	XXX_NoUnkeyedLiteral struct{}                                               `json:"-"`
 	XXX_sizecache        int32                                                  `json:"-"`
 }
@@ -613,25 +549,16 @@ func (*ProvisionEndDevicesRequest_IdentifiersList) Descriptor() ([]byte, []int) 
 	return fileDescriptor_1b695d5f526759a7, []int{8, 0}
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.Unmarshal(m, b)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.Marshal(b, m, deterministic)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.Merge(m, src)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.Size(m)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList.DiscardUnknown(m)
@@ -639,17 +566,17 @@ func (m *ProvisionEndDevicesRequest_IdentifiersList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersList proto.InternalMessageInfo
 
-func (m *ProvisionEndDevicesRequest_IdentifiersList) GetEndDeviceIDs() []EndDeviceIdentifiers {
+func (m *ProvisionEndDevicesRequest_IdentifiersList) GetEndDeviceIds() []EndDeviceIdentifiers {
 	if m != nil {
-		return m.EndDeviceIDs
+		return m.EndDeviceIds
 	}
 	return nil
 }
 
 type ProvisionEndDevicesRequest_IdentifiersRange struct {
-	JoinEUI *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
+	JoinEui *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
 	// DevEUI to start issuing from.
-	StartDevEUI          go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,2,opt,name=start_dev_eui,json=startDevEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"start_dev_eui"`
+	StartDevEui          go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,2,opt,name=start_dev_eui,json=startDevEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"start_dev_eui"`
 	XXX_NoUnkeyedLiteral struct{}                                              `json:"-"`
 	XXX_sizecache        int32                                                 `json:"-"`
 }
@@ -662,25 +589,16 @@ func (*ProvisionEndDevicesRequest_IdentifiersRange) Descriptor() ([]byte, []int)
 	return fileDescriptor_1b695d5f526759a7, []int{8, 1}
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.Unmarshal(m, b)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.Marshal(b, m, deterministic)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.Merge(m, src)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.Size(m)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange.DiscardUnknown(m)
@@ -689,7 +607,7 @@ func (m *ProvisionEndDevicesRequest_IdentifiersRange) XXX_DiscardUnknown() {
 var xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersRange proto.InternalMessageInfo
 
 type ProvisionEndDevicesRequest_IdentifiersFromData struct {
-	JoinEUI              *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
+	JoinEui              *go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                               `json:"-"`
 	XXX_sizecache        int32                                                  `json:"-"`
 }
@@ -702,25 +620,16 @@ func (*ProvisionEndDevicesRequest_IdentifiersFromData) Descriptor() ([]byte, []i
 	return fileDescriptor_1b695d5f526759a7, []int{8, 2}
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersFromData) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.Unmarshal(m, b)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersFromData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.Marshal(b, m, deterministic)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersFromData) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.Merge(m, src)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersFromData) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.Size(m)
 }
 func (m *ProvisionEndDevicesRequest_IdentifiersFromData) XXX_DiscardUnknown() {
 	xxx_messageInfo_ProvisionEndDevicesRequest_IdentifiersFromData.DiscardUnknown(m)
@@ -734,7 +643,7 @@ type ApplicationActivationSettings struct {
 	// The (encrypted) Key Encryption Key.
 	KEK *KeyEnvelope `protobuf:"bytes,2,opt,name=kek,proto3" json:"kek,omitempty"`
 	// Home NetID.
-	HomeNetID *go_thethings_network_lorawan_stack_v3_pkg_types.NetID `protobuf:"bytes,3,opt,name=home_net_id,json=homeNetId,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.NetID" json:"home_net_id,omitempty"`
+	HomeNetId *go_thethings_network_lorawan_stack_v3_pkg_types.NetID `protobuf:"bytes,3,opt,name=home_net_id,json=homeNetId,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.NetID" json:"home_net_id,omitempty"`
 	// The AS-ID of the Application Server to use.
 	ApplicationServerID  string   `protobuf:"bytes,4,opt,name=application_server_id,json=applicationServerId,proto3" json:"application_server_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -747,25 +656,16 @@ func (*ApplicationActivationSettings) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{9}
 }
 func (m *ApplicationActivationSettings) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ApplicationActivationSettings.Unmarshal(m, b)
 }
 func (m *ApplicationActivationSettings) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ApplicationActivationSettings.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ApplicationActivationSettings.Marshal(b, m, deterministic)
 }
 func (m *ApplicationActivationSettings) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ApplicationActivationSettings.Merge(m, src)
 }
 func (m *ApplicationActivationSettings) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ApplicationActivationSettings.Size(m)
 }
 func (m *ApplicationActivationSettings) XXX_DiscardUnknown() {
 	xxx_messageInfo_ApplicationActivationSettings.DiscardUnknown(m)
@@ -796,9 +696,9 @@ func (m *ApplicationActivationSettings) GetApplicationServerID() string {
 
 type GetApplicationActivationSettingsRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
-	FieldMask              types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
-	XXX_sizecache          int32           `json:"-"`
+	FieldMask              *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}         `json:"-"`
+	XXX_sizecache          int32            `json:"-"`
 }
 
 func (m *GetApplicationActivationSettingsRequest) Reset() {
@@ -809,25 +709,16 @@ func (*GetApplicationActivationSettingsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{10}
 }
 func (m *GetApplicationActivationSettingsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetApplicationActivationSettingsRequest.Unmarshal(m, b)
 }
 func (m *GetApplicationActivationSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
 }
 func (m *GetApplicationActivationSettingsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetApplicationActivationSettingsRequest.Merge(m, src)
 }
 func (m *GetApplicationActivationSettingsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetApplicationActivationSettingsRequest.Size(m)
 }
 func (m *GetApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetApplicationActivationSettingsRequest.DiscardUnknown(m)
@@ -835,19 +726,19 @@ func (m *GetApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetApplicationActivationSettingsRequest proto.InternalMessageInfo
 
-func (m *GetApplicationActivationSettingsRequest) GetFieldMask() types.FieldMask {
+func (m *GetApplicationActivationSettingsRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type SetApplicationActivationSettingsRequest struct {
 	ApplicationIdentifiers        `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
 	ApplicationActivationSettings `protobuf:"bytes,2,opt,name=settings,proto3,embedded=settings" json:"settings"`
-	FieldMask                     types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral          struct{}        `json:"-"`
-	XXX_sizecache                 int32           `json:"-"`
+	FieldMask                     *types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral          struct{}         `json:"-"`
+	XXX_sizecache                 int32            `json:"-"`
 }
 
 func (m *SetApplicationActivationSettingsRequest) Reset() {
@@ -858,25 +749,16 @@ func (*SetApplicationActivationSettingsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{11}
 }
 func (m *SetApplicationActivationSettingsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_SetApplicationActivationSettingsRequest.Unmarshal(m, b)
 }
 func (m *SetApplicationActivationSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SetApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_SetApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
 }
 func (m *SetApplicationActivationSettingsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SetApplicationActivationSettingsRequest.Merge(m, src)
 }
 func (m *SetApplicationActivationSettingsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_SetApplicationActivationSettingsRequest.Size(m)
 }
 func (m *SetApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_SetApplicationActivationSettingsRequest.DiscardUnknown(m)
@@ -884,11 +766,11 @@ func (m *SetApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetApplicationActivationSettingsRequest proto.InternalMessageInfo
 
-func (m *SetApplicationActivationSettingsRequest) GetFieldMask() types.FieldMask {
+func (m *SetApplicationActivationSettingsRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type DeleteApplicationActivationSettingsRequest struct {
@@ -905,25 +787,16 @@ func (*DeleteApplicationActivationSettingsRequest) Descriptor() ([]byte, []int) 
 	return fileDescriptor_1b695d5f526759a7, []int{12}
 }
 func (m *DeleteApplicationActivationSettingsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_DeleteApplicationActivationSettingsRequest.Unmarshal(m, b)
 }
 func (m *DeleteApplicationActivationSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DeleteApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_DeleteApplicationActivationSettingsRequest.Marshal(b, m, deterministic)
 }
 func (m *DeleteApplicationActivationSettingsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DeleteApplicationActivationSettingsRequest.Merge(m, src)
 }
 func (m *DeleteApplicationActivationSettingsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_DeleteApplicationActivationSettingsRequest.Size(m)
 }
 func (m *DeleteApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_DeleteApplicationActivationSettingsRequest.DiscardUnknown(m)
@@ -932,7 +805,7 @@ func (m *DeleteApplicationActivationSettingsRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_DeleteApplicationActivationSettingsRequest proto.InternalMessageInfo
 
 type JoinEUIPrefix struct {
-	JoinEUI              go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui"`
+	JoinEui              go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=join_eui,json=joinEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"join_eui"`
 	Length               uint32                                                `protobuf:"varint,2,opt,name=length,proto3" json:"length,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                              `json:"-"`
 	XXX_sizecache        int32                                                 `json:"-"`
@@ -944,25 +817,16 @@ func (*JoinEUIPrefix) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{13}
 }
 func (m *JoinEUIPrefix) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_JoinEUIPrefix.Unmarshal(m, b)
 }
 func (m *JoinEUIPrefix) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JoinEUIPrefix.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_JoinEUIPrefix.Marshal(b, m, deterministic)
 }
 func (m *JoinEUIPrefix) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_JoinEUIPrefix.Merge(m, src)
 }
 func (m *JoinEUIPrefix) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_JoinEUIPrefix.Size(m)
 }
 func (m *JoinEUIPrefix) XXX_DiscardUnknown() {
 	xxx_messageInfo_JoinEUIPrefix.DiscardUnknown(m)
@@ -989,25 +853,16 @@ func (*JoinEUIPrefixes) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1b695d5f526759a7, []int{14}
 }
 func (m *JoinEUIPrefixes) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_JoinEUIPrefixes.Unmarshal(m, b)
 }
 func (m *JoinEUIPrefixes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_JoinEUIPrefixes.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_JoinEUIPrefixes.Marshal(b, m, deterministic)
 }
 func (m *JoinEUIPrefixes) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_JoinEUIPrefixes.Merge(m, src)
 }
 func (m *JoinEUIPrefixes) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_JoinEUIPrefixes.Size(m)
 }
 func (m *JoinEUIPrefixes) XXX_DiscardUnknown() {
 	xxx_messageInfo_JoinEUIPrefixes.DiscardUnknown(m)
@@ -1069,141 +924,133 @@ func init() {
 }
 
 var fileDescriptor_1b695d5f526759a7 = []byte{
-	// 2131 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0x4d, 0x6c, 0x1b, 0xc7,
-	0x15, 0xe6, 0x90, 0xa2, 0x44, 0x8e, 0x24, 0x4a, 0x1e, 0x3b, 0x09, 0x4b, 0x3b, 0x4b, 0x65, 0xa3,
-	0xd6, 0xae, 0x12, 0x91, 0x29, 0xdd, 0x26, 0x8e, 0x52, 0xc4, 0x25, 0x45, 0x5a, 0xa2, 0xf5, 0x53,
-	0x75, 0xd9, 0xb4, 0xa9, 0x53, 0x67, 0xbd, 0x22, 0x87, 0xd4, 0x9a, 0xd4, 0xee, 0x76, 0x77, 0x44,
-	0x85, 0x49, 0x0d, 0x18, 0x3e, 0xb4, 0x46, 0x11, 0xa0, 0x05, 0x8a, 0x00, 0x45, 0x4f, 0x01, 0x8a,
-	0xa2, 0xb9, 0x35, 0x2d, 0x02, 0x34, 0xa7, 0x22, 0x87, 0xb6, 0xf0, 0xd1, 0x40, 0x5b, 0x20, 0xe8,
-	0x81, 0x88, 0x56, 0x2d, 0x90, 0x63, 0x4e, 0x45, 0xa0, 0x53, 0x31, 0xb3, 0x43, 0x72, 0xb9, 0xa4,
-	0x64, 0x51, 0xb2, 0x1c, 0xf4, 0x36, 0xbb, 0xf3, 0xe6, 0x9b, 0xf7, 0xbe, 0x79, 0xef, 0xcd, 0x7b,
-	0x03, 0xc5, 0x9a, 0x6e, 0x2a, 0xdb, 0x8a, 0x36, 0x6b, 0x11, 0xa5, 0x58, 0x4d, 0x2a, 0x86, 0x9a,
-	0xbc, 0xa9, 0xab, 0x9a, 0x85, 0xcd, 0x3a, 0x36, 0x13, 0x86, 0xa9, 0x13, 0x1d, 0x45, 0x08, 0xd1,
-	0x12, 0x5c, 0x2e, 0x51, 0xbf, 0x18, 0x4b, 0x57, 0x54, 0xb2, 0xb1, 0xb5, 0x9e, 0x28, 0xea, 0x9b,
-	0x49, 0xac, 0xd5, 0xf5, 0x86, 0x61, 0xea, 0x6f, 0x34, 0x92, 0x4c, 0xb8, 0x38, 0x5b, 0xc1, 0xda,
-	0x6c, 0x5d, 0xa9, 0xa9, 0x25, 0x85, 0xe0, 0x64, 0xcf, 0xc0, 0x81, 0x8c, 0xcd, 0xba, 0x20, 0x2a,
-	0x7a, 0x45, 0x77, 0x16, 0xaf, 0x6f, 0x95, 0xd9, 0x17, 0xfb, 0x60, 0x23, 0x2e, 0x7e, 0xae, 0xa2,
-	0xeb, 0x95, 0x1a, 0x66, 0xea, 0x29, 0x9a, 0xa6, 0x13, 0x85, 0xa8, 0xba, 0x66, 0xf1, 0xd9, 0xb3,
-	0x7c, 0xb6, 0x8d, 0x81, 0x37, 0x0d, 0xd2, 0xe0, 0x93, 0x53, 0xde, 0xc9, 0xb2, 0x8a, 0x6b, 0x25,
-	0x79, 0x53, 0xb1, 0xaa, 0x1e, 0xf0, 0xb6, 0x84, 0x45, 0xcc, 0xad, 0x22, 0xe1, 0xb3, 0x7d, 0x08,
-	0xc2, 0x5a, 0x49, 0x2e, 0xe1, 0xba, 0x5a, 0x6c, 0x59, 0xf3, 0x74, 0xaf, 0x8c, 0x5a, 0xc2, 0x1a,
-	0x51, 0xcb, 0x2a, 0x36, 0x5b, 0x5a, 0x9e, 0xeb, 0xcf, 0xf4, 0xfe, 0xb3, 0x55, 0xdc, 0x68, 0xad,
-	0x8d, 0xf7, 0xce, 0xb6, 0xce, 0x83, 0x09, 0x88, 0xbf, 0xf6, 0xc3, 0x53, 0x05, 0x6c, 0x59, 0xaa,
-	0xae, 0x2d, 0xe1, 0x86, 0x84, 0x7f, 0xb4, 0x85, 0x2d, 0x82, 0x5e, 0x86, 0x11, 0xcb, 0xf9, 0x29,
-	0x57, 0x71, 0x43, 0x56, 0x4b, 0x51, 0x30, 0x05, 0x2e, 0x8c, 0x65, 0xa2, 0x7b, 0x99, 0xe0, 0x9b,
-	0x81, 0xe8, 0xed, 0x49, 0xbb, 0x19, 0x1f, 0xeb, 0x2c, 0xcb, 0x67, 0xa5, 0x31, 0xab, 0xf3, 0x55,
-	0x42, 0x37, 0xe0, 0x48, 0x09, 0xd7, 0x65, 0xbc, 0xa5, 0x46, 0xfd, 0x6c, 0xe1, 0xc2, 0xbd, 0x66,
-	0xdc, 0xf7, 0xaf, 0x66, 0xfc, 0x1b, 0x15, 0x3d, 0x41, 0x36, 0x30, 0xd9, 0x50, 0xb5, 0x8a, 0x95,
-	0xd0, 0x30, 0xd9, 0xd6, 0xcd, 0x6a, 0xb2, 0x5b, 0xc9, 0xfa, 0xc5, 0xa4, 0x51, 0xad, 0x24, 0x49,
-	0xc3, 0xc0, 0x56, 0x22, 0xf7, 0x4a, 0xfe, 0xf9, 0xaf, 0xdb, 0xcd, 0xf8, 0x70, 0x16, 0xd7, 0x73,
-	0xaf, 0xe4, 0xa5, 0xe1, 0x12, 0xae, 0xe7, 0xb6, 0x54, 0x54, 0x84, 0x21, 0x4a, 0x02, 0xdb, 0x22,
-	0xc0, 0xb6, 0x58, 0x3c, 0xee, 0x16, 0x23, 0x57, 0x75, 0x55, 0xa3, 0x7b, 0x8c, 0x50, 0xe4, 0xdc,
-	0x96, 0x2a, 0xde, 0xf1, 0xc3, 0xc9, 0xd5, 0xed, 0x6a, 0x61, 0x09, 0x37, 0x2c, 0x09, 0x5b, 0x86,
-	0xae, 0x59, 0x18, 0x7d, 0x1b, 0x4e, 0x94, 0x65, 0x6d, 0xbb, 0x2a, 0x5b, 0xb2, 0xaa, 0x11, 0xca,
-	0x0f, 0x23, 0x67, 0x34, 0x75, 0x36, 0xd1, 0xed, 0xee, 0x89, 0x25, 0xdc, 0xc8, 0x69, 0x75, 0x5c,
-	0xd3, 0x0d, 0x9c, 0x19, 0xdb, 0xcb, 0x04, 0x7f, 0x06, 0xfc, 0x93, 0x80, 0x6a, 0x29, 0x8d, 0x96,
-	0x29, 0x6c, 0x5e, 0x23, 0x4b, 0xb8, 0x41, 0x01, 0x2d, 0x0f, 0xa0, 0x7f, 0x60, 0x40, 0xcb, 0x05,
-	0xb8, 0x0c, 0xc7, 0x1d, 0x38, 0xac, 0x15, 0x19, 0x5c, 0x60, 0x50, 0x38, 0xa8, 0x6d, 0x57, 0x0b,
-	0x39, 0xad, 0xb8, 0x84, 0x1b, 0xe2, 0xab, 0x70, 0x22, 0x6d, 0x18, 0x05, 0xe6, 0x1d, 0x9c, 0x82,
-	0x1c, 0x0c, 0x2b, 0x86, 0x21, 0x5b, 0x47, 0x33, 0x7e, 0x44, 0x71, 0xe0, 0xc4, 0xb7, 0x03, 0xf0,
-	0xec, 0xbc, 0xd9, 0x30, 0x88, 0x5e, 0xc0, 0x26, 0x8d, 0x8a, 0x35, 0xa5, 0x51, 0xd3, 0x95, 0x52,
-	0xcb, 0x0b, 0x17, 0x61, 0x40, 0x2d, 0x59, 0x7c, 0x83, 0x69, 0xef, 0x06, 0x39, 0xad, 0x94, 0x65,
-	0xb1, 0x94, 0xef, 0x44, 0x4c, 0x66, 0xd2, 0xbd, 0xd3, 0xfd, 0x66, 0x1c, 0x48, 0x14, 0x02, 0xc9,
-	0x70, 0x82, 0xaf, 0x94, 0xeb, 0xd8, 0xa4, 0x7e, 0xca, 0x28, 0x8e, 0xa4, 0x62, 0x5e, 0xd4, 0x95,
-	0xf4, 0xfc, 0xf7, 0x1c, 0x89, 0x4c, 0x6c, 0x2f, 0x13, 0xbc, 0x43, 0xb1, 0xec, 0x66, 0x3c, 0xb2,
-	0xac, 0x4b, 0xca, 0xf7, 0xd3, 0xab, 0x7c, 0x4e, 0x8a, 0xf0, 0x25, 0xfc, 0x1b, 0x45, 0xe1, 0x88,
-	0xe1, 0x28, 0xef, 0x78, 0xa3, 0xd4, 0xfa, 0x44, 0xeb, 0x30, 0x62, 0x98, 0x7a, 0x5d, 0xa5, 0x62,
-	0xd8, 0xa4, 0xa1, 0x34, 0x34, 0x05, 0x2e, 0x84, 0x33, 0x2f, 0xed, 0x65, 0xce, 0x9b, 0x5f, 0x8e,
-	0x4e, 0xa7, 0x9e, 0x7a, 0xfd, 0x35, 0x65, 0xf6, 0xcd, 0xe7, 0x66, 0x5f, 0xbc, 0x7e, 0xe1, 0xf2,
-	0xdc, 0x6b, 0xb3, 0xd7, 0x2f, 0xb7, 0x3e, 0xbf, 0xfa, 0x56, 0xea, 0xd9, 0x5b, 0xd3, 0x3f, 0x7e,
-	0x7d, 0xda, 0x6e, 0xc6, 0xc7, 0xd7, 0x3a, 0x18, 0xf9, 0xac, 0x34, 0xee, 0x82, 0xcc, 0x97, 0x50,
-	0x16, 0x9e, 0x6a, 0xff, 0x50, 0xb5, 0x8a, 0x5c, 0x52, 0x88, 0x12, 0x0d, 0x32, 0xda, 0x9e, 0x48,
-	0x38, 0x49, 0x2a, 0xd1, 0x4a, 0x52, 0x89, 0x02, 0x4b, 0x52, 0xd2, 0xa4, 0x7b, 0x45, 0x56, 0x21,
-	0x8a, 0x78, 0x09, 0x9e, 0xeb, 0x7f, 0x1a, 0xfc, 0xd4, 0x5d, 0x36, 0x82, 0x2e, 0x1b, 0xc5, 0xdf,
-	0xfb, 0xe1, 0x19, 0x1a, 0x3c, 0xe9, 0x62, 0x11, 0x1b, 0x64, 0x25, 0x3f, 0xdf, 0x3a, 0xc1, 0x32,
-	0x9c, 0xe0, 0x32, 0xb2, 0xe9, 0xfc, 0xe2, 0xa7, 0xf9, 0x8c, 0x97, 0xf7, 0x03, 0xfc, 0xa0, 0xcf,
-	0xa1, 0x46, 0x8c, 0x6e, 0x4f, 0x59, 0x83, 0xa7, 0x58, 0x36, 0xe0, 0x9b, 0xc8, 0x34, 0xb0, 0xf7,
-	0x3b, 0x61, 0x09, 0x53, 0xd1, 0xef, 0x36, 0x0c, 0x9c, 0x09, 0xb5, 0x4e, 0x58, 0x9a, 0xa0, 0xff,
-	0x38, 0x1a, 0x9d, 0x42, 0xd7, 0x61, 0x98, 0x66, 0x30, 0x4d, 0xd7, 0x8a, 0x98, 0x27, 0x98, 0x6f,
-	0xf1, 0x04, 0x73, 0x69, 0xd0, 0x04, 0x93, 0xc5, 0xf5, 0x55, 0x8a, 0x23, 0x85, 0x4a, 0x7c, 0x24,
-	0xfe, 0x3c, 0x08, 0xa3, 0x59, 0x6c, 0xaa, 0x75, 0xdc, 0xc9, 0xa2, 0xd6, 0xff, 0xa1, 0xdf, 0xdf,
-	0x80, 0x90, 0x11, 0xef, 0xe6, 0x29, 0xcd, 0x79, 0x7a, 0x71, 0x50, 0x9e, 0xa8, 0x0b, 0x39, 0x44,
-	0x85, 0x6f, 0xb6, 0x86, 0xdd, 0x07, 0x31, 0xf4, 0xb0, 0x0f, 0x02, 0x5d, 0x87, 0xc3, 0x1a, 0x26,
-	0x34, 0x2c, 0x83, 0x0c, 0xfb, 0xca, 0x51, 0x6f, 0x91, 0x55, 0x4c, 0xf2, 0x59, 0xbb, 0x19, 0x0f,
-	0xb2, 0x81, 0x14, 0xd4, 0x30, 0xc9, 0xf7, 0x8b, 0xfe, 0xe1, 0x47, 0x13, 0xfd, 0x23, 0x83, 0x46,
-	0xff, 0x5d, 0x3f, 0x44, 0x0b, 0x98, 0x48, 0xba, 0x4e, 0x4e, 0xc6, 0x17, 0x7b, 0xa9, 0xf0, 0x3f,
-	0x1a, 0x2a, 0x02, 0x83, 0x52, 0xf1, 0xcf, 0x10, 0x8c, 0xb5, 0xb7, 0x69, 0x9b, 0xd8, 0xa6, 0xe4,
-	0x07, 0x70, 0x42, 0x31, 0x8c, 0x9a, 0x5a, 0x64, 0xb5, 0xa4, 0xdc, 0xa1, 0xe7, 0x2b, 0x5e, 0x7a,
-	0xd2, 0x1d, 0x31, 0x37, 0x41, 0xa1, 0x4e, 0x1e, 0x53, 0xdc, 0x12, 0x34, 0x5e, 0xfb, 0x73, 0x74,
-	0x69, 0x2f, 0x33, 0x6d, 0x8a, 0xd1, 0xe9, 0x94, 0x70, 0x30, 0x47, 0x0f, 0x24, 0xe8, 0x99, 0xfd,
-	0x08, 0x1a, 0xeb, 0xe5, 0x01, 0xad, 0xc1, 0xa1, 0x9a, 0x6a, 0x11, 0x16, 0x75, 0xa3, 0xa9, 0x39,
-	0xaf, 0x75, 0xfb, 0x53, 0x94, 0x70, 0x59, 0xbb, 0xac, 0x5a, 0x64, 0xd1, 0x27, 0x31, 0x24, 0x54,
-	0x80, 0x41, 0x53, 0xd1, 0x2a, 0x98, 0x5f, 0x4e, 0x2f, 0x1d, 0x0d, 0x52, 0xa2, 0x10, 0x8b, 0x3e,
-	0xc9, 0xc1, 0xa2, 0x19, 0xa2, 0x6c, 0xea, 0x9b, 0x8e, 0x2d, 0xc3, 0x0c, 0xf8, 0xe5, 0xa3, 0x01,
-	0x5f, 0x31, 0xf5, 0x4d, 0x6a, 0xf9, 0xa2, 0x4f, 0x0a, 0x95, 0xf9, 0x38, 0xf6, 0x0f, 0x00, 0x27,
-	0x3c, 0xf6, 0x20, 0xd9, 0x55, 0x7d, 0x3a, 0x95, 0x71, 0xf6, 0xa1, 0x56, 0x9e, 0xe8, 0x06, 0x8c,
-	0x74, 0x9a, 0x05, 0xe6, 0x62, 0xfe, 0xa9, 0xc0, 0xa1, 0x23, 0xf0, 0x0c, 0x75, 0x30, 0x5a, 0xa2,
-	0x77, 0x66, 0xb3, 0x96, 0x34, 0x86, 0x3b, 0xb2, 0x56, 0xec, 0x3f, 0x00, 0x4e, 0x7a, 0x39, 0x3d,
-	0x79, 0xbb, 0x0c, 0x38, 0x6e, 0x11, 0xc5, 0x24, 0x72, 0x77, 0x7b, 0xb0, 0x7c, 0xdc, 0xda, 0x7d,
-	0xb4, 0x40, 0x51, 0x79, 0x8f, 0x30, 0x6a, 0xb5, 0x3e, 0xb6, 0xd4, 0x58, 0x1d, 0x9e, 0xee, 0x73,
-	0xc2, 0x27, 0x6e, 0xe9, 0x9c, 0x3f, 0x0a, 0x32, 0xe3, 0x70, 0xb4, 0x73, 0x8a, 0x96, 0xf8, 0x37,
-	0x3f, 0x7c, 0xd2, 0x95, 0x12, 0xd2, 0x45, 0xa2, 0xd6, 0xd9, 0xa8, 0x80, 0x09, 0xa1, 0x3b, 0xa2,
-	0xaf, 0xc1, 0x70, 0x15, 0x57, 0xe5, 0x9a, 0xb2, 0x8e, 0x6b, 0x4c, 0xad, 0x70, 0xe6, 0xcc, 0x5e,
-	0x26, 0x68, 0xf2, 0x96, 0x2b, 0xb4, 0x94, 0x5b, 0x5a, 0xa6, 0x73, 0x52, 0xa8, 0x8a, 0xab, 0x6c,
-	0x84, 0x9e, 0x87, 0x81, 0x2a, 0xae, 0x1e, 0xa6, 0x63, 0x18, 0xb1, 0x9b, 0xf1, 0xc0, 0x52, 0x6e,
-	0x49, 0xa2, 0x0b, 0x50, 0x19, 0x8e, 0x6e, 0xe8, 0x9b, 0x58, 0xe6, 0xb7, 0x9f, 0x73, 0x75, 0x5f,
-	0x39, 0xce, 0xcd, 0x17, 0x5e, 0xd4, 0x37, 0xb1, 0x73, 0xfb, 0x85, 0x37, 0xf8, 0xb0, 0x84, 0x24,
-	0xf8, 0x98, 0x3b, 0x5b, 0x3a, 0xef, 0x03, 0x9d, 0x32, 0x58, 0xd8, 0xcb, 0x0c, 0x99, 0xfe, 0x68,
-	0xc9, 0x6e, 0xc6, 0x4f, 0xbb, 0xb8, 0x29, 0x30, 0xb1, 0x7c, 0x56, 0x3a, 0xad, 0xf4, 0xfc, 0x2c,
-	0x89, 0x7f, 0x05, 0xf0, 0xfc, 0x02, 0x26, 0x07, 0x72, 0xf9, 0x08, 0xb2, 0xf5, 0x65, 0x08, 0x3b,
-	0x6f, 0x02, 0xfc, 0x04, 0x62, 0x3d, 0xd7, 0xcc, 0x15, 0x2a, 0xb2, 0xa2, 0x58, 0xd5, 0xcc, 0x10,
-	0x6b, 0x7f, 0xc2, 0xe5, 0xd6, 0x0f, 0xda, 0x7c, 0x9f, 0x2f, 0x7c, 0xf1, 0x76, 0x14, 0x60, 0xc8,
-	0xe2, 0xbb, 0x71, 0x2b, 0x66, 0x0f, 0xc0, 0xec, 0x55, 0xd1, 0x05, 0xdd, 0x06, 0xf2, 0x90, 0x13,
-	0x18, 0x9c, 0x9c, 0x9f, 0x02, 0x38, 0x93, 0xc5, 0x35, 0x4c, 0xf0, 0x17, 0xcc, 0x8f, 0xf8, 0x36,
-	0x80, 0xe3, 0x3c, 0xbe, 0xd7, 0x4c, 0x5c, 0x56, 0xdf, 0xe8, 0x7a, 0x7d, 0x00, 0x27, 0xf4, 0xfa,
-	0x80, 0x1e, 0x87, 0xc3, 0x35, 0xac, 0x55, 0xc8, 0x06, 0x3b, 0x94, 0x71, 0x89, 0x7f, 0x89, 0x12,
-	0x9c, 0xe8, 0xd2, 0x06, 0x53, 0xb2, 0x43, 0x06, 0x1f, 0x47, 0x01, 0xbb, 0x28, 0x9e, 0xf4, 0x5a,
-	0xdd, 0xb5, 0x84, 0xb3, 0xdd, 0x5e, 0x94, 0xfa, 0x0d, 0x80, 0x43, 0xab, 0xd6, 0x55, 0x0b, 0x2d,
-	0x40, 0xb8, 0xa8, 0x68, 0xa5, 0x1a, 0xa6, 0xf2, 0xe8, 0x6c, 0x3f, 0x14, 0xce, 0x78, 0xec, 0x5c,
-	0xff, 0x49, 0xde, 0x2d, 0x4a, 0x70, 0x74, 0x01, 0x93, 0xd6, 0xeb, 0x09, 0x7a, 0xca, 0x2b, 0xdc,
-	0xf3, 0xe8, 0x14, 0x9b, 0xf2, 0x8a, 0x78, 0x9f, 0x5e, 0x52, 0xaf, 0xc2, 0xa1, 0x34, 0x55, 0x72,
-	0x0d, 0x42, 0x27, 0xfc, 0xe9, 0xf4, 0x61, 0xa0, 0xe3, 0x7d, 0x7c, 0xc0, 0xfd, 0xa2, 0x91, 0xfa,
-	0xef, 0x10, 0x3c, 0xb3, 0xea, 0x1c, 0x56, 0x57, 0x27, 0x8a, 0xaa, 0x30, 0xe2, 0xb2, 0x79, 0x25,
-	0x3f, 0x8f, 0x06, 0x69, 0x5d, 0x63, 0xcf, 0x1e, 0x4e, 0x98, 0x73, 0x56, 0x74, 0xfc, 0xac, 0xdd,
-	0x46, 0xa3, 0xe9, 0x7e, 0x14, 0x7b, 0xbb, 0xec, 0x01, 0x37, 0xd1, 0xe0, 0xa9, 0x9c, 0x56, 0xa4,
-	0x12, 0x1d, 0xb0, 0x93, 0x34, 0xca, 0x80, 0xa7, 0xf9, 0x7e, 0x4e, 0xe7, 0x7d, 0xf2, 0x3b, 0xfe,
-	0x10, 0x46, 0x9c, 0xde, 0xba, 0xed, 0x7d, 0x17, 0xbc, 0xeb, 0xf7, 0xeb, 0xbd, 0x1f, 0xec, 0x84,
-	0x68, 0x19, 0x86, 0x1d, 0xc7, 0xa6, 0xbe, 0x27, 0x7a, 0xc5, 0x7b, 0x5b, 0xa8, 0xd8, 0x41, 0x97,
-	0x72, 0xea, 0x2f, 0x00, 0x46, 0x5d, 0x09, 0xa9, 0xdb, 0xf9, 0xae, 0xc1, 0x71, 0x47, 0xd1, 0x96,
-	0xab, 0x1f, 0xde, 0x8e, 0x07, 0x79, 0x3c, 0x37, 0x23, 0x6d, 0x18, 0x0f, 0xc5, 0x8c, 0x77, 0x86,
-	0xe1, 0xe9, 0xab, 0x56, 0xbb, 0xdc, 0x94, 0x70, 0x45, 0xb5, 0x88, 0xd9, 0x40, 0x7f, 0x04, 0x30,
-	0xb0, 0x80, 0x09, 0x7a, 0xba, 0xcf, 0x06, 0x2e, 0x69, 0x67, 0x87, 0x2f, 0xed, 0x5b, 0xdc, 0x8a,
-	0xd5, 0x3b, 0x7f, 0xff, 0xf7, 0x2f, 0xfd, 0x18, 0x15, 0x93, 0x37, 0xad, 0xa4, 0x2b, 0x3d, 0x5b,
-	0xc9, 0xb7, 0xba, 0xeb, 0xe4, 0x84, 0xe7, 0x12, 0xf0, 0x7c, 0xdf, 0x4a, 0xf2, 0x62, 0xac, 0x67,
-	0x5d, 0x7b, 0x78, 0x0b, 0xfd, 0xc4, 0x0f, 0x03, 0x85, 0x7e, 0x4a, 0x17, 0x06, 0x53, 0xfa, 0xcf,
-	0x80, 0x69, 0xfd, 0x27, 0x10, 0x3b, 0x50, 0xed, 0xc4, 0x11, 0xd5, 0x4e, 0x74, 0xab, 0x3d, 0x07,
-	0x66, 0xae, 0xad, 0x88, 0x8b, 0x0f, 0x6b, 0xa7, 0x39, 0x30, 0x83, 0x7e, 0x07, 0x60, 0xb8, 0xdd,
-	0x39, 0xa1, 0x99, 0xc3, 0x37, 0x55, 0x07, 0xb1, 0xf2, 0x1d, 0x46, 0xca, 0x62, 0x6c, 0xbe, 0x57,
-	0xd3, 0x07, 0xa9, 0xd6, 0xee, 0x50, 0x67, 0x3b, 0x4a, 0xde, 0xf5, 0x83, 0xe7, 0x00, 0x7a, 0x07,
-	0xc0, 0x61, 0xa7, 0x58, 0x40, 0x87, 0x6a, 0x91, 0x62, 0x8f, 0xf7, 0x94, 0x22, 0xb9, 0x4d, 0x83,
-	0x34, 0xc4, 0x15, 0xa6, 0xdd, 0xc2, 0x4c, 0x6e, 0x70, 0xed, 0xda, 0x47, 0xd4, 0x39, 0x93, 0xd4,
-	0x07, 0x43, 0x70, 0xfa, 0xa0, 0xf2, 0xa5, 0x1d, 0x28, 0x7f, 0xe0, 0x81, 0xf2, 0x42, 0x9f, 0x40,
-	0x39, 0x4c, 0xfd, 0x13, 0x1b, 0xac, 0x64, 0x13, 0x33, 0xcc, 0xce, 0x6f, 0xa2, 0xb9, 0xc1, 0xed,
-	0x6c, 0x97, 0x78, 0x1f, 0x00, 0x27, 0x4e, 0x5e, 0xe8, 0x13, 0x27, 0x27, 0xa1, 0x73, 0x8e, 0xe9,
-	0x7c, 0x59, 0x3c, 0x86, 0xce, 0xd4, 0xab, 0xdf, 0xed, 0xf8, 0xca, 0x5c, 0x6f, 0x3e, 0x3d, 0x6c,
-	0xc1, 0xb9, 0xaf, 0x07, 0x71, 0x66, 0x67, 0x8e, 0xa1, 0x65, 0xca, 0x84, 0xfe, 0xab, 0x16, 0xaa,
-	0xb1, 0x17, 0x39, 0x6f, 0xad, 0xb7, 0xcf, 0xbe, 0xbd, 0x19, 0xdf, 0xb3, 0x50, 0x7c, 0x92, 0x29,
-	0xf6, 0x04, 0x7a, 0x8c, 0x2a, 0xd6, 0x2a, 0x5f, 0xe5, 0x56, 0x09, 0x98, 0xf9, 0x2d, 0xb8, 0xb7,
-	0x23, 0x80, 0xfb, 0x3b, 0x02, 0xf8, 0x78, 0x47, 0xf0, 0x7d, 0xb2, 0x23, 0xf8, 0x3e, 0xdd, 0x11,
-	0x7c, 0x9f, 0xed, 0x08, 0xbe, 0xcf, 0x77, 0x04, 0x70, 0xdb, 0x16, 0xc0, 0x5d, 0x5b, 0xf0, 0xbd,
-	0x67, 0x0b, 0xe0, 0x7d, 0x5b, 0xf0, 0x7d, 0x68, 0x0b, 0xbe, 0x8f, 0x6c, 0xc1, 0x77, 0xcf, 0x16,
-	0xc0, 0x7d, 0x5b, 0x00, 0x1f, 0xdb, 0x82, 0xef, 0x13, 0x5b, 0x00, 0x9f, 0xda, 0x82, 0xef, 0x33,
-	0x5b, 0x00, 0x9f, 0xdb, 0x82, 0xef, 0xf6, 0xae, 0xe0, 0xbb, 0xbb, 0x2b, 0x80, 0x5f, 0xec, 0x0a,
-	0xbe, 0x5f, 0xed, 0x0a, 0xe0, 0xdd, 0x5d, 0xc1, 0xf7, 0xde, 0xae, 0xe0, 0x7b, 0x7f, 0x57, 0x00,
-	0x1f, 0xee, 0x0a, 0xe0, 0xa3, 0x5d, 0x01, 0x5c, 0x4b, 0x0e, 0x50, 0x30, 0x13, 0xcd, 0x58, 0x5f,
-	0x1f, 0x66, 0x76, 0x5f, 0xfc, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xac, 0x93, 0x1e, 0x2c, 0x81,
-	0x1e, 0x00, 0x00,
+	// 2001 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x58, 0x4f, 0x70, 0x1b, 0x57,
+	0x19, 0xf7, 0x4a, 0xb2, 0x2d, 0x7d, 0xfe, 0x9b, 0xe7, 0xb4, 0x15, 0x4a, 0x22, 0xb9, 0x5b, 0x43,
+	0x82, 0x5b, 0x4b, 0x45, 0x81, 0x36, 0x71, 0xa1, 0x41, 0xb2, 0x54, 0x5b, 0x71, 0x6c, 0xcc, 0x2a,
+	0xe9, 0x24, 0x29, 0xe9, 0xb2, 0x96, 0x9e, 0xe4, 0xf5, 0xca, 0xbb, 0xcb, 0xbe, 0x67, 0xb9, 0x6a,
+	0xc9, 0x4c, 0xc9, 0xf0, 0xa7, 0xc3, 0x89, 0x19, 0xc8, 0xbd, 0x33, 0x1c, 0xe0, 0x0a, 0x93, 0x19,
+	0xa6, 0x17, 0xe0, 0xc0, 0x81, 0x19, 0x2e, 0xcc, 0x70, 0x61, 0x38, 0x78, 0xc0, 0xe1, 0xc0, 0x91,
+	0x03, 0xc3, 0xc1, 0x27, 0x66, 0xdf, 0x3e, 0xad, 0x56, 0x2b, 0x59, 0x91, 0x1c, 0x3b, 0xe1, 0xf6,
+	0x76, 0xdf, 0xf7, 0x7e, 0xef, 0xfb, 0x7e, 0xdf, 0x9f, 0xfd, 0xbe, 0x05, 0xb1, 0x66, 0x58, 0xca,
+	0x9e, 0xa2, 0x2f, 0x10, 0xaa, 0x94, 0xb4, 0x94, 0x62, 0xaa, 0xa9, 0x6d, 0x43, 0xd5, 0x09, 0xb6,
+	0xea, 0xd8, 0x4a, 0x9a, 0x96, 0x41, 0x0d, 0x34, 0x49, 0xa9, 0x9e, 0xe4, 0x72, 0xc9, 0xfa, 0xe5,
+	0x58, 0xa6, 0xaa, 0xd2, 0xad, 0xdd, 0xcd, 0x64, 0xc9, 0xd8, 0x49, 0x61, 0xbd, 0x6e, 0x34, 0x4c,
+	0xcb, 0xf8, 0xa0, 0x91, 0x62, 0xc2, 0xa5, 0x85, 0x2a, 0xd6, 0x17, 0xea, 0x4a, 0x4d, 0x2d, 0x2b,
+	0x14, 0xa7, 0x3a, 0x16, 0x0e, 0x64, 0x6c, 0xc1, 0x03, 0x51, 0x35, 0xaa, 0x86, 0x73, 0x78, 0x73,
+	0xb7, 0xc2, 0x9e, 0xd8, 0x03, 0x5b, 0x71, 0xf1, 0xf3, 0x55, 0xc3, 0xa8, 0xd6, 0x30, 0x53, 0x4f,
+	0xd1, 0x75, 0x83, 0x2a, 0x54, 0x35, 0x74, 0xc2, 0x77, 0xcf, 0xf1, 0x5d, 0x17, 0x03, 0xef, 0x98,
+	0xb4, 0xc1, 0x37, 0x67, 0xfd, 0x9b, 0x15, 0x15, 0xd7, 0xca, 0xf2, 0x8e, 0x42, 0x34, 0x1f, 0xb8,
+	0x2b, 0x41, 0xa8, 0xb5, 0x5b, 0xa2, 0x7c, 0xb7, 0x0b, 0x41, 0x58, 0x2f, 0xcb, 0x65, 0x5c, 0x57,
+	0x4b, 0x4d, 0x6b, 0x5e, 0xe9, 0x94, 0x51, 0xcb, 0x58, 0xa7, 0x6a, 0x45, 0xc5, 0x56, 0x53, 0xcb,
+	0xf3, 0xdd, 0x99, 0x3e, 0x7a, 0x57, 0xc3, 0x8d, 0xe6, 0xd9, 0x44, 0xe7, 0x6e, 0xd3, 0x1f, 0x4c,
+	0x40, 0xfc, 0x41, 0x00, 0xce, 0x14, 0x31, 0x21, 0xaa, 0xa1, 0xaf, 0xe2, 0x86, 0x84, 0xbf, 0xb3,
+	0x8b, 0x09, 0x45, 0x6f, 0xc3, 0x24, 0x71, 0x5e, 0xca, 0x1a, 0x6e, 0xc8, 0x6a, 0x39, 0x2a, 0xcc,
+	0x0a, 0x97, 0xc6, 0xb3, 0xd1, 0xc3, 0xec, 0xf0, 0x87, 0xc1, 0xe8, 0xc7, 0xd3, 0x07, 0xfb, 0x89,
+	0xf1, 0xd6, 0xb1, 0x42, 0x4e, 0x1a, 0x27, 0xad, 0xa7, 0x32, 0x7a, 0x17, 0x46, 0xcb, 0xb8, 0x2e,
+	0xe3, 0x5d, 0x35, 0x1a, 0x60, 0x07, 0xbf, 0xf6, 0xc7, 0xfd, 0xc4, 0xd0, 0xdf, 0xf6, 0x13, 0x5f,
+	0xa9, 0x1a, 0x49, 0xba, 0x85, 0xe9, 0x96, 0xaa, 0x57, 0x49, 0x52, 0xc7, 0x74, 0xcf, 0xb0, 0xb4,
+	0x54, 0xbb, 0x92, 0xf5, 0xcb, 0x29, 0x53, 0xab, 0xa6, 0x68, 0xc3, 0xc4, 0x24, 0x99, 0xbf, 0x55,
+	0x78, 0xe3, 0xcb, 0xd2, 0x48, 0x19, 0xd7, 0xf3, 0xbb, 0x2a, 0xba, 0x0d, 0x61, 0xdb, 0x74, 0x06,
+	0x1c, 0x3c, 0x09, 0xe0, 0x51, 0x1b, 0x2e, 0xbf, 0xab, 0x8a, 0x0f, 0x02, 0x30, 0xbd, 0xbe, 0xa7,
+	0x15, 0x57, 0x71, 0x83, 0x48, 0x98, 0x98, 0x86, 0x4e, 0x30, 0xfa, 0x06, 0x4c, 0x55, 0x64, 0x7d,
+	0x4f, 0x93, 0x89, 0xac, 0xea, 0xd4, 0xa6, 0x82, 0xf1, 0x30, 0x96, 0x3e, 0x97, 0x6c, 0x8f, 0xec,
+	0xe4, 0x2a, 0x6e, 0xe4, 0xf5, 0x3a, 0xae, 0x19, 0x26, 0xce, 0x8e, 0x1f, 0x66, 0x87, 0x7f, 0x2c,
+	0x04, 0xa6, 0x05, 0x5b, 0x35, 0x69, 0xac, 0x62, 0xc3, 0x16, 0x74, 0xba, 0x8a, 0x1b, 0x36, 0x20,
+	0xf1, 0x01, 0x06, 0x06, 0x06, 0x24, 0x1e, 0xc0, 0x1b, 0x30, 0xe1, 0xc0, 0x61, 0xbd, 0xc4, 0xe0,
+	0x82, 0x83, 0xc2, 0x81, 0xbe, 0xa7, 0x15, 0xf3, 0x7a, 0x69, 0x15, 0x37, 0xc4, 0xdb, 0x30, 0x95,
+	0x31, 0xcd, 0x22, 0x0b, 0x04, 0x4e, 0x41, 0x1e, 0x22, 0x8a, 0x69, 0xca, 0xe4, 0x78, 0xc6, 0x8f,
+	0x2a, 0x0e, 0x9c, 0xf8, 0xfd, 0x20, 0x9c, 0x5b, 0xb2, 0x1a, 0x26, 0x35, 0x8a, 0xd8, 0xb2, 0x13,
+	0x60, 0x43, 0x69, 0xd4, 0x0c, 0xa5, 0xdc, 0x0c, 0xb8, 0x15, 0x08, 0xaa, 0x65, 0xc2, 0x2f, 0x98,
+	0xf3, 0x5f, 0x90, 0xd7, 0xcb, 0x39, 0x96, 0x36, 0x85, 0x56, 0x72, 0x64, 0xa7, 0xbd, 0x37, 0xfd,
+	0x79, 0x3f, 0x21, 0x48, 0x36, 0x04, 0x5a, 0x83, 0x29, 0x7e, 0x52, 0xae, 0x63, 0xcb, 0x0e, 0x49,
+	0x46, 0xf1, 0x64, 0x3a, 0xe6, 0x47, 0x5d, 0xcb, 0x2c, 0xbd, 0xeb, 0x48, 0x64, 0xc3, 0x87, 0xd9,
+	0xe1, 0x07, 0x36, 0x96, 0x34, 0xc9, 0x05, 0xf8, 0x0e, 0x12, 0x61, 0xd4, 0x74, 0x54, 0xe5, 0x01,
+	0x17, 0xe6, 0x29, 0x10, 0x90, 0x9a, 0x1b, 0x68, 0x13, 0x26, 0x4d, 0xcb, 0xa8, 0xab, 0xf6, 0x01,
+	0x6c, 0xd9, 0xd9, 0x12, 0x9a, 0x15, 0x2e, 0x45, 0xb2, 0x6f, 0x1d, 0x66, 0x2f, 0x5a, 0x9f, 0x8f,
+	0xce, 0xa5, 0x5f, 0x7e, 0xff, 0x3d, 0x65, 0xe1, 0xc3, 0xd7, 0x17, 0xae, 0xde, 0xbb, 0x74, 0x6d,
+	0xf1, 0xbd, 0x85, 0x7b, 0xd7, 0x9a, 0x8f, 0x5f, 0xfc, 0x28, 0xfd, 0xda, 0xfd, 0xb9, 0xef, 0xbe,
+	0x3f, 0x77, 0xb0, 0x9f, 0x98, 0xd8, 0x68, 0x61, 0x14, 0x72, 0xd2, 0x84, 0x07, 0xb2, 0x50, 0x46,
+	0x39, 0x38, 0xe3, 0xbe, 0x50, 0xf5, 0xaa, 0x5c, 0x56, 0xa8, 0x12, 0x1d, 0x66, 0x74, 0xbd, 0x94,
+	0x74, 0xea, 0x50, 0xb2, 0x59, 0x87, 0x92, 0x45, 0x56, 0x87, 0xa4, 0x69, 0xef, 0x89, 0x9c, 0x42,
+	0x15, 0xf1, 0x0a, 0x9c, 0xef, 0xee, 0x05, 0xee, 0xed, 0x68, 0xcb, 0x5a, 0x96, 0xf0, 0xae, 0x8d,
+	0xe2, 0xa3, 0x00, 0x9c, 0xbd, 0x6e, 0xa8, 0x7a, 0xa6, 0x54, 0xc2, 0x26, 0x5d, 0x2b, 0x2c, 0x35,
+	0x3d, 0x57, 0x81, 0x29, 0x2e, 0x23, 0x5b, 0xce, 0x2b, 0xee, 0xc5, 0x57, 0xfd, 0x7c, 0xf7, 0xf0,
+	0x7f, 0x17, 0x67, 0x4e, 0x9a, 0xed, 0x11, 0x72, 0x0b, 0xce, 0xb0, 0xd4, 0xe7, 0x97, 0xc8, 0x76,
+	0x16, 0x73, 0xcf, 0x26, 0xfc, 0x37, 0xd9, 0x8a, 0xf2, 0x73, 0x37, 0x1b, 0x26, 0xf6, 0xb8, 0x77,
+	0x6a, 0xbb, 0x7d, 0x0b, 0xdd, 0x83, 0x88, 0x5d, 0xa9, 0x74, 0x43, 0x2f, 0x61, 0xee, 0xe1, 0xaf,
+	0xf3, 0x92, 0x72, 0x65, 0xd0, 0x92, 0x92, 0xc3, 0xf5, 0x75, 0x1b, 0x47, 0x0a, 0x97, 0xf9, 0x4a,
+	0xfc, 0x4f, 0x08, 0xa2, 0x39, 0x6c, 0xa9, 0x75, 0xdc, 0xaa, 0x96, 0xe4, 0xff, 0x3e, 0xe8, 0xbf,
+	0x0d, 0xc0, 0xb8, 0xf6, 0xb2, 0x92, 0xe1, 0xac, 0x5c, 0x1d, 0x94, 0x15, 0xdb, 0x19, 0x0e, 0x2d,
+	0x91, 0xed, 0xe6, 0xb2, 0x9d, 0xf6, 0xd0, 0x49, 0xd3, 0x8e, 0x6e, 0xc2, 0x88, 0x8e, 0xa9, 0x9d,
+	0x89, 0xc3, 0x4f, 0xf7, 0x95, 0x58, 0xc7, 0xb4, 0x90, 0x93, 0x86, 0x75, 0x4c, 0x0b, 0xdd, 0xf2,
+	0x7c, 0xe4, 0xd9, 0xe4, 0xf9, 0xe8, 0xa0, 0x79, 0xfe, 0x49, 0x00, 0xd0, 0x32, 0xa6, 0x92, 0x61,
+	0xd0, 0xd3, 0x09, 0xb8, 0x4e, 0x2a, 0x02, 0xcf, 0x86, 0x8a, 0xe0, 0xa0, 0x54, 0x3c, 0x0c, 0x43,
+	0xcc, 0xbd, 0xc6, 0x35, 0xd1, 0xa5, 0xe4, 0x0e, 0x4c, 0x29, 0xa6, 0x59, 0x53, 0x4b, 0xac, 0x31,
+	0x94, 0x5b, 0xf4, 0x7c, 0xc1, 0x4f, 0x4f, 0xa6, 0x25, 0xe6, 0x25, 0x28, 0xdc, 0xaa, 0x58, 0x8a,
+	0x57, 0x82, 0x20, 0xf9, 0x08, 0x8e, 0xae, 0x1c, 0x66, 0xe7, 0x2c, 0x31, 0x3a, 0x97, 0x8e, 0xf7,
+	0xe6, 0xe8, 0x89, 0x04, 0xbd, 0x7a, 0x14, 0x41, 0xe3, 0x9d, 0x3c, 0xa0, 0x0d, 0x08, 0xd5, 0x54,
+	0x42, 0x59, 0xb2, 0x8d, 0xa5, 0x17, 0xfd, 0xd6, 0x1d, 0x4d, 0x51, 0xd2, 0x63, 0xed, 0x0d, 0x95,
+	0xd0, 0x95, 0x21, 0x89, 0x21, 0xa1, 0x22, 0x0c, 0x5b, 0x8a, 0x5e, 0xc5, 0xfc, 0x33, 0xf4, 0xd6,
+	0xf1, 0x20, 0x25, 0x1b, 0x62, 0x65, 0x48, 0x72, 0xb0, 0xec, 0xc2, 0x50, 0xb1, 0x8c, 0x1d, 0xc7,
+	0x96, 0x11, 0x06, 0xfc, 0xf6, 0xf1, 0x80, 0xdf, 0xb1, 0x8c, 0x1d, 0xdb, 0xf2, 0x95, 0x21, 0x29,
+	0x5c, 0xe1, 0xeb, 0xd8, 0x67, 0x02, 0x4c, 0xf9, 0xec, 0x41, 0x37, 0x3d, 0x4d, 0xa5, 0xd3, 0xe6,
+	0x5e, 0x7d, 0xfa, 0x86, 0x12, 0x6d, 0xc0, 0x64, 0xab, 0xdd, 0x67, 0x71, 0x15, 0x98, 0x0d, 0xf6,
+	0x9d, 0x76, 0x21, 0xd6, 0x3e, 0x8d, 0xe3, 0xd6, 0x1e, 0x89, 0xfd, 0x49, 0x80, 0x69, 0x3f, 0x71,
+	0xa7, 0xa4, 0xbc, 0x02, 0x13, 0x84, 0x2a, 0x16, 0x95, 0x4f, 0xb4, 0x8b, 0x1f, 0x63, 0x98, 0x39,
+	0xd6, 0xca, 0xc7, 0x34, 0x98, 0xe9, 0xe2, 0xac, 0xd3, 0xb1, 0x67, 0x31, 0x10, 0x15, 0xb2, 0x13,
+	0x30, 0xd6, 0x72, 0x08, 0x11, 0x3f, 0x0b, 0xc0, 0x05, 0x4f, 0x4a, 0x67, 0x4a, 0x54, 0xad, 0xb3,
+	0x55, 0x11, 0x53, 0x6a, 0x5f, 0x83, 0xbe, 0x04, 0x11, 0x0d, 0x6b, 0x72, 0x4d, 0xd9, 0xc4, 0x35,
+	0xa6, 0x4b, 0x24, 0x7b, 0xf6, 0x30, 0x3b, 0x6c, 0xf1, 0xf9, 0x27, 0xbc, 0x9a, 0x5f, 0xbd, 0x61,
+	0xef, 0x49, 0x61, 0x0d, 0x6b, 0x6c, 0x85, 0xde, 0x80, 0xa0, 0x86, 0xb5, 0x7e, 0x7a, 0xfa, 0xd1,
+	0x83, 0xfd, 0x44, 0x70, 0x35, 0xbf, 0x2a, 0xd9, 0x07, 0xd0, 0x1d, 0x18, 0xdb, 0x32, 0x76, 0xb0,
+	0xcc, 0x3f, 0x5a, 0xc1, 0xe3, 0x1b, 0xee, 0x7c, 0xb0, 0x22, 0x36, 0xda, 0x3a, 0xfb, 0x68, 0x49,
+	0xf0, 0x82, 0xb7, 0xc0, 0x39, 0xf3, 0x79, 0xab, 0x47, 0x8d, 0x1f, 0x66, 0x43, 0x56, 0x20, 0x5a,
+	0x3e, 0xd8, 0x4f, 0xcc, 0x78, 0xe8, 0x28, 0x32, 0xb1, 0x42, 0x4e, 0x9a, 0x51, 0x3a, 0x5e, 0x96,
+	0xc5, 0xdf, 0x09, 0x70, 0x71, 0x19, 0xd3, 0x9e, 0xf4, 0x3d, 0x83, 0x02, 0x7b, 0x15, 0xa0, 0x35,
+	0x93, 0x73, 0xd2, 0x63, 0x1d, 0x5f, 0x86, 0x77, 0x6c, 0x91, 0x35, 0x85, 0x68, 0x52, 0xa4, 0xd2,
+	0x5c, 0x8a, 0x3f, 0x0b, 0xc0, 0xc5, 0xe2, 0xf3, 0xb7, 0xa0, 0x08, 0x61, 0xc2, 0x6f, 0xe3, 0xfa,
+	0x2f, 0xf4, 0xc0, 0xec, 0x54, 0xd1, 0x03, 0xed, 0x02, 0xf9, 0x68, 0x09, 0x0e, 0x42, 0xcb, 0x8f,
+	0x04, 0x98, 0xcf, 0xe1, 0x1a, 0xa6, 0xf8, 0x39, 0x33, 0x23, 0x7e, 0x4f, 0x80, 0x09, 0xbb, 0x73,
+	0xcc, 0xdf, 0x2a, 0x6c, 0x58, 0xb8, 0xa2, 0x7e, 0xd0, 0x36, 0xfb, 0x0b, 0x27, 0x39, 0xfb, 0xa3,
+	0x17, 0x61, 0xa4, 0x86, 0xf5, 0x2a, 0xdd, 0x62, 0x3e, 0x98, 0x90, 0xf8, 0x93, 0x28, 0xc1, 0x54,
+	0x9b, 0x0a, 0x98, 0xa0, 0x6b, 0x10, 0x36, 0xf9, 0x3a, 0x2a, 0xb0, 0x7a, 0x7e, 0xa1, 0xdb, 0xf0,
+	0xe1, 0x1e, 0xe1, 0x85, 0xdc, 0x3d, 0x94, 0xfe, 0xb9, 0x00, 0xa1, 0x75, 0x72, 0x9d, 0xa0, 0x65,
+	0x80, 0x15, 0x45, 0x2f, 0xd7, 0xb0, 0x2d, 0x8f, 0xce, 0xf5, 0x18, 0x61, 0x62, 0xe7, 0xbb, 0x6f,
+	0xf2, 0x99, 0x4d, 0x82, 0xb1, 0x65, 0x4c, 0x9b, 0xff, 0x2e, 0xd0, 0xcb, 0x7e, 0xe1, 0x8e, 0xbf,
+	0x3b, 0xb1, 0x59, 0xbf, 0x88, 0xff, 0xc7, 0x47, 0xfa, 0x36, 0x84, 0x32, 0xb6, 0x92, 0x1b, 0x00,
+	0x4e, 0x9e, 0xdb, 0xdb, 0xfd, 0x40, 0x27, 0xba, 0x38, 0xde, 0xfb, 0x3f, 0x21, 0x7d, 0x07, 0x86,
+	0x33, 0xa6, 0x79, 0x2a, 0xd0, 0xff, 0x0d, 0xc1, 0xd9, 0x75, 0xc7, 0xf9, 0x6d, 0xa3, 0x26, 0xd2,
+	0x60, 0xd2, 0x43, 0xe7, 0x5a, 0x61, 0x09, 0x0d, 0x32, 0x9b, 0xc6, 0x5e, 0xeb, 0x4f, 0x98, 0xbb,
+	0xa3, 0xe4, 0xc4, 0xad, 0x3b, 0x27, 0xa3, 0xb9, 0x6e, 0xde, 0xf3, 0x8f, 0xd1, 0x03, 0x5e, 0xa2,
+	0xc3, 0x99, 0xbc, 0x5e, 0xb2, 0x25, 0x5a, 0x60, 0xa7, 0x69, 0x94, 0x09, 0x33, 0xfc, 0x3e, 0x09,
+	0x6f, 0x3f, 0x93, 0x1b, 0xbf, 0x05, 0x93, 0xce, 0xdc, 0xec, 0x06, 0xf6, 0x25, 0xff, 0xf9, 0xa3,
+	0xe6, 0xea, 0x27, 0xc7, 0x37, 0xba, 0x01, 0x11, 0x27, 0x67, 0xec, 0xd8, 0x13, 0xfd, 0xe2, 0x9d,
+	0x93, 0x53, 0xac, 0xd7, 0xb7, 0x3c, 0xfd, 0x07, 0x01, 0xa2, 0x9e, 0x02, 0xd7, 0x1e, 0x7c, 0x77,
+	0x61, 0xc2, 0x51, 0xb4, 0x19, 0xea, 0xfd, 0xdb, 0xf1, 0xa4, 0x88, 0xe7, 0x66, 0x64, 0x4c, 0xf3,
+	0x44, 0xcc, 0x78, 0x38, 0x02, 0x33, 0xd7, 0x89, 0xdb, 0x8e, 0x4a, 0xb8, 0xaa, 0x12, 0x6a, 0x35,
+	0xd0, 0xaf, 0x05, 0x08, 0x2e, 0x63, 0x8a, 0x5e, 0xe9, 0x72, 0x81, 0x47, 0xda, 0xb9, 0xe1, 0x73,
+	0x47, 0xb6, 0xb7, 0xa2, 0xf6, 0xe0, 0x2f, 0xff, 0xfc, 0x69, 0x00, 0xa3, 0x52, 0x6a, 0x9b, 0xa4,
+	0x3c, 0xe5, 0x9e, 0xa4, 0x3e, 0x6a, 0xef, 0x94, 0x93, 0xbe, 0x8f, 0x8a, 0xef, 0xf9, 0x7e, 0x8a,
+	0xf7, 0x70, 0x1d, 0xe7, 0xdc, 0xe5, 0x7d, 0xf4, 0xc3, 0x00, 0x04, 0x8b, 0xdd, 0x94, 0x2e, 0x0e,
+	0xa6, 0xf4, 0x6f, 0x05, 0xa6, 0xf5, 0x6f, 0x84, 0x58, 0x4f, 0xb5, 0x93, 0xc7, 0x54, 0x3b, 0xd9,
+	0xae, 0xf6, 0xa2, 0x30, 0x7f, 0x77, 0x4d, 0x5c, 0x39, 0xa9, 0x9b, 0x16, 0x85, 0x79, 0xf4, 0x0b,
+	0x01, 0x22, 0xee, 0xc0, 0x84, 0xe6, 0xfb, 0x9f, 0xa5, 0x7a, 0xb1, 0xf2, 0x4d, 0x46, 0xca, 0x4a,
+	0x6c, 0xa9, 0x53, 0xd3, 0x27, 0xa9, 0xe6, 0x0e, 0xa6, 0x0b, 0x2d, 0x25, 0x3f, 0x09, 0x08, 0xaf,
+	0x0b, 0xe8, 0xa1, 0x00, 0x23, 0x4e, 0xf3, 0x81, 0xfa, 0x1a, 0x92, 0x62, 0x2f, 0x76, 0x34, 0x35,
+	0xf9, 0x1d, 0x93, 0x36, 0xc4, 0x35, 0xa6, 0xdd, 0xf2, 0x7c, 0x7e, 0x70, 0xed, 0x5c, 0x17, 0xb5,
+	0x7c, 0x92, 0x7e, 0x14, 0x82, 0xb9, 0x5e, 0xed, 0x90, 0x9b, 0x28, 0xbf, 0xe2, 0x89, 0xf2, 0x66,
+	0x97, 0x44, 0xe9, 0xa7, 0x9f, 0x8a, 0x0d, 0xd6, 0xfc, 0x89, 0x59, 0x66, 0xe7, 0x57, 0xd1, 0xe2,
+	0xe0, 0x76, 0xba, 0xcd, 0xe2, 0x23, 0xc1, 0xc9, 0x93, 0x37, 0xbb, 0xe4, 0xc9, 0x69, 0xe8, 0x9c,
+	0x67, 0x3a, 0x5f, 0x13, 0x9f, 0x42, 0x67, 0x3b, 0xaa, 0x3f, 0x6d, 0xc5, 0xca, 0x62, 0x67, 0x3d,
+	0xed, 0xb7, 0x81, 0x3d, 0x32, 0x82, 0x38, 0xb3, 0xf3, 0x4f, 0xa1, 0x65, 0xda, 0x82, 0xc0, 0x75,
+	0x82, 0x6a, 0xec, 0x47, 0x9c, 0xbf, 0x8d, 0x3c, 0xe2, 0xde, 0x58, 0xa2, 0x67, 0x33, 0x89, 0x89,
+	0x78, 0x81, 0x29, 0xf6, 0x12, 0x7a, 0xc1, 0x56, 0xac, 0xd9, 0x0e, 0xcb, 0xcd, 0xee, 0x32, 0x7b,
+	0xeb, 0xaf, 0xff, 0x88, 0x0f, 0x7d, 0x7c, 0x10, 0x17, 0x7e, 0x79, 0x10, 0x17, 0xfe, 0x7e, 0x10,
+	0x17, 0xfe, 0x75, 0x10, 0x1f, 0xfa, 0xf7, 0x41, 0x5c, 0xf8, 0xc9, 0xe3, 0xf8, 0xd0, 0xa7, 0x8f,
+	0xe3, 0x43, 0xbf, 0x7f, 0x1c, 0x17, 0xee, 0xa6, 0x06, 0xe8, 0x97, 0xa9, 0x6e, 0x6e, 0x6e, 0x8e,
+	0x30, 0x35, 0x2f, 0xff, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xf6, 0x68, 0x92, 0xee, 0xf4, 0x1d, 0x00,
+	0x00,
 }
 
 func (this *SessionKeyRequest) Equal(that interface{}) bool {
@@ -1228,10 +1075,10 @@ func (this *SessionKeyRequest) Equal(that interface{}) bool {
 	if !bytes.Equal(this.SessionKeyID, that1.SessionKeyID) {
 		return false
 	}
-	if !this.DevEUI.Equal(that1.DevEUI) {
+	if !this.DevEui.Equal(that1.DevEui) {
 		return false
 	}
-	if !this.JoinEUI.Equal(that1.JoinEUI) {
+	if !this.JoinEui.Equal(that1.JoinEui) {
 		return false
 	}
 	return true
@@ -1312,7 +1159,7 @@ func (this *CryptoServicePayloadRequest) Equal(that interface{}) bool {
 	if !this.EndDeviceIdentifiers.Equal(&that1.EndDeviceIdentifiers) {
 		return false
 	}
-	if this.LoRaWANVersion != that1.LoRaWANVersion {
+	if this.LorawanVersion != that1.LorawanVersion {
 		return false
 	}
 	if !bytes.Equal(this.Payload, that1.Payload) {
@@ -1402,7 +1249,7 @@ func (this *DeriveSessionKeysRequest) Equal(that interface{}) bool {
 	if !this.EndDeviceIdentifiers.Equal(&that1.EndDeviceIdentifiers) {
 		return false
 	}
-	if this.LoRaWANVersion != that1.LoRaWANVersion {
+	if this.LorawanVersion != that1.LorawanVersion {
 		return false
 	}
 	if !this.JoinNonce.Equal(that1.JoinNonce) {
@@ -1411,7 +1258,7 @@ func (this *DeriveSessionKeysRequest) Equal(that interface{}) bool {
 	if !this.DevNonce.Equal(that1.DevNonce) {
 		return false
 	}
-	if !this.NetID.Equal(that1.NetID) {
+	if !this.NetId.Equal(that1.NetId) {
 		return false
 	}
 	if this.ProvisionerID != that1.ProvisionerID {
@@ -1582,18 +1429,18 @@ func (this *ProvisionEndDevicesRequest_IdentifiersList) Equal(that interface{}) 
 	} else if this == nil {
 		return false
 	}
-	if that1.JoinEUI == nil {
-		if this.JoinEUI != nil {
+	if that1.JoinEui == nil {
+		if this.JoinEui != nil {
 			return false
 		}
-	} else if !this.JoinEUI.Equal(*that1.JoinEUI) {
+	} else if !this.JoinEui.Equal(*that1.JoinEui) {
 		return false
 	}
-	if len(this.EndDeviceIDs) != len(that1.EndDeviceIDs) {
+	if len(this.EndDeviceIds) != len(that1.EndDeviceIds) {
 		return false
 	}
-	for i := range this.EndDeviceIDs {
-		if !this.EndDeviceIDs[i].Equal(&that1.EndDeviceIDs[i]) {
+	for i := range this.EndDeviceIds {
+		if !this.EndDeviceIds[i].Equal(&that1.EndDeviceIds[i]) {
 			return false
 		}
 	}
@@ -1618,14 +1465,14 @@ func (this *ProvisionEndDevicesRequest_IdentifiersRange) Equal(that interface{})
 	} else if this == nil {
 		return false
 	}
-	if that1.JoinEUI == nil {
-		if this.JoinEUI != nil {
+	if that1.JoinEui == nil {
+		if this.JoinEui != nil {
 			return false
 		}
-	} else if !this.JoinEUI.Equal(*that1.JoinEUI) {
+	} else if !this.JoinEui.Equal(*that1.JoinEui) {
 		return false
 	}
-	if !this.StartDevEUI.Equal(that1.StartDevEUI) {
+	if !this.StartDevEui.Equal(that1.StartDevEui) {
 		return false
 	}
 	return true
@@ -1649,11 +1496,11 @@ func (this *ProvisionEndDevicesRequest_IdentifiersFromData) Equal(that interface
 	} else if this == nil {
 		return false
 	}
-	if that1.JoinEUI == nil {
-		if this.JoinEUI != nil {
+	if that1.JoinEui == nil {
+		if this.JoinEui != nil {
 			return false
 		}
-	} else if !this.JoinEUI.Equal(*that1.JoinEUI) {
+	} else if !this.JoinEui.Equal(*that1.JoinEui) {
 		return false
 	}
 	return true
@@ -1683,11 +1530,11 @@ func (this *ApplicationActivationSettings) Equal(that interface{}) bool {
 	if !this.KEK.Equal(that1.KEK) {
 		return false
 	}
-	if that1.HomeNetID == nil {
-		if this.HomeNetID != nil {
+	if that1.HomeNetId == nil {
+		if this.HomeNetId != nil {
 			return false
 		}
-	} else if !this.HomeNetID.Equal(*that1.HomeNetID) {
+	} else if !this.HomeNetId.Equal(*that1.HomeNetId) {
 		return false
 	}
 	if this.ApplicationServerID != that1.ApplicationServerID {
@@ -1717,7 +1564,7 @@ func (this *GetApplicationActivationSettingsRequest) Equal(that interface{}) boo
 	if !this.ApplicationIdentifiers.Equal(&that1.ApplicationIdentifiers) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1747,7 +1594,7 @@ func (this *SetApplicationActivationSettingsRequest) Equal(that interface{}) boo
 	if !this.ApplicationActivationSettings.Equal(&that1.ApplicationActivationSettings) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1795,7 +1642,7 @@ func (this *JoinEUIPrefix) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.JoinEUI.Equal(that1.JoinEUI) {
+	if !this.JoinEui.Equal(that1.JoinEui) {
 		return false
 	}
 	if this.Length != that1.Length {
@@ -1845,7 +1692,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type NsJsClient interface {
+	// Handle a join-request message.
 	HandleJoin(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error)
+	// Request the network session keys for a particular session.
 	GetNwkSKeys(ctx context.Context, in *SessionKeyRequest, opts ...grpc.CallOption) (*NwkSKeysResponse, error)
 }
 
@@ -1877,7 +1726,9 @@ func (c *nsJsClient) GetNwkSKeys(ctx context.Context, in *SessionKeyRequest, opt
 
 // NsJsServer is the server API for NsJs service.
 type NsJsServer interface {
+	// Handle a join-request message.
 	HandleJoin(context.Context, *JoinRequest) (*JoinResponse, error)
+	// Request the network session keys for a particular session.
 	GetNwkSKeys(context.Context, *SessionKeyRequest) (*NwkSKeysResponse, error)
 }
 
@@ -1953,6 +1804,7 @@ var _NsJs_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AsJsClient interface {
+	// Request the application session key for a particular session.
 	GetAppSKey(ctx context.Context, in *SessionKeyRequest, opts ...grpc.CallOption) (*AppSKeyResponse, error)
 }
 
@@ -1975,6 +1827,7 @@ func (c *asJsClient) GetAppSKey(ctx context.Context, in *SessionKeyRequest, opts
 
 // AsJsServer is the server API for AsJs service.
 type AsJsServer interface {
+	// Request the application session key for a particular session.
 	GetAppSKey(context.Context, *SessionKeyRequest) (*AppSKeyResponse, error)
 }
 
@@ -2021,14 +1874,93 @@ var _AsJs_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/joinserver.proto",
 }
 
+// AppJsClient is the client API for AppJs service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type AppJsClient interface {
+	// Request the application session key for a particular session.
+	GetAppSKey(ctx context.Context, in *SessionKeyRequest, opts ...grpc.CallOption) (*AppSKeyResponse, error)
+}
+
+type appJsClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAppJsClient(cc *grpc.ClientConn) AppJsClient {
+	return &appJsClient{cc}
+}
+
+func (c *appJsClient) GetAppSKey(ctx context.Context, in *SessionKeyRequest, opts ...grpc.CallOption) (*AppSKeyResponse, error) {
+	out := new(AppSKeyResponse)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.AppJs/GetAppSKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AppJsServer is the server API for AppJs service.
+type AppJsServer interface {
+	// Request the application session key for a particular session.
+	GetAppSKey(context.Context, *SessionKeyRequest) (*AppSKeyResponse, error)
+}
+
+// UnimplementedAppJsServer can be embedded to have forward compatible implementations.
+type UnimplementedAppJsServer struct {
+}
+
+func (*UnimplementedAppJsServer) GetAppSKey(ctx context.Context, req *SessionKeyRequest) (*AppSKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAppSKey not implemented")
+}
+
+func RegisterAppJsServer(s *grpc.Server, srv AppJsServer) {
+	s.RegisterService(&_AppJs_serviceDesc, srv)
+}
+
+func _AppJs_GetAppSKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppJsServer).GetAppSKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.AppJs/GetAppSKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppJsServer).GetAppSKey(ctx, req.(*SessionKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _AppJs_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "ttn.lorawan.v3.AppJs",
+	HandlerType: (*AppJsServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAppSKey",
+			Handler:    _AppJs_GetAppSKey_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "lorawan-stack/api/joinserver.proto",
+}
+
 // NetworkCryptoServiceClient is the client API for NetworkCryptoService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type NetworkCryptoServiceClient interface {
+	// Calculate the join-request message MIC.
 	JoinRequestMIC(ctx context.Context, in *CryptoServicePayloadRequest, opts ...grpc.CallOption) (*CryptoServicePayloadResponse, error)
+	// Calculate the join-accept message MIC.
 	JoinAcceptMIC(ctx context.Context, in *JoinAcceptMICRequest, opts ...grpc.CallOption) (*CryptoServicePayloadResponse, error)
+	// Encrypt the join-accept payload.
 	EncryptJoinAccept(ctx context.Context, in *CryptoServicePayloadRequest, opts ...grpc.CallOption) (*CryptoServicePayloadResponse, error)
+	// Encrypt the rejoin-accept payload.
 	EncryptRejoinAccept(ctx context.Context, in *CryptoServicePayloadRequest, opts ...grpc.CallOption) (*CryptoServicePayloadResponse, error)
+	// Derive network session keys (NwkSKey, or FNwkSKey, SNwkSKey and NwkSEncKey)
 	DeriveNwkSKeys(ctx context.Context, in *DeriveSessionKeysRequest, opts ...grpc.CallOption) (*NwkSKeysResponse, error)
 	// Get the NwkKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
 	GetNwkKey(ctx context.Context, in *GetRootKeysRequest, opts ...grpc.CallOption) (*KeyEnvelope, error)
@@ -2098,10 +2030,15 @@ func (c *networkCryptoServiceClient) GetNwkKey(ctx context.Context, in *GetRootK
 
 // NetworkCryptoServiceServer is the server API for NetworkCryptoService service.
 type NetworkCryptoServiceServer interface {
+	// Calculate the join-request message MIC.
 	JoinRequestMIC(context.Context, *CryptoServicePayloadRequest) (*CryptoServicePayloadResponse, error)
+	// Calculate the join-accept message MIC.
 	JoinAcceptMIC(context.Context, *JoinAcceptMICRequest) (*CryptoServicePayloadResponse, error)
+	// Encrypt the join-accept payload.
 	EncryptJoinAccept(context.Context, *CryptoServicePayloadRequest) (*CryptoServicePayloadResponse, error)
+	// Encrypt the rejoin-accept payload.
 	EncryptRejoinAccept(context.Context, *CryptoServicePayloadRequest) (*CryptoServicePayloadResponse, error)
+	// Derive network session keys (NwkSKey, or FNwkSKey, SNwkSKey and NwkSEncKey)
 	DeriveNwkSKeys(context.Context, *DeriveSessionKeysRequest) (*NwkSKeysResponse, error)
 	// Get the NwkKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
 	GetNwkKey(context.Context, *GetRootKeysRequest) (*KeyEnvelope, error)
@@ -2279,6 +2216,7 @@ var _NetworkCryptoService_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ApplicationCryptoServiceClient interface {
+	// Derive the application session key (AppSKey).
 	DeriveAppSKey(ctx context.Context, in *DeriveSessionKeysRequest, opts ...grpc.CallOption) (*AppSKeyResponse, error)
 	// Get the AppKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
 	GetAppKey(ctx context.Context, in *GetRootKeysRequest, opts ...grpc.CallOption) (*KeyEnvelope, error)
@@ -2312,6 +2250,7 @@ func (c *applicationCryptoServiceClient) GetAppKey(ctx context.Context, in *GetR
 
 // ApplicationCryptoServiceServer is the server API for ApplicationCryptoService service.
 type ApplicationCryptoServiceServer interface {
+	// Derive the application session key (AppSKey).
 	DeriveAppSKey(context.Context, *DeriveSessionKeysRequest) (*AppSKeyResponse, error)
 	// Get the AppKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
 	GetAppKey(context.Context, *GetRootKeysRequest) (*KeyEnvelope, error)
@@ -2762,6 +2701,7 @@ var _ApplicationActivationSettingRegistry_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type JsClient interface {
+	// Request the JoinEUI prefixes that are configured for this Join Server.
 	GetJoinEUIPrefixes(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*JoinEUIPrefixes, error)
 }
 
@@ -2784,6 +2724,7 @@ func (c *jsClient) GetJoinEUIPrefixes(ctx context.Context, in *types.Empty, opts
 
 // JsServer is the server API for Js service.
 type JsServer interface {
+	// Request the JoinEUI prefixes that are configured for this Join Server.
 	GetJoinEUIPrefixes(context.Context, *types.Empty) (*JoinEUIPrefixes, error)
 }
 
@@ -2830,1277 +2771,6 @@ var _Js_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/joinserver.proto",
 }
 
-func (m *SessionKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SessionKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SessionKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size := m.JoinEUI.Size()
-		i -= size
-		if _, err := m.JoinEUI.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size := m.DevEUI.Size()
-		i -= size
-		if _, err := m.DevEUI.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if len(m.SessionKeyID) > 0 {
-		i -= len(m.SessionKeyID)
-		copy(dAtA[i:], m.SessionKeyID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.SessionKeyID)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *NwkSKeysResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *NwkSKeysResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NwkSKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.NwkSEncKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.SNwkSIntKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.FNwkSIntKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *AppSKeyResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AppSKeyResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AppSKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.AppSKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CryptoServicePayloadRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CryptoServicePayloadRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CryptoServicePayloadRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ProvisioningData != nil {
-		{
-			size, err := m.ProvisioningData.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.ProvisionerID) > 0 {
-		i -= len(m.ProvisionerID)
-		copy(dAtA[i:], m.ProvisionerID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ProvisionerID)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.LoRaWANVersion != 0 {
-		i = encodeVarintJoinserver(dAtA, i, uint64(m.LoRaWANVersion))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.EndDeviceIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CryptoServicePayloadResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CryptoServicePayloadResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CryptoServicePayloadResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Payload) > 0 {
-		i -= len(m.Payload)
-		copy(dAtA[i:], m.Payload)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.Payload)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *JoinAcceptMICRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *JoinAcceptMICRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *JoinAcceptMICRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size := m.DevNonce.Size()
-		i -= size
-		if _, err := m.DevNonce.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	if m.JoinRequestType != 0 {
-		i = encodeVarintJoinserver(dAtA, i, uint64(m.JoinRequestType))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.CryptoServicePayloadRequest.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *DeriveSessionKeysRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DeriveSessionKeysRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DeriveSessionKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ProvisioningData != nil {
-		{
-			size, err := m.ProvisioningData.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x3a
-	}
-	if len(m.ProvisionerID) > 0 {
-		i -= len(m.ProvisionerID)
-		copy(dAtA[i:], m.ProvisionerID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ProvisionerID)))
-		i--
-		dAtA[i] = 0x32
-	}
-	{
-		size := m.NetID.Size()
-		i -= size
-		if _, err := m.NetID.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size := m.DevNonce.Size()
-		i -= size
-		if _, err := m.DevNonce.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	{
-		size := m.JoinNonce.Size()
-		i -= size
-		if _, err := m.JoinNonce.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	if m.LoRaWANVersion != 0 {
-		i = encodeVarintJoinserver(dAtA, i, uint64(m.LoRaWANVersion))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.EndDeviceIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *GetRootKeysRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetRootKeysRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetRootKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ProvisioningData != nil {
-		{
-			size, err := m.ProvisioningData.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ProvisionerID) > 0 {
-		i -= len(m.ProvisionerID)
-		copy(dAtA[i:], m.ProvisionerID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ProvisionerID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.EndDeviceIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ProvisionEndDevicesRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProvisionEndDevicesRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.EndDevices != nil {
-		{
-			size := m.EndDevices.Size()
-			i -= size
-			if _, err := m.EndDevices.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	if len(m.ProvisioningData) > 0 {
-		i -= len(m.ProvisioningData)
-		copy(dAtA[i:], m.ProvisioningData)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ProvisioningData)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ProvisionerID) > 0 {
-		i -= len(m.ProvisionerID)
-		copy(dAtA[i:], m.ProvisionerID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ProvisionerID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ProvisionEndDevicesRequest_List) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_List) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.List != nil {
-		{
-			size, err := m.List.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	return len(dAtA) - i, nil
-}
-func (m *ProvisionEndDevicesRequest_Range) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_Range) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.Range != nil {
-		{
-			size, err := m.Range.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *ProvisionEndDevicesRequest_FromData) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_FromData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.FromData != nil {
-		{
-			size, err := m.FromData.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	return len(dAtA) - i, nil
-}
-func (m *ProvisionEndDevicesRequest_IdentifiersList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.EndDeviceIDs) > 0 {
-		for iNdEx := len(m.EndDeviceIDs) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.EndDeviceIDs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintJoinserver(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if m.JoinEUI != nil {
-		{
-			size := m.JoinEUI.Size()
-			i -= size
-			if _, err := m.JoinEUI.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersRange) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersRange) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersRange) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size := m.StartDevEUI.Size()
-		i -= size
-		if _, err := m.StartDevEUI.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if m.JoinEUI != nil {
-		{
-			size := m.JoinEUI.Size()
-			i -= size
-			if _, err := m.JoinEUI.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersFromData) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersFromData) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProvisionEndDevicesRequest_IdentifiersFromData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.JoinEUI != nil {
-		{
-			size := m.JoinEUI.Size()
-			i -= size
-			if _, err := m.JoinEUI.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ApplicationActivationSettings) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ApplicationActivationSettings) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ApplicationActivationSettings) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ApplicationServerID) > 0 {
-		i -= len(m.ApplicationServerID)
-		copy(dAtA[i:], m.ApplicationServerID)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.ApplicationServerID)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.HomeNetID != nil {
-		{
-			size := m.HomeNetID.Size()
-			i -= size
-			if _, err := m.HomeNetID.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.KEK != nil {
-		{
-			size, err := m.KEK.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintJoinserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.KEKLabel) > 0 {
-		i -= len(m.KEKLabel)
-		copy(dAtA[i:], m.KEKLabel)
-		i = encodeVarintJoinserver(dAtA, i, uint64(len(m.KEKLabel)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetApplicationActivationSettingsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetApplicationActivationSettingsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetApplicationActivationSettingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *SetApplicationActivationSettingsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SetApplicationActivationSettingsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SetApplicationActivationSettingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.ApplicationActivationSettings.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *DeleteApplicationActivationSettingsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DeleteApplicationActivationSettingsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DeleteApplicationActivationSettingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *JoinEUIPrefix) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *JoinEUIPrefix) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *JoinEUIPrefix) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Length != 0 {
-		i = encodeVarintJoinserver(dAtA, i, uint64(m.Length))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size := m.JoinEUI.Size()
-		i -= size
-		if _, err := m.JoinEUI.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintJoinserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *JoinEUIPrefixes) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *JoinEUIPrefixes) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *JoinEUIPrefixes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Prefixes) > 0 {
-		for iNdEx := len(m.Prefixes) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Prefixes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintJoinserver(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintJoinserver(dAtA []byte, offset int, v uint64) int {
-	offset -= sovJoinserver(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func NewPopulatedSessionKeyRequest(r randyJoinserver, easy bool) *SessionKeyRequest {
-	this := &SessionKeyRequest{}
-	v1 := r.Intn(100)
-	this.SessionKeyID = make([]byte, v1)
-	for i := 0; i < v1; i++ {
-		this.SessionKeyID[i] = byte(r.Intn(256))
-	}
-	v2 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	this.DevEUI = *v2
-	v3 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	this.JoinEUI = *v3
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedNwkSKeysResponse(r randyJoinserver, easy bool) *NwkSKeysResponse {
-	this := &NwkSKeysResponse{}
-	v4 := NewPopulatedKeyEnvelope(r, easy)
-	this.FNwkSIntKey = *v4
-	v5 := NewPopulatedKeyEnvelope(r, easy)
-	this.SNwkSIntKey = *v5
-	v6 := NewPopulatedKeyEnvelope(r, easy)
-	this.NwkSEncKey = *v6
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedAppSKeyResponse(r randyJoinserver, easy bool) *AppSKeyResponse {
-	this := &AppSKeyResponse{}
-	v7 := NewPopulatedKeyEnvelope(r, easy)
-	this.AppSKey = *v7
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCryptoServicePayloadRequest(r randyJoinserver, easy bool) *CryptoServicePayloadRequest {
-	this := &CryptoServicePayloadRequest{}
-	v8 := NewPopulatedEndDeviceIdentifiers(r, easy)
-	this.EndDeviceIdentifiers = *v8
-	this.LoRaWANVersion = MACVersion([]int32{0, 1, 2, 3, 4, 5, 6}[r.Intn(7)])
-	v9 := r.Intn(100)
-	this.Payload = make([]byte, v9)
-	for i := 0; i < v9; i++ {
-		this.Payload[i] = byte(r.Intn(256))
-	}
-	this.ProvisionerID = randStringJoinserver(r)
-	if r.Intn(5) != 0 {
-		this.ProvisioningData = types.NewPopulatedStruct(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCryptoServicePayloadResponse(r randyJoinserver, easy bool) *CryptoServicePayloadResponse {
-	this := &CryptoServicePayloadResponse{}
-	v10 := r.Intn(100)
-	this.Payload = make([]byte, v10)
-	for i := 0; i < v10; i++ {
-		this.Payload[i] = byte(r.Intn(256))
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedJoinAcceptMICRequest(r randyJoinserver, easy bool) *JoinAcceptMICRequest {
-	this := &JoinAcceptMICRequest{}
-	v11 := NewPopulatedCryptoServicePayloadRequest(r, easy)
-	this.CryptoServicePayloadRequest = *v11
-	this.JoinRequestType = RejoinType([]int32{0, 1, 2}[r.Intn(3)])
-	v12 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedDevNonce(r)
-	this.DevNonce = *v12
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedDeriveSessionKeysRequest(r randyJoinserver, easy bool) *DeriveSessionKeysRequest {
-	this := &DeriveSessionKeysRequest{}
-	v13 := NewPopulatedEndDeviceIdentifiers(r, easy)
-	this.EndDeviceIdentifiers = *v13
-	this.LoRaWANVersion = MACVersion([]int32{0, 1, 2, 3, 4, 5, 6}[r.Intn(7)])
-	v14 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedJoinNonce(r)
-	this.JoinNonce = *v14
-	v15 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedDevNonce(r)
-	this.DevNonce = *v15
-	v16 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedNetID(r)
-	this.NetID = *v16
-	this.ProvisionerID = randStringJoinserver(r)
-	if r.Intn(5) != 0 {
-		this.ProvisioningData = types.NewPopulatedStruct(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetRootKeysRequest(r randyJoinserver, easy bool) *GetRootKeysRequest {
-	this := &GetRootKeysRequest{}
-	v17 := NewPopulatedEndDeviceIdentifiers(r, easy)
-	this.EndDeviceIdentifiers = *v17
-	this.ProvisionerID = randStringJoinserver(r)
-	if r.Intn(5) != 0 {
-		this.ProvisioningData = types.NewPopulatedStruct(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedProvisionEndDevicesRequest(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest {
-	this := &ProvisionEndDevicesRequest{}
-	v18 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v18
-	this.ProvisionerID = randStringJoinserver(r)
-	v19 := r.Intn(100)
-	this.ProvisioningData = make([]byte, v19)
-	for i := 0; i < v19; i++ {
-		this.ProvisioningData[i] = byte(r.Intn(256))
-	}
-	oneofNumber_EndDevices := []int32{4, 5, 6}[r.Intn(3)]
-	switch oneofNumber_EndDevices {
-	case 4:
-		this.EndDevices = NewPopulatedProvisionEndDevicesRequest_List(r, easy)
-	case 5:
-		this.EndDevices = NewPopulatedProvisionEndDevicesRequest_Range(r, easy)
-	case 6:
-		this.EndDevices = NewPopulatedProvisionEndDevicesRequest_FromData(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedProvisionEndDevicesRequest_List(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_List {
-	this := &ProvisionEndDevicesRequest_List{}
-	this.List = NewPopulatedProvisionEndDevicesRequest_IdentifiersList(r, easy)
-	return this
-}
-func NewPopulatedProvisionEndDevicesRequest_Range(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_Range {
-	this := &ProvisionEndDevicesRequest_Range{}
-	this.Range = NewPopulatedProvisionEndDevicesRequest_IdentifiersRange(r, easy)
-	return this
-}
-func NewPopulatedProvisionEndDevicesRequest_FromData(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_FromData {
-	this := &ProvisionEndDevicesRequest_FromData{}
-	this.FromData = NewPopulatedProvisionEndDevicesRequest_IdentifiersFromData(r, easy)
-	return this
-}
-func NewPopulatedProvisionEndDevicesRequest_IdentifiersList(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_IdentifiersList {
-	this := &ProvisionEndDevicesRequest_IdentifiersList{}
-	this.JoinEUI = go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	if r.Intn(5) != 0 {
-		v20 := r.Intn(5)
-		this.EndDeviceIDs = make([]EndDeviceIdentifiers, v20)
-		for i := 0; i < v20; i++ {
-			v21 := NewPopulatedEndDeviceIdentifiers(r, easy)
-			this.EndDeviceIDs[i] = *v21
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedProvisionEndDevicesRequest_IdentifiersRange(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_IdentifiersRange {
-	this := &ProvisionEndDevicesRequest_IdentifiersRange{}
-	this.JoinEUI = go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	v22 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	this.StartDevEUI = *v22
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedProvisionEndDevicesRequest_IdentifiersFromData(r randyJoinserver, easy bool) *ProvisionEndDevicesRequest_IdentifiersFromData {
-	this := &ProvisionEndDevicesRequest_IdentifiersFromData{}
-	this.JoinEUI = go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedApplicationActivationSettings(r randyJoinserver, easy bool) *ApplicationActivationSettings {
-	this := &ApplicationActivationSettings{}
-	this.KEKLabel = randStringJoinserver(r)
-	if r.Intn(5) != 0 {
-		this.KEK = NewPopulatedKeyEnvelope(r, easy)
-	}
-	this.HomeNetID = go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedNetID(r)
-	this.ApplicationServerID = randStringJoinserver(r)
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetApplicationActivationSettingsRequest(r randyJoinserver, easy bool) *GetApplicationActivationSettingsRequest {
-	this := &GetApplicationActivationSettingsRequest{}
-	v23 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v23
-	v24 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v24
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedSetApplicationActivationSettingsRequest(r randyJoinserver, easy bool) *SetApplicationActivationSettingsRequest {
-	this := &SetApplicationActivationSettingsRequest{}
-	v25 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v25
-	v26 := NewPopulatedApplicationActivationSettings(r, easy)
-	this.ApplicationActivationSettings = *v26
-	v27 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v27
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedDeleteApplicationActivationSettingsRequest(r randyJoinserver, easy bool) *DeleteApplicationActivationSettingsRequest {
-	this := &DeleteApplicationActivationSettingsRequest{}
-	v28 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v28
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedJoinEUIPrefix(r randyJoinserver, easy bool) *JoinEUIPrefix {
-	this := &JoinEUIPrefix{}
-	v29 := go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedEUI64(r)
-	this.JoinEUI = *v29
-	this.Length = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedJoinEUIPrefixes(r randyJoinserver, easy bool) *JoinEUIPrefixes {
-	this := &JoinEUIPrefixes{}
-	if r.Intn(5) != 0 {
-		v30 := r.Intn(5)
-		this.Prefixes = make([]JoinEUIPrefix, v30)
-		for i := 0; i < v30; i++ {
-			v31 := NewPopulatedJoinEUIPrefix(r, easy)
-			this.Prefixes[i] = *v31
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-type randyJoinserver interface {
-	Float32() float32
-	Float64() float64
-	Int63() int64
-	Int31() int32
-	Uint32() uint32
-	Intn(n int) int
-}
-
-func randUTF8RuneJoinserver(r randyJoinserver) rune {
-	ru := r.Intn(62)
-	if ru < 10 {
-		return rune(ru + 48)
-	} else if ru < 36 {
-		return rune(ru + 55)
-	}
-	return rune(ru + 61)
-}
-func randStringJoinserver(r randyJoinserver) string {
-	v32 := r.Intn(100)
-	tmps := make([]rune, v32)
-	for i := 0; i < v32; i++ {
-		tmps[i] = randUTF8RuneJoinserver(r)
-	}
-	return string(tmps)
-}
-func randUnrecognizedJoinserver(r randyJoinserver, maxFieldNumber int) (dAtA []byte) {
-	l := r.Intn(5)
-	for i := 0; i < l; i++ {
-		wire := r.Intn(4)
-		if wire == 3 {
-			wire = 5
-		}
-		fieldNumber := maxFieldNumber + r.Intn(100)
-		dAtA = randFieldJoinserver(dAtA, r, fieldNumber, wire)
-	}
-	return dAtA
-}
-func randFieldJoinserver(dAtA []byte, r randyJoinserver, fieldNumber int, wire int) []byte {
-	key := uint32(fieldNumber)<<3 | uint32(wire)
-	switch wire {
-	case 0:
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(key))
-		v33 := r.Int63()
-		if r.Intn(2) == 0 {
-			v33 *= -1
-		}
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(v33))
-	case 1:
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	case 2:
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(key))
-		ll := r.Intn(100)
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(ll))
-		for j := 0; j < ll; j++ {
-			dAtA = append(dAtA, byte(r.Intn(256)))
-		}
-	default:
-		dAtA = encodeVarintPopulateJoinserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	}
-	return dAtA
-}
-func encodeVarintPopulateJoinserver(dAtA []byte, v uint64) []byte {
-	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
-		v >>= 7
-	}
-	dAtA = append(dAtA, uint8(v))
-	return dAtA
-}
 func (m *SessionKeyRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -4111,9 +2781,9 @@ func (m *SessionKeyRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
-	l = m.DevEUI.Size()
+	l = m.DevEui.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	l = m.JoinEUI.Size()
+	l = m.JoinEui.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
 	return n
 }
@@ -4152,8 +2822,8 @@ func (m *CryptoServicePayloadRequest) Size() (n int) {
 	_ = l
 	l = m.EndDeviceIdentifiers.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	if m.LoRaWANVersion != 0 {
-		n += 1 + sovJoinserver(uint64(m.LoRaWANVersion))
+	if m.LorawanVersion != 0 {
+		n += 1 + sovJoinserver(uint64(m.LorawanVersion))
 	}
 	l = len(m.Payload)
 	if l > 0 {
@@ -4207,14 +2877,14 @@ func (m *DeriveSessionKeysRequest) Size() (n int) {
 	_ = l
 	l = m.EndDeviceIdentifiers.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	if m.LoRaWANVersion != 0 {
-		n += 1 + sovJoinserver(uint64(m.LoRaWANVersion))
+	if m.LorawanVersion != 0 {
+		n += 1 + sovJoinserver(uint64(m.LorawanVersion))
 	}
 	l = m.JoinNonce.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
 	l = m.DevNonce.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	l = m.NetID.Size()
+	l = m.NetId.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
 	l = len(m.ProvisionerID)
 	if l > 0 {
@@ -4310,12 +2980,12 @@ func (m *ProvisionEndDevicesRequest_IdentifiersList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.JoinEUI != nil {
-		l = m.JoinEUI.Size()
+	if m.JoinEui != nil {
+		l = m.JoinEui.Size()
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
-	if len(m.EndDeviceIDs) > 0 {
-		for _, e := range m.EndDeviceIDs {
+	if len(m.EndDeviceIds) > 0 {
+		for _, e := range m.EndDeviceIds {
 			l = e.Size()
 			n += 1 + l + sovJoinserver(uint64(l))
 		}
@@ -4329,11 +2999,11 @@ func (m *ProvisionEndDevicesRequest_IdentifiersRange) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.JoinEUI != nil {
-		l = m.JoinEUI.Size()
+	if m.JoinEui != nil {
+		l = m.JoinEui.Size()
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
-	l = m.StartDevEUI.Size()
+	l = m.StartDevEui.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
 	return n
 }
@@ -4344,8 +3014,8 @@ func (m *ProvisionEndDevicesRequest_IdentifiersFromData) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.JoinEUI != nil {
-		l = m.JoinEUI.Size()
+	if m.JoinEui != nil {
+		l = m.JoinEui.Size()
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
 	return n
@@ -4365,8 +3035,8 @@ func (m *ApplicationActivationSettings) Size() (n int) {
 		l = m.KEK.Size()
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
-	if m.HomeNetID != nil {
-		l = m.HomeNetID.Size()
+	if m.HomeNetId != nil {
+		l = m.HomeNetId.Size()
 		n += 1 + l + sovJoinserver(uint64(l))
 	}
 	l = len(m.ApplicationServerID)
@@ -4384,8 +3054,10 @@ func (m *GetApplicationActivationSettingsRequest) Size() (n int) {
 	_ = l
 	l = m.ApplicationIdentifiers.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovJoinserver(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovJoinserver(uint64(l))
+	}
 	return n
 }
 
@@ -4399,8 +3071,10 @@ func (m *SetApplicationActivationSettingsRequest) Size() (n int) {
 	n += 1 + l + sovJoinserver(uint64(l))
 	l = m.ApplicationActivationSettings.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovJoinserver(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovJoinserver(uint64(l))
+	}
 	return n
 }
 
@@ -4421,7 +3095,7 @@ func (m *JoinEUIPrefix) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.JoinEUI.Size()
+	l = m.JoinEui.Size()
 	n += 1 + l + sovJoinserver(uint64(l))
 	if m.Length != 0 {
 		n += 1 + sovJoinserver(uint64(m.Length))
@@ -4448,7 +3122,7 @@ func sovJoinserver(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozJoinserver(x uint64) (n int) {
-	return sovJoinserver((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovJoinserver(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *SessionKeyRequest) String() string {
 	if this == nil {
@@ -4456,8 +3130,8 @@ func (this *SessionKeyRequest) String() string {
 	}
 	s := strings.Join([]string{`&SessionKeyRequest{`,
 		`SessionKeyID:` + fmt.Sprintf("%v", this.SessionKeyID) + `,`,
-		`DevEUI:` + fmt.Sprintf("%v", this.DevEUI) + `,`,
-		`JoinEUI:` + fmt.Sprintf("%v", this.JoinEUI) + `,`,
+		`DevEui:` + fmt.Sprintf("%v", this.DevEui) + `,`,
+		`JoinEui:` + fmt.Sprintf("%v", this.JoinEui) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4490,7 +3164,7 @@ func (this *CryptoServicePayloadRequest) String() string {
 	}
 	s := strings.Join([]string{`&CryptoServicePayloadRequest{`,
 		`EndDeviceIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.EndDeviceIdentifiers), "EndDeviceIdentifiers", "EndDeviceIdentifiers", 1), `&`, ``, 1) + `,`,
-		`LoRaWANVersion:` + fmt.Sprintf("%v", this.LoRaWANVersion) + `,`,
+		`LorawanVersion:` + fmt.Sprintf("%v", this.LorawanVersion) + `,`,
 		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
 		`ProvisionerID:` + fmt.Sprintf("%v", this.ProvisionerID) + `,`,
 		`ProvisioningData:` + strings.Replace(fmt.Sprintf("%v", this.ProvisioningData), "Struct", "types.Struct", 1) + `,`,
@@ -4526,10 +3200,10 @@ func (this *DeriveSessionKeysRequest) String() string {
 	}
 	s := strings.Join([]string{`&DeriveSessionKeysRequest{`,
 		`EndDeviceIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.EndDeviceIdentifiers), "EndDeviceIdentifiers", "EndDeviceIdentifiers", 1), `&`, ``, 1) + `,`,
-		`LoRaWANVersion:` + fmt.Sprintf("%v", this.LoRaWANVersion) + `,`,
+		`LorawanVersion:` + fmt.Sprintf("%v", this.LorawanVersion) + `,`,
 		`JoinNonce:` + fmt.Sprintf("%v", this.JoinNonce) + `,`,
 		`DevNonce:` + fmt.Sprintf("%v", this.DevNonce) + `,`,
-		`NetID:` + fmt.Sprintf("%v", this.NetID) + `,`,
+		`NetId:` + fmt.Sprintf("%v", this.NetId) + `,`,
 		`ProvisionerID:` + fmt.Sprintf("%v", this.ProvisionerID) + `,`,
 		`ProvisioningData:` + strings.Replace(fmt.Sprintf("%v", this.ProvisioningData), "Struct", "types.Struct", 1) + `,`,
 		`}`,
@@ -4595,14 +3269,14 @@ func (this *ProvisionEndDevicesRequest_IdentifiersList) String() string {
 	if this == nil {
 		return "nil"
 	}
-	repeatedStringForEndDeviceIDs := "[]EndDeviceIdentifiers{"
-	for _, f := range this.EndDeviceIDs {
-		repeatedStringForEndDeviceIDs += fmt.Sprintf("%v", f) + ","
+	repeatedStringForEndDeviceIds := "[]EndDeviceIdentifiers{"
+	for _, f := range this.EndDeviceIds {
+		repeatedStringForEndDeviceIds += fmt.Sprintf("%v", f) + ","
 	}
-	repeatedStringForEndDeviceIDs += "}"
+	repeatedStringForEndDeviceIds += "}"
 	s := strings.Join([]string{`&ProvisionEndDevicesRequest_IdentifiersList{`,
-		`JoinEUI:` + fmt.Sprintf("%v", this.JoinEUI) + `,`,
-		`EndDeviceIDs:` + repeatedStringForEndDeviceIDs + `,`,
+		`JoinEui:` + fmt.Sprintf("%v", this.JoinEui) + `,`,
+		`EndDeviceIds:` + repeatedStringForEndDeviceIds + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4612,8 +3286,8 @@ func (this *ProvisionEndDevicesRequest_IdentifiersRange) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ProvisionEndDevicesRequest_IdentifiersRange{`,
-		`JoinEUI:` + fmt.Sprintf("%v", this.JoinEUI) + `,`,
-		`StartDevEUI:` + fmt.Sprintf("%v", this.StartDevEUI) + `,`,
+		`JoinEui:` + fmt.Sprintf("%v", this.JoinEui) + `,`,
+		`StartDevEui:` + fmt.Sprintf("%v", this.StartDevEui) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4623,7 +3297,7 @@ func (this *ProvisionEndDevicesRequest_IdentifiersFromData) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ProvisionEndDevicesRequest_IdentifiersFromData{`,
-		`JoinEUI:` + fmt.Sprintf("%v", this.JoinEUI) + `,`,
+		`JoinEui:` + fmt.Sprintf("%v", this.JoinEui) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4635,7 +3309,7 @@ func (this *ApplicationActivationSettings) String() string {
 	s := strings.Join([]string{`&ApplicationActivationSettings{`,
 		`KEKLabel:` + fmt.Sprintf("%v", this.KEKLabel) + `,`,
 		`KEK:` + strings.Replace(fmt.Sprintf("%v", this.KEK), "KeyEnvelope", "KeyEnvelope", 1) + `,`,
-		`HomeNetID:` + fmt.Sprintf("%v", this.HomeNetID) + `,`,
+		`HomeNetId:` + fmt.Sprintf("%v", this.HomeNetId) + `,`,
 		`ApplicationServerID:` + fmt.Sprintf("%v", this.ApplicationServerID) + `,`,
 		`}`,
 	}, "")
@@ -4647,7 +3321,7 @@ func (this *GetApplicationActivationSettingsRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetApplicationActivationSettingsRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4659,7 +3333,7 @@ func (this *SetApplicationActivationSettingsRequest) String() string {
 	s := strings.Join([]string{`&SetApplicationActivationSettingsRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`ApplicationActivationSettings:` + strings.Replace(strings.Replace(this.ApplicationActivationSettings.String(), "ApplicationActivationSettings", "ApplicationActivationSettings", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4679,7 +3353,7 @@ func (this *JoinEUIPrefix) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&JoinEUIPrefix{`,
-		`JoinEUI:` + fmt.Sprintf("%v", this.JoinEUI) + `,`,
+		`JoinEui:` + fmt.Sprintf("%v", this.JoinEui) + `,`,
 		`Length:` + fmt.Sprintf("%v", this.Length) + `,`,
 		`}`,
 	}, "")
@@ -4708,2661 +3382,3 @@ func valueToStringJoinserver(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *SessionKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SessionKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SessionKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SessionKeyID", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SessionKeyID = append(m.SessionKeyID[:0], dAtA[iNdEx:postIndex]...)
-			if m.SessionKeyID == nil {
-				m.SessionKeyID = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DevEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.DevEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.JoinEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *NwkSKeysResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: NwkSKeysResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: NwkSKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FNwkSIntKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FNwkSIntKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SNwkSIntKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.SNwkSIntKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NwkSEncKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.NwkSEncKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AppSKeyResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AppSKeyResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AppSKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AppSKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.AppSKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CryptoServicePayloadRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CryptoServicePayloadRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CryptoServicePayloadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EndDeviceIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.EndDeviceIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LoRaWANVersion", wireType)
-			}
-			m.LoRaWANVersion = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LoRaWANVersion |= MACVersion(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Payload", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Payload = append(m.Payload[:0], dAtA[iNdEx:postIndex]...)
-			if m.Payload == nil {
-				m.Payload = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionerID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProvisionerID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisioningData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ProvisioningData == nil {
-				m.ProvisioningData = &types.Struct{}
-			}
-			if err := m.ProvisioningData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CryptoServicePayloadResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CryptoServicePayloadResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CryptoServicePayloadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Payload", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Payload = append(m.Payload[:0], dAtA[iNdEx:postIndex]...)
-			if m.Payload == nil {
-				m.Payload = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *JoinAcceptMICRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: JoinAcceptMICRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: JoinAcceptMICRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CryptoServicePayloadRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.CryptoServicePayloadRequest.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinRequestType", wireType)
-			}
-			m.JoinRequestType = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.JoinRequestType |= RejoinType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DevNonce", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.DevNonce.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DeriveSessionKeysRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DeriveSessionKeysRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeriveSessionKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EndDeviceIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.EndDeviceIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LoRaWANVersion", wireType)
-			}
-			m.LoRaWANVersion = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LoRaWANVersion |= MACVersion(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinNonce", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.JoinNonce.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DevNonce", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.DevNonce.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NetID", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.NetID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionerID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProvisionerID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisioningData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ProvisioningData == nil {
-				m.ProvisioningData = &types.Struct{}
-			}
-			if err := m.ProvisioningData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetRootKeysRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetRootKeysRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetRootKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EndDeviceIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.EndDeviceIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionerID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProvisionerID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisioningData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ProvisioningData == nil {
-				m.ProvisioningData = &types.Struct{}
-			}
-			if err := m.ProvisioningData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProvisionEndDevicesRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ProvisionEndDevicesRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProvisionEndDevicesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionerID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProvisionerID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProvisioningData", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProvisioningData = append(m.ProvisioningData[:0], dAtA[iNdEx:postIndex]...)
-			if m.ProvisioningData == nil {
-				m.ProvisioningData = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field List", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &ProvisionEndDevicesRequest_IdentifiersList{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.EndDevices = &ProvisionEndDevicesRequest_List{v}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Range", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &ProvisionEndDevicesRequest_IdentifiersRange{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.EndDevices = &ProvisionEndDevicesRequest_Range{v}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &ProvisionEndDevicesRequest_IdentifiersFromData{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.EndDevices = &ProvisionEndDevicesRequest_FromData{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProvisionEndDevicesRequest_IdentifiersList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: IdentifiersList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: IdentifiersList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			var v go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-			m.JoinEUI = &v
-			if err := m.JoinEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EndDeviceIDs", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.EndDeviceIDs = append(m.EndDeviceIDs, EndDeviceIdentifiers{})
-			if err := m.EndDeviceIDs[len(m.EndDeviceIDs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProvisionEndDevicesRequest_IdentifiersRange) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: IdentifiersRange: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: IdentifiersRange: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			var v go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-			m.JoinEUI = &v
-			if err := m.JoinEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StartDevEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.StartDevEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProvisionEndDevicesRequest_IdentifiersFromData) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: IdentifiersFromData: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: IdentifiersFromData: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			var v go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-			m.JoinEUI = &v
-			if err := m.JoinEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ApplicationActivationSettings) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ApplicationActivationSettings: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ApplicationActivationSettings: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KEKLabel", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.KEKLabel = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KEK", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.KEK == nil {
-				m.KEK = &KeyEnvelope{}
-			}
-			if err := m.KEK.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HomeNetID", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			var v go_thethings_network_lorawan_stack_v3_pkg_types.NetID
-			m.HomeNetID = &v
-			if err := m.HomeNetID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationServerID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ApplicationServerID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetApplicationActivationSettingsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetApplicationActivationSettingsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetApplicationActivationSettingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *SetApplicationActivationSettingsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SetApplicationActivationSettingsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SetApplicationActivationSettingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationActivationSettings", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationActivationSettings.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DeleteApplicationActivationSettingsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DeleteApplicationActivationSettingsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeleteApplicationActivationSettingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *JoinEUIPrefix) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: JoinEUIPrefix: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: JoinEUIPrefix: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JoinEUI", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.JoinEUI.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Length", wireType)
-			}
-			m.Length = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Length |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *JoinEUIPrefixes) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: JoinEUIPrefixes: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: JoinEUIPrefixes: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Prefixes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Prefixes = append(m.Prefixes, JoinEUIPrefix{})
-			if err := m.Prefixes[len(m.Prefixes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipJoinserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthJoinserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipJoinserver(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowJoinserver
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowJoinserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthJoinserver
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupJoinserver
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthJoinserver
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthJoinserver        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowJoinserver          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupJoinserver = fmt.Errorf("proto: unexpected end of group")
-)

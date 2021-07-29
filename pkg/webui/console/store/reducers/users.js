@@ -28,14 +28,12 @@ const initialState = {
   selectedUser: null,
 }
 
-const user = function(state = {}, user) {
-  return {
-    ...state,
-    ...user,
-  }
-}
+const user = (state = {}, user) => ({
+  ...state,
+  ...user,
+})
 
-const users = function(state = initialState, { type, payload, meta }) {
+const users = (state = initialState, { type, payload, meta }) => {
   switch (type) {
     case GET_USER:
       return {
@@ -56,7 +54,7 @@ const users = function(state = initialState, { type, payload, meta }) {
       }
     case GET_USERS_LIST_SUCCESS:
       const entities = payload.entities.reduce(
-        function(acc, app) {
+        (acc, app) => {
           const id = getUserId(app)
 
           acc[id] = user(acc[id], app)

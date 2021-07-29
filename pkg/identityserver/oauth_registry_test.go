@@ -35,8 +35,8 @@ func TestOAuthRegistry(t *testing.T) {
 		client := population.Clients[0]
 
 		_, err := oauthStore.Authorize(ctx, &ttnpb.OAuthClientAuthorization{
-			UserIDs:   user.UserIdentifiers,
-			ClientIDs: client.ClientIdentifiers,
+			UserIds:   user.UserIdentifiers,
+			ClientIds: client.ClientIdentifiers,
 			Rights:    client.Rights,
 		})
 		if err != nil {
@@ -44,8 +44,8 @@ func TestOAuthRegistry(t *testing.T) {
 		}
 
 		err = oauthStore.CreateAccessToken(ctx, &ttnpb.OAuthAccessToken{
-			UserIDs:       user.UserIdentifiers,
-			ClientIDs:     client.ClientIdentifiers,
+			UserIds:       user.UserIdentifiers,
+			ClientIds:     client.ClientIdentifiers,
 			UserSessionID: "12345678-1234-5678-1234-567812345678",
 			ID:            "access_token_id",
 			Rights:        client.Rights,
@@ -64,12 +64,12 @@ func TestOAuthRegistry(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(authorizations, should.NotBeNil) && a.So(authorizations.Authorizations, should.HaveLength, 1) {
-			a.So(authorizations.Authorizations[0].ClientIDs.ClientID, should.Equal, client.ClientID)
+			a.So(authorizations.Authorizations[0].ClientIds.ClientId, should.Equal, client.ClientId)
 		}
 
 		tokens, err := reg.ListTokens(ctx, &ttnpb.ListOAuthAccessTokensRequest{
-			UserIDs:   user.UserIdentifiers,
-			ClientIDs: client.ClientIdentifiers,
+			UserIds:   user.UserIdentifiers,
+			ClientIds: client.ClientIdentifiers,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -79,16 +79,16 @@ func TestOAuthRegistry(t *testing.T) {
 		}
 
 		_, err = reg.DeleteToken(ctx, &ttnpb.OAuthAccessTokenIdentifiers{
-			UserIDs:   user.UserIdentifiers,
-			ClientIDs: client.ClientIdentifiers,
+			UserIds:   user.UserIdentifiers,
+			ClientIds: client.ClientIdentifiers,
 			ID:        "access_token_id",
 		}, creds)
 
 		a.So(err, should.BeNil)
 
 		tokens, err = reg.ListTokens(ctx, &ttnpb.ListOAuthAccessTokensRequest{
-			UserIDs:   user.UserIdentifiers,
-			ClientIDs: client.ClientIdentifiers,
+			UserIds:   user.UserIdentifiers,
+			ClientIds: client.ClientIdentifiers,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -97,8 +97,8 @@ func TestOAuthRegistry(t *testing.T) {
 		}
 
 		_, err = reg.Delete(ctx, &ttnpb.OAuthClientAuthorizationIdentifiers{
-			UserIDs:   user.UserIdentifiers,
-			ClientIDs: client.ClientIdentifiers,
+			UserIds:   user.UserIdentifiers,
+			ClientIds: client.ClientIdentifiers,
 		}, creds)
 
 		a.So(err, should.BeNil)

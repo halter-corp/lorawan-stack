@@ -14,21 +14,18 @@
 
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import { id as gatewayIdRegexp } from '@ttn-lw/lib/regexp'
 
 import { attributeValidCheck, attributeTooShortCheck } from '@console/lib/attributes'
-import {
-  id as gatewayIdRegexp,
-  address as addressRegexp,
-  delay as delayRegexp,
-} from '@console/lib/regexp'
+import { address as addressRegexp, delay as delayRegexp } from '@console/lib/regexp'
 
 const validationSchema = Yup.object().shape({
   owner_id: Yup.string(),
   ids: Yup.object().shape({
     gateway_id: Yup.string()
-      .matches(gatewayIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
-      .min(2, Yup.passValues(sharedMessages.validateTooShort))
+      .min(3, Yup.passValues(sharedMessages.validateTooShort))
       .max(36, Yup.passValues(sharedMessages.validateTooLong))
+      .matches(gatewayIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
       .required(sharedMessages.validateRequired),
     eui: Yup.nullableString().length(8 * 2, Yup.passValues(sharedMessages.validateLength)),
   }),
@@ -37,13 +34,16 @@ const validationSchema = Yup.object().shape({
     .max(50, Yup.passValues(sharedMessages.validateTooLong)),
   update_channel: Yup.string()
     .min(2, Yup.passValues(sharedMessages.validateTooShort))
-    .max(50, Yup.passValues(sharedMessages.validateTooLong)),
+    .max(128, Yup.passValues(sharedMessages.validateTooLong)),
   description: Yup.string().max(2000, Yup.passValues(sharedMessages.validateTooLong)),
-  frequency_plan_id: Yup.string(),
+  frequency_plan_id: Yup.string()
+    .max(64, Yup.passValues(sharedMessages.validateTooLong))
+    .required(sharedMessages.validateRequired),
   gateway_server_address: Yup.string().matches(
     addressRegexp,
     Yup.passValues(sharedMessages.validateAddressFormat),
   ),
+  require_authenticated_connection: Yup.boolean().default(false),
   location_public: Yup.boolean().default(false),
   status_public: Yup.boolean().default(false),
   schedule_downlink_late: Yup.boolean().default(false),
@@ -54,6 +54,7 @@ const validationSchema = Yup.object().shape({
     Yup.passValues(sharedMessages.validateDelayFormat),
   ),
   attributes: Yup.array()
+    .max(10, Yup.passValues(sharedMessages.attributesValidateTooMany))
     .test(
       'has no empty string values',
       sharedMessages.attributesValidateRequired,

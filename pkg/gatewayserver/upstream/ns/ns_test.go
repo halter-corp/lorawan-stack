@@ -39,7 +39,7 @@ func TestNSHandler(t *testing.T) {
 	ctx := log.NewContext(test.Context(), test.GetLogger(t))
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	gtwIDs := ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"}
+	gtwIDs := ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"}
 	ns, nsAddr := mock.StartNS(ctx)
 	c := componenttest.NewComponent(t, &component.Config{
 		ServiceBase: config.ServiceBase{
@@ -55,7 +55,7 @@ func TestNSHandler(t *testing.T) {
 	componenttest.StartComponent(t, c)
 	defer c.Close()
 	mustHavePeer(ctx, c, ttnpb.ClusterRole_NETWORK_SERVER)
-	h := NewHandler(ctx, c, nil)
+	h := NewHandler(ctx, c, c, nil)
 
 	for _, tc := range []struct {
 		Name                 string
@@ -71,8 +71,8 @@ func TestNSHandler(t *testing.T) {
 						MHDR: ttnpb.MHDR{MType: ttnpb.MType_JOIN_REQUEST, Major: ttnpb.Major_LORAWAN_R1},
 						MIC:  []byte{0x4E, 0x61, 0xBC, 0x00},
 						Payload: &ttnpb.Message_JoinRequestPayload{JoinRequestPayload: &ttnpb.JoinRequestPayload{
-							JoinEUI:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
-							DevEUI:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+							JoinEui:  types.EUI64{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
+							DevEui:   types.EUI64{0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
 							DevNonce: [2]byte{0x46, 0x50},
 						}},
 					},
@@ -85,7 +85,7 @@ func TestNSHandler(t *testing.T) {
 					Settings: ttnpb.TxSettings{
 						Frequency:  868300000,
 						CodingRate: "4/5",
-						DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+						DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 							SpreadingFactor: 11,
 							Bandwidth:       125000,
 						}}},
@@ -93,7 +93,7 @@ func TestNSHandler(t *testing.T) {
 				},
 			},
 			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				DeviceID: "test-device",
+				DeviceId: "test-device",
 			},
 		},
 	} {

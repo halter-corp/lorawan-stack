@@ -66,10 +66,10 @@ func (s *server) FillGatewayContext(ctx context.Context, ids ttnpb.GatewayIdenti
 	if ids.IsZero() {
 		return nil, ttnpb.GatewayIdentifiers{}, errors.New("the identifiers are zero")
 	}
-	if ids.GatewayID != "" {
+	if ids.GatewayId != "" {
 		return ctx, ids, nil
 	}
-	ids.GatewayID = fmt.Sprintf("eui-%v", strings.ToLower(ids.EUI.String()))
+	ids.GatewayId = fmt.Sprintf("eui-%v", strings.ToLower(ids.Eui.String()))
 	return ctx, ids, nil
 }
 
@@ -119,6 +119,10 @@ func (s *server) GetFrequencyPlans(ctx context.Context, ids ttnpb.GatewayIdentif
 func (s *server) ClaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
 	s.downlinkClaims.Store(unique.ID(ctx, ids), true)
 	return nil
+}
+
+func (s *server) ValidateGatewayID(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
+	return ids.ValidateContext(ctx)
 }
 
 // UnclaimDownlink implements io.Server.

@@ -74,7 +74,7 @@ func (is *mockIS) add(ctx context.Context, ids ttnpb.GatewayIdentifiers, key str
 		FrequencyPlanIDs:   []string{test.EUFrequencyPlanID},
 		Antennas: []ttnpb.GatewayAntenna{
 			{
-				Location: ttnpb.Location{
+				Location: &ttnpb.Location{
 					Source: ttnpb.SOURCE_REGISTRY,
 				},
 			},
@@ -104,16 +104,15 @@ func (is *mockIS) Update(ctx context.Context, req *ttnpb.UpdateGatewayRequest) (
 	if !ok {
 		return nil, errNotFound.New()
 	}
-	// Just update antennas
-	gtw.Antennas = req.Antennas
+	gtw.SetFields(&req.Gateway, req.FieldMask.GetPaths()...)
 	return gtw, nil
 }
 
 func (is *mockIS) GetIdentifiersForEUI(ctx context.Context, req *ttnpb.GetGatewayIdentifiersForEUIRequest) (*ttnpb.GatewayIdentifiers, error) {
-	if req.EUI == registeredGatewayEUI {
+	if req.Eui == registeredGatewayEUI {
 		return &ttnpb.GatewayIdentifiers{
-			GatewayID: registeredGatewayID,
-			EUI:       &registeredGatewayEUI,
+			GatewayId: registeredGatewayID,
+			Eui:       &registeredGatewayEUI,
 		}, nil
 	}
 	return nil, errNotFound.New()
@@ -155,8 +154,8 @@ func randomJoinRequestPayload(joinEUI, devEUI types.EUI64) []byte {
 			},
 			Payload: &ttnpb.Message_JoinRequestPayload{
 				JoinRequestPayload: &ttnpb.JoinRequestPayload{
-					JoinEUI:  joinEUI,
-					DevEUI:   devEUI,
+					JoinEui:  joinEUI,
+					DevEui:   devEUI,
 					DevNonce: devNonce,
 				},
 			},

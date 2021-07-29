@@ -35,21 +35,21 @@ type mockInteropHandler struct {
 	GetAppSKeyFunc   func(context.Context, *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error)
 }
 
-func (h mockInteropHandler) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (*ttnpb.JoinResponse, error) {
+func (h mockInteropHandler) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest, authorizer Authorizer) (*ttnpb.JoinResponse, error) {
 	if h.HandleJoinFunc == nil {
 		panic("HandleJoin should not be called")
 	}
 	return h.HandleJoinFunc(ctx, req)
 }
 
-func (h mockInteropHandler) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EUI64) (*types.NetID, error) {
+func (h mockInteropHandler) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EUI64, authorizer Authorizer) (*types.NetID, error) {
 	if h.GetHomeNetIDFunc == nil {
 		panic("GetHomeNetID should not be called")
 	}
 	return h.GetHomeNetIDFunc(ctx, joinEUI, devEUI)
 }
 
-func (h mockInteropHandler) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error) {
+func (h mockInteropHandler) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest, authorizer Authorizer) (*ttnpb.AppSKeyResponse, error) {
 	if h.GetAppSKeyFunc == nil {
 		panic("GetAppSKey should not be called")
 	}
@@ -89,7 +89,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				RawPayload:         []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x21, 0x22, 0x23},
 				DevAddr:            types.DevAddr{0x1, 0x2, 0x3, 0x4},
 				SelectedMACVersion: ttnpb.MAC_V1_0_3,
-				NetID:              types.NetID{0x0, 0x0, 0x13},
+				NetId:              types.NetID{0x0, 0x0, 0x13},
 				DownlinkSettings: ttnpb.DLSettings{
 					OptNeg:      true,
 					Rx1DROffset: 0x6,
@@ -168,7 +168,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				RawPayload:         []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x21, 0x22, 0x23},
 				DevAddr:            types.DevAddr{0x1, 0x2, 0x3, 0x4},
 				SelectedMACVersion: ttnpb.MAC_V1_1,
-				NetID:              types.NetID{0x0, 0x0, 0x13},
+				NetId:              types.NetID{0x0, 0x0, 0x13},
 				DownlinkSettings: ttnpb.DLSettings{
 					OptNeg:      true,
 					Rx1DROffset: 0x6,
@@ -263,7 +263,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				RawPayload:         []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x21, 0x22, 0x23},
 				DevAddr:            types.DevAddr{0x1, 0x2, 0x3, 0x4},
 				SelectedMACVersion: ttnpb.MAC_V1_1,
-				NetID:              types.NetID{0x0, 0x0, 0x13},
+				NetId:              types.NetID{0x0, 0x0, 0x13},
 				DownlinkSettings: ttnpb.DLSettings{
 					OptNeg:      true,
 					Rx1DROffset: 0x6,
@@ -307,7 +307,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				RawPayload:         []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x21, 0x22, 0x23},
 				DevAddr:            types.DevAddr{0x1, 0x2, 0x3, 0x4},
 				SelectedMACVersion: ttnpb.MAC_V1_1,
-				NetID:              types.NetID{0x0, 0x0, 0x13},
+				NetId:              types.NetID{0x0, 0x0, 0x13},
 				DownlinkSettings: ttnpb.DLSettings{
 					OptNeg:      true,
 					Rx1DROffset: 0x6,
@@ -351,7 +351,7 @@ func TestInteropJoinRequest(t *testing.T) {
 				RawPayload:         []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x21, 0x22, 0x23},
 				DevAddr:            types.DevAddr{0x1, 0x2, 0x3, 0x4},
 				SelectedMACVersion: ttnpb.MAC_V1_1,
-				NetID:              types.NetID{0x0, 0x0, 0x13},
+				NetId:              types.NetID{0x0, 0x0, 0x13},
 				DownlinkSettings: ttnpb.DLSettings{
 					OptNeg:      true,
 					Rx1DROffset: 0x6,
@@ -579,8 +579,8 @@ func TestInteropAppSKeyRequest(t *testing.T) {
 				SessionKeyID: interop.Buffer{0x1, 0x2, 0x3, 0x4},
 			},
 			ExpectedSessionKeyRequest: &ttnpb.SessionKeyRequest{
-				JoinEUI:      types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-				DevEUI:       types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				JoinEui:      types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				DevEui:       types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
 				SessionKeyID: []byte{0x1, 0x2, 0x3, 0x4},
 			},
 			GetAppSKeyFunc: func() (*ttnpb.AppSKeyResponse, error) {
@@ -626,8 +626,8 @@ func TestInteropAppSKeyRequest(t *testing.T) {
 				SessionKeyID: interop.Buffer{0x1, 0x2, 0x3, 0x4},
 			},
 			ExpectedSessionKeyRequest: &ttnpb.SessionKeyRequest{
-				JoinEUI:      types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-				DevEUI:       types.EUI64{0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42},
+				JoinEui:      types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+				DevEui:       types.EUI64{0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42},
 				SessionKeyID: []byte{0x1, 0x2, 0x3, 0x4},
 			},
 			GetAppSKeyFunc: func() (*ttnpb.AppSKeyResponse, error) {

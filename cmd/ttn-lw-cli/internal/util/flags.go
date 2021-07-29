@@ -51,6 +51,21 @@ func ForwardFlag(flagSet *pflag.FlagSet, old string, new string) {
 	}
 }
 
+// HideFlag hides the provided flag from the flag set.
+func HideFlag(flagSet *pflag.FlagSet, name string) {
+	if flag := flagSet.Lookup(name); flag != nil {
+		flag.Hidden = true
+	}
+}
+
+// HideFlagSet hides the flags from the provided flag set.
+func HideFlagSet(flagSet *pflag.FlagSet) *pflag.FlagSet {
+	flagSet.VisitAll(func(f *pflag.Flag) {
+		f.Hidden = true
+	})
+	return flagSet
+}
+
 var (
 	toDash       = strings.NewReplacer("_", "-")
 	toUnderscore = strings.NewReplacer("-", "_")
@@ -122,6 +137,14 @@ func isStopType(t reflect.Type, maskOnly bool) bool {
 			"Struct":
 			return true
 		}
+	case "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
+		switch t.Name() {
+		case
+			// ErrorDetails is a recursive type, stop parsing to prevent infinite recursion.
+			"ErrorDetails":
+			return true
+		default:
+		}
 	}
 	return false
 }
@@ -153,7 +176,11 @@ func isAtomicType(t reflect.Type, maskOnly bool) bool {
 			"ADRAckDelayExponentValue",
 			"ADRAckLimitExponentValue",
 			"AggregatedDutyCycleValue",
+			"BoolValue",
 			"DataRateIndexValue",
+			"DataRateOffsetValue",
+			"DeviceEIRPValue",
+			"FrequencyValue",
 			"GatewayAntennaIdentifiers",
 			"Picture",
 			"PingSlotPeriodValue",
@@ -207,7 +234,8 @@ func unwrapLoRaWANEnumType(typeName string) string {
 	return fmt.Sprintf("ttn.lorawan.v3.%s", strings.TrimSuffix(strings.TrimPrefix(typeName, ""), "Value"))
 }
 
-func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
+// AddField adds a field to the flag set.
+func AddField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 	if maskOnly {
 		if t.Kind() == reflect.Struct && !isAtomicType(t, maskOnly) {
 			fs.Bool(name, false, fmt.Sprintf("select the %s field and all allowed sub-fields", name))
@@ -269,24 +297,36 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 			"ADRAckLimitExponentValue",
 			"AggregatedDutyCycleValue",
 			"DataRateIndexValue",
+			"DataRateOffsetValue",
+			"DeviceEIRPValue",
 			"PingSlotPeriodValue",
 			"RxDelayValue":
-			enumType := unwrapLoRaWANEnumType(typeName)
-			values := make([]string, 0, len(proto.EnumValueMap(enumType)))
-			for value := range proto.EnumValueMap(enumType) {
-				values = append(values, value)
+			fv, ok := t.FieldByName("Value")
+			if !ok {
+				panic(fmt.Sprintf("flags: %T type does not contain a Value field", typeName))
 			}
-			sort.Strings(values)
-			fs.String(name, "", strings.Join(values, "|"))
+			values := enumValues(fv.Type)
+			if len(values) == 0 {
+				panic(fmt.Sprintf("flags: no allowed values for %T", typeName))
+			}
+			fs.String(name, "", fmt.Sprintf("allowed values: %s", strings.Join(values, ", ")))
 			return
 
 		case "Picture":
 			// Not supported
 			return
+
+		case "FrequencyValue":
+			fs.Uint64(name, 0, "")
+			return
+
+		case "BoolValue":
+			fs.Bool(name, false, "")
+			return
 		}
 		if t.Kind() == reflect.Int32 {
 			if values := enumValues(t); values != nil {
-				fs.String(name, "", strings.Join(values, "|"))
+				fs.String(name, "", fmt.Sprintf("allowed values: %s", strings.Join(values, ", ")))
 				return
 			}
 		}
@@ -344,7 +384,7 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 			return
 		case reflect.Int32:
 			if values := enumValues(el); values != nil {
-				fs.StringSlice(name, nil, strings.Join(values, "|"))
+				fs.StringSlice(name, nil, fmt.Sprintf("allowed values: %s", strings.Join(values, ", ")))
 				return
 			}
 			fs.IntSlice(name, nil, "")
@@ -384,6 +424,18 @@ func addField(fs *pflag.FlagSet, name string, t reflect.Type, maskOnly bool) {
 func fieldMaskFlags(prefix []string, t reflect.Type, maskOnly bool) *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
 	props := proto.GetProperties(t)
+	for _, oneofProp := range props.OneofTypes {
+		if oneofProp.Prop.Tag == 0 {
+			continue
+		}
+		t := oneofProp.Type
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+
+		path := append(prefix, props.Prop[oneofProp.Field].OrigName)
+		flagSet.AddFlagSet(fieldMaskFlags(path, t, maskOnly))
+	}
 	for _, prop := range props.Prop {
 		if prop.Tag == 0 {
 			continue
@@ -407,7 +459,7 @@ func fieldMaskFlags(prefix []string, t reflect.Type, maskOnly bool) *pflag.FlagS
 		if isStopType(t, maskOnly) {
 			continue
 		}
-		addField(flagSet, name, fieldType, maskOnly)
+		AddField(flagSet, name, fieldType, maskOnly)
 		if fieldType.Kind() == reflect.Struct && !isAtomicType(fieldType, maskOnly) {
 			flagSet.AddFlagSet(fieldMaskFlags(path, fieldType, maskOnly))
 		}
@@ -480,9 +532,7 @@ func SetFields(dst interface{}, flags *pflag.FlagSet, prefix ...string) error {
 	return nil
 }
 
-var (
-	textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
-)
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
 func setField(rv reflect.Value, path []string, v reflect.Value) error {
 	rt := rv.Type()
@@ -502,14 +552,10 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 				switch {
 				case ft.AssignableTo(vt):
 					field.Set(v)
-				case ft.Kind() == reflect.Int32 && vt.Kind() == reflect.String:
-					if reflect.PtrTo(ft).Implements(textUnmarshalerType) {
-						err := field.Addr().Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v.String()))
-						if err != nil {
-							return err
-						}
-					} else {
-						return fmt.Errorf(`%s does not implement encoding.TextUnmarshaler`, ft.Name())
+				case vt.Kind() == reflect.String && reflect.PtrTo(ft).Implements(textUnmarshalerType):
+					err := field.Addr().Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v.String()))
+					if err != nil {
+						return err
 					}
 				case ft.PkgPath() == "time":
 					switch {
@@ -558,6 +604,11 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 					}
 				case ft.PkgPath() == "go.thethings.network/lorawan-stack/v3/pkg/ttnpb":
 					switch typeName := ft.Name(); typeName {
+					case "BoolValue":
+						field.Set(reflect.ValueOf(ttnpb.BoolValue{Value: v.Bool()}))
+					case "FrequencyValue":
+						field.Set(reflect.ValueOf(ttnpb.FrequencyValue{Value: v.Uint()}))
+
 					case "DataRateIndexValue":
 						if enumValue, ok := proto.EnumValueMap(unwrapLoRaWANEnumType(typeName))[v.String()]; ok {
 							field.Set(reflect.ValueOf(ttnpb.DataRateIndexValue{Value: ttnpb.DataRateIndex(enumValue)}))
@@ -566,6 +617,17 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 						var enum ttnpb.DataRateIndex
 						if err := enum.UnmarshalText([]byte(v.String())); err != nil {
 							field.Set(reflect.ValueOf(ttnpb.DataRateIndexValue{Value: enum}))
+							break
+						}
+						return fmt.Errorf(`invalid value "%s" for %s`, v.String(), typeName)
+					case "DataRateOffsetValue":
+						if enumValue, ok := proto.EnumValueMap(unwrapLoRaWANEnumType(typeName))[v.String()]; ok {
+							field.Set(reflect.ValueOf(ttnpb.DataRateOffsetValue{Value: ttnpb.DataRateOffset(enumValue)}))
+							break
+						}
+						var enum ttnpb.DataRateOffset
+						if err := enum.UnmarshalText([]byte(v.String())); err != nil {
+							field.Set(reflect.ValueOf(ttnpb.DataRateOffsetValue{Value: enum}))
 							break
 						}
 						return fmt.Errorf(`invalid value "%s" for %s`, v.String(), typeName)
@@ -599,6 +661,17 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 						var enum ttnpb.RxDelay
 						if err := enum.UnmarshalText([]byte(v.String())); err != nil {
 							field.Set(reflect.ValueOf(ttnpb.RxDelayValue{Value: enum}))
+							break
+						}
+						return fmt.Errorf(`invalid value "%s" for %s`, v.String(), typeName)
+					case "DeviceEIRPValue":
+						if enumValue, ok := proto.EnumValueMap(unwrapLoRaWANEnumType(typeName))[v.String()]; ok {
+							field.Set(reflect.ValueOf(ttnpb.DeviceEIRPValue{Value: ttnpb.DeviceEIRP(enumValue)}))
+							break
+						}
+						var enum ttnpb.DeviceEIRP
+						if err := enum.UnmarshalText([]byte(v.String())); err != nil {
+							field.Set(reflect.ValueOf(ttnpb.DeviceEIRPValue{Value: enum}))
 							break
 						}
 						return fmt.Errorf(`invalid value "%s" for %s`, v.String(), typeName)
@@ -660,20 +733,16 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 						for i := 0; i < v.Len(); i++ {
 							slice.Index(i).Set(reflect.ValueOf(ttnpb.GatewayAntennaIdentifiers{
 								GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-									GatewayID: v.Index(i).String(),
+									GatewayId: v.Index(i).String(),
 								},
 							}))
 						}
-					case ft.Elem().Kind() == reflect.Int32 && vt.Elem().Kind() == reflect.String:
-						if reflect.PtrTo(ft.Elem()).Implements(textUnmarshalerType) {
-							for i := 0; i < v.Len(); i++ {
-								err := slice.Index(i).Addr().Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v.Index(i).String()))
-								if err != nil {
-									return err
-								}
+					case vt.Elem().Kind() == reflect.String && reflect.PtrTo(ft.Elem()).Implements(textUnmarshalerType):
+						for i := 0; i < v.Len(); i++ {
+							err := slice.Index(i).Addr().Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v.Index(i).String()))
+							if err != nil {
+								return err
 							}
-						} else {
-							return fmt.Errorf(`%s does not implement encoding.TextUnmarshaler`, ft.Elem().Name())
 						}
 					default:
 						return fmt.Errorf("%v is not convertible to %v", ft, vt)
@@ -683,6 +752,28 @@ func setField(rv reflect.Value, path []string, v reflect.Value) error {
 					return fmt.Errorf("%v is not assignable to %v", ft, vt)
 				}
 				return nil
+			}
+			for name, oneofProp := range props.OneofTypes {
+				if name != path[1] {
+					continue
+				}
+				if field.Type().Kind() != reflect.Interface {
+					panic("oneof field is not an interface")
+				}
+				elem := field.Elem()
+				switch {
+				case !elem.IsValid():
+					field.Set(reflect.New(oneofProp.Type.Elem()))
+				case elem.Type() != oneofProp.Type:
+					return fmt.Errorf("different oneof type")
+				}
+				field = field.Elem()
+				if field.Type().Kind() == reflect.Ptr {
+					if field.IsNil() {
+						field.Set(reflect.New(field.Type().Elem()))
+					}
+					field = field.Elem()
+				}
 			}
 			return setField(field, path[1:], v)
 		}

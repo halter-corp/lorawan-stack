@@ -12,23 +12,15 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-if #ARGV == 2 then
-	redis.call("lrem", KEYS[2], 1, ARGV[2])
-end
-
-
-for i = 1, #KEYS do
-  local uid
-  if KEYS[i]:sub(-10) == "processing" then
-	  uid = redis.call('rpop', KEYS[i])
-  else
-	  uid = redis.call('rpoplpush', KEYS[i], KEYS[i+1])
+for _, old_uid in ipairs(ARGV) do
+  local uid = redis.call('lindex', KEYS[1], -1)
+  if not uid then
+    return nil
   end
-	if uid then
-	  for j = i, #KEYS, 1 do
-	  	redis.call('pexpire', KEYS[j], ARGV[1])
-	  end
-	  return {i,uid}
-	end
+  if uid ~= old_uid then
+    return uid
+  end
+  redis.call('ltrim', KEYS[1], 0, -2)
+  redis.call('hdel', KEYS[2], old_uid)
 end
-return nil
+return redis.call('lindex', KEYS[1], -1)

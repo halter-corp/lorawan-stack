@@ -5,13 +5,6 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-	time "time"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -19,6 +12,12 @@ import (
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	types "github.com/gogo/protobuf/types"
 	golang_proto "github.com/golang/protobuf/proto"
+	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -37,14 +36,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Application is the message that defines an Application in the network.
 type Application struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=ids,proto3,embedded=ids" json:"ids"`
-	CreatedAt              time.Time `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,stdtime" json:"created_at"`
-	UpdatedAt              time.Time `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
-	Name                   string    `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	Description            string    `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	CreatedAt              time.Time  `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,stdtime" json:"created_at"`
+	UpdatedAt              time.Time  `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
+	DeletedAt              *time.Time `protobuf:"bytes,8,opt,name=deleted_at,json=deletedAt,proto3,stdtime" json:"deleted_at,omitempty"`
+	Name                   string     `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Description            string     `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
 	// Key-value attributes for this application. Typically used for organizing applications or for storing integration-specific data.
 	Attributes map[string]string `protobuf:"bytes,6,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Contact information for this application. Typically used to indicate who to contact with technical/security questions about the application.
 	ContactInfo          []*ContactInfo `protobuf:"bytes,7,rep,name=contact_info,json=contactInfo,proto3" json:"contact_info,omitempty"`
+	DevEuiCounter        uint32         `protobuf:"varint,9,opt,name=dev_eui_counter,json=devEuiCounter,proto3" json:"dev_eui_counter,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
 }
@@ -55,25 +56,16 @@ func (*Application) Descriptor() ([]byte, []int) {
 	return fileDescriptor_57d90136b1f4f7b1, []int{0}
 }
 func (m *Application) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_Application.Unmarshal(m, b)
 }
 func (m *Application) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Application.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_Application.Marshal(b, m, deterministic)
 }
 func (m *Application) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Application.Merge(m, src)
 }
 func (m *Application) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_Application.Size(m)
 }
 func (m *Application) XXX_DiscardUnknown() {
 	xxx_messageInfo_Application.DiscardUnknown(m)
@@ -93,6 +85,13 @@ func (m *Application) GetUpdatedAt() time.Time {
 		return m.UpdatedAt
 	}
 	return time.Time{}
+}
+
+func (m *Application) GetDeletedAt() *time.Time {
+	if m != nil {
+		return m.DeletedAt
+	}
+	return nil
 }
 
 func (m *Application) GetName() string {
@@ -123,6 +122,13 @@ func (m *Application) GetContactInfo() []*ContactInfo {
 	return nil
 }
 
+func (m *Application) GetDevEuiCounter() uint32 {
+	if m != nil {
+		return m.DevEuiCounter
+	}
+	return 0
+}
+
 type Applications struct {
 	Applications         []*Application `protobuf:"bytes,1,rep,name=applications,proto3" json:"applications,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
@@ -135,25 +141,16 @@ func (*Applications) Descriptor() ([]byte, []int) {
 	return fileDescriptor_57d90136b1f4f7b1, []int{1}
 }
 func (m *Applications) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_Applications.Unmarshal(m, b)
 }
 func (m *Applications) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Applications.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_Applications.Marshal(b, m, deterministic)
 }
 func (m *Applications) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Applications.Merge(m, src)
 }
 func (m *Applications) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_Applications.Size(m)
 }
 func (m *Applications) XXX_DiscardUnknown() {
 	xxx_messageInfo_Applications.DiscardUnknown(m)
@@ -168,39 +165,59 @@ func (m *Applications) GetApplications() []*Application {
 	return nil
 }
 
+type IssueDevEUIResponse struct {
+	DevEui               go_thethings_network_lorawan_stack_v3_pkg_types.EUI64 `protobuf:"bytes,1,opt,name=dev_eui,json=devEui,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.EUI64" json:"dev_eui"`
+	XXX_NoUnkeyedLiteral struct{}                                              `json:"-"`
+	XXX_sizecache        int32                                                 `json:"-"`
+}
+
+func (m *IssueDevEUIResponse) Reset()      { *m = IssueDevEUIResponse{} }
+func (*IssueDevEUIResponse) ProtoMessage() {}
+func (*IssueDevEUIResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_57d90136b1f4f7b1, []int{2}
+}
+func (m *IssueDevEUIResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IssueDevEUIResponse.Unmarshal(m, b)
+}
+func (m *IssueDevEUIResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IssueDevEUIResponse.Marshal(b, m, deterministic)
+}
+func (m *IssueDevEUIResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IssueDevEUIResponse.Merge(m, src)
+}
+func (m *IssueDevEUIResponse) XXX_Size() int {
+	return xxx_messageInfo_IssueDevEUIResponse.Size(m)
+}
+func (m *IssueDevEUIResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_IssueDevEUIResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IssueDevEUIResponse proto.InternalMessageInfo
+
 type GetApplicationRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
 	// The names of the application fields that should be returned.
-	FieldMask            types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	FieldMask            *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *GetApplicationRequest) Reset()      { *m = GetApplicationRequest{} }
 func (*GetApplicationRequest) ProtoMessage() {}
 func (*GetApplicationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{2}
+	return fileDescriptor_57d90136b1f4f7b1, []int{3}
 }
 func (m *GetApplicationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetApplicationRequest.Unmarshal(m, b)
 }
 func (m *GetApplicationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetApplicationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetApplicationRequest.Marshal(b, m, deterministic)
 }
 func (m *GetApplicationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetApplicationRequest.Merge(m, src)
 }
 func (m *GetApplicationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetApplicationRequest.Size(m)
 }
 func (m *GetApplicationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetApplicationRequest.DiscardUnknown(m)
@@ -208,11 +225,11 @@ func (m *GetApplicationRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetApplicationRequest proto.InternalMessageInfo
 
-func (m *GetApplicationRequest) GetFieldMask() types.FieldMask {
+func (m *GetApplicationRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type ListApplicationsRequest struct {
@@ -221,14 +238,16 @@ type ListApplicationsRequest struct {
 	// where the user or organization is collaborator on.
 	Collaborator *OrganizationOrUserIdentifiers `protobuf:"bytes,1,opt,name=collaborator,proto3" json:"collaborator,omitempty"`
 	// The names of the application fields that should be returned.
-	FieldMask types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
+	FieldMask *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
 	// Order the results by this field path (must be present in the field mask).
 	// Default ordering is by ID. Prepend with a minus (-) to reverse the order.
 	Order string `protobuf:"bytes,3,opt,name=order,proto3" json:"order,omitempty"`
 	// Limit the number of results per page.
 	Limit uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	// Page number for pagination. 0 is interpreted as 1.
-	Page                 uint32   `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	Page uint32 `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	// Only return recently deleted applications.
+	Deleted              bool     `protobuf:"varint,6,opt,name=deleted,proto3" json:"deleted,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
@@ -236,28 +255,19 @@ type ListApplicationsRequest struct {
 func (m *ListApplicationsRequest) Reset()      { *m = ListApplicationsRequest{} }
 func (*ListApplicationsRequest) ProtoMessage() {}
 func (*ListApplicationsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{3}
+	return fileDescriptor_57d90136b1f4f7b1, []int{4}
 }
 func (m *ListApplicationsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListApplicationsRequest.Unmarshal(m, b)
 }
 func (m *ListApplicationsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListApplicationsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListApplicationsRequest.Marshal(b, m, deterministic)
 }
 func (m *ListApplicationsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListApplicationsRequest.Merge(m, src)
 }
 func (m *ListApplicationsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListApplicationsRequest.Size(m)
 }
 func (m *ListApplicationsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListApplicationsRequest.DiscardUnknown(m)
@@ -272,11 +282,11 @@ func (m *ListApplicationsRequest) GetCollaborator() *OrganizationOrUserIdentifie
 	return nil
 }
 
-func (m *ListApplicationsRequest) GetFieldMask() types.FieldMask {
+func (m *ListApplicationsRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 func (m *ListApplicationsRequest) GetOrder() string {
@@ -300,6 +310,13 @@ func (m *ListApplicationsRequest) GetPage() uint32 {
 	return 0
 }
 
+func (m *ListApplicationsRequest) GetDeleted() bool {
+	if m != nil {
+		return m.Deleted
+	}
+	return false
+}
+
 type CreateApplicationRequest struct {
 	Application `protobuf:"bytes,1,opt,name=application,proto3,embedded=application" json:"application"`
 	// Collaborator to grant all rights on the newly created application.
@@ -311,28 +328,19 @@ type CreateApplicationRequest struct {
 func (m *CreateApplicationRequest) Reset()      { *m = CreateApplicationRequest{} }
 func (*CreateApplicationRequest) ProtoMessage() {}
 func (*CreateApplicationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{4}
+	return fileDescriptor_57d90136b1f4f7b1, []int{5}
 }
 func (m *CreateApplicationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CreateApplicationRequest.Unmarshal(m, b)
 }
 func (m *CreateApplicationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CreateApplicationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CreateApplicationRequest.Marshal(b, m, deterministic)
 }
 func (m *CreateApplicationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CreateApplicationRequest.Merge(m, src)
 }
 func (m *CreateApplicationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CreateApplicationRequest.Size(m)
 }
 func (m *CreateApplicationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CreateApplicationRequest.DiscardUnknown(m)
@@ -350,36 +358,27 @@ func (m *CreateApplicationRequest) GetCollaborator() OrganizationOrUserIdentifie
 type UpdateApplicationRequest struct {
 	Application `protobuf:"bytes,1,opt,name=application,proto3,embedded=application" json:"application"`
 	// The names of the application fields that should be updated.
-	FieldMask            types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	FieldMask            *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UpdateApplicationRequest) Reset()      { *m = UpdateApplicationRequest{} }
 func (*UpdateApplicationRequest) ProtoMessage() {}
 func (*UpdateApplicationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{5}
+	return fileDescriptor_57d90136b1f4f7b1, []int{6}
 }
 func (m *UpdateApplicationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_UpdateApplicationRequest.Unmarshal(m, b)
 }
 func (m *UpdateApplicationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateApplicationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_UpdateApplicationRequest.Marshal(b, m, deterministic)
 }
 func (m *UpdateApplicationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UpdateApplicationRequest.Merge(m, src)
 }
 func (m *UpdateApplicationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_UpdateApplicationRequest.Size(m)
 }
 func (m *UpdateApplicationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_UpdateApplicationRequest.DiscardUnknown(m)
@@ -387,11 +386,11 @@ func (m *UpdateApplicationRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UpdateApplicationRequest proto.InternalMessageInfo
 
-func (m *UpdateApplicationRequest) GetFieldMask() types.FieldMask {
+func (m *UpdateApplicationRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type ListApplicationAPIKeysRequest struct {
@@ -407,28 +406,19 @@ type ListApplicationAPIKeysRequest struct {
 func (m *ListApplicationAPIKeysRequest) Reset()      { *m = ListApplicationAPIKeysRequest{} }
 func (*ListApplicationAPIKeysRequest) ProtoMessage() {}
 func (*ListApplicationAPIKeysRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{6}
+	return fileDescriptor_57d90136b1f4f7b1, []int{7}
 }
 func (m *ListApplicationAPIKeysRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListApplicationAPIKeysRequest.Unmarshal(m, b)
 }
 func (m *ListApplicationAPIKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListApplicationAPIKeysRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListApplicationAPIKeysRequest.Marshal(b, m, deterministic)
 }
 func (m *ListApplicationAPIKeysRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListApplicationAPIKeysRequest.Merge(m, src)
 }
 func (m *ListApplicationAPIKeysRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListApplicationAPIKeysRequest.Size(m)
 }
 func (m *ListApplicationAPIKeysRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListApplicationAPIKeysRequest.DiscardUnknown(m)
@@ -453,7 +443,7 @@ func (m *ListApplicationAPIKeysRequest) GetPage() uint32 {
 type GetApplicationAPIKeyRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
 	// Unique public identifier for the API key.
-	KeyID                string   `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	KeyId                string   `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
@@ -461,28 +451,19 @@ type GetApplicationAPIKeyRequest struct {
 func (m *GetApplicationAPIKeyRequest) Reset()      { *m = GetApplicationAPIKeyRequest{} }
 func (*GetApplicationAPIKeyRequest) ProtoMessage() {}
 func (*GetApplicationAPIKeyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{7}
+	return fileDescriptor_57d90136b1f4f7b1, []int{8}
 }
 func (m *GetApplicationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetApplicationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *GetApplicationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetApplicationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetApplicationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *GetApplicationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetApplicationAPIKeyRequest.Merge(m, src)
 }
 func (m *GetApplicationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetApplicationAPIKeyRequest.Size(m)
 }
 func (m *GetApplicationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetApplicationAPIKeyRequest.DiscardUnknown(m)
@@ -490,46 +471,38 @@ func (m *GetApplicationAPIKeyRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetApplicationAPIKeyRequest proto.InternalMessageInfo
 
-func (m *GetApplicationAPIKeyRequest) GetKeyID() string {
+func (m *GetApplicationAPIKeyRequest) GetKeyId() string {
 	if m != nil {
-		return m.KeyID
+		return m.KeyId
 	}
 	return ""
 }
 
 type CreateApplicationAPIKeyRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
-	Name                   string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Rights                 []Right  `protobuf:"varint,3,rep,packed,name=rights,proto3,enum=ttn.lorawan.v3.Right" json:"rights,omitempty"`
-	XXX_NoUnkeyedLiteral   struct{} `json:"-"`
-	XXX_sizecache          int32    `json:"-"`
+	Name                   string     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Rights                 []Right    `protobuf:"varint,3,rep,packed,name=rights,proto3,enum=ttn.lorawan.v3.Right" json:"rights,omitempty"`
+	ExpiresAt              *time.Time `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,stdtime" json:"expires_at,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}   `json:"-"`
+	XXX_sizecache          int32      `json:"-"`
 }
 
 func (m *CreateApplicationAPIKeyRequest) Reset()      { *m = CreateApplicationAPIKeyRequest{} }
 func (*CreateApplicationAPIKeyRequest) ProtoMessage() {}
 func (*CreateApplicationAPIKeyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{8}
+	return fileDescriptor_57d90136b1f4f7b1, []int{9}
 }
 func (m *CreateApplicationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CreateApplicationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *CreateApplicationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CreateApplicationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CreateApplicationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *CreateApplicationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CreateApplicationAPIKeyRequest.Merge(m, src)
 }
 func (m *CreateApplicationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CreateApplicationAPIKeyRequest.Size(m)
 }
 func (m *CreateApplicationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CreateApplicationAPIKeyRequest.DiscardUnknown(m)
@@ -551,44 +524,51 @@ func (m *CreateApplicationAPIKeyRequest) GetRights() []Right {
 	return nil
 }
 
+func (m *CreateApplicationAPIKeyRequest) GetExpiresAt() *time.Time {
+	if m != nil {
+		return m.ExpiresAt
+	}
+	return nil
+}
+
 type UpdateApplicationAPIKeyRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
 	APIKey                 `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3,embedded=api_key" json:"api_key"`
-	XXX_NoUnkeyedLiteral   struct{} `json:"-"`
-	XXX_sizecache          int32    `json:"-"`
+	// The names of the api key fields that should be updated.
+	FieldMask            *types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UpdateApplicationAPIKeyRequest) Reset()      { *m = UpdateApplicationAPIKeyRequest{} }
 func (*UpdateApplicationAPIKeyRequest) ProtoMessage() {}
 func (*UpdateApplicationAPIKeyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{9}
+	return fileDescriptor_57d90136b1f4f7b1, []int{10}
 }
 func (m *UpdateApplicationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_UpdateApplicationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *UpdateApplicationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateApplicationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_UpdateApplicationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *UpdateApplicationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UpdateApplicationAPIKeyRequest.Merge(m, src)
 }
 func (m *UpdateApplicationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_UpdateApplicationAPIKeyRequest.Size(m)
 }
 func (m *UpdateApplicationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_UpdateApplicationAPIKeyRequest.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdateApplicationAPIKeyRequest proto.InternalMessageInfo
+
+func (m *UpdateApplicationAPIKeyRequest) GetFieldMask() *types.FieldMask {
+	if m != nil {
+		return m.FieldMask
+	}
+	return nil
+}
 
 type ListApplicationCollaboratorsRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
@@ -603,28 +583,19 @@ type ListApplicationCollaboratorsRequest struct {
 func (m *ListApplicationCollaboratorsRequest) Reset()      { *m = ListApplicationCollaboratorsRequest{} }
 func (*ListApplicationCollaboratorsRequest) ProtoMessage() {}
 func (*ListApplicationCollaboratorsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{10}
+	return fileDescriptor_57d90136b1f4f7b1, []int{11}
 }
 func (m *ListApplicationCollaboratorsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListApplicationCollaboratorsRequest.Unmarshal(m, b)
 }
 func (m *ListApplicationCollaboratorsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListApplicationCollaboratorsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListApplicationCollaboratorsRequest.Marshal(b, m, deterministic)
 }
 func (m *ListApplicationCollaboratorsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListApplicationCollaboratorsRequest.Merge(m, src)
 }
 func (m *ListApplicationCollaboratorsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListApplicationCollaboratorsRequest.Size(m)
 }
 func (m *ListApplicationCollaboratorsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListApplicationCollaboratorsRequest.DiscardUnknown(m)
@@ -656,28 +627,19 @@ type GetApplicationCollaboratorRequest struct {
 func (m *GetApplicationCollaboratorRequest) Reset()      { *m = GetApplicationCollaboratorRequest{} }
 func (*GetApplicationCollaboratorRequest) ProtoMessage() {}
 func (*GetApplicationCollaboratorRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{11}
+	return fileDescriptor_57d90136b1f4f7b1, []int{12}
 }
 func (m *GetApplicationCollaboratorRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetApplicationCollaboratorRequest.Unmarshal(m, b)
 }
 func (m *GetApplicationCollaboratorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetApplicationCollaboratorRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetApplicationCollaboratorRequest.Marshal(b, m, deterministic)
 }
 func (m *GetApplicationCollaboratorRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetApplicationCollaboratorRequest.Merge(m, src)
 }
 func (m *GetApplicationCollaboratorRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetApplicationCollaboratorRequest.Size(m)
 }
 func (m *GetApplicationCollaboratorRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetApplicationCollaboratorRequest.DiscardUnknown(m)
@@ -695,28 +657,19 @@ type SetApplicationCollaboratorRequest struct {
 func (m *SetApplicationCollaboratorRequest) Reset()      { *m = SetApplicationCollaboratorRequest{} }
 func (*SetApplicationCollaboratorRequest) ProtoMessage() {}
 func (*SetApplicationCollaboratorRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_57d90136b1f4f7b1, []int{12}
+	return fileDescriptor_57d90136b1f4f7b1, []int{13}
 }
 func (m *SetApplicationCollaboratorRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_SetApplicationCollaboratorRequest.Unmarshal(m, b)
 }
 func (m *SetApplicationCollaboratorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SetApplicationCollaboratorRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_SetApplicationCollaboratorRequest.Marshal(b, m, deterministic)
 }
 func (m *SetApplicationCollaboratorRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SetApplicationCollaboratorRequest.Merge(m, src)
 }
 func (m *SetApplicationCollaboratorRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_SetApplicationCollaboratorRequest.Size(m)
 }
 func (m *SetApplicationCollaboratorRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_SetApplicationCollaboratorRequest.DiscardUnknown(m)
@@ -738,6 +691,8 @@ func init() {
 	golang_proto.RegisterMapType((map[string]string)(nil), "ttn.lorawan.v3.Application.AttributesEntry")
 	proto.RegisterType((*Applications)(nil), "ttn.lorawan.v3.Applications")
 	golang_proto.RegisterType((*Applications)(nil), "ttn.lorawan.v3.Applications")
+	proto.RegisterType((*IssueDevEUIResponse)(nil), "ttn.lorawan.v3.IssueDevEUIResponse")
+	golang_proto.RegisterType((*IssueDevEUIResponse)(nil), "ttn.lorawan.v3.IssueDevEUIResponse")
 	proto.RegisterType((*GetApplicationRequest)(nil), "ttn.lorawan.v3.GetApplicationRequest")
 	golang_proto.RegisterType((*GetApplicationRequest)(nil), "ttn.lorawan.v3.GetApplicationRequest")
 	proto.RegisterType((*ListApplicationsRequest)(nil), "ttn.lorawan.v3.ListApplicationsRequest")
@@ -770,77 +725,82 @@ func init() {
 }
 
 var fileDescriptor_57d90136b1f4f7b1 = []byte{
-	// 1112 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x57, 0x4b, 0x6c, 0x1b, 0x45,
-	0x18, 0xde, 0xf1, 0x23, 0xa9, 0xc7, 0x79, 0x69, 0x45, 0x61, 0x95, 0xc0, 0xc4, 0xdd, 0x46, 0x55,
-	0x5a, 0xba, 0x6b, 0xe4, 0x5c, 0xa0, 0x02, 0x22, 0x6f, 0x78, 0xc8, 0x04, 0x1a, 0x58, 0xe8, 0x85,
-	0xaa, 0x58, 0x63, 0xef, 0x78, 0x33, 0xb2, 0xbd, 0xbb, 0xec, 0x8e, 0x53, 0x5c, 0x84, 0x54, 0x71,
-	0xaa, 0x38, 0x55, 0x9c, 0x10, 0x27, 0x84, 0x04, 0xea, 0x81, 0x43, 0x4f, 0xa8, 0x12, 0x1c, 0x7a,
-	0x82, 0x1c, 0x38, 0xe4, 0x84, 0x7a, 0x0a, 0xf5, 0xfa, 0x12, 0x89, 0x4b, 0x8f, 0x95, 0x4f, 0x68,
-	0x67, 0xd7, 0xf5, 0xfa, 0x41, 0x24, 0x68, 0x65, 0xf5, 0x94, 0x99, 0xd9, 0xef, 0xff, 0xfe, 0xef,
-	0x9f, 0xf9, 0xbf, 0x19, 0x07, 0x9e, 0x6e, 0xd8, 0x2e, 0xbe, 0x8a, 0x2d, 0xc5, 0x63, 0xb8, 0x5a,
-	0xcf, 0x63, 0x87, 0xe6, 0xb1, 0xe3, 0x34, 0x68, 0x15, 0x33, 0x6a, 0x5b, 0xaa, 0xe3, 0xda, 0xcc,
-	0x16, 0x17, 0x18, 0xb3, 0xd4, 0x08, 0xa8, 0xee, 0x6d, 0x2c, 0x17, 0x4d, 0xca, 0x76, 0x5b, 0x15,
-	0xb5, 0x6a, 0x37, 0xf3, 0xc4, 0xda, 0xb3, 0xdb, 0x8e, 0x6b, 0x7f, 0xd6, 0xce, 0x73, 0x70, 0x55,
-	0x31, 0x89, 0xa5, 0xec, 0xe1, 0x06, 0x35, 0x30, 0x23, 0xf9, 0xb1, 0x41, 0x48, 0xb9, 0xac, 0xc4,
-	0x28, 0x4c, 0xdb, 0xb4, 0xc3, 0xe0, 0x4a, 0xab, 0xc6, 0x67, 0x7c, 0xc2, 0x47, 0x11, 0x3c, 0x67,
-	0xda, 0xb6, 0xd9, 0x20, 0x03, 0x54, 0x8d, 0x92, 0x86, 0x51, 0x6e, 0x62, 0xaf, 0x1e, 0x21, 0x56,
-	0x47, 0x11, 0x8c, 0x36, 0x89, 0xc7, 0x70, 0xd3, 0x89, 0x00, 0x6b, 0xe3, 0x95, 0x56, 0x6d, 0x8b,
-	0xe1, 0x2a, 0x2b, 0x53, 0xab, 0xd6, 0x4f, 0x34, 0x61, 0x3f, 0xa8, 0x41, 0x2c, 0x46, 0x6b, 0x94,
-	0xb8, 0x5e, 0x04, 0x42, 0xe3, 0x20, 0x97, 0x9a, 0xbb, 0x2c, 0xfa, 0x2e, 0xff, 0x98, 0x82, 0xd9,
-	0xe2, 0x60, 0x17, 0xc5, 0x77, 0x60, 0x92, 0x1a, 0x9e, 0x04, 0x72, 0x60, 0x3d, 0x5b, 0x38, 0xa3,
-	0x0e, 0xef, 0xa6, 0x1a, 0x43, 0x96, 0x06, 0xa9, 0xb4, 0xa5, 0x9e, 0x96, 0xfe, 0x0a, 0x24, 0x96,
-	0xc0, 0xfe, 0xe1, 0xaa, 0x70, 0x70, 0xb8, 0x0a, 0xf4, 0x80, 0x44, 0xdc, 0x82, 0xb0, 0xea, 0x12,
-	0xcc, 0x88, 0x51, 0xc6, 0x4c, 0x4a, 0x70, 0xca, 0x65, 0x35, 0x2c, 0x5e, 0xed, 0x17, 0xaf, 0x7e,
-	0xd4, 0x2f, 0x5e, 0x3b, 0x11, 0x84, 0xdf, 0xfc, 0x6b, 0x15, 0xe8, 0x99, 0x28, 0xae, 0xc8, 0x02,
-	0x92, 0x96, 0x63, 0xf4, 0x49, 0x92, 0xff, 0x85, 0x24, 0x8a, 0x2b, 0x32, 0x71, 0x05, 0xa6, 0x2c,
-	0xdc, 0x24, 0x52, 0x2a, 0x07, 0xd6, 0x33, 0xda, 0x6c, 0x4f, 0x4b, 0xb9, 0x09, 0xa9, 0xa0, 0xf3,
-	0x45, 0xf1, 0x1c, 0xcc, 0x1a, 0xc4, 0xab, 0xba, 0xd4, 0x09, 0xea, 0x92, 0xd2, 0x1c, 0x73, 0xa2,
-	0xa7, 0xa5, 0xdd, 0xa4, 0x74, 0xb0, 0xa8, 0xc7, 0x3f, 0x8a, 0x6d, 0x08, 0x31, 0x63, 0x2e, 0xad,
-	0xb4, 0x18, 0xf1, 0xa4, 0x99, 0x5c, 0x72, 0x3d, 0x5b, 0x78, 0xf1, 0x98, 0x5d, 0x52, 0x8b, 0x8f,
-	0xd0, 0x6f, 0x5a, 0xcc, 0x6d, 0x6b, 0xe7, 0x7b, 0xda, 0xd9, 0x6f, 0xc1, 0x19, 0x79, 0xcd, 0x95,
-	0xa5, 0xb5, 0x02, 0xfa, 0xe4, 0x32, 0x56, 0xae, 0xbd, 0xa4, 0xbc, 0x72, 0x65, 0x7d, 0xf3, 0xc2,
-	0x65, 0xe5, 0xca, 0x66, 0x7f, 0x7a, 0xf6, 0xf3, 0xc2, 0xf9, 0x2f, 0xd6, 0xf4, 0x58, 0x32, 0xf1,
-	0x75, 0x38, 0x17, 0x6f, 0x02, 0x69, 0x96, 0x27, 0x5f, 0x19, 0x4d, 0xbe, 0x15, 0x62, 0x4a, 0x56,
-	0xcd, 0xd6, 0xb3, 0xd5, 0xc1, 0x64, 0xf9, 0x35, 0xb8, 0x38, 0x22, 0x46, 0x5c, 0x82, 0xc9, 0x3a,
-	0x69, 0xf3, 0xc3, 0xce, 0xe8, 0xc1, 0x50, 0x7c, 0x06, 0xa6, 0xf7, 0x70, 0xa3, 0x45, 0xf8, 0x69,
-	0x65, 0xf4, 0x70, 0x72, 0x21, 0xf1, 0x32, 0x90, 0x77, 0xe0, 0x5c, 0xac, 0x2e, 0x4f, 0xdc, 0x84,
-	0x73, 0x31, 0xf7, 0x05, 0x1d, 0x33, 0x51, 0x4e, 0x2c, 0x46, 0x1f, 0x0a, 0x90, 0x7f, 0x01, 0xf0,
-	0xe4, 0xdb, 0x84, 0xc5, 0x01, 0xe4, 0xd3, 0x16, 0xf1, 0x98, 0x88, 0xe1, 0x62, 0x0c, 0x59, 0x7e,
-	0x12, 0xfd, 0xb8, 0x80, 0xe3, 0xc8, 0x40, 0x3d, 0x1c, 0xd8, 0xf2, 0x5f, 0x5b, 0xf3, 0xad, 0x00,
-	0xf2, 0x1e, 0xf6, 0xea, 0x5a, 0x2a, 0x60, 0xd2, 0x33, 0xb5, 0xfe, 0x82, 0xfc, 0x7b, 0x02, 0x3e,
-	0xf7, 0x2e, 0xf5, 0xe2, 0xf2, 0xbd, 0xbe, 0xfe, 0x0f, 0x82, 0x93, 0x6a, 0x34, 0x70, 0xc5, 0x76,
-	0x31, 0xb3, 0xdd, 0x48, 0xbc, 0x32, 0x2a, 0x7e, 0xc7, 0x35, 0xb1, 0x45, 0xaf, 0xf1, 0xd8, 0x1d,
-	0xf7, 0x92, 0x47, 0xdc, 0x58, 0x0d, 0xfa, 0x10, 0xc5, 0x63, 0xeb, 0x15, 0x0d, 0x98, 0xb6, 0x5d,
-	0x83, 0xb8, 0xdc, 0x41, 0x19, 0xed, 0x62, 0x4f, 0xdb, 0x76, 0x4b, 0xba, 0x30, 0xb4, 0x31, 0x65,
-	0x6a, 0xe8, 0x8b, 0xca, 0xc8, 0x02, 0xf7, 0x88, 0x9e, 0x56, 0xf8, 0x9f, 0x98, 0x9f, 0xf5, 0xac,
-	0x12, 0x9b, 0x84, 0xe4, 0x22, 0x82, 0xe9, 0x06, 0x6d, 0x52, 0xc6, 0x8d, 0x36, 0xcf, 0x4d, 0x74,
-	0x2e, 0x29, 0x1d, 0xcd, 0xea, 0xe1, 0xb2, 0x28, 0xc2, 0x94, 0x83, 0x4d, 0xc2, 0x3d, 0x36, 0xaf,
-	0xf3, 0xb1, 0xfc, 0x07, 0x80, 0xd2, 0x16, 0x67, 0x9a, 0xd0, 0x0a, 0x3b, 0x30, 0x1b, 0xd3, 0x13,
-	0xed, 0xe4, 0x71, 0x4d, 0x36, 0xe1, 0xec, 0xe3, 0x0c, 0x62, 0x79, 0xe4, 0x6c, 0x12, 0xff, 0xe3,
-	0x6c, 0xb4, 0xb9, 0x78, 0x8e, 0xe1, 0x93, 0x92, 0x7f, 0x02, 0x50, 0xba, 0xc4, 0x2f, 0x9e, 0x69,
-	0x94, 0xf3, 0xd8, 0x7d, 0xfc, 0x33, 0x80, 0x2f, 0x8c, 0xf4, 0x71, 0xf1, 0xfd, 0xd2, 0x36, 0x69,
-	0x7b, 0x53, 0x74, 0xe3, 0xa3, 0xb6, 0x49, 0x1c, 0xdf, 0x36, 0xc9, 0x58, 0xdb, 0x7c, 0x0f, 0xe0,
-	0xca, 0xf0, 0xf5, 0x11, 0xea, 0x9e, 0xa2, 0xec, 0x1c, 0x9c, 0xa9, 0x93, 0x76, 0x99, 0x1a, 0xe1,
-	0x6d, 0xa9, 0x65, 0xfc, 0xc3, 0xd5, 0xf4, 0x36, 0x69, 0x97, 0xde, 0xd0, 0xd3, 0x75, 0xd2, 0x2e,
-	0x19, 0xf2, 0x21, 0x80, 0x68, 0xac, 0xb7, 0xa7, 0xae, 0xb3, 0xff, 0xfa, 0x25, 0x26, 0xbd, 0x7e,
-	0xaf, 0xc2, 0x99, 0xf0, 0x07, 0x81, 0x94, 0xcc, 0x25, 0xd7, 0x17, 0x0a, 0x27, 0x47, 0xd3, 0xea,
-	0xc1, 0x57, 0x6d, 0xbe, 0xa7, 0xc1, 0xaf, 0xc1, 0xac, 0x9c, 0xfe, 0x32, 0x48, 0xa5, 0x47, 0x31,
-	0xf2, 0x6f, 0x00, 0xa2, 0xb1, 0x6e, 0x9f, 0x7a, 0x81, 0x45, 0x38, 0x8b, 0x1d, 0x5a, 0x0e, 0xde,
-	0xb2, 0xd0, 0x02, 0xcf, 0x8e, 0x51, 0x73, 0x49, 0x13, 0xa8, 0x66, 0xb0, 0x43, 0xb7, 0x49, 0x5b,
-	0xfe, 0x15, 0xc0, 0xd3, 0x23, 0x3e, 0xd8, 0x8a, 0xd9, 0xfa, 0x69, 0x77, 0xc3, 0xdf, 0x00, 0x9e,
-	0x1a, 0x76, 0x43, 0x5c, 0xfd, 0x14, 0xc5, 0x57, 0x9f, 0xc4, 0xfd, 0x3a, 0x9e, 0x66, 0xf8, 0x8e,
-	0xfd, 0x13, 0xc0, 0x53, 0x1f, 0x3e, 0x0d, 0xd5, 0x5e, 0x9c, 0x58, 0xed, 0xf3, 0xe3, 0xbf, 0xc9,
-	0x06, 0x98, 0xe3, 0x1e, 0x0f, 0xed, 0x07, 0xb0, 0xdf, 0x41, 0xe0, 0xa0, 0x83, 0xc0, 0xbd, 0x0e,
-	0x12, 0xee, 0x77, 0x90, 0x70, 0xd4, 0x41, 0xc2, 0x83, 0x0e, 0x12, 0x1e, 0x76, 0x10, 0xb8, 0xee,
-	0x23, 0x70, 0xc3, 0x47, 0xc2, 0x2d, 0x1f, 0x81, 0xdb, 0x3e, 0x12, 0xee, 0xf8, 0x48, 0xb8, 0xeb,
-	0x23, 0x61, 0xdf, 0x47, 0xe0, 0xc0, 0x47, 0xe0, 0x9e, 0x8f, 0x84, 0xfb, 0x3e, 0x02, 0x47, 0x3e,
-	0x12, 0x1e, 0xf8, 0x08, 0x3c, 0xf4, 0x91, 0x70, 0xbd, 0x8b, 0x84, 0x1b, 0x5d, 0x04, 0x6e, 0x76,
-	0x91, 0xf0, 0x4d, 0x17, 0x81, 0xef, 0xba, 0x48, 0xb8, 0xd5, 0x45, 0xc2, 0xed, 0x2e, 0x02, 0x77,
-	0xba, 0x08, 0xdc, 0xed, 0x22, 0xf0, 0x71, 0xde, 0xb4, 0x55, 0xb6, 0x4b, 0xd8, 0x2e, 0xb5, 0x4c,
-	0x4f, 0xb5, 0x08, 0xbb, 0x6a, 0xbb, 0xf5, 0xfc, 0xf0, 0x7f, 0x0e, 0x7b, 0x1b, 0x79, 0xa7, 0x6e,
-	0xe6, 0x19, 0xb3, 0x9c, 0x4a, 0x65, 0x86, 0x3f, 0x2d, 0x1b, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff,
-	0x18, 0xe1, 0xfc, 0x74, 0x93, 0x0d, 0x00, 0x00,
+	// 1197 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0x3d, 0x8c, 0x1b, 0x45,
+	0x14, 0xf6, 0xac, 0x7f, 0xee, 0x3c, 0xbe, 0x3f, 0x16, 0x02, 0xab, 0x0b, 0xac, 0x9d, 0xcd, 0x29,
+	0x32, 0x01, 0xaf, 0x91, 0x43, 0x10, 0x89, 0x14, 0x5d, 0xbc, 0xc7, 0x11, 0x4c, 0x20, 0x07, 0x03,
+	0x47, 0x41, 0x14, 0xac, 0xb1, 0x77, 0xbc, 0x37, 0xb2, 0xbd, 0xbb, 0xcc, 0x8e, 0x9d, 0x38, 0x08,
+	0x09, 0x52, 0x52, 0x45, 0x69, 0x90, 0xa8, 0x52, 0x21, 0x10, 0x1d, 0x12, 0x88, 0x82, 0x82, 0x32,
+	0x05, 0x45, 0x2a, 0x84, 0x40, 0x0a, 0x70, 0xd7, 0x44, 0xa2, 0xa1, 0x76, 0x85, 0x76, 0x76, 0x1d,
+	0xaf, 0x7f, 0xb8, 0xe8, 0x48, 0x64, 0xa5, 0xf2, 0xcc, 0xf8, 0x7b, 0xef, 0x7d, 0xef, 0xed, 0xf7,
+	0xde, 0x0c, 0x3c, 0xda, 0x72, 0x18, 0xbe, 0x8c, 0xed, 0x82, 0xc7, 0x71, 0xbd, 0x59, 0xc4, 0x2e,
+	0x2d, 0x62, 0xd7, 0x6d, 0xd1, 0x3a, 0xe6, 0xd4, 0xb1, 0x75, 0x97, 0x39, 0xdc, 0x91, 0x97, 0x38,
+	0xb7, 0xf5, 0x10, 0xa8, 0x77, 0x4f, 0xac, 0x96, 0x2d, 0xca, 0x77, 0x3a, 0x35, 0xbd, 0xee, 0xb4,
+	0x8b, 0xc4, 0xee, 0x3a, 0x3d, 0x97, 0x39, 0x57, 0x7a, 0x45, 0x01, 0xae, 0x17, 0x2c, 0x62, 0x17,
+	0xba, 0xb8, 0x45, 0x4d, 0xcc, 0x49, 0x71, 0x62, 0x11, 0xb8, 0x5c, 0x2d, 0x44, 0x5c, 0x58, 0x8e,
+	0xe5, 0x04, 0xc6, 0xb5, 0x4e, 0x43, 0xec, 0xc4, 0x46, 0xac, 0x42, 0x78, 0xce, 0x72, 0x1c, 0xab,
+	0x45, 0x86, 0xa8, 0x06, 0x25, 0x2d, 0xb3, 0xda, 0xc6, 0x5e, 0x33, 0x44, 0x64, 0xc7, 0x11, 0x9c,
+	0xb6, 0x89, 0xc7, 0x71, 0xdb, 0x0d, 0x01, 0x6b, 0x93, 0x99, 0xd6, 0x1d, 0x9b, 0xe3, 0x3a, 0xaf,
+	0x52, 0xbb, 0x31, 0x08, 0x34, 0xa5, 0x1e, 0xd4, 0x24, 0x36, 0xa7, 0x0d, 0x4a, 0x98, 0x17, 0x82,
+	0xd4, 0x49, 0x10, 0xa3, 0xd6, 0x0e, 0x0f, 0xff, 0xd7, 0xbe, 0x4e, 0xc2, 0x4c, 0x79, 0x58, 0x45,
+	0xf9, 0x75, 0x18, 0xa7, 0xa6, 0xa7, 0x80, 0x1c, 0xc8, 0x67, 0x4a, 0xc7, 0xf4, 0xd1, 0x6a, 0xea,
+	0x11, 0x64, 0x65, 0x18, 0xca, 0x58, 0xe9, 0x1b, 0xc9, 0xcf, 0x80, 0xb4, 0x02, 0x6e, 0xdd, 0xc9,
+	0xc6, 0x6e, 0xdf, 0xc9, 0x02, 0xe4, 0x3b, 0x91, 0x37, 0x20, 0xac, 0x33, 0x82, 0x39, 0x31, 0xab,
+	0x98, 0x2b, 0x92, 0x70, 0xb9, 0xaa, 0x07, 0xc9, 0xeb, 0x83, 0xe4, 0xf5, 0x77, 0x07, 0xc9, 0x1b,
+	0xf3, 0xbe, 0xf9, 0xf5, 0x3f, 0xb2, 0x00, 0xa5, 0x43, 0xbb, 0x32, 0xf7, 0x9d, 0x74, 0x5c, 0x73,
+	0xe0, 0x24, 0x7e, 0x10, 0x27, 0xa1, 0x5d, 0x99, 0xcb, 0xeb, 0x10, 0x9a, 0xa4, 0x45, 0x42, 0x27,
+	0xf3, 0xf7, 0x75, 0x92, 0x08, 0x1c, 0x84, 0x36, 0x65, 0x2e, 0x1f, 0x86, 0x09, 0x1b, 0xb7, 0x89,
+	0x92, 0xc8, 0x81, 0x7c, 0xda, 0x98, 0xeb, 0x1b, 0x09, 0x26, 0x29, 0x25, 0x24, 0x0e, 0xe5, 0xe3,
+	0x30, 0x63, 0x12, 0xaf, 0xce, 0xa8, 0xeb, 0x17, 0x46, 0x49, 0x0a, 0xcc, 0x7c, 0xdf, 0x48, 0xb2,
+	0xb8, 0x72, 0x7b, 0x19, 0x45, 0xff, 0x94, 0xaf, 0x01, 0x08, 0x31, 0xe7, 0x8c, 0xd6, 0x3a, 0x9c,
+	0x78, 0x4a, 0x2a, 0x17, 0xcf, 0x67, 0x4a, 0xcf, 0xed, 0x53, 0x67, 0xbd, 0x7c, 0x0f, 0xbd, 0x69,
+	0x73, 0xd6, 0x33, 0x4e, 0xf6, 0x8d, 0xd2, 0x17, 0xa0, 0xb8, 0x02, 0xb5, 0x35, 0xa6, 0x29, 0x6b,
+	0x25, 0xf5, 0x83, 0x8b, 0xb8, 0x70, 0xf5, 0x85, 0xc2, 0xa9, 0x4b, 0xf9, 0xf5, 0xd3, 0x17, 0x0b,
+	0x97, 0xd6, 0x07, 0xdb, 0x67, 0x3f, 0x2a, 0x3d, 0xff, 0xf1, 0xda, 0x71, 0x9f, 0xc5, 0x2d, 0x80,
+	0x22, 0x51, 0xe5, 0xd7, 0xe0, 0x42, 0x54, 0x4f, 0xca, 0x9c, 0x60, 0x71, 0x78, 0x9c, 0xc5, 0x46,
+	0x80, 0xa9, 0xd8, 0x0d, 0x47, 0xa4, 0x73, 0x03, 0x48, 0x2b, 0x10, 0x65, 0xea, 0xc3, 0x63, 0xf9,
+	0x18, 0x5c, 0x36, 0x49, 0xb7, 0x4a, 0x3a, 0xb4, 0x5a, 0x77, 0x3a, 0x36, 0x27, 0x4c, 0x49, 0xe7,
+	0x40, 0x7e, 0x11, 0x2d, 0x9a, 0xa4, 0xbb, 0xd9, 0xa1, 0x1b, 0xc1, 0xe1, 0xea, 0x19, 0xb8, 0x3c,
+	0x96, 0x87, 0xbc, 0x02, 0xe3, 0x4d, 0xd2, 0x13, 0x4a, 0x4b, 0x23, 0x7f, 0x29, 0x3f, 0x01, 0x93,
+	0x5d, 0xdc, 0xea, 0x10, 0x21, 0x95, 0x34, 0x0a, 0x36, 0xa7, 0xa5, 0x97, 0xc1, 0xe9, 0xc4, 0x0f,
+	0x37, 0xb3, 0x40, 0xdb, 0x82, 0x0b, 0x91, 0xc2, 0x78, 0xf2, 0x3a, 0x5c, 0x88, 0x0c, 0x00, 0x5f,
+	0xb4, 0x53, 0xd3, 0x88, 0xd8, 0xa0, 0x11, 0x03, 0xad, 0x0d, 0x1f, 0xaf, 0x78, 0x5e, 0x87, 0xbc,
+	0x42, 0xba, 0x9b, 0xdb, 0x15, 0x44, 0x3c, 0xd7, 0xb1, 0x3d, 0x22, 0xbf, 0x07, 0xe7, 0xc2, 0xa4,
+	0x04, 0xbb, 0x05, 0xe3, 0x8c, 0xaf, 0xa9, 0xdf, 0xee, 0x64, 0x4f, 0x5a, 0x8e, 0xce, 0x77, 0x08,
+	0xdf, 0xa1, 0xb6, 0xe5, 0xe9, 0x36, 0xe1, 0x97, 0x1d, 0xd6, 0x2c, 0x8e, 0x76, 0x58, 0xf7, 0x44,
+	0xd1, 0x6d, 0x5a, 0x45, 0xde, 0x73, 0x89, 0xa7, 0x6f, 0x6e, 0x57, 0x5e, 0x7a, 0x11, 0xa5, 0x82,
+	0x5a, 0x68, 0xdf, 0x01, 0x78, 0xe8, 0x1c, 0xe1, 0x51, 0x3e, 0xe4, 0xc3, 0x0e, 0xf1, 0xb8, 0x8c,
+	0xe1, 0x72, 0x84, 0x58, 0xf5, 0x61, 0x74, 0xe0, 0x12, 0x8e, 0x22, 0x3d, 0xf9, 0x14, 0x84, 0xc3,
+	0x41, 0xf4, 0x9f, 0xcd, 0xf8, 0xaa, 0x0f, 0x79, 0x13, 0x7b, 0x4d, 0x94, 0x6e, 0x0c, 0x96, 0xda,
+	0xef, 0x12, 0x7c, 0xea, 0x0d, 0xea, 0x45, 0x89, 0x7b, 0x03, 0xe6, 0x6f, 0xfb, 0x52, 0x6a, 0xb5,
+	0x70, 0xcd, 0x61, 0x98, 0x3b, 0x2c, 0xa4, 0x5d, 0x18, 0xa7, 0xbd, 0xc5, 0x2c, 0x6c, 0xd3, 0xab,
+	0xc2, 0x76, 0x8b, 0x6d, 0x7b, 0x84, 0x45, 0xd8, 0xa3, 0x11, 0x17, 0x0f, 0xc0, 0x54, 0x36, 0x61,
+	0xd2, 0x61, 0x26, 0x61, 0x62, 0x4e, 0xa4, 0x8d, 0x0b, 0x7d, 0xe3, 0x3c, 0xab, 0xa0, 0xd8, 0x48,
+	0x31, 0xaa, 0xd4, 0x44, 0xcb, 0x85, 0xb1, 0x03, 0xd1, 0xc8, 0x28, 0x59, 0x10, 0x3f, 0x91, 0xa9,
+	0x85, 0x32, 0x85, 0xc8, 0x26, 0x70, 0x2e, 0xab, 0x30, 0xd9, 0xa2, 0x6d, 0xca, 0xc5, 0x34, 0x58,
+	0x14, 0xad, 0x71, 0x3c, 0xae, 0xdc, 0x9d, 0x43, 0xc1, 0xb1, 0x2c, 0xc3, 0x84, 0x8b, 0x2d, 0x22,
+	0x06, 0xc1, 0x22, 0x12, 0x6b, 0x59, 0xf1, 0x35, 0x25, 0xa6, 0x89, 0x92, 0xca, 0x81, 0xfc, 0x3c,
+	0x1a, 0x6c, 0xb5, 0x9f, 0x01, 0x54, 0x36, 0x44, 0x8c, 0x29, 0xc2, 0xd8, 0x82, 0x99, 0x08, 0xd3,
+	0xb0, 0xba, 0xfb, 0x29, 0x7c, 0x8a, 0x12, 0xa2, 0x1e, 0xe4, 0xea, 0xd8, 0xf7, 0x92, 0xfe, 0xc7,
+	0xf7, 0x32, 0x16, 0xa2, 0x31, 0x46, 0xbf, 0x9e, 0xf6, 0x25, 0x80, 0xca, 0xb6, 0x18, 0xbc, 0xb3,
+	0x48, 0xe7, 0x01, 0x54, 0xfd, 0x3d, 0x80, 0xcf, 0x8c, 0xa9, 0xba, 0xfc, 0x56, 0xe5, 0x3c, 0xe9,
+	0x79, 0x33, 0xec, 0xca, 0x7b, 0x52, 0x92, 0xf6, 0x97, 0x52, 0x7c, 0x28, 0x25, 0xed, 0x73, 0x00,
+	0x0f, 0x8f, 0x8e, 0x91, 0x80, 0xf7, 0x0c, 0x69, 0x1f, 0x82, 0xa9, 0x26, 0xe9, 0x55, 0xa9, 0x39,
+	0x18, 0xd5, 0x4d, 0xd2, 0xab, 0x98, 0xda, 0x37, 0x12, 0x54, 0x27, 0xa4, 0x3c, 0x73, 0x72, 0x83,
+	0xbb, 0x5a, 0x9a, 0x76, 0x57, 0x9f, 0x85, 0xa9, 0xe0, 0xfd, 0xa3, 0xc4, 0x73, 0xf1, 0xfc, 0x52,
+	0xe9, 0xd0, 0x78, 0x58, 0xe4, 0xff, 0x6b, 0x3c, 0xd6, 0x37, 0x96, 0x6e, 0x80, 0xcc, 0x3c, 0x50,
+	0x80, 0x96, 0xbc, 0xe6, 0x87, 0x43, 0xa1, 0x9d, 0x7c, 0x0e, 0x42, 0x72, 0xc5, 0xa5, 0x8c, 0x78,
+	0xfe, 0x5b, 0x22, 0x71, 0xdf, 0xb7, 0x84, 0xdf, 0x2c, 0xdf, 0x02, 0xe9, 0x2c, 0x08, 0xde, 0x14,
+	0xa1, 0x6d, 0x99, 0x6b, 0x9f, 0x4a, 0x50, 0x9d, 0xe8, 0x94, 0x99, 0x57, 0xab, 0x0c, 0xe7, 0xb0,
+	0x4b, 0xab, 0xfe, 0x55, 0x1c, 0xb4, 0xcf, 0x93, 0x13, 0xae, 0x05, 0xa5, 0x29, 0xae, 0x52, 0xd8,
+	0xa5, 0xe7, 0x49, 0x6f, 0xac, 0x09, 0xe3, 0x07, 0x69, 0xc2, 0x1f, 0x01, 0x3c, 0x3a, 0xd6, 0x84,
+	0x1b, 0x91, 0x69, 0xf2, 0xa8, 0xb7, 0xe2, 0xdf, 0x00, 0x1e, 0x19, 0x6d, 0xc5, 0x28, 0xfb, 0x19,
+	0x92, 0xaf, 0x3f, 0x8c, 0xb1, 0x3e, 0x19, 0x66, 0x74, 0xb4, 0xff, 0x02, 0xe0, 0x91, 0x77, 0x1e,
+	0x85, 0x6c, 0x2f, 0x4c, 0xcd, 0xf6, 0xe9, 0xc9, 0xf7, 0xeb, 0x10, 0xb3, 0xdf, 0x9d, 0x65, 0x6c,
+	0xff, 0xfa, 0x97, 0x1a, 0xfb, 0x64, 0x57, 0x05, 0x5f, 0xed, 0xaa, 0xe0, 0xcf, 0x5d, 0x15, 0xdc,
+	0xdd, 0x55, 0x63, 0xff, 0xec, 0xaa, 0xe0, 0xfa, 0x9e, 0x1a, 0xbb, 0xb9, 0xa7, 0xc6, 0x7e, 0xda,
+	0x53, 0xc1, 0xfb, 0xc5, 0x03, 0xbc, 0xfe, 0xb8, 0xed, 0xd6, 0x6a, 0x29, 0xa1, 0xfd, 0x13, 0xff,
+	0x06, 0x00, 0x00, 0xff, 0xff, 0xa3, 0xd1, 0x32, 0x2a, 0xb9, 0x0e, 0x00, 0x00,
 }
 
 func (this *Application) Equal(that interface{}) bool {
@@ -871,6 +831,13 @@ func (this *Application) Equal(that interface{}) bool {
 	if !this.UpdatedAt.Equal(that1.UpdatedAt) {
 		return false
 	}
+	if that1.DeletedAt == nil {
+		if this.DeletedAt != nil {
+			return false
+		}
+	} else if !this.DeletedAt.Equal(*that1.DeletedAt) {
+		return false
+	}
 	if this.Name != that1.Name {
 		return false
 	}
@@ -892,6 +859,9 @@ func (this *Application) Equal(that interface{}) bool {
 		if !this.ContactInfo[i].Equal(that1.ContactInfo[i]) {
 			return false
 		}
+	}
+	if this.DevEuiCounter != that1.DevEuiCounter {
+		return false
 	}
 	return true
 }
@@ -924,6 +894,30 @@ func (this *Applications) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *IssueDevEUIResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*IssueDevEUIResponse)
+	if !ok {
+		that2, ok := that.(IssueDevEUIResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.DevEui.Equal(that1.DevEui) {
+		return false
+	}
+	return true
+}
 func (this *GetApplicationRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -946,7 +940,7 @@ func (this *GetApplicationRequest) Equal(that interface{}) bool {
 	if !this.ApplicationIdentifiers.Equal(&that1.ApplicationIdentifiers) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -973,7 +967,7 @@ func (this *ListApplicationsRequest) Equal(that interface{}) bool {
 	if !this.Collaborator.Equal(that1.Collaborator) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	if this.Order != that1.Order {
@@ -983,6 +977,9 @@ func (this *ListApplicationsRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Page != that1.Page {
+		return false
+	}
+	if this.Deleted != that1.Deleted {
 		return false
 	}
 	return true
@@ -1036,7 +1033,7 @@ func (this *UpdateApplicationRequest) Equal(that interface{}) bool {
 	if !this.Application.Equal(&that1.Application) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1093,7 +1090,7 @@ func (this *GetApplicationAPIKeyRequest) Equal(that interface{}) bool {
 	if !this.ApplicationIdentifiers.Equal(&that1.ApplicationIdentifiers) {
 		return false
 	}
-	if this.KeyID != that1.KeyID {
+	if this.KeyId != that1.KeyId {
 		return false
 	}
 	return true
@@ -1131,6 +1128,13 @@ func (this *CreateApplicationAPIKeyRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if that1.ExpiresAt == nil {
+		if this.ExpiresAt != nil {
+			return false
+		}
+	} else if !this.ExpiresAt.Equal(*that1.ExpiresAt) {
+		return false
+	}
 	return true
 }
 func (this *UpdateApplicationAPIKeyRequest) Equal(that interface{}) bool {
@@ -1156,6 +1160,9 @@ func (this *UpdateApplicationAPIKeyRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.APIKey.Equal(&that1.APIKey) {
+		return false
+	}
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1244,654 +1251,6 @@ func (this *SetApplicationCollaboratorRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (m *Application) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Application) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Application) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ContactInfo) > 0 {
-		for iNdEx := len(m.ContactInfo) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ContactInfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintApplication(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if len(m.Attributes) > 0 {
-		for k := range m.Attributes {
-			v := m.Attributes[k]
-			baseI := i
-			i -= len(v)
-			copy(dAtA[i:], v)
-			i = encodeVarintApplication(dAtA, i, uint64(len(v)))
-			i--
-			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintApplication(dAtA, i, uint64(len(k)))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintApplication(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Description) > 0 {
-		i -= len(m.Description)
-		copy(dAtA[i:], m.Description)
-		i = encodeVarintApplication(dAtA, i, uint64(len(m.Description)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintApplication(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x22
-	}
-	n1, err1 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.UpdatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt):])
-	if err1 != nil {
-		return 0, err1
-	}
-	i -= n1
-	i = encodeVarintApplication(dAtA, i, uint64(n1))
-	i--
-	dAtA[i] = 0x1a
-	n2, err2 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CreatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CreatedAt):])
-	if err2 != nil {
-		return 0, err2
-	}
-	i -= n2
-	i = encodeVarintApplication(dAtA, i, uint64(n2))
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *Applications) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Applications) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Applications) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Applications) > 0 {
-		for iNdEx := len(m.Applications) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Applications[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintApplication(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetApplicationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetApplicationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetApplicationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListApplicationsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListApplicationsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListApplicationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Limit != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.Order) > 0 {
-		i -= len(m.Order)
-		copy(dAtA[i:], m.Order)
-		i = encodeVarintApplication(dAtA, i, uint64(len(m.Order)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if m.Collaborator != nil {
-		{
-			size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintApplication(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CreateApplicationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CreateApplicationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CreateApplicationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.Application.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *UpdateApplicationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UpdateApplicationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UpdateApplicationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.Application.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListApplicationAPIKeysRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListApplicationAPIKeysRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListApplicationAPIKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Limit != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *GetApplicationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetApplicationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetApplicationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.KeyID) > 0 {
-		i -= len(m.KeyID)
-		copy(dAtA[i:], m.KeyID)
-		i = encodeVarintApplication(dAtA, i, uint64(len(m.KeyID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CreateApplicationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CreateApplicationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CreateApplicationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Rights) > 0 {
-		dAtA15 := make([]byte, len(m.Rights)*10)
-		var j14 int
-		for _, num := range m.Rights {
-			for num >= 1<<7 {
-				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j14++
-			}
-			dAtA15[j14] = uint8(num)
-			j14++
-		}
-		i -= j14
-		copy(dAtA[i:], dAtA15[:j14])
-		i = encodeVarintApplication(dAtA, i, uint64(j14))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintApplication(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *UpdateApplicationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UpdateApplicationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UpdateApplicationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.APIKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListApplicationCollaboratorsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListApplicationCollaboratorsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListApplicationCollaboratorsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Limit != 0 {
-		i = encodeVarintApplication(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *GetApplicationCollaboratorRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetApplicationCollaboratorRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetApplicationCollaboratorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.OrganizationOrUserIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *SetApplicationCollaboratorRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SetApplicationCollaboratorRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SetApplicationCollaboratorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplication(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintApplication(dAtA []byte, offset int, v uint64) int {
-	offset -= sovApplication(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
 func NewPopulatedApplication(r randyApplication, easy bool) *Application {
 	this := &Application{}
 	v1 := NewPopulatedApplicationIdentifiers(r, easy)
@@ -1900,8 +1259,11 @@ func NewPopulatedApplication(r randyApplication, easy bool) *Application {
 	this.CreatedAt = *v2
 	v3 := github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
 	this.UpdatedAt = *v3
-	this.Name = randStringApplication(r)
-	this.Description = randStringApplication(r)
+	if r.Intn(5) != 0 {
+		this.DeletedAt = github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
+	}
+	this.Name = string(randStringApplication(r))
+	this.Description = string(randStringApplication(r))
 	if r.Intn(5) != 0 {
 		v4 := r.Intn(10)
 		this.Attributes = make(map[string]string)
@@ -1916,148 +1278,7 @@ func NewPopulatedApplication(r randyApplication, easy bool) *Application {
 			this.ContactInfo[i] = NewPopulatedContactInfo(r, easy)
 		}
 	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedApplications(r randyApplication, easy bool) *Applications {
-	this := &Applications{}
-	if r.Intn(5) != 0 {
-		v6 := r.Intn(5)
-		this.Applications = make([]*Application, v6)
-		for i := 0; i < v6; i++ {
-			this.Applications[i] = NewPopulatedApplication(r, easy)
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetApplicationRequest(r randyApplication, easy bool) *GetApplicationRequest {
-	this := &GetApplicationRequest{}
-	v7 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v7
-	v8 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v8
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListApplicationsRequest(r randyApplication, easy bool) *ListApplicationsRequest {
-	this := &ListApplicationsRequest{}
-	if r.Intn(5) != 0 {
-		this.Collaborator = NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	}
-	v9 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v9
-	this.Order = randStringApplication(r)
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCreateApplicationRequest(r randyApplication, easy bool) *CreateApplicationRequest {
-	this := &CreateApplicationRequest{}
-	v10 := NewPopulatedApplication(r, easy)
-	this.Application = *v10
-	v11 := NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	this.Collaborator = *v11
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedUpdateApplicationRequest(r randyApplication, easy bool) *UpdateApplicationRequest {
-	this := &UpdateApplicationRequest{}
-	v12 := NewPopulatedApplication(r, easy)
-	this.Application = *v12
-	v13 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v13
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListApplicationAPIKeysRequest(r randyApplication, easy bool) *ListApplicationAPIKeysRequest {
-	this := &ListApplicationAPIKeysRequest{}
-	v14 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v14
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetApplicationAPIKeyRequest(r randyApplication, easy bool) *GetApplicationAPIKeyRequest {
-	this := &GetApplicationAPIKeyRequest{}
-	v15 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v15
-	this.KeyID = randStringApplication(r)
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCreateApplicationAPIKeyRequest(r randyApplication, easy bool) *CreateApplicationAPIKeyRequest {
-	this := &CreateApplicationAPIKeyRequest{}
-	v16 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v16
-	this.Name = randStringApplication(r)
-	v17 := r.Intn(10)
-	this.Rights = make([]Right, v17)
-	for i := 0; i < v17; i++ {
-		this.Rights[i] = Right([]int32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 56, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 57, 58, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55}[r.Intn(59)])
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedUpdateApplicationAPIKeyRequest(r randyApplication, easy bool) *UpdateApplicationAPIKeyRequest {
-	this := &UpdateApplicationAPIKeyRequest{}
-	v18 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v18
-	v19 := NewPopulatedAPIKey(r, easy)
-	this.APIKey = *v19
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListApplicationCollaboratorsRequest(r randyApplication, easy bool) *ListApplicationCollaboratorsRequest {
-	this := &ListApplicationCollaboratorsRequest{}
-	v20 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v20
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetApplicationCollaboratorRequest(r randyApplication, easy bool) *GetApplicationCollaboratorRequest {
-	this := &GetApplicationCollaboratorRequest{}
-	v21 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v21
-	v22 := NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	this.OrganizationOrUserIdentifiers = *v22
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedSetApplicationCollaboratorRequest(r randyApplication, easy bool) *SetApplicationCollaboratorRequest {
-	this := &SetApplicationCollaboratorRequest{}
-	v23 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v23
-	v24 := NewPopulatedCollaborator(r, easy)
-	this.Collaborator = *v24
+	this.DevEuiCounter = uint32(r.Uint32())
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2082,9 +1303,9 @@ func randUTF8RuneApplication(r randyApplication) rune {
 	return rune(ru + 61)
 }
 func randStringApplication(r randyApplication) string {
-	v25 := r.Intn(100)
-	tmps := make([]rune, v25)
-	for i := 0; i < v25; i++ {
+	v6 := r.Intn(100)
+	tmps := make([]rune, v6)
+	for i := 0; i < v6; i++ {
 		tmps[i] = randUTF8RuneApplication(r)
 	}
 	return string(tmps)
@@ -2106,11 +1327,11 @@ func randFieldApplication(dAtA []byte, r randyApplication, fieldNumber int, wire
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateApplication(dAtA, uint64(key))
-		v26 := r.Int63()
+		v7 := r.Int63()
 		if r.Intn(2) == 0 {
-			v26 *= -1
+			v7 *= -1
 		}
-		dAtA = encodeVarintPopulateApplication(dAtA, uint64(v26))
+		dAtA = encodeVarintPopulateApplication(dAtA, uint64(v7))
 	case 1:
 		dAtA = encodeVarintPopulateApplication(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -2129,7 +1350,7 @@ func randFieldApplication(dAtA []byte, r randyApplication, fieldNumber int, wire
 }
 func encodeVarintPopulateApplication(dAtA []byte, v uint64) []byte {
 	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
+		dAtA = append(dAtA, uint8(uint64(v)&0x7f|0x80))
 		v >>= 7
 	}
 	dAtA = append(dAtA, uint8(v))
@@ -2147,6 +1368,10 @@ func (m *Application) Size() (n int) {
 	n += 1 + l + sovApplication(uint64(l))
 	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt)
 	n += 1 + l + sovApplication(uint64(l))
+	if m.DeletedAt != nil {
+		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.DeletedAt)
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	l = len(m.Name)
 	if l > 0 {
 		n += 1 + l + sovApplication(uint64(l))
@@ -2169,6 +1394,9 @@ func (m *Application) Size() (n int) {
 			n += 1 + l + sovApplication(uint64(l))
 		}
 	}
+	if m.DevEuiCounter != 0 {
+		n += 1 + sovApplication(uint64(m.DevEuiCounter))
+	}
 	return n
 }
 
@@ -2187,6 +1415,17 @@ func (m *Applications) Size() (n int) {
 	return n
 }
 
+func (m *IssueDevEUIResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.DevEui.Size()
+	n += 1 + l + sovApplication(uint64(l))
+	return n
+}
+
 func (m *GetApplicationRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2195,8 +1434,10 @@ func (m *GetApplicationRequest) Size() (n int) {
 	_ = l
 	l = m.ApplicationIdentifiers.Size()
 	n += 1 + l + sovApplication(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovApplication(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	return n
 }
 
@@ -2210,8 +1451,10 @@ func (m *ListApplicationsRequest) Size() (n int) {
 		l = m.Collaborator.Size()
 		n += 1 + l + sovApplication(uint64(l))
 	}
-	l = m.FieldMask.Size()
-	n += 1 + l + sovApplication(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	l = len(m.Order)
 	if l > 0 {
 		n += 1 + l + sovApplication(uint64(l))
@@ -2221,6 +1464,9 @@ func (m *ListApplicationsRequest) Size() (n int) {
 	}
 	if m.Page != 0 {
 		n += 1 + sovApplication(uint64(m.Page))
+	}
+	if m.Deleted {
+		n += 2
 	}
 	return n
 }
@@ -2246,8 +1492,10 @@ func (m *UpdateApplicationRequest) Size() (n int) {
 	_ = l
 	l = m.Application.Size()
 	n += 1 + l + sovApplication(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovApplication(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	return n
 }
 
@@ -2276,7 +1524,7 @@ func (m *GetApplicationAPIKeyRequest) Size() (n int) {
 	_ = l
 	l = m.ApplicationIdentifiers.Size()
 	n += 1 + l + sovApplication(uint64(l))
-	l = len(m.KeyID)
+	l = len(m.KeyId)
 	if l > 0 {
 		n += 1 + l + sovApplication(uint64(l))
 	}
@@ -2302,6 +1550,10 @@ func (m *CreateApplicationAPIKeyRequest) Size() (n int) {
 		}
 		n += 1 + sovApplication(uint64(l)) + l
 	}
+	if m.ExpiresAt != nil {
+		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.ExpiresAt)
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	return n
 }
 
@@ -2315,6 +1567,10 @@ func (m *UpdateApplicationAPIKeyRequest) Size() (n int) {
 	n += 1 + l + sovApplication(uint64(l))
 	l = m.APIKey.Size()
 	n += 1 + l + sovApplication(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplication(uint64(l))
+	}
 	return n
 }
 
@@ -2365,7 +1621,7 @@ func sovApplication(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozApplication(x uint64) (n int) {
-	return sovApplication((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovApplication(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *Application) String() string {
 	if this == nil {
@@ -2390,10 +1646,12 @@ func (this *Application) String() string {
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`CreatedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.CreatedAt), "Timestamp", "types.Timestamp", 1), `&`, ``, 1) + `,`,
 		`UpdatedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.UpdatedAt), "Timestamp", "types.Timestamp", 1), `&`, ``, 1) + `,`,
+		`DeletedAt:` + strings.Replace(fmt.Sprintf("%v", this.DeletedAt), "Timestamp", "types.Timestamp", 1) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
 		`Attributes:` + mapStringForAttributes + `,`,
 		`ContactInfo:` + repeatedStringForContactInfo + `,`,
+		`DevEuiCounter:` + fmt.Sprintf("%v", this.DevEuiCounter) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2413,13 +1671,23 @@ func (this *Applications) String() string {
 	}, "")
 	return s
 }
+func (this *IssueDevEUIResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&IssueDevEUIResponse{`,
+		`DevEui:` + fmt.Sprintf("%v", this.DevEui) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *GetApplicationRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetApplicationRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2430,10 +1698,11 @@ func (this *ListApplicationsRequest) String() string {
 	}
 	s := strings.Join([]string{`&ListApplicationsRequest{`,
 		`Collaborator:` + strings.Replace(fmt.Sprintf("%v", this.Collaborator), "OrganizationOrUserIdentifiers", "OrganizationOrUserIdentifiers", 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`Order:` + fmt.Sprintf("%v", this.Order) + `,`,
 		`Limit:` + fmt.Sprintf("%v", this.Limit) + `,`,
 		`Page:` + fmt.Sprintf("%v", this.Page) + `,`,
+		`Deleted:` + fmt.Sprintf("%v", this.Deleted) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2455,7 +1724,7 @@ func (this *UpdateApplicationRequest) String() string {
 	}
 	s := strings.Join([]string{`&UpdateApplicationRequest{`,
 		`Application:` + strings.Replace(strings.Replace(this.Application.String(), "Application", "Application", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2478,7 +1747,7 @@ func (this *GetApplicationAPIKeyRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetApplicationAPIKeyRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`KeyID:` + fmt.Sprintf("%v", this.KeyID) + `,`,
+		`KeyId:` + fmt.Sprintf("%v", this.KeyId) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2491,6 +1760,7 @@ func (this *CreateApplicationAPIKeyRequest) String() string {
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Rights:` + fmt.Sprintf("%v", this.Rights) + `,`,
+		`ExpiresAt:` + strings.Replace(fmt.Sprintf("%v", this.ExpiresAt), "Timestamp", "types.Timestamp", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2502,6 +1772,7 @@ func (this *UpdateApplicationAPIKeyRequest) String() string {
 	s := strings.Join([]string{`&UpdateApplicationAPIKeyRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`APIKey:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.APIKey), "APIKey", "APIKey", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2548,2010 +1819,3 @@ func valueToStringApplication(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *Application) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Application: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Application: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.CreatedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.UpdatedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Description = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Attributes == nil {
-				m.Attributes = make(map[string]string)
-			}
-			var mapkey string
-			var mapvalue string
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowApplication
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowApplication
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthApplication
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthApplication
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var stringLenmapvalue uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowApplication
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapvalue |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapvalue := int(stringLenmapvalue)
-					if intStringLenmapvalue < 0 {
-						return ErrInvalidLengthApplication
-					}
-					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-					if postStringIndexmapvalue < 0 {
-						return ErrInvalidLengthApplication
-					}
-					if postStringIndexmapvalue > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
-					iNdEx = postStringIndexmapvalue
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipApplication(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if skippy < 0 {
-						return ErrInvalidLengthApplication
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Attributes[mapkey] = mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContactInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ContactInfo = append(m.ContactInfo, &ContactInfo{})
-			if err := m.ContactInfo[len(m.ContactInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Applications) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Applications: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Applications: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Applications", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Applications = append(m.Applications, &Application{})
-			if err := m.Applications[len(m.Applications)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetApplicationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetApplicationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetApplicationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListApplicationsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListApplicationsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListApplicationsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Collaborator == nil {
-				m.Collaborator = &OrganizationOrUserIdentifiers{}
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Order", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Order = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateApplicationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CreateApplicationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CreateApplicationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Application", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Application.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UpdateApplicationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UpdateApplicationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UpdateApplicationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Application", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Application.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListApplicationAPIKeysRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListApplicationAPIKeysRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListApplicationAPIKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetApplicationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetApplicationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetApplicationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KeyID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.KeyID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateApplicationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CreateApplicationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CreateApplicationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType == 0 {
-				var v Right
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowApplication
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= Right(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Rights = append(m.Rights, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowApplication
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthApplication
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthApplication
-				}
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				if elementCount != 0 && len(m.Rights) == 0 {
-					m.Rights = make([]Right, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v Right
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowApplication
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= Right(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Rights = append(m.Rights, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Rights", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UpdateApplicationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UpdateApplicationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UpdateApplicationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field APIKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.APIKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListApplicationCollaboratorsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListApplicationCollaboratorsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListApplicationCollaboratorsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetApplicationCollaboratorRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetApplicationCollaboratorRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetApplicationCollaboratorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationOrUserIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationOrUserIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *SetApplicationCollaboratorRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SetApplicationCollaboratorRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SetApplicationCollaboratorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplication
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplication(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplication
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipApplication(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowApplication
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowApplication
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthApplication
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupApplication
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthApplication
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthApplication        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowApplication          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupApplication = fmt.Errorf("proto: unexpected end of group")
-)

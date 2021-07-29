@@ -18,6 +18,7 @@ package test
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,36 +26,32 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
 	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
 	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
-	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal"
+	nstime "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
 
-const (
-	AppIDString = "test-app-id"
-	DevID       = "test-dev-id"
-)
+func init() {
+	rpclog.ReplaceGrpcLogger(log.Noop)
+}
 
-var (
-	ErrTestInternal = errors.DefineInternal("test_internal", "test error")
-	ErrTestNotFound = errors.DefineNotFound("test_not_found", "test error")
+var timeMu sync.RWMutex
 
-	FNwkSIntKey = types.AES128Key{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	NwkSEncKey  = types.AES128Key{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	SNwkSIntKey = types.AES128Key{0x42, 0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	AppSKey     = types.AES128Key{0x42, 0x42, 0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-
-	JoinEUI = types.EUI64{0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	DevEUI  = types.EUI64{0x42, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	DevAddr = types.DevAddr{0x42, 0x00, 0x00, 0x00}
-
-	AppID = ttnpb.ApplicationIdentifiers{ApplicationID: AppIDString}
-
-	NetID = test.Must(types.NewNetID(2, []byte{1, 2, 3})).(types.NetID)
-)
+func SetMockClock(clock *test.MockClock) func() {
+	timeMu.Lock()
+	unsetNow := nstime.SetNow(clock.Now)
+	unsetAfter := nstime.SetAfter(clock.After)
+	return func() {
+		unsetNow()
+		unsetAfter()
+		timeMu.Unlock()
+	}
+}
 
 // CopyBytes returns a deep copy of []byte.
 func CopyBytes(b []byte) []byte {
@@ -70,6 +67,11 @@ func CopyStrings(ss []string) []string {
 		return nil
 	}
 	return append([]string{}, ss...)
+}
+
+// CopySession returns a deep copy of *ttnpb.Session pb.
+func CopySession(pb *ttnpb.Session) *ttnpb.Session {
+	return deepcopy.Copy(pb).(*ttnpb.Session)
 }
 
 // CopyMessage returns a deep copy of *ttnpb.Message pb.
@@ -92,11 +94,6 @@ func CopyDownlinkMessages(pbs ...*ttnpb.DownlinkMessage) []*ttnpb.DownlinkMessag
 	return deepcopy.Copy(pbs).([]*ttnpb.DownlinkMessage)
 }
 
-// CopySessionKeys returns a deep copy of ttnpb.SessionKeys pb.
-func CopySessionKeys(pb *ttnpb.SessionKeys) *ttnpb.SessionKeys {
-	return deepcopy.Copy(pb).(*ttnpb.SessionKeys)
-}
-
 func DurationPtr(v time.Duration) *time.Duration {
 	return &v
 }
@@ -105,9 +102,94 @@ func AES128KeyPtr(key types.AES128Key) *types.AES128Key {
 	return &key
 }
 
-func FrequencyPlan(id string) *frequencyplans.FrequencyPlan {
-	return test.Must(frequencyplans.NewStore(test.FrequencyPlansFetcher).GetByID(id)).(*frequencyplans.FrequencyPlan)
+func MACStatePtr(v ttnpb.MACState) *ttnpb.MACState {
+	return &v
 }
+
+func Band(fpID string, phyVer ttnpb.PHYVersion) band.Band {
+	return *LoRaWANBands[test.FrequencyPlan(fpID).BandID][phyVer]
+}
+
+var (
+	DefaultGatewayAntennaIdentifiers = [...]ttnpb.GatewayAntennaIdentifiers{
+		{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-0"},
+			AntennaIndex:       3,
+		},
+		{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-1"},
+			AntennaIndex:       1,
+		},
+		{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-2"},
+		},
+		{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-3"},
+			AntennaIndex:       2,
+		},
+		{
+			GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-4"},
+		},
+	}
+
+	DefaultRxMetadata = [...]*ttnpb.RxMetadata{
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-1"},
+			SNR:                    -9,
+			UplinkToken:            []byte("token-gtw-1"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
+		},
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-3"},
+			SNR:                    -5.3,
+			UplinkToken:            []byte("token-gtw-3"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
+		},
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-5"},
+			SNR:                    12,
+			UplinkToken:            []byte("token-gtw-5"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NEVER,
+		},
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-0"},
+			SNR:                    5.2,
+			UplinkToken:            []byte("token-gtw-0"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
+		},
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-2"},
+			SNR:                    6.3,
+			UplinkToken:            []byte("token-gtw-2"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
+		},
+		{
+			GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayId: "gateway-test-4"},
+			SNR:                    -7,
+			UplinkToken:            []byte("token-gtw-4"),
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
+		},
+	}
+
+	DefaultApplicationDownlinkQueue = []*ttnpb.ApplicationDownlink{
+		{
+			CorrelationIDs: []string{"correlation-app-down-1", "correlation-app-down-2"},
+			FCnt:           0x22,
+			FPort:          0x1,
+			FRMPayload:     []byte("testPayload"),
+			Priority:       ttnpb.TxSchedulePriority_HIGHEST,
+			SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44},
+		},
+		{
+			CorrelationIDs: []string{"correlation-app-down-3", "correlation-app-down-4"},
+			FCnt:           0x23,
+			FPort:          0x1,
+			FRMPayload:     []byte("testPayload"),
+			Priority:       ttnpb.TxSchedulePriority_HIGHEST,
+			SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44},
+		},
+	}
+)
 
 const (
 	DefaultEU868JoinAcceptDelay = ttnpb.RX_DELAY_5
@@ -145,9 +227,9 @@ func MakeDefaultEU868CurrentChannels() []*ttnpb.MACParameters_Channel {
 
 func MakeDefaultEU868CurrentMACParameters(phyVersion ttnpb.PHYVersion) ttnpb.MACParameters {
 	return ttnpb.MACParameters{
-		ADRAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: ttnpb.ADR_ACK_DELAY_32},
-		ADRAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: ttnpb.ADR_ACK_LIMIT_64},
-		ADRNbTrans:                 1,
+		AdrAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: ttnpb.ADR_ACK_DELAY_32},
+		AdrAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: ttnpb.ADR_ACK_LIMIT_64},
+		AdrNbTrans:                 1,
 		MaxDutyCycle:               ttnpb.DUTY_CYCLE_1,
 		MaxEIRP:                    16,
 		PingSlotDataRateIndexValue: &ttnpb.DataRateIndexValue{Value: ttnpb.DATA_RATE_3},
@@ -210,7 +292,7 @@ func MakeDefaultEU868DesiredMACParameters(phyVersion ttnpb.PHYVersion) ttnpb.MAC
 func MakeDefaultEU868MACState(class ttnpb.Class, macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVersion) *ttnpb.MACState {
 	return &ttnpb.MACState{
 		DeviceClass:       class,
-		LoRaWANVersion:    macVersion,
+		LorawanVersion:    macVersion,
 		CurrentParameters: MakeDefaultEU868CurrentMACParameters(phyVersion),
 		DesiredParameters: MakeDefaultEU868DesiredMACParameters(phyVersion),
 	}
@@ -246,9 +328,9 @@ func MakeDefaultUS915CurrentChannels() []*ttnpb.MACParameters_Channel {
 
 func MakeDefaultUS915CurrentMACParameters(ver ttnpb.PHYVersion) ttnpb.MACParameters {
 	return ttnpb.MACParameters{
-		ADRAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: ttnpb.ADR_ACK_DELAY_32},
-		ADRAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: ttnpb.ADR_ACK_LIMIT_64},
-		ADRNbTrans:                 1,
+		AdrAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: ttnpb.ADR_ACK_DELAY_32},
+		AdrAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: ttnpb.ADR_ACK_LIMIT_64},
+		AdrNbTrans:                 1,
 		MaxDutyCycle:               ttnpb.DUTY_CYCLE_1,
 		MaxEIRP:                    30,
 		PingSlotDataRateIndexValue: &ttnpb.DataRateIndexValue{Value: ttnpb.DATA_RATE_8},
@@ -289,123 +371,10 @@ func MakeDefaultUS915FSB2DesiredMACParameters(ver ttnpb.PHYVersion) ttnpb.MACPar
 func MakeDefaultUS915FSB2MACState(class ttnpb.Class, macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVersion) *ttnpb.MACState {
 	return &ttnpb.MACState{
 		DeviceClass:       class,
-		LoRaWANVersion:    macVersion,
+		LorawanVersion:    macVersion,
 		CurrentParameters: MakeDefaultUS915CurrentMACParameters(phyVersion),
 		DesiredParameters: MakeDefaultUS915FSB2DesiredMACParameters(phyVersion),
 	}
-}
-
-func MakeOTAAIdentifiers(devAddr *types.DevAddr) *ttnpb.EndDeviceIdentifiers {
-	ids := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIdentifiers: AppID,
-		DeviceID:               DevID,
-
-		DevEUI:  DevEUI.Copy(&types.EUI64{}),
-		JoinEUI: JoinEUI.Copy(&types.EUI64{}),
-	}
-	if devAddr != nil {
-		ids.DevAddr = devAddr.Copy(&types.DevAddr{})
-	}
-	return ids
-}
-
-func MakeABPIdentifiers(withDevEUI bool) *ttnpb.EndDeviceIdentifiers {
-	ids := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIdentifiers: AppID,
-		DeviceID:               DevID,
-		DevAddr:                DevAddr.Copy(&types.DevAddr{}),
-	}
-	if withDevEUI {
-		ids.DevEUI = DevEUI.Copy(&types.EUI64{})
-	}
-	return ids
-}
-
-func MakeSessionKeys(macVersion ttnpb.MACVersion, withAppSKey bool) *ttnpb.SessionKeys {
-	sk := &ttnpb.SessionKeys{
-		FNwkSIntKey: &ttnpb.KeyEnvelope{
-			Key: &FNwkSIntKey,
-		},
-		SessionKeyID: []byte("test-session-key-id"),
-	}
-	if withAppSKey {
-		sk.AppSKey = &ttnpb.KeyEnvelope{
-			Key: &AppSKey,
-		}
-	}
-	switch {
-	case macVersion.Compare(ttnpb.MAC_V1_1) < 0:
-		sk.NwkSEncKey = sk.FNwkSIntKey
-		sk.SNwkSIntKey = sk.FNwkSIntKey
-	default:
-		sk.NwkSEncKey = &ttnpb.KeyEnvelope{
-			Key: &NwkSEncKey,
-		}
-		sk.SNwkSIntKey = &ttnpb.KeyEnvelope{
-			Key: &SNwkSIntKey,
-		}
-	}
-	return CopySessionKeys(sk)
-}
-
-var RxMetadata = [...]*ttnpb.RxMetadata{
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-1"},
-		SNR:                    -9,
-		UplinkToken:            []byte("token-gtw-1"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
-	},
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-3"},
-		SNR:                    -5.3,
-		UplinkToken:            []byte("token-gtw-3"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
-	},
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-5"},
-		SNR:                    12,
-		UplinkToken:            []byte("token-gtw-5"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NEVER,
-	},
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-0"},
-		SNR:                    5.2,
-		UplinkToken:            []byte("token-gtw-0"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
-	},
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-2"},
-		SNR:                    6.3,
-		UplinkToken:            []byte("token-gtw-2"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
-	},
-	{
-		GatewayIdentifiers:     ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-4"},
-		SNR:                    -7,
-		UplinkToken:            []byte("token-gtw-4"),
-		DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER,
-	},
-}
-
-var GatewayAntennaIdentifiers = [...]ttnpb.GatewayAntennaIdentifiers{
-	{
-		GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-0"},
-		AntennaIndex:       3,
-	},
-	{
-		GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-1"},
-		AntennaIndex:       1,
-	},
-	{
-		GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-2"},
-	},
-	{
-		GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-3"},
-		AntennaIndex:       2,
-	},
-	{
-		GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "gateway-test-4"},
-	},
 }
 
 func MakeUplinkSettings(dr ttnpb.DataRate, drIdx ttnpb.DataRateIndex, freq uint64) ttnpb.TxSettings {
@@ -482,9 +451,27 @@ func MakeDownlinkMACBuffer(phy *band.Band, cmds ...MACCommander) []byte {
 	return b
 }
 
+var SessionKeysOptions = test.SessionKeysOptions
+
+func MakeSessionKeys(macVersion ttnpb.MACVersion, wrapKeys, withID bool, opts ...test.SessionKeysOption) *ttnpb.SessionKeys {
+	defaultKeyOpt := SessionKeysOptions.WithDefaultNwkKeys
+	if wrapKeys {
+		defaultKeyOpt = SessionKeysOptions.WithDefaultNwkKeysWrapped
+	}
+	var id []byte
+	if withID {
+		id = test.DefaultSessionKeyID
+	}
+	return test.MakeSessionKeys(
+		defaultKeyOpt(macVersion),
+		SessionKeysOptions.WithSessionKeyID(id),
+		SessionKeysOptions.Compose(opts...),
+	)
+}
+
 func messageGenerationKeys(sk *ttnpb.SessionKeys, macVersion ttnpb.MACVersion) ttnpb.SessionKeys {
 	if sk == nil {
-		return *MakeSessionKeys(macVersion, false)
+		return *MakeSessionKeys(macVersion, false, false)
 	}
 	decrypt := func(ke *ttnpb.KeyEnvelope) *types.AES128Key {
 		switch {
@@ -554,10 +541,10 @@ func WithDeviceDataUplinkConfig(dev *ttnpb.EndDevice, pending bool, drIdx ttnpb.
 		macState = dev.PendingMACState
 	}
 	return func(conf DataUplinkConfig) DataUplinkConfig {
-		conf.MACVersion = macState.LoRaWANVersion
+		conf.MACVersion = macState.LorawanVersion
 		conf.DevAddr = session.DevAddr
 		conf.FCnt = session.LastFCntUp + fCntDelta
-		conf.DataRate = LoRaWANBands[FrequencyPlan(dev.FrequencyPlanID).BandID][dev.LoRaWANPHYVersion].DataRates[drIdx].Rate
+		conf.DataRate = LoRaWANBands[test.FrequencyPlan(dev.FrequencyPlanID).BandID][dev.LorawanPhyVersion].DataRates[drIdx].Rate
 		conf.DataRateIndex = drIdx
 		conf.Frequency = macState.CurrentParameters.Channels[chIdx].UplinkFrequency
 		conf.ChannelIndex = chIdx
@@ -673,6 +660,8 @@ type DataDownlinkConfig struct {
 	FRMPayload []byte
 	FOpts      []byte
 
+	Request ttnpb.TxRequest
+
 	SessionKeys *ttnpb.SessionKeys
 }
 
@@ -722,6 +711,9 @@ func MakeDataDownlink(conf DataDownlinkConfig) *ttnpb.DownlinkMessage {
 	}
 	msg.MIC = mic[:]
 	return &ttnpb.DownlinkMessage{
+		Settings: &ttnpb.DownlinkMessage_Request{
+			Request: deepcopy.Copy(&conf.Request).(*ttnpb.TxRequest),
+		},
 		RawPayload: append(phyPayload, mic[:]...),
 		Payload: func() *ttnpb.Message {
 			if !conf.DecodePayload {
@@ -751,8 +743,8 @@ func ForEachBand(tb testing.TB, f func(func(...string) string, *band.Band, ttnpb
 		}
 		for phyVersion, b := range phyVersions {
 			switch phyVersion {
-			case ttnpb.PHY_V1_0_3_REV_A, ttnpb.PHY_V1_1_REV_B:
-			case ttnpb.PHY_V1_0_2_REV_B:
+			case ttnpb.RP001_V1_0_3_REV_A, ttnpb.RP001_V1_1_REV_B:
+			case ttnpb.RP001_V1_0_2_REV_B:
 				if !testing.Short() {
 					break
 				}
@@ -826,7 +818,7 @@ func ForEachFrequencyPlan(tb testing.TB, f func(func(...string) string, string, 
 		}
 		f(func(parts ...string) string {
 			return MakeTestCaseName(append(parts, fmt.Sprintf("FP:%s", fpID))...)
-		}, fpID, FrequencyPlan(fpID))
+		}, fpID, test.FrequencyPlan(fpID))
 	}
 }
 

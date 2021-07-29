@@ -27,6 +27,7 @@ import (
 	gcsv2 "go.thethings.network/lorawan-stack/v3/pkg/gatewayconfigurationserver/v2"
 	"go.thethings.network/lorawan-stack/v3/pkg/pfconfig/cpf"
 	"go.thethings.network/lorawan-stack/v3/pkg/pfconfig/semtechudp"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/web"
 	"go.thethings.network/lorawan-stack/v3/pkg/webhandlers"
@@ -44,7 +45,7 @@ func (s *Server) withGateway(next func(http.ResponseWriter, *http.Request, *ttnp
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		gtwID := gatewayIDFromContext(ctx)
-		cc, err := s.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, gtwID)
+		cc, err := s.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, &gtwID)
 		if err != nil {
 			webhandlers.Error(w, r, err)
 			return
@@ -52,7 +53,7 @@ func (s *Server) withGateway(next func(http.ResponseWriter, *http.Request, *ttnp
 		client := ttnpb.NewGatewayRegistryClient(cc)
 		gtw, err := client.Get(ctx, &ttnpb.GetGatewayRequest{
 			GatewayIdentifiers: gtwID,
-			FieldMask: types.FieldMask{
+			FieldMask: &types.FieldMask{
 				Paths: []string{
 					"antennas",
 					"frequency_plan_id",
@@ -117,6 +118,7 @@ func (s *Server) RegisterRoutes(server *web.Server) {
 	router := server.Prefix(ttnpb.HTTPAPIPrefix + "/gcs/gateways/{gateway_id}/").Subrouter()
 	router.Use(
 		mux.MiddlewareFunc(webmiddleware.Namespace("gatewayconfigurationserver")),
+		ratelimit.HTTPMiddleware(s.Component.RateLimiter(), "http:gcs"),
 		mux.MiddlewareFunc(webmiddleware.Metadata("Authorization")),
 		validateAndFillIDs,
 	)

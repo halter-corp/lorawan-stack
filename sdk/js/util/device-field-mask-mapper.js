@@ -20,7 +20,26 @@ const fs = require('fs')
 
 const traverse = require('traverse')
 
-const fieldMasks = require('../generated/device-field-masks.json')
+const allowedPaths = require('../generated/allowed-field-mask-paths.json')
+
+const fieldMasks = {
+  is: {
+    get: allowedPaths['/ttn.lorawan.v3.EndDeviceRegistry/Get'],
+    set: allowedPaths['/ttn.lorawan.v3.EndDeviceRegistry/Update'],
+  },
+  as: {
+    get: allowedPaths['/ttn.lorawan.v3.AsEndDeviceRegistry/Get'],
+    set: allowedPaths['/ttn.lorawan.v3.AsEndDeviceRegistry/Set'],
+  },
+  ns: {
+    get: allowedPaths['/ttn.lorawan.v3.NsEndDeviceRegistry/Get'],
+    set: allowedPaths['/ttn.lorawan.v3.NsEndDeviceRegistry/Set'],
+  },
+  js: {
+    get: allowedPaths['/ttn.lorawan.v3.JsEndDeviceRegistry/Get'],
+    set: allowedPaths['/ttn.lorawan.v3.JsEndDeviceRegistry/Set'],
+  },
+}
 
 const result = {}
 
@@ -60,7 +79,7 @@ for (const component in fieldMasks) {
 }
 
 // Rewrite single `_root` entries as plain array leaf.
-traverse(result).forEach(function() {
+traverse(result).forEach(function () {
   if (Object.keys(this.node).length === 1 && this.node._root) {
     this.update(this.node._root)
   }
@@ -69,7 +88,7 @@ traverse(result).forEach(function() {
 fs.writeFile(
   `${__dirname}/../generated/device-entity-map.json`,
   JSON.stringify(result, null, 2),
-  function(err) {
+  err => {
     if (err) {
       return console.error(err)
     }

@@ -17,12 +17,12 @@ package networkserver
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/mac"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
@@ -31,15 +31,6 @@ import (
 func nsScheduleWindow() time.Duration {
 	// TODO: Observe this value at runtime https://github.com/TheThingsNetwork/lorawan-stack/issues/1552.
 	return 200 * time.Millisecond
-}
-
-var (
-	timeNow   func() time.Time                       = time.Now
-	timeAfter func(d time.Duration) <-chan time.Time = time.After
-)
-
-func timeUntil(t time.Time) time.Duration {
-	return t.Sub(timeNow())
 }
 
 func searchUplinkChannel(freq uint64, macState *ttnpb.MACState) (uint8, error) {
@@ -222,7 +213,7 @@ func nextDataDownlinkSlot(ctx context.Context, dev *ttnpb.EndDevice, phy *band.B
 	if dev.GetMACState() == nil {
 		return nil, false
 	}
-	earliestAt = latestTime(earliestAt, timeNow())
+	earliestAt = latestTime(earliestAt, time.Now())
 	if dev.MACState.LastDownlinkAt != nil {
 		earliestAt = latestTime(earliestAt, *dev.MACState.LastDownlinkAt)
 	}
@@ -233,12 +224,12 @@ func nextDataDownlinkSlot(ctx context.Context, dev *ttnpb.EndDevice, phy *band.B
 	if hasClassA {
 		switch classA.Uplink.Payload.MHDR.MType {
 		case ttnpb.MType_UNCONFIRMED_UP:
-			if classA.Uplink.Payload.GetMACPayload().FCtrl.ADRAckReq {
-				logger.Debug("Acknowledgement required for ADRAckReq")
+			if classA.Uplink.Payload.GetMACPayload().FCtrl.AdrAckReq {
+				logger.Debug("Acknowledgment required for ADRAckReq")
 				needsAck = dev.MACState.LastDownlinkAt == nil || dev.MACState.LastDownlinkAt.Before(classA.Uplink.ReceivedAt)
 			}
 		case ttnpb.MType_CONFIRMED_UP:
-			logger.Debug("Acknowledgement required for confirmed uplink")
+			logger.Debug("Acknowledgment required for confirmed uplink")
 			needsAck = dev.MACState.LastDownlinkAt == nil || dev.MACState.LastDownlinkAt.Before(classA.Uplink.ReceivedAt)
 		}
 		rx2 := classA.RX2()
@@ -265,7 +256,7 @@ func nextDataDownlinkSlot(ctx context.Context, dev *ttnpb.EndDevice, phy *band.B
 		case mac.DeviceNeedsDutyCycleReq(dev):
 			logger.Debug("Device needs DutyCycleReq, choose class A downlink slot")
 			return classA, true
-		case mac.DeviceNeedsLinkADRReq(ctx, dev, defaults, phy):
+		case mac.DeviceNeedsLinkADRReq(ctx, dev, phy):
 			logger.Debug("Device needs LinkADRReq, choose class A downlink slot")
 			return classA, true
 		case mac.DeviceNeedsNewChannelReq(dev):

@@ -19,7 +19,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/webhandlers"
 )
@@ -63,12 +66,12 @@ func (w *webhooks) validateAndFillIDs(next http.Handler) http.Handler {
 		ctx := r.Context()
 		vars := mux.Vars(r)
 		appID := ttnpb.ApplicationIdentifiers{
-			ApplicationID: vars["application_id"],
+			ApplicationId: vars["application_id"],
 		}
 
 		devID := ttnpb.EndDeviceIdentifiers{
 			ApplicationIdentifiers: appID,
-			DeviceID:               vars["device_id"],
+			DeviceId:               vars["device_id"],
 		}
 		if err := devID.ValidateContext(ctx); err != nil {
 			webhandlers.Error(w, r, err)
@@ -78,7 +81,7 @@ func (w *webhooks) validateAndFillIDs(next http.Handler) http.Handler {
 
 		hookID := ttnpb.ApplicationWebhookIdentifiers{
 			ApplicationIdentifiers: appID,
-			WebhookID:              vars["webhook_id"],
+			WebhookId:              vars["webhook_id"],
 		}
 		if err := hookID.ValidateContext(ctx); err != nil {
 			webhandlers.Error(w, r, err)
@@ -99,6 +102,31 @@ func (w *webhooks) requireApplicationRights(required ...ttnpb.Right) mux.Middlew
 				webhandlers.Error(res, req, err)
 				return
 			}
+			next.ServeHTTP(res, req)
+		})
+	}
+}
+
+var errRateLimitExceeded = errors.DefineResourceExhausted("rate_limit_exceeded", "rate limit exceeded")
+
+func (w *webhooks) requireRateLimits() mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+			authTokenID := ""
+			token := req.Header.Get("Authorization")
+			if _, v, _, err := auth.SplitToken(token); err == nil && v != "" {
+				authTokenID = v
+			}
+
+			resource := ratelimit.ApplicationWebhooksDownResource(ctx, deviceIDFromContext(ctx), authTokenID)
+			limit, result := w.server.RateLimiter().RateLimit(resource)
+			result.SetHTTPHeaders(res.Header())
+			if limit {
+				webhandlers.Error(res, req, errRateLimitExceeded.New())
+				return
+			}
+
 			next.ServeHTTP(res, req)
 		})
 	}

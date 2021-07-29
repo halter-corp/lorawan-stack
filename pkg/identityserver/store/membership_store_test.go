@@ -28,8 +28,7 @@ import (
 )
 
 func TestFindIndirectMemberships(t *testing.T) {
-	ctx := test.Context()
-	a := assertions.New(t)
+	a, ctx := test.New(t)
 
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
 		s := newStore(db)
@@ -76,7 +75,7 @@ func TestFindIndirectMemberships(t *testing.T) {
 			Rights:     Rights{Rights: []ttnpb.Right{6, 7}},
 		})
 
-		common, err := store.FindIndirectMemberships(ctx, &ttnpb.UserIdentifiers{UserID: "test-user"}, &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"})
+		common, err := store.FindIndirectMemberships(ctx, &ttnpb.UserIdentifiers{UserId: "test-user"}, (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}).GetEntityIdentifiers())
 
 		if a.So(err, should.BeNil) {
 			a.So(common, should.HaveLength, 2)
@@ -85,9 +84,9 @@ func TestFindIndirectMemberships(t *testing.T) {
 }
 
 func TestMembershipStore(t *testing.T) {
-	ctx := test.Context()
-
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
+		_, ctx := test.New(t)
+
 		prepareTest(db,
 			&Membership{},
 			&Account{}, &User{}, &Organization{},
@@ -98,7 +97,7 @@ func TestMembershipStore(t *testing.T) {
 		store := GetMembershipStore(db)
 
 		if os.Getenv("TEST_REDIS") == "1" {
-			redis, flush := test.NewRedis(t, "is_membership_store")
+			redis, flush := test.NewRedis(ctx, "is_membership_store")
 			defer flush()
 			store = GetMembershipCache(store, redis, time.Minute)
 		}
@@ -124,7 +123,7 @@ func TestMembershipStore(t *testing.T) {
 		for _, tt := range []struct {
 			Name              string
 			Identifiers       *ttnpb.OrganizationOrUserIdentifiers
-			MemberIdentifiers ttnpb.Identifiers
+			MemberIdentifiers *ttnpb.EntityIdentifiers
 			Rights            []ttnpb.Right
 			RightsUpdated     []ttnpb.Right
 			EntityType        string
@@ -132,7 +131,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "User-Application",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_APPLICATION_SETTINGS_BASIC},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_APPLICATION_INFO,
@@ -143,7 +142,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "User-Client",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_CLIENT_ALL},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_CLIENT_ALL,
@@ -154,7 +153,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "User-Gateway",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_GATEWAY_SETTINGS_BASIC},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_GATEWAY_INFO,
@@ -165,7 +164,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "User-Organization",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.OrganizationIdentifiers{OrganizationID: "test-org"},
+				MemberIdentifiers: (&ttnpb.OrganizationIdentifiers{OrganizationId: "test-org"}).GetEntityIdentifiers(),
 				Rights: []ttnpb.Right{
 					ttnpb.RIGHT_APPLICATION_ALL,
 					ttnpb.RIGHT_GATEWAY_ALL,
@@ -182,7 +181,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "Organization-Application",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_APPLICATION_INFO},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_APPLICATION_INFO,
@@ -193,7 +192,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "Organization-Client",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_CLIENT_ALL},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_CLIENT_ALL,
@@ -204,7 +203,7 @@ func TestMembershipStore(t *testing.T) {
 			{
 				Name:              "Organization-Gateway",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw"}).GetEntityIdentifiers(),
 				Rights:            []ttnpb.Right{ttnpb.RIGHT_GATEWAY_INFO},
 				RightsUpdated: []ttnpb.Right{
 					ttnpb.RIGHT_GATEWAY_INFO,
@@ -214,7 +213,7 @@ func TestMembershipStore(t *testing.T) {
 			},
 		} {
 			t.Run(tt.Name, func(t *testing.T) {
-				a := assertions.New(t)
+				a, ctx := test.New(t)
 
 				memberEntityRights, err := store.GetMember(ctx, tt.Identifiers, tt.MemberIdentifiers)
 
@@ -301,7 +300,7 @@ func TestMembershipStore(t *testing.T) {
 
 			err := store.SetMember(ctx,
 				orgIDs,
-				ttnpb.OrganizationIdentifiers{OrganizationID: "other-org"},
+				(&ttnpb.OrganizationIdentifiers{OrganizationId: "other-org"}).GetEntityIdentifiers(),
 				ttnpb.RightsFrom([]ttnpb.Right{ttnpb.RIGHT_ORGANIZATION_ALL}...),
 			)
 
@@ -310,55 +309,55 @@ func TestMembershipStore(t *testing.T) {
 			}
 		})
 
-		userNotFoundIDs := ttnpb.UserIdentifiers{UserID: "test-usr-not-found"}.OrganizationOrUserIdentifiers()
-		organizationNotFoundIDs := ttnpb.UserIdentifiers{UserID: "test-usr-not-found"}.OrganizationOrUserIdentifiers()
+		userNotFoundIDs := ttnpb.UserIdentifiers{UserId: "test-usr-not-found"}.OrganizationOrUserIdentifiers()
+		organizationNotFoundIDs := ttnpb.UserIdentifiers{UserId: "test-usr-not-found"}.OrganizationOrUserIdentifiers()
 
 		for _, tt := range []struct {
 			Name              string
 			Identifiers       *ttnpb.OrganizationOrUserIdentifiers
-			MemberIdentifiers ttnpb.Identifiers
+			MemberIdentifiers *ttnpb.EntityIdentifiers
 			EntityType        string
 		}{
 			{
 				Name:              "User-Application - user not found",
 				Identifiers:       userNotFoundIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}).GetEntityIdentifiers(),
 				EntityType:        "application",
 			},
 			{
 				Name:              "User-Client - user not found",
 				Identifiers:       userNotFoundIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli"}).GetEntityIdentifiers(),
 				EntityType:        "client",
 			},
 			{
 				Name:              "User-Gateway - user not found",
 				Identifiers:       userNotFoundIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw"}).GetEntityIdentifiers(),
 				EntityType:        "gateway",
 			},
 			{
 				Name:              "User-Organization - user not found",
 				Identifiers:       userNotFoundIDs,
-				MemberIdentifiers: &ttnpb.OrganizationIdentifiers{OrganizationID: "test-org"},
+				MemberIdentifiers: (&ttnpb.OrganizationIdentifiers{OrganizationId: "test-org"}).GetEntityIdentifiers(),
 				EntityType:        "organization",
 			},
 			{
 				Name:              "Organization-Application - organization not found",
 				Identifiers:       organizationNotFoundIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}).GetEntityIdentifiers(),
 				EntityType:        "application",
 			},
 			{
 				Name:              "Organization-Client - organization not found",
 				Identifiers:       organizationNotFoundIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli"}).GetEntityIdentifiers(),
 				EntityType:        "client",
 			},
 			{
 				Name:              "Organization-Gateway - organization not found",
 				Identifiers:       organizationNotFoundIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw"}).GetEntityIdentifiers(),
 				EntityType:        "gateway",
 			},
 		} {
@@ -386,49 +385,49 @@ func TestMembershipStore(t *testing.T) {
 		for _, tt := range []struct {
 			Name              string
 			Identifiers       *ttnpb.OrganizationOrUserIdentifiers
-			MemberIdentifiers ttnpb.Identifiers
+			MemberIdentifiers *ttnpb.EntityIdentifiers
 			EntityType        string
 		}{
 			{
 				Name:              "User-Application - application not found",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app-not-found"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "application",
 			},
 			{
 				Name:              "User-Client - client not found",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli-not-found"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "client",
 			},
 			{
 				Name:              "User-Gateway - gateway not found",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw-not-found"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "gateway",
 			},
 			{
 				Name:              "User-Organization - organization not found",
 				Identifiers:       usrIDs,
-				MemberIdentifiers: &ttnpb.OrganizationIdentifiers{OrganizationID: "test-org-not-found"},
+				MemberIdentifiers: (&ttnpb.OrganizationIdentifiers{OrganizationId: "test-org-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "organization",
 			},
 			{
 				Name:              "Organization-Application - application not found",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app-not-found"},
+				MemberIdentifiers: (&ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "application",
 			},
 			{
 				Name:              "Organization-Client - client not found",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.ClientIdentifiers{ClientID: "test-cli-not-found"},
+				MemberIdentifiers: (&ttnpb.ClientIdentifiers{ClientId: "test-cli-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "client",
 			},
 			{
 				Name:              "Organization-Gateway - gateway not found",
 				Identifiers:       orgIDs,
-				MemberIdentifiers: &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw-not-found"},
+				MemberIdentifiers: (&ttnpb.GatewayIdentifiers{GatewayId: "test-gtw-not-found"}).GetEntityIdentifiers(),
 				EntityType:        "gateway",
 			},
 		} {
@@ -451,6 +450,77 @@ func TestMembershipStore(t *testing.T) {
 					a.So(members, should.BeEmpty)
 				}
 			})
+		}
+	})
+}
+
+func TestDeleteEntityAndAccountMemberships(t *testing.T) {
+	ctx := test.Context()
+	a := assertions.New(t)
+	WithDB(t, func(t *testing.T, db *gorm.DB) {
+		s := newStore(db)
+		store := GetMembershipStore(db)
+
+		prepareTest(db,
+			&Membership{},
+			&Account{}, &User{}, &Organization{},
+			&Application{},
+		)
+
+		usr := &User{Account: Account{UID: "test-user"}}
+		s.createEntity(ctx, usr)
+		org1 := &Organization{Account: Account{UID: "test-org-1"}}
+		s.createEntity(ctx, org1)
+		org2 := &Organization{Account: Account{UID: "test-org-2"}}
+		s.createEntity(ctx, org2)
+		app := &Application{ApplicationID: "test-app"}
+		s.createEntity(ctx, app)
+		usrIDs := usr.Account.OrganizationOrUserIdentifiers()
+		s.createEntity(ctx, &Membership{
+			AccountID:  usr.Account.ID,
+			EntityID:   org1.ID,
+			EntityType: "organization",
+			Rights:     Rights{Rights: []ttnpb.Right{1, 2, 3, 4}},
+		})
+		s.createEntity(ctx, &Membership{
+			AccountID:  usr.Account.ID,
+			EntityID:   org2.ID,
+			EntityType: "organization",
+			Rights:     Rights{Rights: []ttnpb.Right{5, 6, 7, 8}},
+		})
+
+		s.createEntity(ctx, &Membership{
+			AccountID:  org1.Account.ID,
+			EntityID:   app.ID,
+			EntityType: "application",
+			Rights:     Rights{Rights: []ttnpb.Right{2, 3}},
+		})
+		s.createEntity(ctx, &Membership{
+			AccountID:  org2.Account.ID,
+			EntityID:   app.ID,
+			EntityType: "application",
+			Rights:     Rights{Rights: []ttnpb.Right{6, 7}},
+		})
+
+		err := store.DeleteEntityMembers(ctx, (&ttnpb.ApplicationIdentifiers{ApplicationId: app.ApplicationID}).GetEntityIdentifiers())
+		a.So(err, should.BeNil)
+
+		members, err := store.FindMembers(ctx, (&ttnpb.ApplicationIdentifiers{ApplicationId: app.ApplicationID}).GetEntityIdentifiers())
+		if a.So(err, should.BeNil) {
+			a.So(members, should.BeEmpty)
+		}
+
+		err = store.DeleteAccountMembers(ctx, usrIDs)
+		a.So(err, should.BeNil)
+
+		_, err = store.GetMember(ctx, usrIDs, (&ttnpb.OrganizationIdentifiers{OrganizationId: org1.Account.UID}).GetEntityIdentifiers())
+		if a.So(err, should.NotBeNil) {
+			a.So(errors.IsNotFound(err), should.BeTrue)
+		}
+
+		_, err = store.GetMember(ctx, usrIDs, (&ttnpb.OrganizationIdentifiers{OrganizationId: org2.Account.UID}).GetEntityIdentifiers())
+		if a.So(err, should.NotBeNil) {
+			a.So(errors.IsNotFound(err), should.BeTrue)
 		}
 	})
 }

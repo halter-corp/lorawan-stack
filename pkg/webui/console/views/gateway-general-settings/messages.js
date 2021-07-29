@@ -1,4 +1,4 @@
-// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ const messages = defineMessages({
   deleteGateway: 'Delete gateway',
   modalWarning:
     'Are you sure you want to delete "{gtwName}"? This action cannot be undone and it will not be possible to reuse the gateway ID.',
+  disablePacketBrokerForwarding:
+    'Disable forwarding uplink messages received from this gateway to the Packet Broker',
 })
 
 export default messages

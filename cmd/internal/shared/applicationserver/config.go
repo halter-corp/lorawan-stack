@@ -20,18 +20,19 @@ import (
 
 	"go.thethings.network/lorawan-stack/v3/cmd/internal/shared"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 )
 
 // DefaultWebhookTemplatesConfig is the default configuration for the Webhook templates.
 var DefaultWebhookTemplatesConfig = web.TemplatesConfig{
-	URL: "https://raw.githubusercontent.com/TheThingsNetwork/lorawan-webhook-templates/master",
+	Directory: "/srv/ttn-lorawan/lorawan-webhook-templates",
+	URL:       "https://raw.githubusercontent.com/TheThingsNetwork/lorawan-webhook-templates/master",
 }
 
 // DefaultApplicationServerConfig is the default configuration for the Application Server.
 var DefaultApplicationServerConfig = applicationserver.Config{
-	LinkMode: "all",
 	MQTT: config.MQTT{
 		Listen:           ":1883",
 		ListenTLS:        ":8883",
@@ -47,9 +48,36 @@ var DefaultApplicationServerConfig = applicationserver.Config{
 		Downlinks: web.DownlinksConfig{PublicAddress: shared.DefaultPublicURL + "/api/v3"},
 	},
 	EndDeviceFetcher: applicationserver.EndDeviceFetcherConfig{
+		Timeout: 5 * time.Second,
 		Cache: applicationserver.EndDeviceFetcherCacheConfig{
 			Enable: true,
 			TTL:    5 * time.Minute,
 		},
+		CircuitBreaker: applicationserver.EndDeviceFetcherCircuitBreakerConfig{
+			Enable:    true,
+			Threshold: 10,
+			Timeout:   15 * time.Minute,
+		},
+	},
+	UplinkStorage: applicationserver.UplinkStorageConfig{
+		Limit: 16,
+	},
+	Distribution: applicationserver.DistributionConfig{
+		Timeout: time.Minute,
+	},
+	PubSub: applicationserver.PubSubConfig{
+		Providers: map[string]string{
+			"mqtt": "enabled",
+			"nats": "enabled",
+		},
+	},
+	Packages: applicationserver.ApplicationPackagesConfig{
+		Config: packages.Config{
+			Workers: 16,
+			Timeout: 10 * time.Second,
+		},
+	},
+	Formatters: applicationserver.FormattersConfig{
+		MaxParameterLength: 40960,
 	},
 }

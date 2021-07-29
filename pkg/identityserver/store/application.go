@@ -15,7 +15,7 @@
 package store
 
 import (
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -32,6 +32,7 @@ type Application struct {
 	APIKeys       []APIKey     `gorm:"polymorphic:Entity;polymorphic_value:application"`
 	Memberships   []Membership `gorm:"polymorphic:Entity;polymorphic_value:application"`
 	// END common fields
+	DevEUICounter int `gorm:"<-:create;type:INT;default:'0';column:dev_eui_counter"`
 }
 
 func init() {
@@ -40,9 +41,10 @@ func init() {
 
 // functions to set fields from the application model into the application proto.
 var applicationPBSetters = map[string]func(*ttnpb.Application, *Application){
-	nameField:        func(pb *ttnpb.Application, app *Application) { pb.Name = app.Name },
-	descriptionField: func(pb *ttnpb.Application, app *Application) { pb.Description = app.Description },
-	attributesField:  func(pb *ttnpb.Application, app *Application) { pb.Attributes = attributes(app.Attributes).toMap() },
+	nameField:          func(pb *ttnpb.Application, app *Application) { pb.Name = app.Name },
+	descriptionField:   func(pb *ttnpb.Application, app *Application) { pb.Description = app.Description },
+	attributesField:    func(pb *ttnpb.Application, app *Application) { pb.Attributes = attributes(app.Attributes).toMap() },
+	devEuiCounterField: func(pb *ttnpb.Application, app *Application) { pb.DevEuiCounter = uint32(app.DevEUICounter) },
 }
 
 // functions to set fields from the application proto into the application model.
@@ -55,7 +57,7 @@ var applicationModelSetters = map[string]func(*Application, *ttnpb.Application){
 }
 
 // fieldMask to use if a nil or empty fieldmask is passed.
-var defaultApplicationFieldMask = &types.FieldMask{}
+var defaultApplicationFieldMask = &pbtypes.FieldMask{}
 
 func init() {
 	paths := make([]string, 0, len(applicationPBSetters))
@@ -69,31 +71,33 @@ func init() {
 
 // fieldmask path to column name in applications table.
 var applicationColumnNames = map[string][]string{
-	attributesField:  {},
-	contactInfoField: {},
-	nameField:        {nameField},
-	descriptionField: {descriptionField},
+	attributesField:    {},
+	contactInfoField:   {},
+	nameField:          {nameField},
+	descriptionField:   {descriptionField},
+	devEuiCounterField: {devEuiCounterField},
 }
 
-func (app Application) toPB(pb *ttnpb.Application, fieldMask *types.FieldMask) {
-	pb.ApplicationIdentifiers.ApplicationID = app.ApplicationID
+func (app Application) toPB(pb *ttnpb.Application, fieldMask *pbtypes.FieldMask) {
+	pb.ApplicationIdentifiers.ApplicationId = app.ApplicationID
 	pb.CreatedAt = cleanTime(app.CreatedAt)
 	pb.UpdatedAt = cleanTime(app.UpdatedAt)
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	pb.DeletedAt = cleanTimePtr(app.DeletedAt)
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultApplicationFieldMask
 	}
-	for _, path := range fieldMask.Paths {
+	for _, path := range fieldMask.GetPaths() {
 		if setter, ok := applicationPBSetters[path]; ok {
 			setter(pb, &app)
 		}
 	}
 }
 
-func (app *Application) fromPB(pb *ttnpb.Application, fieldMask *types.FieldMask) (columns []string) {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func (app *Application) fromPB(pb *ttnpb.Application, fieldMask *pbtypes.FieldMask) (columns []string) {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultApplicationFieldMask
 	}
-	for _, path := range fieldMask.Paths {
+	for _, path := range fieldMask.GetPaths() {
 		if setter, ok := applicationModelSetters[path]; ok {
 			setter(app, pb)
 			if columnNames, ok := applicationColumnNames[path]; ok {

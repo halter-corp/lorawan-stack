@@ -18,9 +18,21 @@ package ttn.lorawan.v3;
 
 import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
 import "lorawan-stack/api/identifiers.proto";
 
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// TODO: Migrate away from GoGo Protobuf (https://github.com/TheThingsNetwork/lorawan-stack/issues/2798).
+option (gogoproto.enum_stringer_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.goproto_enum_stringer_all) = false;
+option (gogoproto.goproto_registration) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.protosizer_all) = false;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.stringer_all) = true;
 
 // Right is the enum that defines all the different rights to do something in the network.
 enum Right {
@@ -88,7 +100,8 @@ enum Right {
   // The right to link as Application to a Network Server for traffic exchange,
   // i.e. read uplink and write downlink (API keys only).
   // This right is typically only given to an Application Server.
-  // This right implies RIGHT_APPLICATION_INFO.
+  // This right implies RIGHT_APPLICATION_INFO, RIGHT_APPLICATION_TRAFFIC_READ,
+  // and RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE.
   RIGHT_APPLICATION_LINK = 27;
   // The pseudo-right for all (current and future) application rights.
   RIGHT_APPLICATION_ALL = 28;
@@ -180,6 +193,10 @@ message APIKey {
 
   // Rights that are granted to this API key.
   repeated Right rights = 4 [(validate.rules).repeated.items.enum.defined_only = true];
+
+  google.protobuf.Timestamp created_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp updated_at = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp expires_at = 7 [(gogoproto.nullable) = true, (gogoproto.stdtime) = true, (validate.rules).timestamp.gt_now = true];
 }
 
 message APIKeys {

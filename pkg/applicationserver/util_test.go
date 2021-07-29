@@ -24,11 +24,11 @@ import (
 	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
-	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -45,13 +45,12 @@ func mustHavePeer(ctx context.Context, c *component.Component, role ttnpb.Cluste
 func eui64Ptr(eui types.EUI64) *types.EUI64 {
 	return &eui
 }
-func devAddrPtr(devAddr types.DevAddr) *types.DevAddr {
-	return &devAddr
-}
+
 func withDevAddr(ids ttnpb.EndDeviceIdentifiers, devAddr types.DevAddr) ttnpb.EndDeviceIdentifiers {
 	ids.DevAddr = &devAddr
 	return ids
 }
+
 func aes128KeyPtr(key types.AES128Key) *types.AES128Key {
 	return &key
 }
@@ -62,17 +61,21 @@ type mockNS struct {
 	upCh            chan *ttnpb.ApplicationUp
 	downlinkQueueMu sync.RWMutex
 	downlinkQueue   map[string][]*ttnpb.ApplicationDownlink
-	validateAuth    func(rpcmetadata.MD) bool
 }
 
-func startMockNS(ctx context.Context, validateAuth func(rpcmetadata.MD) bool) (*mockNS, string) {
+type mockNSASConn struct {
+	cc   *grpc.ClientConn
+	auth grpc.CallOption
+}
+
+func startMockNS(ctx context.Context, link chan *mockNSASConn) (*mockNS, string) {
 	ns := &mockNS{
 		linkCh:        make(chan ttnpb.ApplicationIdentifiers, 1),
 		unlinkCh:      make(chan ttnpb.ApplicationIdentifiers, 1),
 		upCh:          make(chan *ttnpb.ApplicationUp, 1),
 		downlinkQueue: make(map[string][]*ttnpb.ApplicationDownlink),
-		validateAuth:  validateAuth,
 	}
+	go ns.sendTraffic(ctx, link)
 	srv := rpcserver.New(ctx)
 	ttnpb.RegisterAsNsServer(srv.Server, ns)
 	lis, err := net.Listen("tcp", "localhost:0")
@@ -83,42 +86,25 @@ func startMockNS(ctx context.Context, validateAuth func(rpcmetadata.MD) bool) (*
 	return ns, lis.Addr().String()
 }
 
-var errPermissionDenied = errors.DefinePermissionDenied("permission_denied", "permission denied")
-
-func (ns *mockNS) LinkApplication(stream ttnpb.AsNs_LinkApplicationServer) error {
-	ctx := stream.Context()
-	md := rpcmetadata.FromIncomingContext(ctx)
-	ids := ttnpb.ApplicationIdentifiers{
-		ApplicationID: md.ID,
-	}
-	if err := ids.ValidateContext(ctx); err != nil {
-		return err
-	}
-	if !ns.validateAuth(md) {
-		return errPermissionDenied.New()
-	}
-
+func (ns *mockNS) sendTraffic(ctx context.Context, link chan *mockNSASConn) {
+	var cc *grpc.ClientConn
+	var auth grpc.CallOption
 	select {
-	case ns.linkCh <- ids:
-	default:
+	case <-ctx.Done():
+		return
+	case l := <-link:
+		cc, auth = l.cc, l.auth
 	}
-	defer func() {
-		select {
-		case ns.unlinkCh <- ids:
-		default:
-		}
-	}()
-
+	client := ttnpb.NewNsAsClient(cc)
 	for {
 		select {
-		case <-stream.Context().Done():
-			return nil
+		case <-ctx.Done():
+			return
 		case up := <-ns.upCh:
-			if err := stream.Send(up); err != nil {
-				return err
-			}
-			if _, err := stream.Recv(); err != nil {
-				return err
+			if _, err := client.HandleUplink(ctx, &ttnpb.NsAsHandleUplinkRequest{
+				ApplicationUps: []*ttnpb.ApplicationUp{up},
+			}, auth); err != nil {
+				panic(err)
 			}
 		}
 	}
@@ -154,9 +140,55 @@ func (ns *mockNS) DownlinkQueueList(ctx context.Context, ids *ttnpb.EndDeviceIde
 	}, nil
 }
 
+type mockISEndDeviceRegistry struct {
+	ttnpb.EndDeviceRegistryServer
+
+	endDevicesMu sync.RWMutex
+	endDevices   map[string]*ttnpb.EndDevice
+}
+
+func (m *mockISEndDeviceRegistry) add(ctx context.Context, dev *ttnpb.EndDevice) {
+	m.endDevicesMu.Lock()
+	defer m.endDevicesMu.Unlock()
+	m.endDevices[unique.ID(ctx, dev.EndDeviceIdentifiers)] = dev
+}
+
+func (m *mockISEndDeviceRegistry) get(ctx context.Context, ids ttnpb.EndDeviceIdentifiers) (*ttnpb.EndDevice, bool) {
+	m.endDevicesMu.RLock()
+	defer m.endDevicesMu.RUnlock()
+	dev, ok := m.endDevices[unique.ID(ctx, ids)]
+	return dev, ok
+}
+
+func (m *mockISEndDeviceRegistry) Get(ctx context.Context, in *ttnpb.GetEndDeviceRequest) (*ttnpb.EndDevice, error) {
+	m.endDevicesMu.RLock()
+	defer m.endDevicesMu.RUnlock()
+	if dev, ok := m.endDevices[unique.ID(ctx, in.EndDeviceIdentifiers)]; ok {
+		return dev, nil
+	}
+	return nil, errNotFound.New()
+}
+
+func (m *mockISEndDeviceRegistry) Update(ctx context.Context, in *ttnpb.UpdateEndDeviceRequest) (*ttnpb.EndDevice, error) {
+	m.endDevicesMu.Lock()
+	defer m.endDevicesMu.Unlock()
+	dev, ok := m.endDevices[unique.ID(ctx, in.EndDeviceIdentifiers)]
+	if !ok {
+		return nil, errNotFound.New()
+	}
+	if err := dev.SetFields(&in.EndDevice, in.GetFieldMask().GetPaths()...); err != nil {
+		return nil, err
+	}
+	m.endDevices[unique.ID(ctx, in.EndDeviceIdentifiers)] = dev
+	return dev, nil
+}
+
 type mockIS struct {
 	ttnpb.ApplicationRegistryServer
 	ttnpb.ApplicationAccessServer
+
+	endDeviceRegistry *mockISEndDeviceRegistry
+
 	applications     map[string]*ttnpb.Application
 	applicationAuths map[string][]string
 }
@@ -165,10 +197,14 @@ func startMockIS(ctx context.Context) (*mockIS, string) {
 	is := &mockIS{
 		applications:     make(map[string]*ttnpb.Application),
 		applicationAuths: make(map[string][]string),
+		endDeviceRegistry: &mockISEndDeviceRegistry{
+			endDevices: make(map[string]*ttnpb.EndDevice),
+		},
 	}
 	srv := rpcserver.New(ctx)
 	ttnpb.RegisterApplicationRegistryServer(srv.Server, is)
 	ttnpb.RegisterApplicationAccessServer(srv.Server, is)
+	ttnpb.RegisterEndDeviceRegistryServer(srv.Server, is.endDeviceRegistry)
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		panic(err)
@@ -250,7 +286,7 @@ func (js *mockJS) add(ctx context.Context, devEUI types.EUI64, sessionKeyID []by
 }
 
 func (js *mockJS) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error) {
-	key, ok := js.keys[fmt.Sprintf("%v:%v", req.DevEUI, req.SessionKeyID)]
+	key, ok := js.keys[fmt.Sprintf("%v:%v", req.DevEui, req.SessionKeyID)]
 	if !ok {
 		return nil, errNotFound.New()
 	}

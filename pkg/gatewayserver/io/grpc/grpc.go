@@ -25,6 +25,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
@@ -58,6 +59,8 @@ type impl struct {
 	server               io.Server
 	mqttConfigProvider   config.MQTTConfigProvider
 	mqttv2ConfigProvider config.MQTTConfigProvider
+
+	tokens io.DownlinkTokens
 }
 
 // New returns a new gRPC frontend.
@@ -79,13 +82,13 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 	ctx := log.NewContextWithField(link.Context(), "namespace", "gatewayserver/io/grpc")
 
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: rpcmetadata.FromIncomingContext(ctx).ID,
+		GatewayId: rpcmetadata.FromIncomingContext(ctx).ID,
 	}
 	ctx, ids, err := s.server.FillGatewayContext(ctx, ids)
 	if err != nil {
 		return err
 	}
-	if err = ids.ValidateContext(ctx); err != nil {
+	if err = s.server.ValidateGatewayID(ctx, ids); err != nil {
 		return err
 	}
 	if err = rights.RequireGateway(ctx, ids, ttnpb.RIGHT_GATEWAY_LINK); err != nil {
@@ -105,7 +108,13 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 	}
 
 	go func() {
+		resource := ratelimit.GatewayUpResource(ctx, ids)
 		for {
+			if err := ratelimit.Require(s.server.RateLimiter(), resource); err != nil {
+				logger.WithError(err).Warn("Terminate connection")
+				conn.Disconnect(err)
+				return
+			}
 			msg, err := link.Recv()
 			if err != nil {
 				if !errors.IsCanceled(err) {
@@ -121,7 +130,7 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 				"uplink_count", len(msg.UplinkMessages),
 			)).Debug("Received message")
 
-			for _, up := range msg.UplinkMessages {
+			for _, up := range io.UniqueUplinkMessagesByRSSI(msg.UplinkMessages) {
 				up.ReceivedAt = now
 				if err := conn.HandleUp(up); err != nil {
 					logger.WithError(err).Warn("Failed to handle uplink message")
@@ -132,9 +141,14 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 					logger.WithError(err).Warn("Failed to handle status message")
 				}
 			}
-			if msg.TxAcknowledgment != nil {
-				if err := conn.HandleTxAck(msg.TxAcknowledgment); err != nil {
-					logger.WithError(err).Warn("Failed to handle Tx acknowledgement")
+			if ack := msg.TxAcknowledgment; ack != nil {
+				if token, ok := s.tokens.ParseTokenFromCorrelationIDs(ack.GetCorrelationIDs()); ok {
+					if down, _, ok := s.tokens.Get(token, time.Now()); ok {
+						ack.DownlinkMessage = down
+					}
+				}
+				if err := conn.HandleTxAck(ack); err != nil {
+					logger.WithError(err).Warn("Failed to handle Tx acknowledgment")
 				}
 			}
 		}
@@ -145,6 +159,8 @@ func (s *impl) LinkGateway(link ttnpb.GtwGs_LinkGatewayServer) error {
 		case <-conn.Context().Done():
 			return conn.Context().Err()
 		case down := <-conn.Down():
+			token := s.tokens.Next(down, time.Now())
+			down.CorrelationIDs = append(down.CorrelationIDs, s.tokens.FormatCorrelationID(token))
 			msg := &ttnpb.GatewayDown{
 				DownlinkMessage: down,
 			}
@@ -162,7 +178,7 @@ func (s *impl) GetConcentratorConfig(ctx context.Context, _ *pbtypes.Empty) (*tt
 	ctx = log.NewContextWithField(ctx, "namespace", "gatewayserver/io/grpc")
 
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: rpcmetadata.FromIncomingContext(ctx).ID,
+		GatewayId: rpcmetadata.FromIncomingContext(ctx).ID,
 	}
 	if err := ids.ValidateContext(ctx); err != nil {
 		return nil, err

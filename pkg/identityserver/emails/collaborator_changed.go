@@ -14,12 +14,21 @@
 
 package emails
 
-import "go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+import (
+	"fmt"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+)
 
 // CollaboratorChanged is the email that is sent when a collaborator is changed
 type CollaboratorChanged struct {
 	Data
 	Collaborator ttnpb.Collaborator
+}
+
+// ConsoleURL returns the URL to the collaborator in the Console.
+func (c CollaboratorChanged) ConsoleURL() string {
+	return fmt.Sprintf("%s/%ss/%s/collaborators/%s/%s", c.Network.ConsoleURL, c.Entity.Type, c.Entity.ID, c.Collaborator.EntityType(), c.Collaborator.IDString())
 }
 
 // TemplateName returns the name of the template to use for this email.
@@ -29,9 +38,18 @@ const collaboratorChangedSubject = `A collaborator has been changed`
 
 const collaboratorChangedBody = `Dear {{.User.Name}},
 
-The collaborator "{{.Collaborator.EntityIdentifiers.IDString}}" of {{.Entity.Type}} "{{.Entity.ID}}" on {{.Network.Name}} now has the following rights:
+The collaborator "{{.Collaborator.IDString}}" of {{.Entity.Type}} "{{.Entity.ID}}" on {{.Network.Name}} now has the following rights:
 {{range $right := .Collaborator.Rights}}
 {{$right}} {{end}}
+
+You can go to {{.ConsoleURL}} to view and edit this collaborator in the Console.
+
+If you prefer to use the command-line interface, you can run the following commands to view or edit this collaborator:
+
+ttn-lw-cli {{.Entity.Type}}s collaborators get --{{.Entity.Type}}-id {{.Entity.ID}} --{{.Collaborator.EntityType}}-id {{.Collaborator.IDString}}
+ttn-lw-cli {{.Entity.Type}}s collaborators set --{{.Entity.Type}}-id {{.Entity.ID}} --{{.Collaborator.EntityType}}-id {{.Collaborator.IDString}}
+
+For more information on how to use the command-line interface, please refer to the documentation: {{ documentation_url "/getting-started/cli/" }}.
 `
 
 // DefaultTemplates returns the default templates for this email.

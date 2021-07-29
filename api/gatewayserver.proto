@@ -22,6 +22,7 @@ import "google/protobuf/empty.proto";
 import "lorawan-stack/api/error.proto";
 import "lorawan-stack/api/gateway.proto";
 import "lorawan-stack/api/identifiers.proto";
+import "lorawan-stack/api/lorawan.proto";
 import "lorawan-stack/api/messages.proto";
 import "lorawan-stack/api/mqtt.proto";
 import "lorawan-stack/api/regional.proto";
@@ -30,13 +31,24 @@ package ttn.lorawan.v3;
 
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
+// TODO: Migrate away from GoGo Protobuf (https://github.com/TheThingsNetwork/lorawan-stack/issues/2798).
+option (gogoproto.enum_stringer_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.goproto_enum_stringer_all) = false;
+option (gogoproto.goproto_registration) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.protosizer_all) = false;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.stringer_all) = true;
+
 // GatewayUp may contain zero or more uplink messages and/or a status message for the gateway.
 message GatewayUp {
   // Uplink messages received by the gateway.
   repeated UplinkMessage uplink_messages = 1;
   // Gateway status produced by the gateway.
   GatewayStatus gateway_status = 2;
-  // A transmission acknowledgement or error.
+  // A Tx acknowledgment or error.
   TxAcknowledgment tx_acknowledgment = 3;
 }
 
@@ -69,6 +81,14 @@ service GtwGs {
 message ScheduleDownlinkResponse {
   // The amount of time between the message has been scheduled and it will be transmitted by the gateway.
   google.protobuf.Duration delay = 1 [(gogoproto.stdduration) = true, (gogoproto.nullable) = false, (validate.rules).duration.required = true];
+  // Downlink path chosen by the Gateway Server.
+  DownlinkPath downlink_path = 2;
+  // Whether RX1 has been chosen for the downlink message.
+  // Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+  bool rx1 = 3;
+  // Whether RX2 has been chosen for the downlink message.
+  // Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+  bool rx2 = 4;
 }
 
 message ScheduleDownlinkErrorDetails {

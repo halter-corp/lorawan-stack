@@ -15,6 +15,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
+import Link from '@ttn-lw/components/link'
 import LocationMap from '@ttn-lw/components/map'
 import WidgetContainer from '@ttn-lw/components/widget-container'
 
@@ -53,23 +54,27 @@ export default class MapWidget extends React.Component {
         ? [markers[0].position.latitude, markers[0].position.longitude]
         : undefined
 
-    return markers.length > 0 ? (
-      <LocationMap
-        id={id}
-        mapCenter={mapCenter}
-        markers={markers}
-        leafletConfig={leafletConfig}
-        widget
-      />
-    ) : (
-      <div className={style.mapDisabled}>
-        <Message component="span" content={sharedMessages.noLocation} />
+    return (
+      <div data-test-id="map-widget">
+        {markers.length > 0 ? (
+          <LocationMap
+            id={id}
+            mapCenter={mapCenter}
+            markers={markers}
+            leafletConfig={leafletConfig}
+            widget
+          />
+        ) : (
+          <div className={style.mapDisabled}>
+            <Message component="span" content={sharedMessages.noLocation} />
+          </div>
+        )}
       </div>
     )
   }
 
   render() {
-    const { path } = this.props
+    const { path, markers } = this.props
 
     return (
       <WidgetContainer
@@ -77,7 +82,9 @@ export default class MapWidget extends React.Component {
         toAllUrl={path}
         linkMessage={sharedMessages.changeLocation}
       >
-        {this.Map}
+        <Link to={path} disabled={markers && markers.length > 0}>
+          {this.Map}
+        </Link>
       </WidgetContainer>
     )
   }

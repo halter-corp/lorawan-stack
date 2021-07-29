@@ -12,6 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+import {
+  createPaginationIdsSelectorByEntity,
+  createPaginationTotalCountSelectorByEntity,
+} from '@ttn-lw/lib/store/selectors/pagination'
+
 import {
   GET_GTW_BASE,
   GET_GTWS_LIST_BASE,
@@ -28,14 +35,9 @@ import {
   createEventsPausedSelector,
   createEventsTruncatedSelector,
   createLatestEventSelector,
+  createEventsFilterSelector,
 } from './events'
 import { createRightsSelector, createPseudoRightsSelector } from './rights'
-import {
-  createPaginationIdsSelectorByEntity,
-  createPaginationTotalCountSelectorByEntity,
-} from './pagination'
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
 
 const ENTITY = 'gateways'
 
@@ -70,6 +72,7 @@ export const selectGatewayEventsInterrupted = createEventsInterruptedSelector(EN
 export const selectGatewayEventsPaused = createEventsPausedSelector(ENTITY)
 export const selectGatewayEventsTruncated = createEventsTruncatedSelector(ENTITY)
 export const selectLatestGatewayEvent = createLatestEventSelector(ENTITY)
+export const selectGatewayEventsFilter = createEventsFilterSelector(ENTITY)
 
 // Rights.
 export const selectGatewayRights = createRightsSelector(ENTITY)
@@ -79,7 +82,7 @@ export const selectGatewayRightsFetching = createFetchingSelector(GET_GTWS_RIGHT
 
 // Statistics.
 export const selectGatewayStatisticsConnectError = createErrorSelector(START_GTW_STATS_BASE)
-export const selectGatewayStatisticsUpdateError = function(state) {
+export const selectGatewayStatisticsUpdateError = state => {
   const statistics = selectGatewayStatisticsStore(state) || {}
 
   return statistics.error
@@ -90,7 +93,7 @@ export const selectGatewayStatisticsIsFetching = createFetchingSelector([
   START_GTW_STATS_BASE,
   UPDATE_GTW_STATS_BASE,
 ])
-export const selectGatewayStatistics = function(state) {
+export const selectGatewayStatistics = state => {
   const statistics = selectGatewayStatisticsStore(state) || {}
 
   return statistics.stats

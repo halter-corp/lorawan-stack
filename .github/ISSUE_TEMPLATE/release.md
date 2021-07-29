@@ -14,10 +14,19 @@ This is a checklist for releases. This is filled in by both the releaser and the
 
 #### Preparation
 
+- [ ] Create a [documentation release issue](https://github.com/TheThingsIndustries/lorawan-stack-docs/issues/new?title=Release+v3.x.x&labels=release&template=release.md).
+
 - [ ] Create a `release/v3.${minor}.${patch}` branch off the `v3.${minor}` branch.
   ```bash
   $ git checkout v3.${minor}
   $ git checkout -b release/v3.${minor}.${patch}
+  ```
+
+- [ ] Update submodules
+  ```bash
+  $ mage git:pullSubmodules
+  $ git add data
+  $ git commit -m "data: Update external repositories" # if any changes.
   ```
 
 - [ ] Update the `CHANGELOG.md` file
@@ -98,7 +107,6 @@ This is a checklist for releases. This is filled in by both the releaser and the
 
 #### Post Release
 
-- [ ] Edit the release notes on the Github releases page, which is typically copied from `CHANGELOG.md`.
 - [ ] For non RC releases, push the Docker latest tag.
     ```bash
     $ versionDockerTag=${version#"v"} # v3.6.1 -> 3.6.1
@@ -111,3 +119,4 @@ This is a checklist for releases. This is filled in by both the releaser and the
 
 - [ ] The new release contains only the intended commits. This can be checked using `https://github.com/TheThingsNetwork/lorawan-stack/compare/v<previous-version>...v<current-version>`
 - [ ] The Docker latest tag is up to date.
+- [ ] The [documentation site](https://www.thethingsindustries.com/docs/) has been updated.

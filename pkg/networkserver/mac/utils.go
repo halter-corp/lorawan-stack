@@ -18,16 +18,16 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"time"
 
-	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
 	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
+	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/gpstime"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -67,8 +67,8 @@ func channelDataRateRange(chs ...*ttnpb.MACParameters_Channel) (min, max ttnpb.D
 const DefaultClassBTimeout = 10 * time.Minute
 
 func DeviceClassBTimeout(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) time.Duration {
-	if dev.MACSettings != nil && dev.MACSettings.ClassBTimeout != nil {
-		return *dev.MACSettings.ClassBTimeout
+	if t := dev.GetMACSettings().GetClassBTimeout(); t != nil {
+		return *t
 	}
 	if defaults.ClassBTimeout != nil {
 		return *defaults.ClassBTimeout
@@ -81,8 +81,8 @@ func DeviceClassBTimeout(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) time.
 const DefaultClassCTimeout = 5 * time.Minute
 
 func DeviceClassCTimeout(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) time.Duration {
-	if dev.MACSettings != nil && dev.MACSettings.ClassCTimeout != nil {
-		return *dev.MACSettings.ClassCTimeout
+	if t := dev.GetMACSettings().GetClassCTimeout(); t != nil {
+		return *t
 	}
 	if defaults.ClassCTimeout != nil {
 		return *defaults.ClassCTimeout
@@ -149,11 +149,14 @@ func DeviceUseADR(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings, phy *band.Ba
 	if !phy.EnableADR {
 		return false
 	}
-	if dev.MACSettings != nil && dev.MACSettings.UseADR != nil {
-		return dev.MACSettings.UseADR.Value
+	if dev.GetMulticast() {
+		return false
 	}
-	if defaults.UseADR != nil {
-		return defaults.UseADR.Value
+	if v := dev.GetMACSettings().GetUseAdr(); v != nil {
+		return v.Value
+	}
+	if defaults.UseAdr != nil {
+		return defaults.UseAdr.Value
 	}
 	return true
 }
@@ -184,7 +187,7 @@ var errClassAMulticast = errors.DefineInvalidArgument("class_a_multicast", "mult
 
 func DeviceDefaultClass(dev *ttnpb.EndDevice) (ttnpb.Class, error) {
 	switch {
-	case dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) < 0 && dev.SupportsClassC:
+	case dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) < 0 && dev.SupportsClassC:
 		return ttnpb.CLASS_C, nil
 	case !dev.Multicast:
 		return ttnpb.CLASS_A, nil
@@ -200,11 +203,11 @@ func DeviceDefaultClass(dev *ttnpb.EndDevice) (ttnpb.Class, error) {
 func DeviceDefaultLoRaWANVersion(dev *ttnpb.EndDevice) ttnpb.MACVersion {
 	switch {
 	case dev.Multicast:
-		return dev.LoRaWANVersion
-	case dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0:
+		return dev.LorawanVersion
+	case dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) >= 0:
 		return ttnpb.MAC_V1_1
 	default:
-		return dev.LoRaWANVersion
+		return dev.LorawanVersion
 	}
 }
 
@@ -221,6 +224,8 @@ func DeviceDefaultPingSlotPeriodicity(dev *ttnpb.EndDevice, defaults ttnpb.MACSe
 
 func DeviceDesiredMaxEIRP(dev *ttnpb.EndDevice, phy *band.Band, fp *frequencyplans.FrequencyPlan, defaults ttnpb.MACSettings) float32 {
 	switch {
+	case dev.GetMACSettings().GetDesiredMaxEirp() != nil:
+		return lorawan.DeviceEIRPToFloat32(dev.GetMACSettings().GetDesiredMaxEirp().GetValue())
 	case fp.MaxEIRP != nil && *fp.MaxEIRP > 0 && *fp.MaxEIRP < phy.DefaultMaxEIRP:
 		return *fp.MaxEIRP
 	default:
@@ -228,18 +233,18 @@ func DeviceDesiredMaxEIRP(dev *ttnpb.EndDevice, phy *band.Band, fp *frequencypla
 	}
 }
 
-func DeviceDesiredUplinkDwellTime(fp *frequencyplans.FrequencyPlan) *pbtypes.BoolValue {
+func DeviceDesiredUplinkDwellTime(fp *frequencyplans.FrequencyPlan) *ttnpb.BoolValue {
 	if fp.DwellTime.Uplinks == nil {
 		return nil
 	}
-	return &pbtypes.BoolValue{Value: *fp.DwellTime.Uplinks}
+	return &ttnpb.BoolValue{Value: *fp.DwellTime.Uplinks}
 }
 
-func DeviceDesiredDownlinkDwellTime(fp *frequencyplans.FrequencyPlan) *pbtypes.BoolValue {
+func DeviceDesiredDownlinkDwellTime(fp *frequencyplans.FrequencyPlan) *ttnpb.BoolValue {
 	if fp.DwellTime.Downlinks == nil {
 		return nil
 	}
-	return &pbtypes.BoolValue{Value: *fp.DwellTime.Downlinks}
+	return &ttnpb.BoolValue{Value: *fp.DwellTime.Downlinks}
 }
 
 func DeviceDefaultRX1Delay(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.MACSettings) ttnpb.RxDelay {
@@ -266,10 +271,10 @@ func DeviceDesiredRX1Delay(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.
 
 func DeviceDesiredADRAckLimitExponent(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.MACSettings) *ttnpb.ADRAckLimitExponentValue {
 	switch {
-	case dev.GetMACSettings().GetDesiredADRAckLimitExponent() != nil:
-		return &ttnpb.ADRAckLimitExponentValue{Value: dev.MACSettings.DesiredADRAckLimitExponent.Value}
-	case defaults.DesiredADRAckLimitExponent != nil:
-		return &ttnpb.ADRAckLimitExponentValue{Value: defaults.DesiredADRAckLimitExponent.Value}
+	case dev.GetMACSettings().GetDesiredAdrAckLimitExponent() != nil:
+		return &ttnpb.ADRAckLimitExponentValue{Value: dev.MACSettings.DesiredAdrAckLimitExponent.Value}
+	case defaults.DesiredAdrAckLimitExponent != nil:
+		return &ttnpb.ADRAckLimitExponentValue{Value: defaults.DesiredAdrAckLimitExponent.Value}
 	default:
 		return &ttnpb.ADRAckLimitExponentValue{Value: phy.ADRAckLimit}
 	}
@@ -277,27 +282,27 @@ func DeviceDesiredADRAckLimitExponent(dev *ttnpb.EndDevice, phy *band.Band, defa
 
 func DeviceDesiredADRAckDelayExponent(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.MACSettings) *ttnpb.ADRAckDelayExponentValue {
 	switch {
-	case dev.GetMACSettings().GetDesiredADRAckDelayExponent() != nil:
-		return &ttnpb.ADRAckDelayExponentValue{Value: dev.MACSettings.DesiredADRAckDelayExponent.Value}
-	case defaults.DesiredADRAckDelayExponent != nil:
-		return &ttnpb.ADRAckDelayExponentValue{Value: defaults.DesiredADRAckDelayExponent.Value}
+	case dev.GetMACSettings().GetDesiredAdrAckDelayExponent() != nil:
+		return &ttnpb.ADRAckDelayExponentValue{Value: dev.MACSettings.DesiredAdrAckDelayExponent.Value}
+	case defaults.DesiredAdrAckDelayExponent != nil:
+		return &ttnpb.ADRAckDelayExponentValue{Value: defaults.DesiredAdrAckDelayExponent.Value}
 	default:
 		return &ttnpb.ADRAckDelayExponentValue{Value: phy.ADRAckDelay}
 	}
 }
 
-func DeviceDefaultRX1DataRateOffset(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) uint32 {
+func DeviceDefaultRX1DataRateOffset(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) ttnpb.DataRateOffset {
 	switch {
 	case dev.GetMACSettings().GetRx1DataRateOffset() != nil:
 		return dev.MACSettings.Rx1DataRateOffset.Value
 	case defaults.Rx1DataRateOffset != nil:
 		return defaults.Rx1DataRateOffset.Value
 	default:
-		return 0
+		return ttnpb.DataRateOffset_DATA_RATE_OFFSET_0
 	}
 }
 
-func DeviceDesiredRX1DataRateOffset(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) uint32 {
+func DeviceDesiredRX1DataRateOffset(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) ttnpb.DataRateOffset {
 	switch {
 	case dev.GetMACSettings().GetDesiredRx1DataRateOffset() != nil:
 		return dev.MACSettings.DesiredRx1DataRateOffset.Value
@@ -452,95 +457,116 @@ func DeviceDesiredBeaconFrequency(dev *ttnpb.EndDevice, defaults ttnpb.MACSettin
 	}
 }
 
-func DeviceDefaultChannels(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.MACSettings) []*ttnpb.MACParameters_Channel {
-	// NOTE: FactoryPresetFrequencies does not indicate the data rate ranges allowed for channels.
-	// In the latest regional parameters spec(1.1b) the data rate ranges are DR0-DR5 for mandatory channels in all non-fixed channel plans,
-	// hence we assume the same range for predefined channels.
-	var chs []*ttnpb.MACParameters_Channel
-	switch {
-	case len(dev.GetMACSettings().GetFactoryPresetFrequencies()) > 0:
-		chs = make([]*ttnpb.MACParameters_Channel, 0, len(dev.MACSettings.FactoryPresetFrequencies))
-		for _, freq := range dev.MACSettings.FactoryPresetFrequencies {
-			chs = append(chs, &ttnpb.MACParameters_Channel{
-				MaxDataRateIndex:  ttnpb.DATA_RATE_5,
-				UplinkFrequency:   freq,
-				DownlinkFrequency: freq,
-				EnableUplink:      true,
-			})
-		}
-	case len(defaults.GetFactoryPresetFrequencies()) > 0:
-		chs = make([]*ttnpb.MACParameters_Channel, 0, len(defaults.FactoryPresetFrequencies))
-		for _, freq := range defaults.FactoryPresetFrequencies {
-			chs = append(chs, &ttnpb.MACParameters_Channel{
-				MaxDataRateIndex:  ttnpb.DATA_RATE_5,
-				UplinkFrequency:   freq,
-				DownlinkFrequency: freq,
-				EnableUplink:      true,
-			})
-		}
-	default:
-		if len(phy.DownlinkChannels) > len(phy.UplinkChannels) ||
-			len(phy.UplinkChannels) > int(phy.MaxUplinkChannels) ||
-			len(phy.DownlinkChannels) > int(phy.MaxDownlinkChannels) {
-			// NOTE: In case the spec changes and this assumption is not valid anymore,
-			// the implementation of this function won't be valid and has to be changed.
-			panic("uplink/downlink channel length is inconsistent")
-		}
-		chs = make([]*ttnpb.MACParameters_Channel, 0, len(phy.UplinkChannels))
-		for i, phyUpCh := range phy.UplinkChannels {
-			chs = append(chs, &ttnpb.MACParameters_Channel{
-				MinDataRateIndex:  phyUpCh.MinDataRate,
-				MaxDataRateIndex:  phyUpCh.MaxDataRate,
-				UplinkFrequency:   phyUpCh.Frequency,
-				DownlinkFrequency: phy.DownlinkChannels[i%len(phy.DownlinkChannels)].Frequency,
-				EnableUplink:      true,
-			})
-		}
+func deviceFactoryPresetFrequencies(dev *ttnpb.EndDevice, defaults ttnpb.MACSettings) []uint64 {
+	if freqs := dev.GetMACSettings().GetFactoryPresetFrequencies(); len(freqs) > 0 {
+		return freqs
 	}
-	return chs
+	return defaults.GetFactoryPresetFrequencies()
 }
 
-func DeviceDesiredChannels(phy *band.Band, fp *frequencyplans.FrequencyPlan, defaults ttnpb.MACSettings) []*ttnpb.MACParameters_Channel {
-	if len(phy.DownlinkChannels) > len(phy.UplinkChannels) || len(fp.DownlinkChannels) > len(fp.UplinkChannels) ||
-		len(phy.UplinkChannels) > int(phy.MaxUplinkChannels) || len(phy.DownlinkChannels) > int(phy.MaxDownlinkChannels) ||
-		len(fp.UplinkChannels) > int(phy.MaxUplinkChannels) || len(fp.DownlinkChannels) > int(phy.MaxDownlinkChannels) {
+func DeviceDefaultChannels(dev *ttnpb.EndDevice, phy *band.Band, defaults ttnpb.MACSettings) []*ttnpb.MACParameters_Channel {
+	if len(phy.DownlinkChannels) > len(phy.UplinkChannels) ||
+		len(phy.UplinkChannels) > int(phy.MaxUplinkChannels) ||
+		len(phy.DownlinkChannels) > int(phy.MaxDownlinkChannels) {
 		// NOTE: In case the spec changes and this assumption is not valid anymore,
 		// the implementation of this function won't be valid and has to be changed.
 		panic("uplink/downlink channel length is inconsistent")
 	}
 
-	chs := make([]*ttnpb.MACParameters_Channel, 0, len(phy.UplinkChannels)+len(fp.UplinkChannels))
+	factoryPresetFreqs := deviceFactoryPresetFrequencies(dev, defaults)
+
+	chs := make([]*ttnpb.MACParameters_Channel, 0, len(phy.UplinkChannels)+len(factoryPresetFreqs))
 	for i, phyUpCh := range phy.UplinkChannels {
+		downFreq := phy.DownlinkChannels[i%len(phy.DownlinkChannels)].Frequency
+		if dev.Multicast {
+			chs = append(chs, &ttnpb.MACParameters_Channel{
+				DownlinkFrequency: downFreq,
+			})
+			continue
+		}
 		chs = append(chs, &ttnpb.MACParameters_Channel{
 			MinDataRateIndex:  phyUpCh.MinDataRate,
 			MaxDataRateIndex:  phyUpCh.MaxDataRate,
 			UplinkFrequency:   phyUpCh.Frequency,
-			DownlinkFrequency: phy.DownlinkChannels[i%len(phy.DownlinkChannels)].Frequency,
+			DownlinkFrequency: downFreq,
+			EnableUplink:      len(factoryPresetFreqs) == 0,
 		})
 	}
 
-outerUp:
-	for _, fpUpCh := range fp.UplinkChannels {
+outer:
+	for _, freq := range factoryPresetFreqs {
+		for _, ch := range chs {
+			if ch.UplinkFrequency == freq {
+				ch.EnableUplink = true
+				// NOTE: duplicates should not be allowed.
+				continue outer
+			}
+		}
+		if dev.Multicast {
+			chs = append(chs, &ttnpb.MACParameters_Channel{
+				DownlinkFrequency: freq,
+			})
+			continue
+		}
+		// NOTE: FactoryPresetFrequencies does not indicate the data rate ranges allowed for channels.
+		// In the latest regional parameters spec(1.1b) the data rate ranges are DR0-DR5 for mandatory channels in all non-fixed channel plans,
+		// hence we assume the same range for predefined channels.
+		chs = append(chs, &ttnpb.MACParameters_Channel{
+			MaxDataRateIndex:  ttnpb.DATA_RATE_5,
+			UplinkFrequency:   freq,
+			DownlinkFrequency: freq,
+			EnableUplink:      true,
+		})
+	}
+	return chs
+}
+
+func DeviceDesiredChannels(dev *ttnpb.EndDevice, phy *band.Band, fp *frequencyplans.FrequencyPlan, defaults ttnpb.MACSettings) []*ttnpb.MACParameters_Channel {
+	if len(phy.DownlinkChannels) > len(phy.UplinkChannels) ||
+		len(phy.UplinkChannels) > int(phy.MaxUplinkChannels) ||
+		len(phy.DownlinkChannels) > int(phy.MaxDownlinkChannels) ||
+		len(fp.DownlinkChannels) != 0 && len(fp.DownlinkChannels) != len(fp.UplinkChannels) ||
+		len(fp.UplinkChannels) > int(phy.MaxUplinkChannels) ||
+		len(fp.DownlinkChannels) > int(phy.MaxDownlinkChannels) {
+		// NOTE: In case the spec changes and this assumption is not valid anymore,
+		// the implementation of this function won't be valid and has to be changed.
+		panic("uplink/downlink channel length is inconsistent")
+	}
+
+	defaultChs := DeviceDefaultChannels(dev, phy, defaults)
+
+	chs := make([]*ttnpb.MACParameters_Channel, 0, len(defaultChs)+len(fp.UplinkChannels))
+	for _, ch := range defaultChs {
+		chs = append(chs, &ttnpb.MACParameters_Channel{
+			MinDataRateIndex:  ch.MinDataRateIndex,
+			MaxDataRateIndex:  ch.MaxDataRateIndex,
+			UplinkFrequency:   ch.UplinkFrequency,
+			DownlinkFrequency: ch.DownlinkFrequency,
+		})
+	}
+
+outer:
+	for i, fpUpCh := range fp.UplinkChannels {
 		for _, ch := range chs {
 			if ch.UplinkFrequency == fpUpCh.Frequency {
 				ch.MinDataRateIndex = ttnpb.DataRateIndex(fpUpCh.MinDataRate)
 				ch.MaxDataRateIndex = ttnpb.DataRateIndex(fpUpCh.MaxDataRate)
 				ch.EnableUplink = true
-				continue outerUp
+				// NOTE: duplicates should not be allowed.
+				continue outer
 			}
+		}
+		downFreq := fpUpCh.Frequency
+		if i < len(fp.DownlinkChannels) {
+			downFreq = fp.DownlinkChannels[i].Frequency
 		}
 		chs = append(chs, &ttnpb.MACParameters_Channel{
 			MinDataRateIndex:  ttnpb.DataRateIndex(fpUpCh.MinDataRate),
 			MaxDataRateIndex:  ttnpb.DataRateIndex(fpUpCh.MaxDataRate),
 			UplinkFrequency:   fpUpCh.Frequency,
-			DownlinkFrequency: phy.DownlinkChannels[len(chs)%len(phy.DownlinkChannels)].Frequency,
+			DownlinkFrequency: downFreq,
 			EnableUplink:      true,
 		})
-	}
-	if len(fp.DownlinkChannels) > 0 {
-		for i, ch := range chs {
-			ch.DownlinkFrequency = fp.DownlinkChannels[i%len(fp.DownlinkChannels)].Frequency
-		}
 	}
 	return chs
 }
@@ -554,33 +580,31 @@ func NewState(dev *ttnpb.EndDevice, fps *frequencyplans.Store, defaults ttnpb.MA
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Support rejoins. (https://github.com/TheThingsNetwork/lorawan-stack/issues/8)
-	return &ttnpb.MACState{
-		LoRaWANVersion:      DeviceDefaultLoRaWANVersion(dev),
-		DeviceClass:         class,
-		PingSlotPeriodicity: DeviceDefaultPingSlotPeriodicity(dev, defaults),
-		CurrentParameters: ttnpb.MACParameters{
-			MaxEIRP:                    phy.DefaultMaxEIRP,
-			ADRDataRateIndex:           ttnpb.DATA_RATE_0,
-			ADRNbTrans:                 1,
-			Rx1Delay:                   DeviceDefaultRX1Delay(dev, phy, defaults),
-			Rx1DataRateOffset:          DeviceDefaultRX1DataRateOffset(dev, defaults),
-			Rx2DataRateIndex:           DeviceDefaultRX2DataRateIndex(dev, phy, defaults),
-			Rx2Frequency:               DeviceDefaultRX2Frequency(dev, phy, defaults),
-			MaxDutyCycle:               DeviceDefaultMaxDutyCycle(dev, defaults),
-			RejoinTimePeriodicity:      ttnpb.REJOIN_TIME_0,
-			RejoinCountPeriodicity:     ttnpb.REJOIN_COUNT_16,
-			PingSlotFrequency:          DeviceDefaultPingSlotFrequency(dev, phy, defaults),
-			BeaconFrequency:            DeviceDefaultBeaconFrequency(dev, defaults),
-			Channels:                   DeviceDefaultChannels(dev, phy, defaults),
-			ADRAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: phy.ADRAckLimit},
-			ADRAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: phy.ADRAckDelay},
-			PingSlotDataRateIndexValue: DeviceDefaultPingSlotDataRateIndexValue(dev, phy, defaults),
-		},
-		DesiredParameters: ttnpb.MACParameters{
+
+	current := ttnpb.MACParameters{
+		MaxEIRP:                    phy.DefaultMaxEIRP,
+		AdrDataRateIndex:           ttnpb.DATA_RATE_0,
+		AdrNbTrans:                 1,
+		Rx1Delay:                   DeviceDefaultRX1Delay(dev, phy, defaults),
+		Rx1DataRateOffset:          DeviceDefaultRX1DataRateOffset(dev, defaults),
+		Rx2DataRateIndex:           DeviceDefaultRX2DataRateIndex(dev, phy, defaults),
+		Rx2Frequency:               DeviceDefaultRX2Frequency(dev, phy, defaults),
+		MaxDutyCycle:               DeviceDefaultMaxDutyCycle(dev, defaults),
+		RejoinTimePeriodicity:      ttnpb.REJOIN_TIME_0,
+		RejoinCountPeriodicity:     ttnpb.REJOIN_COUNT_16,
+		PingSlotFrequency:          DeviceDefaultPingSlotFrequency(dev, phy, defaults),
+		BeaconFrequency:            DeviceDefaultBeaconFrequency(dev, defaults),
+		Channels:                   DeviceDefaultChannels(dev, phy, defaults),
+		AdrAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: phy.ADRAckLimit},
+		AdrAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: phy.ADRAckDelay},
+		PingSlotDataRateIndexValue: DeviceDefaultPingSlotDataRateIndexValue(dev, phy, defaults),
+	}
+	desired := current
+	if !dev.Multicast {
+		desired = ttnpb.MACParameters{
 			MaxEIRP:                    DeviceDesiredMaxEIRP(dev, phy, fp, defaults),
-			ADRDataRateIndex:           ttnpb.DATA_RATE_0,
-			ADRNbTrans:                 1,
+			AdrDataRateIndex:           ttnpb.DATA_RATE_0,
+			AdrNbTrans:                 1,
 			Rx1Delay:                   DeviceDesiredRX1Delay(dev, phy, defaults),
 			Rx1DataRateOffset:          DeviceDesiredRX1DataRateOffset(dev, defaults),
 			Rx2DataRateIndex:           DeviceDesiredRX2DataRateIndex(dev, phy, fp, defaults),
@@ -590,12 +614,20 @@ func NewState(dev *ttnpb.EndDevice, fps *frequencyplans.Store, defaults ttnpb.MA
 			RejoinCountPeriodicity:     ttnpb.REJOIN_COUNT_16,
 			PingSlotFrequency:          DeviceDesiredPingSlotFrequency(dev, phy, fp, defaults),
 			BeaconFrequency:            DeviceDesiredBeaconFrequency(dev, defaults),
-			Channels:                   DeviceDesiredChannels(phy, fp, defaults),
+			Channels:                   DeviceDesiredChannels(dev, phy, fp, defaults),
 			UplinkDwellTime:            DeviceDesiredUplinkDwellTime(fp),
 			DownlinkDwellTime:          DeviceDesiredDownlinkDwellTime(fp),
-			ADRAckLimitExponent:        DeviceDesiredADRAckLimitExponent(dev, phy, defaults),
-			ADRAckDelayExponent:        DeviceDesiredADRAckDelayExponent(dev, phy, defaults),
+			AdrAckLimitExponent:        DeviceDesiredADRAckLimitExponent(dev, phy, defaults),
+			AdrAckDelayExponent:        DeviceDesiredADRAckDelayExponent(dev, phy, defaults),
 			PingSlotDataRateIndexValue: DeviceDesiredPingSlotDataRateIndexValue(dev, phy, fp, defaults),
-		},
+		}
+	}
+	// TODO: Support rejoins. (https://github.com/TheThingsNetwork/lorawan-stack/issues/8)
+	return &ttnpb.MACState{
+		LorawanVersion:      DeviceDefaultLoRaWANVersion(dev),
+		DeviceClass:         class,
+		PingSlotPeriodicity: DeviceDefaultPingSlotPeriodicity(dev, defaults),
+		CurrentParameters:   current,
+		DesiredParameters:   desired,
 	}, nil
 }

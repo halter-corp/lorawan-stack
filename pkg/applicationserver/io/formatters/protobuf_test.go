@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/formatters"
@@ -36,9 +37,9 @@ func TestProtobufUpstream(t *testing.T) {
 			Message: &ttnpb.ApplicationUp{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "foo-app",
+						ApplicationId: "foo-app",
 					},
-					DeviceID: "foo-device",
+					DeviceId: "foo-device",
 				},
 				Up: &ttnpb.ApplicationUp_UplinkMessage{
 					UplinkMessage: &ttnpb.ApplicationUplink{
@@ -63,9 +64,9 @@ func TestProtobufUpstream(t *testing.T) {
 			Message: &ttnpb.ApplicationUp{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "foo-app",
+						ApplicationId: "foo-app",
 					},
-					DeviceID: "foo-device",
+					DeviceId: "foo-device",
 				},
 				Up: &ttnpb.ApplicationUp_JoinAccept{
 					JoinAccept: &ttnpb.ApplicationJoinAccept{
@@ -82,7 +83,7 @@ func TestProtobufUpstream(t *testing.T) {
 			if !a.So(err, should.BeNil) {
 				t.FailNow()
 			}
-			expected, err := tc.Message.Marshal()
+			expected, err := proto.Marshal(tc.Message)
 			if !a.So(err, should.BeNil) {
 				t.FailNow()
 			}
@@ -128,7 +129,7 @@ func TestProtobufDownstream(t *testing.T) {
 				input := tc.Input
 				if input == nil {
 					var err error
-					if input, err = tc.Items.Marshal(); !a.So(err, should.BeNil) {
+					if input, err = proto.Marshal(tc.Items); !a.So(err, should.BeNil) {
 						t.FailNow()
 					}
 				}
@@ -157,9 +158,9 @@ func TestProtobufDownstream(t *testing.T) {
 				Request: &ttnpb.DownlinkQueueRequest{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-							ApplicationID: "foo-app",
+							ApplicationId: "foo-app",
 						},
-						DeviceID: "foo-device",
+						DeviceId: "foo-device",
 					},
 					Downlinks: []*ttnpb.ApplicationDownlink{
 						{
@@ -181,7 +182,7 @@ func TestProtobufDownstream(t *testing.T) {
 				input := tc.Input
 				if input == nil {
 					var err error
-					if input, err = tc.Request.Marshal(); !a.So(err, should.BeNil) {
+					if input, err = proto.Marshal(tc.Request); !a.So(err, should.BeNil) {
 						t.FailNow()
 					}
 				}

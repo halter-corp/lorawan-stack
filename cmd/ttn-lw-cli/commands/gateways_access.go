@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ import (
 	"os"
 	"strings"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -75,6 +76,35 @@ var (
 			getTotal()
 
 			return io.Write(os.Stdout, config.OutputFormat, res.Collaborators)
+		},
+	}
+	gatewayCollaboratorsGet = &cobra.Command{
+		Use:     "get",
+		Aliases: []string{"info"},
+		Short:   "Get an gateway collaborator",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			gtwID, err := getGatewayID(cmd.Flags(), nil, true)
+			if err != nil {
+				return err
+			}
+			collaborator := getCollaborator(cmd.Flags())
+			if collaborator == nil {
+				return errNoCollaborator
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			res, err := ttnpb.NewGatewayAccessClient(is).GetCollaborator(ctx, &ttnpb.GetGatewayCollaboratorRequest{
+				GatewayIdentifiers:            *gtwID,
+				OrganizationOrUserIdentifiers: *collaborator,
+			})
+			if err != nil {
+				return err
+			}
+
+			return io.Write(os.Stdout, config.OutputFormat, res)
 		},
 	}
 	gatewayCollaboratorsSet = &cobra.Command{
@@ -176,6 +206,35 @@ var (
 			return io.Write(os.Stdout, config.OutputFormat, res.APIKeys)
 		},
 	}
+	gatewayAPIKeysGet = &cobra.Command{
+		Use:     "get [gateway-id] [api-key-id]",
+		Aliases: []string{"info"},
+		Short:   "Get an gateway API key",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			gtwID, err := getGatewayID(cmd.Flags(), firstArgs(1, args...), true)
+			if err != nil {
+				return err
+			}
+			id := getAPIKeyID(cmd.Flags(), args, 1)
+			if id == "" {
+				return errNoAPIKeyID
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			res, err := ttnpb.NewGatewayAccessClient(is).GetAPIKey(ctx, &ttnpb.GetGatewayAPIKeyRequest{
+				GatewayIdentifiers: *gtwID,
+				KeyId:              id,
+			})
+			if err != nil {
+				return err
+			}
+
+			return io.Write(os.Stdout, config.OutputFormat, res)
+		},
+	}
 	gatewayAPIKeysCreate = &cobra.Command{
 		Use:     "create [gateway-id]",
 		Aliases: []string{"add", "register", "generate"},
@@ -192,6 +251,11 @@ var (
 				return errNoAPIKeyRights
 			}
 
+			expiryDate, err := getAPIKeyExpiry(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
 				return err
@@ -200,6 +264,7 @@ var (
 				GatewayIdentifiers: *gtwID,
 				Name:               name,
 				Rights:             rights,
+				ExpiresAt:          expiryDate,
 			})
 			if err != nil {
 				return err
@@ -228,11 +293,14 @@ var (
 			}
 			name, _ := cmd.Flags().GetString("name")
 
-			rights := getRights(cmd.Flags())
-			if len(rights) == 0 {
-				return errNoAPIKeyRights
+			rights, expiryDate, paths, err := getAPIKeyFields(cmd.Flags())
+			if err != nil {
+				return err
 			}
-
+			if len(paths) == 0 {
+				logger.Warn("No fields selected, won't update anything")
+				return nil
+			}
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
 				return err
@@ -240,10 +308,12 @@ var (
 			_, err = ttnpb.NewGatewayAccessClient(is).UpdateAPIKey(ctx, &ttnpb.UpdateGatewayAPIKeyRequest{
 				GatewayIdentifiers: *gtwID,
 				APIKey: ttnpb.APIKey{
-					ID:     id,
-					Name:   name,
-					Rights: rights,
+					ID:        id,
+					Name:      name,
+					Rights:    rights,
+					ExpiresAt: expiryDate,
 				},
+				FieldMask: &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -276,6 +346,7 @@ var (
 					ID:     id,
 					Rights: nil,
 				},
+				FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 			})
 			if err != nil {
 				return err
@@ -296,6 +367,8 @@ func init() {
 
 	gatewayCollaboratorsList.Flags().AddFlagSet(paginationFlags())
 	gatewayCollaborators.AddCommand(gatewayCollaboratorsList)
+	gatewayCollaboratorsGet.Flags().AddFlagSet(collaboratorFlags())
+	gatewayCollaborators.AddCommand(gatewayCollaboratorsGet)
 	gatewayCollaboratorsSet.Flags().AddFlagSet(collaboratorFlags())
 	gatewayCollaboratorsSet.Flags().AddFlagSet(gatewayRightsFlags)
 	gatewayCollaborators.AddCommand(gatewayCollaboratorsSet)
@@ -306,12 +379,16 @@ func init() {
 
 	gatewayAPIKeysList.Flags().AddFlagSet(paginationFlags())
 	gatewayAPIKeys.AddCommand(gatewayAPIKeysList)
+	gatewayAPIKeysGet.Flags().String("api-key-id", "", "")
+	gatewayAPIKeys.AddCommand(gatewayAPIKeysGet)
 	gatewayAPIKeysCreate.Flags().String("name", "", "")
 	gatewayAPIKeysCreate.Flags().AddFlagSet(gatewayRightsFlags)
+	gatewayAPIKeysCreate.Flags().AddFlagSet(apiKeyExpiryFlag)
 	gatewayAPIKeys.AddCommand(gatewayAPIKeysCreate)
 	gatewayAPIKeysUpdate.Flags().String("api-key-id", "", "")
 	gatewayAPIKeysUpdate.Flags().String("name", "", "")
 	gatewayAPIKeysUpdate.Flags().AddFlagSet(gatewayRightsFlags)
+	gatewayAPIKeysUpdate.Flags().AddFlagSet(apiKeyExpiryFlag)
 	gatewayAPIKeys.AddCommand(gatewayAPIKeysUpdate)
 	gatewayAPIKeysDelete.Flags().String("api-key-id", "", "")
 	gatewayAPIKeys.AddCommand(gatewayAPIKeysDelete)

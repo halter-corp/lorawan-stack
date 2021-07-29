@@ -16,38 +16,52 @@ package redis
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
-	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
 
 type ApplicationUplinkQueue struct {
-	redis  *ttnredis.Client
-	maxLen int64
-	group  string
-	id     string
+	applicationQueue *ttnredis.TaskQueue
 
-	subscriptions sync.Map
+	redis   *ttnredis.Client
+	maxLen  int64
+	group   string
+	id      string
+	key     string
+	minIdle time.Duration
 }
 
+const (
+	payloadKey = "payload"
+)
+
 // NewApplicationUplinkQueue returns new application uplink queue.
-func NewApplicationUplinkQueue(cl *ttnredis.Client, maxLen int64, group, id string) *ApplicationUplinkQueue {
+func NewApplicationUplinkQueue(cl *ttnredis.Client, maxLen int64, group, id string, minIdle time.Duration) *ApplicationUplinkQueue {
 	return &ApplicationUplinkQueue{
-		redis:  cl,
-		maxLen: maxLen,
-		group:  group,
-		id:     id,
+		applicationQueue: &ttnredis.TaskQueue{
+			Redis:  cl,
+			MaxLen: maxLen,
+			Group:  group,
+			ID:     id,
+			Key:    cl.Key("application"),
+		},
+		redis:   cl,
+		maxLen:  maxLen,
+		group:   group,
+		id:      id,
+		key:     cl.Key("application-uplink"),
+		minIdle: minIdle,
 	}
 }
 
-func ApplicationUplinkQueueUIDGenericUplinkKey(cl *ttnredis.Client, uid string) string {
-	return cl.Key("uid", uid, "uplinks")
+func ApplicationUplinkQueueUIDGenericUplinkKey(r keyer, uid string) string {
+	return ttnredis.Key(UIDKey(r, uid), "uplinks")
 }
 
 func (q *ApplicationUplinkQueue) uidGenericUplinkKey(uid string) string {
@@ -62,54 +76,61 @@ func (q *ApplicationUplinkQueue) uidJoinAcceptKey(uid string) string {
 	return ttnredis.Key(q.uidGenericUplinkKey(uid), "join-accept")
 }
 
-const payloadKey = "payload"
+// Init initializes the ApplicationUplinkQueue.
+func (q *ApplicationUplinkQueue) Init(ctx context.Context) error {
+	return q.applicationQueue.Init(ctx)
+}
+
+// Close closes the ApplicationUplinkQueue.
+func (q *ApplicationUplinkQueue) Close(ctx context.Context) error {
+	return q.applicationQueue.Close(ctx)
+}
 
 func (q *ApplicationUplinkQueue) Add(ctx context.Context, ups ...*ttnpb.ApplicationUp) error {
-	for _, up := range ups {
-		uid := unique.ID(ctx, up.ApplicationIdentifiers)
+	if len(ups) == 0 {
+		return nil
+	}
+	_, err := q.redis.Pipelined(ctx, func(p redis.Pipeliner) error {
+		now := time.Now()
+		taskMap := map[string]time.Time{}
+		for _, up := range ups {
+			uid := unique.ID(ctx, up.ApplicationIdentifiers)
 
-		s, err := ttnredis.MarshalProto(up)
-		if err != nil {
-			return err
-		}
-
-		var streamID string
-		var pipelined func(p redis.Pipeliner)
-		switch pld := up.Up.(type) {
-		case *ttnpb.ApplicationUp_JoinAccept:
-			streamID = q.uidJoinAcceptKey(uid)
-		case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
-			streamID = q.uidInvalidationKey(uid)
-			pipelined = func(p redis.Pipeliner) {
-				p.Set(deviceUIDLastInvalidationKey(q.redis, unique.ID(ctx, up.EndDeviceIdentifiers)), pld.DownlinkQueueInvalidated.LastFCntDown, 0)
+			s, err := ttnredis.MarshalProto(up)
+			if err != nil {
+				return err
 			}
-		default:
-			streamID = q.uidGenericUplinkKey(uid)
-		}
-		_, err = q.redis.Pipelined(func(p redis.Pipeliner) error {
-			p.XAdd(&redis.XAddArgs{
-				Stream:       streamID,
+
+			var uidStreamID string
+			switch pld := up.Up.(type) {
+			case *ttnpb.ApplicationUp_JoinAccept:
+				uidStreamID = q.uidJoinAcceptKey(uid)
+			case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
+				uidStreamID = q.uidInvalidationKey(uid)
+				p.Set(ctx, uidLastInvalidationKey(q.redis, unique.ID(ctx, up.EndDeviceIdentifiers)), pld.DownlinkQueueInvalidated.LastFCntDown, 0)
+			default:
+				uidStreamID = q.uidGenericUplinkKey(uid)
+			}
+			p.XAdd(ctx, &redis.XAddArgs{
+				Stream:       uidStreamID,
 				MaxLenApprox: q.maxLen,
 				Values: map[string]interface{}{
 					payloadKey: s,
 				},
 			})
-			if pipelined != nil {
-				pipelined(p)
-			}
-			return nil
-		})
-		if err != nil {
-			return ttnredis.ConvertError(err)
-		}
-
-		upCh, ok := q.subscriptions.Load(uid)
-		if ok {
-			select {
-			case upCh.(chan struct{}) <- struct{}{}:
-			default:
+			if _, ok := taskMap[uid]; !ok {
+				taskMap[uid] = now
 			}
 		}
+		for uid, t := range taskMap {
+			if err := q.applicationQueue.Add(ctx, p, uid, t, false); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return ttnredis.ConvertError(err)
 	}
 	return nil
 }
@@ -119,119 +140,93 @@ var (
 	errMissingPayload = errors.DefineDataLoss("missing_payload", "missing payload")
 )
 
-func (q *ApplicationUplinkQueue) initConsumer(ctx context.Context, streamID string) (func(), error) {
-	_, err := q.redis.XGroupCreateMkStream(streamID, q.group, "0").Result()
-	if err != nil && !ttnredis.IsConsumerGroupExistsErr(err) {
-		return nil, ttnredis.ConvertError(err)
-	}
-	return func() {
-		if err := q.redis.XGroupDelConsumer(streamID, q.group, q.id).Err(); err != nil {
-			log.FromContext(ctx).WithError(err).WithFields(log.Fields(
-				"consumer", q.id,
-				"group", q.group,
-				"stream", streamID,
-			)).Error("Failed to delete application uplink queue redis consumer")
-		}
-	}, nil
-}
-
-// Subscribe ranges over uplink keys using f until ctx is done.
-// Subscribe assumes that there's at most 1 active consumer in q.group per stream at all times.
-func (q *ApplicationUplinkQueue) Subscribe(ctx context.Context, appID ttnpb.ApplicationIdentifiers, f func(context.Context, *ttnpb.ApplicationUp) error) error {
-	uid := unique.ID(ctx, appID)
-
-	genericUpStream := q.uidGenericUplinkKey(uid)
-	invalidationUpStream := q.uidInvalidationKey(uid)
-	joinAcceptUpStream := q.uidJoinAcceptKey(uid)
-
-	for _, streamID := range [...]string{
-		genericUpStream,
-		invalidationUpStream,
-		joinAcceptUpStream,
-	} {
-		delConsumer, err := q.initConsumer(ctx, streamID)
+func (q *ApplicationUplinkQueue) Pop(ctx context.Context, f func(context.Context, ttnpb.ApplicationIdentifiers, networkserver.ApplicationUplinkQueueDrainFunc) (time.Time, error)) error {
+	return q.applicationQueue.Pop(ctx, nil, func(p redis.Pipeliner, uid string, _ time.Time) error {
+		appID, err := unique.ToApplicationID(uid)
 		if err != nil {
 			return err
 		}
-		defer delConsumer()
-	}
-
-	upCh := make(chan struct{}, 1)
-	_, ok := q.subscriptions.LoadOrStore(uid, upCh)
-	if ok {
-		panic(fmt.Sprintf("duplicate subscription for application %s", uid))
-	}
-	defer q.subscriptions.Delete(uid)
-
-	for {
-		rets, err := q.redis.XReadGroup(&redis.XReadGroupArgs{
-			Group:    q.group,
-			Consumer: q.id,
-			Streams:  []string{joinAcceptUpStream, joinAcceptUpStream, invalidationUpStream, invalidationUpStream, genericUpStream, genericUpStream, "0", ">", "0", ">", "0", ">"},
-			Count:    1,
-		}).Result()
+		ctx, err := unique.WithContext(ctx, uid)
 		if err != nil {
+			return err
+		}
+		joinAcceptUpStream := q.uidJoinAcceptKey(uid)
+		invalidationUpStream := q.uidInvalidationKey(uid)
+		genericUpStream := q.uidGenericUplinkKey(uid)
+
+		streams := [...]string{
+			joinAcceptUpStream,
+			invalidationUpStream,
+			genericUpStream,
+		}
+
+		cmds, err := q.redis.Pipelined(ctx, func(pp redis.Pipeliner) error {
+			for _, stream := range streams {
+				pp.XGroupCreateMkStream(ctx, stream, q.group, "0")
+			}
+			return nil
+		})
+		if err != nil && !ttnredis.IsConsumerGroupExistsErr(err) {
 			return ttnredis.ConvertError(err)
 		}
-
-		var (
-			n                 int
-			invalidationFCnts map[string]uint64
-		)
-		for _, ret := range rets {
-			for _, msg := range ret.Messages {
-				n++
-				v, ok := msg.Values[payloadKey]
-				if !ok {
-					return errMissingPayload.New()
-				}
-				s, ok := v.(string)
-				if !ok {
-					return errInvalidPayload.New()
-				}
-				up := &ttnpb.ApplicationUp{}
-				if err = ttnredis.UnmarshalProto(s, up); err != nil {
-					return err
-				}
-				var skipF bool
-				if ret.Stream == invalidationUpStream {
-					devUID := unique.ID(ctx, up.EndDeviceIdentifiers)
-					lastFCnt, ok := invalidationFCnts[devUID]
-					if !ok {
-						lastFCnt, err = q.redis.Get(deviceUIDLastInvalidationKey(q.redis, devUID)).Uint64()
-						if err != nil {
-							return ttnredis.ConvertError(err)
-						}
-						if invalidationFCnts == nil {
-							invalidationFCnts = make(map[string]uint64, len(rets))
-						}
-						invalidationFCnts[devUID] = lastFCnt
-					}
-					skipF = uint64(up.GetDownlinkQueueInvalidated().GetLastFCntDown()) < lastFCnt
-				}
-				if !skipF {
-					if err = f(ctx, up); err != nil {
-						return err
-					}
-				}
-				_, err := q.redis.Pipelined(func(p redis.Pipeliner) error {
-					p.XAck(ret.Stream, q.group, msg.ID)
-					p.XDel(ret.Stream, msg.ID)
-					return nil
-				})
-				if err != nil {
-					return ttnredis.ConvertError(err)
-				}
-			}
-		}
-		if n == 0 {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-
-			case <-upCh:
+		var initErr error
+		for i, cmd := range cmds {
+			if err := cmd.Err(); err != nil && !ttnredis.IsConsumerGroupExistsErr(err) {
+				initErr = err
 				continue
 			}
+			p.XGroupDelConsumer(ctx, streams[i], q.group, q.id)
 		}
-	}
+		if initErr != nil {
+			return ttnredis.ConvertError(initErr)
+		}
+
+		t, err := f(ctx, appID, func(limit int, g func(...*ttnpb.ApplicationUp) error) error {
+			var invalidationFCnts map[string]uint64
+			ups := make([]*ttnpb.ApplicationUp, 0, limit)
+
+			processMessages := func(stream string, msgs ...redis.XMessage) error {
+				ups = ups[:0]
+				for _, msg := range msgs {
+					v, ok := msg.Values[payloadKey]
+					if !ok {
+						return errMissingPayload.New()
+					}
+					s, ok := v.(string)
+					if !ok {
+						return errInvalidPayload.New()
+					}
+					up := &ttnpb.ApplicationUp{}
+					if err = ttnredis.UnmarshalProto(s, up); err != nil {
+						return err
+					}
+					var skip bool
+					if stream == invalidationUpStream {
+						devUID := unique.ID(ctx, up.EndDeviceIdentifiers)
+						lastFCnt, ok := invalidationFCnts[devUID]
+						if !ok {
+							lastFCnt, err = q.redis.Get(ctx, uidLastInvalidationKey(q.redis, devUID)).Uint64()
+							if err != nil {
+								return ttnredis.ConvertError(err)
+							}
+							if invalidationFCnts == nil {
+								invalidationFCnts = make(map[string]uint64, len(msgs))
+							}
+							invalidationFCnts[devUID] = lastFCnt
+						}
+						skip = uint64(up.GetDownlinkQueueInvalidated().GetLastFCntDown()) < lastFCnt
+					}
+					if !skip {
+						ups = append(ups, up)
+					}
+				}
+				return g(ups...)
+			}
+			return ttnredis.RangeStreams(ctx, q.redis, q.group, q.id, int64(limit), q.minIdle, processMessages, streams[:]...)
+		})
+		if err != nil || t.IsZero() {
+			return err
+		}
+		return q.applicationQueue.Add(ctx, p, uid, t, true)
+	})
 }

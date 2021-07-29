@@ -51,7 +51,14 @@ func (ps *PubSub) Get(ctx context.Context, req *ttnpb.GetApplicationPubSubReques
 	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
 		return nil, err
 	}
-	return ps.registry.Get(ctx, req.ApplicationPubSubIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.Paths...))
+	pubsub, err := ps.registry.Get(ctx, req.ApplicationPubSubIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.GetPaths()...))
+	if err != nil {
+		return nil, err
+	}
+	if err := ps.providerStatuses.Enabled(ctx, pubsub.Provider); err != nil {
+		return nil, err
+	}
+	return pubsub, nil
 }
 
 // List implements ttnpb.ApplicationPubSubRegistryServer.
@@ -59,9 +66,12 @@ func (ps *PubSub) List(ctx context.Context, req *ttnpb.ListApplicationPubSubsReq
 	if err := rights.RequireApplication(ctx, req.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
 		return nil, err
 	}
-	pubsubs, err := ps.registry.List(ctx, req.ApplicationIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.Paths...))
+	pubsubs, err := ps.registry.List(ctx, req.ApplicationIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.GetPaths()...))
 	if err != nil {
 		return nil, err
+	}
+	for _, pubsub := range pubsubs {
+		_ = ps.providerStatuses.Enabled(ctx, pubsub.Provider)
 	}
 	return &ttnpb.ApplicationPubSubs{
 		Pubsubs: pubsubs,
@@ -77,13 +87,16 @@ func (ps *PubSub) Set(ctx context.Context, req *ttnpb.SetApplicationPubSubReques
 	); err != nil {
 		return nil, err
 	}
+	if err := ps.providerStatuses.Enabled(ctx, req.Provider); err != nil {
+		return nil, err
+	}
 	// Get all the fields here for starting the integration task.
-	pubsub, err := ps.registry.Set(ctx, req.ApplicationPubSubIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.Paths...),
+	pubsub, err := ps.registry.Set(ctx, req.ApplicationPubSubIdentifiers, appendImplicitPubSubGetPaths(req.FieldMask.GetPaths()...),
 		func(pubsub *ttnpb.ApplicationPubSub) (*ttnpb.ApplicationPubSub, []string, error) {
 			if pubsub != nil {
-				return &req.ApplicationPubSub, req.FieldMask.Paths, nil
+				return &req.ApplicationPubSub, req.FieldMask.GetPaths(), nil
 			}
-			return &req.ApplicationPubSub, append(req.FieldMask.Paths,
+			return &req.ApplicationPubSub, append(req.FieldMask.GetPaths(),
 				"ids.application_ids",
 				"ids.pub_sub_id",
 			), nil
@@ -95,11 +108,11 @@ func (ps *PubSub) Set(ctx context.Context, req *ttnpb.SetApplicationPubSubReques
 	if err := ps.stop(ctx, req.ApplicationPubSubIdentifiers); err != nil && !errors.IsNotFound(err) {
 		log.FromContext(ctx).WithFields(log.Fields(
 			"application_uid", unique.ID(ctx, req.ApplicationIdentifiers),
-			"pub_sub_id", req.PubSubID,
+			"pub_sub_id", req.PubSubId,
 		)).WithError(err).Warn("Failed to cancel pub/sub")
 	}
 	ps.startTask(ps.ctx, req.ApplicationPubSubIdentifiers)
-	events.Publish(evtSetPubSub.NewWithIdentifiersAndData(ctx, req.ApplicationIdentifiers, req.ApplicationPubSubIdentifiers))
+	events.Publish(evtSetPubSub.NewWithIdentifiersAndData(ctx, &req.ApplicationIdentifiers, req.ApplicationPubSubIdentifiers))
 	return pubsub, nil
 }
 
@@ -115,7 +128,7 @@ func (ps *PubSub) Delete(ctx context.Context, ids *ttnpb.ApplicationPubSubIdenti
 	if err := ps.stop(ctx, *ids); err != nil {
 		log.FromContext(ctx).WithFields(log.Fields(
 			"application_uid", unique.ID(ctx, ids.ApplicationIdentifiers),
-			"pub_sub_id", ids.PubSubID,
+			"pub_sub_id", ids.PubSubId,
 		)).WithError(err).Warn("Failed to cancel pub/sub")
 	}
 	_, err := ps.registry.Set(ctx, *ids, nil,
@@ -126,6 +139,6 @@ func (ps *PubSub) Delete(ctx context.Context, ids *ttnpb.ApplicationPubSubIdenti
 	if err != nil {
 		return nil, err
 	}
-	events.Publish(evtDeletePubSub.NewWithIdentifiersAndData(ctx, ids.ApplicationIdentifiers, *ids))
+	events.Publish(evtDeletePubSub.NewWithIdentifiersAndData(ctx, &ids.ApplicationIdentifiers, *ids))
 	return ttnpb.Empty, nil
 }

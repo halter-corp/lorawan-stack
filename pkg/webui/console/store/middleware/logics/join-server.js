@@ -14,13 +14,13 @@
 
 import api from '@console/api'
 
-import * as js from '@console/store/actions/join-server'
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
-import createRequestLogic from './lib'
+import * as js from '@console/store/actions/join-server'
 
 const getJoinEUIPrefixesLogic = createRequestLogic({
   type: js.GET_JOIN_EUI_PREFIXES,
-  async process() {
+  process: async () => {
     const { prefixes } = await api.js.joinEUIPrefixes.list()
 
     return prefixes

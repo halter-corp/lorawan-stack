@@ -86,6 +86,18 @@ func (m *Application) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "deleted_at":
+
+			if v, ok := interface{}(m.GetDeletedAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationValidationError{
+						field:  "deleted_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		case "name":
 
 			if utf8.RuneCountInString(m.GetName()) > 50 {
@@ -106,6 +118,13 @@ func (m *Application) ValidateFields(paths ...string) error {
 
 		case "attributes":
 
+			if len(m.GetAttributes()) > 10 {
+				return ApplicationValidationError{
+					field:  "attributes",
+					reason: "value must contain no more than 10 pair(s)",
+				}
+			}
+
 			for key, val := range m.GetAttributes() {
 				_ = val
 
@@ -123,10 +142,23 @@ func (m *Application) ValidateFields(paths ...string) error {
 					}
 				}
 
-				// no validation rules for Attributes[key]
+				if utf8.RuneCountInString(val) > 200 {
+					return ApplicationValidationError{
+						field:  fmt.Sprintf("attributes[%v]", key),
+						reason: "value length must be at most 200 runes",
+					}
+				}
+
 			}
 
 		case "contact_info":
+
+			if len(m.GetContactInfo()) > 10 {
+				return ApplicationValidationError{
+					field:  "contact_info",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
 
 			for idx, item := range m.GetContactInfo() {
 				_, _ = idx, item
@@ -143,6 +175,8 @@ func (m *Application) ValidateFields(paths ...string) error {
 
 			}
 
+		case "dev_eui_counter":
+			// no validation rules for DevEuiCounter
 		default:
 			return ApplicationValidationError{
 				field:  name,
@@ -305,6 +339,89 @@ var _ interface {
 	ErrorName() string
 } = ApplicationsValidationError{}
 
+// ValidateFields checks the field values on IssueDevEUIResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *IssueDevEUIResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = IssueDevEUIResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "dev_eui":
+			// no validation rules for DevEui
+		default:
+			return IssueDevEUIResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// IssueDevEUIResponseValidationError is the validation error returned by
+// IssueDevEUIResponse.ValidateFields if the designated constraints aren't met.
+type IssueDevEUIResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueDevEUIResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueDevEUIResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueDevEUIResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueDevEUIResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueDevEUIResponseValidationError) ErrorName() string {
+	return "IssueDevEUIResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueDevEUIResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueDevEUIResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueDevEUIResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueDevEUIResponseValidationError{}
+
 // ValidateFields checks the field values on GetApplicationRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -334,7 +451,7 @@ func (m *GetApplicationRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetApplicationRequestValidationError{
 						field:  "field_mask",
@@ -439,7 +556,7 @@ func (m *ListApplicationsRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListApplicationsRequestValidationError{
 						field:  "field_mask",
@@ -469,6 +586,8 @@ func (m *ListApplicationsRequest) ValidateFields(paths ...string) error {
 
 		case "page":
 			// no validation rules for Page
+		case "deleted":
+			// no validation rules for Deleted
 		default:
 			return ListApplicationsRequestValidationError{
 				field:  name,
@@ -680,7 +799,7 @@ func (m *UpdateApplicationRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateApplicationRequestValidationError{
 						field:  "field_mask",
@@ -890,7 +1009,7 @@ func (m *GetApplicationAPIKeyRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "key_id":
-			// no validation rules for KeyID
+			// no validation rules for KeyId
 		default:
 			return GetApplicationAPIKeyRequestValidationError{
 				field:  name,
@@ -996,13 +1115,46 @@ func (m *CreateApplicationAPIKeyRequest) ValidateFields(paths ...string) error {
 
 		case "rights":
 
+			if len(m.GetRights()) < 1 {
+				return CreateApplicationAPIKeyRequestValidationError{
+					field:  "rights",
+					reason: "value must contain at least 1 item(s)",
+				}
+			}
+
+			_CreateApplicationAPIKeyRequest_Rights_Unique := make(map[Right]struct{}, len(m.GetRights()))
+
 			for idx, item := range m.GetRights() {
 				_, _ = idx, item
+
+				if _, exists := _CreateApplicationAPIKeyRequest_Rights_Unique[item]; exists {
+					return CreateApplicationAPIKeyRequestValidationError{
+						field:  fmt.Sprintf("rights[%v]", idx),
+						reason: "repeated value must contain unique items",
+					}
+				} else {
+					_CreateApplicationAPIKeyRequest_Rights_Unique[item] = struct{}{}
+				}
 
 				if _, ok := Right_name[int32(item)]; !ok {
 					return CreateApplicationAPIKeyRequestValidationError{
 						field:  fmt.Sprintf("rights[%v]", idx),
 						reason: "value must be one of the defined enum values",
+					}
+				}
+
+			}
+
+		case "expires_at":
+
+			if ts := m.GetExpiresAt(); ts != nil {
+
+				now := time.Now()
+
+				if ts.Sub(now) <= 0 {
+					return CreateApplicationAPIKeyRequestValidationError{
+						field:  "expires_at",
+						reason: "value must be greater than now",
 					}
 				}
 
@@ -1108,6 +1260,18 @@ func (m *UpdateApplicationAPIKeyRequest) ValidateFields(paths ...string) error {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateApplicationAPIKeyRequestValidationError{
 						field:  "api_key",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "field_mask":
+
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UpdateApplicationAPIKeyRequestValidationError{
+						field:  "field_mask",
 						reason: "embedded message failed validation",
 						cause:  err,
 					}

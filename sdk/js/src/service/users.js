@@ -14,9 +14,20 @@
 
 import Marshaler from '../util/marshaler'
 
+import ApiKeys from './api-keys'
+
 class Users {
   constructor(registry) {
     this._api = registry
+
+    this.ApiKeys = new ApiKeys(registry.UserAccess, {
+      parentRoutes: {
+        get: 'user_ids.user_id',
+        list: 'user_ids.user_id',
+        create: 'user_ids.user_id',
+        update: 'user_ids.user_id',
+      },
+    })
   }
 
   _addState(fieldMask, user) {
@@ -89,14 +100,59 @@ class Users {
         field_mask: Marshaler.fieldMask(mask),
       },
     )
+
+    const result = Marshaler.unwrapUser(response)
+
+    // Get new profile picture value if a new picture was uploaded, deleted, or
+    // the primary email address was changed (in case of Gravar usage).
+    if (mask.includes('profile_picture') || mask.includes('primary_email_address')) {
+      const user = await this.getById(id, ['profile_picture'])
+      const result = Marshaler.unwrapUser(response)
+      result.profile_picture = user.profile_picture
+    }
+
+    return result
+  }
+
+  async create(user, invitationToken) {
+    const response = await this._api.UserRegistry.Create(undefined, {
+      user,
+      invitation_token: invitationToken,
+    })
     return Marshaler.unwrapUser(response)
   }
 
-  async create(user) {
-    const response = await this._api.UserRegistry.Create(undefined, {
-      user,
+  // Miscellaneous.
+
+  async getRightsById(userId) {
+    const result = await this._api.UserAccess.ListRights({
+      routeParams: { user_id: userId },
     })
-    return Marshaler.unwrapUser(response)
+
+    return Marshaler.unwrapRights(result)
+  }
+
+  updatePasswordById(id, payload) {
+    return this._api.UserRegistry.UpdatePassword(
+      {
+        routeParams: {
+          'user_ids.user_id': id,
+        },
+      },
+      {
+        new: payload.new,
+        old: payload.old,
+        revoke_all_access: payload.revoke_all_access,
+      },
+    )
+  }
+
+  createTemporaryPassword(id) {
+    return this._api.UserRegistry.CreateTemporaryPassword({
+      routeParams: {
+        'user_ids.user_id': id,
+      },
+    })
   }
 }
 

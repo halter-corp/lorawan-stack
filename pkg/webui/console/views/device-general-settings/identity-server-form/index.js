@@ -14,6 +14,7 @@
 
 import React from 'react'
 import { defineMessages } from 'react-intl'
+import { isEqual } from 'lodash'
 
 import SubmitButton from '@ttn-lw/components/submit-button'
 import SubmitBar from '@ttn-lw/components/submit-bar'
@@ -27,6 +28,7 @@ import getHostnameFromUrl from '@ttn-lw/lib/host-from-url'
 import diff from '@ttn-lw/lib/diff'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import tooltipIds from '@ttn-lw/lib/constants/tooltip-ids'
 
 import { mapFormValueToAttributes, mapAttributesToFormValue } from '@console/lib/attributes'
 import { parseLorawanMacVersion } from '@console/lib/device-utils'
@@ -37,8 +39,7 @@ import validationSchema from './validation-schema'
 
 const messages = defineMessages({
   deleteDevice: 'Delete end device',
-  deleteWarning:
-    'Are you sure you want to delete "{deviceId}"? This action cannot be undone and it will not be possible to reuse the end device ID.',
+  deleteWarning: 'Are you sure you want to delete "{deviceId}"? This action cannot be undone.',
 })
 
 const IdentityServerForm = React.memo(props => {
@@ -110,12 +111,16 @@ const IdentityServerForm = React.memo(props => {
   const onFormSubmit = React.useCallback(
     async (values, { resetForm, setSubmitting }) => {
       const castedValues = validationSchema.cast(values, { context: validationContext })
+      const attributes = mapFormValueToAttributes(values.attributes)
+
+      if (isEqual(initialValues.attributes || {}, attributes)) {
+        delete castedValues.attributes
+      }
+
       const updatedValues = diff(initialValues, castedValues, ['_external_js'])
 
       const update =
-        'attributes' in updatedValues
-          ? { ...updatedValues, attributes: mapFormValueToAttributes(values.attributes) }
-          : updatedValues
+        'attributes' in updatedValues ? { ...updatedValues, attributes } : updatedValues
 
       setError('')
       try {
@@ -161,13 +166,10 @@ const IdentityServerForm = React.memo(props => {
   }
 
   let joinEUITitle = sharedMessages.appEUIJoinEUI
-  let joinEUIDescription
   if (lorawanVersion >= 100 && lorawanVersion < 104) {
     joinEUITitle = sharedMessages.appEUI
-    joinEUIDescription = sharedMessages.appEUIDescription
   } else if (lorawanVersion >= 104) {
     joinEUITitle = sharedMessages.joinEUI
-    joinEUIDescription = sharedMessages.joinEUIDescription
   }
 
   return (
@@ -196,10 +198,10 @@ const IdentityServerForm = React.memo(props => {
           type="byte"
           min={8}
           max={8}
-          description={joinEUIDescription}
           required
           disabled
           component={Input}
+          tooltipId={tooltipIds.JOIN_EUI}
         />
       )}
       {hasDevEUI && (
@@ -209,10 +211,10 @@ const IdentityServerForm = React.memo(props => {
           type="byte"
           min={8}
           max={8}
-          description={sharedMessages.deviceEUIDescription}
           required
           disabled
           component={Input}
+          tooltipId={tooltipIds.DEV_EUI}
         />
       )}
       <Form.Field
@@ -221,6 +223,7 @@ const IdentityServerForm = React.memo(props => {
         placeholder={sharedMessages.deviceNamePlaceholder}
         description={sharedMessages.deviceNameDescription}
         component={Input}
+        tooltipId={tooltipIds.DEVICE_NAME}
       />
       <Form.Field
         title={sharedMessages.devDesc}
@@ -228,6 +231,7 @@ const IdentityServerForm = React.memo(props => {
         type="textarea"
         description={sharedMessages.deviceDescDescription}
         component={Input}
+        tooltipId={tooltipIds.DEVICE_DESCRIPTION}
       />
       <Form.Field
         title={sharedMessages.networkServerAddress}

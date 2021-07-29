@@ -23,14 +23,18 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
+var errModulationTypeNotSupported = errors.Define("modulation_type_not_supported", "TOA calculation not supported for modulation type `{type}`")
+
 // Compute computes the time-on-air for the given payload size and the TxSettings.
 // This function takes into account PHYPayload.
 func Compute(payloadSize int, settings ttnpb.TxSettings) (d time.Duration, err error) {
 	switch dr := settings.DataRate.Modulation.(type) {
-	case *ttnpb.DataRate_LoRa:
-		return computeLoRa(payloadSize, settings.Frequency, uint8(dr.LoRa.SpreadingFactor), dr.LoRa.Bandwidth, settings.CodingRate, settings.EnableCRC)
+	case *ttnpb.DataRate_Lora:
+		return computeLoRa(payloadSize, settings.Frequency, uint8(dr.Lora.SpreadingFactor), dr.Lora.Bandwidth, settings.CodingRate, settings.EnableCRC)
 	case *ttnpb.DataRate_FSK:
 		return computeFSK(payloadSize, settings.Frequency, dr.FSK.BitRate, settings.EnableCRC)
+	case *ttnpb.DataRate_Lrfhss:
+		return 0, errModulationTypeNotSupported.WithAttributes("type", "LRFHSS")
 	default:
 		panic("invalid modulation")
 	}

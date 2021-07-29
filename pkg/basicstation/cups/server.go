@@ -28,6 +28,7 @@ import (
 	echo "github.com/labstack/echo/v4"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/web"
 	"golang.org/x/sync/singleflight"
@@ -74,16 +75,7 @@ func (s *Server) getRegistry(ctx context.Context, ids *ttnpb.GatewayIdentifiers)
 	if s.registry != nil {
 		return s.registry, nil
 	}
-	var (
-		cc  *grpc.ClientConn
-		err error
-	)
-	if ids != nil {
-		cc, err = s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, ids)
-	} else {
-		// Don't pass a (*ttnpb.GatewayIdentifiers)(nil) to GetPeerConn.
-		cc, err = s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, nil)
-	}
+	cc, err := s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -94,16 +86,7 @@ func (s *Server) getAccess(ctx context.Context, ids *ttnpb.GatewayIdentifiers) (
 	if s.access != nil {
 		return s.access, nil
 	}
-	var (
-		cc  *grpc.ClientConn
-		err error
-	)
-	if ids != nil {
-		cc, err = s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ACCESS, ids)
-	} else {
-		// Don't pass a (*ttnpb.GatewayIdentifiers)(nil) to GetPeerConn.
-		cc, err = s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ACCESS, nil)
-	}
+	cc, err := s.component.GetPeerConn(ctx, ttnpb.ClusterRole_ACCESS, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +95,6 @@ func (s *Server) getAccess(ctx context.Context, ids *ttnpb.GatewayIdentifiers) (
 
 // Option configures the CUPSServer.
 type Option func(s *Server)
-
-// WithExplicitEnable requires CUPS to be explicitly enabled with a cups attribute
-// in the gateway registry.
-func WithExplicitEnable(enable bool) Option {
-	return func(s *Server) {
-		s.requireExplicitEnable = enable
-	}
-}
 
 // WithRegisterUnknown configures the CUPS server to register gateways if they
 // do not already exist in the registry. The gateways will be registered under the
@@ -204,7 +179,7 @@ func NewServer(c *component.Component, options ...Option) *Server {
 
 // RegisterRoutes implements web.Registerer
 func (s *Server) RegisterRoutes(web *web.Server) {
-	web.POST("/update-info", s.UpdateInfo)
+	web.POST("/update-info", s.UpdateInfo, ratelimit.EchoMiddleware(s.component.RateLimiter(), "http:gcs:cups"))
 }
 
 func getContext(c echo.Context) context.Context {

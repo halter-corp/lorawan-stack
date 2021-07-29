@@ -235,7 +235,7 @@ func (m *DownlinkMessage) ValidateFields(paths ...string) error {
 
 		case "end_device_ids":
 
-			if v, ok := interface{}(m.GetEndDeviceIDs()).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetEndDeviceIds()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return DownlinkMessageValidationError{
 						field:  "end_device_ids",
@@ -257,6 +257,15 @@ func (m *DownlinkMessage) ValidateFields(paths ...string) error {
 					}
 				}
 
+			}
+
+		case "session_key_id":
+
+			if len(m.GetSessionKeyId()) > 2048 {
+				return DownlinkMessageValidationError{
+					field:  "session_key_id",
+					reason: "value length must be at most 2048 bytes",
+				}
 			}
 
 		case "settings":
@@ -410,6 +419,18 @@ func (m *TxAcknowledgment) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "downlink_message":
+
+			if v, ok := interface{}(m.GetDownlinkMessage()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return TxAcknowledgmentValidationError{
+						field:  "downlink_message",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		default:
 			return TxAcknowledgmentValidationError{
 				field:  name,
@@ -473,6 +494,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TxAcknowledgmentValidationError{}
+
+// ValidateFields checks the field values on GatewayTxAcknowledgment with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GatewayTxAcknowledgment) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = GatewayTxAcknowledgmentFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "gateway_ids":
+
+			if v, ok := interface{}(m.GetGatewayIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GatewayTxAcknowledgmentValidationError{
+						field:  "gateway_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "tx_ack":
+
+			if v, ok := interface{}(m.GetTxAck()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return GatewayTxAcknowledgmentValidationError{
+						field:  "tx_ack",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return GatewayTxAcknowledgmentValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// GatewayTxAcknowledgmentValidationError is the validation error returned by
+// GatewayTxAcknowledgment.ValidateFields if the designated constraints aren't met.
+type GatewayTxAcknowledgmentValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GatewayTxAcknowledgmentValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GatewayTxAcknowledgmentValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GatewayTxAcknowledgmentValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GatewayTxAcknowledgmentValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GatewayTxAcknowledgmentValidationError) ErrorName() string {
+	return "GatewayTxAcknowledgmentValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GatewayTxAcknowledgmentValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGatewayTxAcknowledgment.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GatewayTxAcknowledgmentValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GatewayTxAcknowledgmentValidationError{}
 
 // ValidateFields checks the field values on GatewayUplinkMessage with the
 // rules defined in the proto definition for this message. If any rules are
@@ -602,10 +728,10 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 
 		case "f_port":
 
-			if val := m.GetFPort(); val < 1 || val > 255 {
+			if m.GetFPort() > 255 {
 				return ApplicationUplinkValidationError{
 					field:  "f_port",
-					reason: "value must be inside range [1, 255]",
+					reason: "value must be less than or equal to 255",
 				}
 			}
 
@@ -635,13 +761,6 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 		case "decoded_payload_warnings":
 
 		case "rx_metadata":
-
-			if len(m.GetRxMetadata()) < 1 {
-				return ApplicationUplinkValidationError{
-					field:  "rx_metadata",
-					reason: "value must contain at least 1 item(s)",
-				}
-			}
 
 			for idx, item := range m.GetRxMetadata() {
 				_, _ = idx, item
@@ -727,6 +846,30 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 					}
 				}
 
+			}
+
+		case "version_ids":
+
+			if v, ok := interface{}(m.GetVersionIDs()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationUplinkValidationError{
+						field:  "version_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "network_ids":
+
+			if v, ok := interface{}(m.GetNetworkIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationUplinkValidationError{
+						field:  "network_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
 			}
 
 		default:
@@ -830,6 +973,13 @@ func (m *ApplicationLocation) ValidateFields(paths ...string) error {
 
 		case "attributes":
 
+			if len(m.GetAttributes()) > 10 {
+				return ApplicationLocationValidationError{
+					field:  "attributes",
+					reason: "value must contain no more than 10 pair(s)",
+				}
+			}
+
 			for key, val := range m.GetAttributes() {
 				_ = val
 
@@ -847,7 +997,13 @@ func (m *ApplicationLocation) ValidateFields(paths ...string) error {
 					}
 				}
 
-				// no validation rules for Attributes[key]
+				if utf8.RuneCountInString(val) > 200 {
+					return ApplicationLocationValidationError{
+						field:  fmt.Sprintf("attributes[%v]", key),
+						reason: "value length must be at most 200 runes",
+					}
+				}
+
 			}
 
 		default:
@@ -1437,13 +1593,6 @@ func (m *ApplicationInvalidatedDownlinks) ValidateFields(paths ...string) error 
 		switch name {
 		case "downlinks":
 
-			if len(m.GetDownlinks()) < 1 {
-				return ApplicationInvalidatedDownlinksValidationError{
-					field:  "downlinks",
-					reason: "value must contain at least 1 item(s)",
-				}
-			}
-
 			for idx, item := range m.GetDownlinks() {
 				_, _ = idx, item
 
@@ -1461,6 +1610,15 @@ func (m *ApplicationInvalidatedDownlinks) ValidateFields(paths ...string) error 
 
 		case "last_f_cnt_down":
 			// no validation rules for LastFCntDown
+		case "session_key_id":
+
+			if len(m.GetSessionKeyID()) > 2048 {
+				return ApplicationInvalidatedDownlinksValidationError{
+					field:  "session_key_id",
+					reason: "value length must be at most 2048 bytes",
+				}
+			}
+
 		default:
 			return ApplicationInvalidatedDownlinksValidationError{
 				field:  name,
@@ -1527,6 +1685,114 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ApplicationInvalidatedDownlinksValidationError{}
+
+// ValidateFields checks the field values on DownlinkQueueOperationErrorDetails
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, an error is returned.
+func (m *DownlinkQueueOperationErrorDetails) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = DownlinkQueueOperationErrorDetailsFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "dev_addr":
+			// no validation rules for DevAddr
+		case "session_key_id":
+
+			if len(m.GetSessionKeyID()) > 2048 {
+				return DownlinkQueueOperationErrorDetailsValidationError{
+					field:  "session_key_id",
+					reason: "value length must be at most 2048 bytes",
+				}
+			}
+
+		case "min_f_cnt_down":
+			// no validation rules for MinFCntDown
+		case "pending_dev_addr":
+			// no validation rules for PendingDevAddr
+		case "pending_session_key_id":
+
+			if len(m.GetPendingSessionKeyID()) > 2048 {
+				return DownlinkQueueOperationErrorDetailsValidationError{
+					field:  "pending_session_key_id",
+					reason: "value length must be at most 2048 bytes",
+				}
+			}
+
+		case "pending_min_f_cnt_down":
+			// no validation rules for PendingMinFCntDown
+		default:
+			return DownlinkQueueOperationErrorDetailsValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// DownlinkQueueOperationErrorDetailsValidationError is the validation error
+// returned by DownlinkQueueOperationErrorDetails.ValidateFields if the
+// designated constraints aren't met.
+type DownlinkQueueOperationErrorDetailsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DownlinkQueueOperationErrorDetailsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DownlinkQueueOperationErrorDetailsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DownlinkQueueOperationErrorDetailsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DownlinkQueueOperationErrorDetailsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DownlinkQueueOperationErrorDetailsValidationError) ErrorName() string {
+	return "DownlinkQueueOperationErrorDetailsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DownlinkQueueOperationErrorDetailsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDownlinkQueueOperationErrorDetails.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DownlinkQueueOperationErrorDetailsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DownlinkQueueOperationErrorDetailsValidationError{}
 
 // ValidateFields checks the field values on ApplicationServiceData with the
 // rules defined in the proto definition for this message. If any rules are
@@ -1944,7 +2210,14 @@ func (m *MessagePayloadFormatters) ValidateFields(paths ...string) error {
 			}
 
 		case "up_formatter_parameter":
-			// no validation rules for UpFormatterParameter
+
+			if utf8.RuneCountInString(m.GetUpFormatterParameter()) > 40960 {
+				return MessagePayloadFormattersValidationError{
+					field:  "up_formatter_parameter",
+					reason: "value length must be at most 40960 runes",
+				}
+			}
+
 		case "down_formatter":
 
 			if _, ok := PayloadFormatter_name[int32(m.GetDownFormatter())]; !ok {
@@ -1955,7 +2228,14 @@ func (m *MessagePayloadFormatters) ValidateFields(paths ...string) error {
 			}
 
 		case "down_formatter_parameter":
-			// no validation rules for DownFormatterParameter
+
+			if utf8.RuneCountInString(m.GetDownFormatterParameter()) > 40960 {
+				return MessagePayloadFormattersValidationError{
+					field:  "down_formatter_parameter",
+					reason: "value length must be at most 40960 runes",
+				}
+			}
+
 		default:
 			return MessagePayloadFormattersValidationError{
 				field:  name,

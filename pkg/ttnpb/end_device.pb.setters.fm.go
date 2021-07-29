@@ -4,10 +4,8 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	time "time"
-
-	types "github.com/gogo/protobuf/types"
 	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
+	time "time"
 )
 
 func (dst *Session) SetFields(src *Session, paths ...string) error {
@@ -108,6 +106,27 @@ func (dst *Session) SetFields(src *Session, paths ...string) error {
 	return nil
 }
 
+func (dst *BoolValue) SetFields(src *BoolValue, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "value":
+			if len(subs) > 0 {
+				return fmt.Errorf("'value' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Value = src.Value
+			} else {
+				var zero bool
+				dst.Value = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -126,50 +145,50 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 				return fmt.Errorf("'adr_data_rate_index' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRDataRateIndex = src.ADRDataRateIndex
+				dst.AdrDataRateIndex = src.AdrDataRateIndex
 			} else {
 				var zero DataRateIndex
-				dst.ADRDataRateIndex = zero
+				dst.AdrDataRateIndex = zero
 			}
 		case "adr_tx_power_index":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_tx_power_index' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRTxPowerIndex = src.ADRTxPowerIndex
+				dst.AdrTxPowerIndex = src.AdrTxPowerIndex
 			} else {
 				var zero uint32
-				dst.ADRTxPowerIndex = zero
+				dst.AdrTxPowerIndex = zero
 			}
 		case "adr_nb_trans":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_nb_trans' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRNbTrans = src.ADRNbTrans
+				dst.AdrNbTrans = src.AdrNbTrans
 			} else {
 				var zero uint32
-				dst.ADRNbTrans = zero
+				dst.AdrNbTrans = zero
 			}
 		case "adr_ack_limit":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_ack_limit' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRAckLimit = src.ADRAckLimit
+				dst.AdrAckLimit = src.AdrAckLimit
 			} else {
 				var zero uint32
-				dst.ADRAckLimit = zero
+				dst.AdrAckLimit = zero
 			}
 		case "adr_ack_delay":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_ack_delay' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRAckDelay = src.ADRAckDelay
+				dst.AdrAckDelay = src.AdrAckDelay
 			} else {
 				var zero uint32
-				dst.ADRAckDelay = zero
+				dst.AdrAckDelay = zero
 			}
 		case "rx1_delay":
 			if len(subs) > 0 {
@@ -188,7 +207,7 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 			if src != nil {
 				dst.Rx1DataRateOffset = src.Rx1DataRateOffset
 			} else {
-				var zero uint32
+				var zero DataRateOffset
 				dst.Rx1DataRateOffset = zero
 			}
 		case "rx2_data_rate_index":
@@ -282,70 +301,102 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 			}
 		case "uplink_dwell_time":
 			if len(subs) > 0 {
-				return fmt.Errorf("'uplink_dwell_time' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.UplinkDwellTime = src.UplinkDwellTime
-			} else {
-				dst.UplinkDwellTime = nil
-			}
-		case "downlink_dwell_time":
-			if len(subs) > 0 {
-				return fmt.Errorf("'downlink_dwell_time' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.DownlinkDwellTime = src.DownlinkDwellTime
-			} else {
-				dst.DownlinkDwellTime = nil
-			}
-		case "adr_ack_limit_exponent":
-			if len(subs) > 0 {
-				var newDst, newSrc *ADRAckLimitExponentValue
-				if (src == nil || src.ADRAckLimitExponent == nil) && dst.ADRAckLimitExponent == nil {
+				var newDst, newSrc *BoolValue
+				if (src == nil || src.UplinkDwellTime == nil) && dst.UplinkDwellTime == nil {
 					continue
 				}
 				if src != nil {
-					newSrc = src.ADRAckLimitExponent
+					newSrc = src.UplinkDwellTime
 				}
-				if dst.ADRAckLimitExponent != nil {
-					newDst = dst.ADRAckLimitExponent
+				if dst.UplinkDwellTime != nil {
+					newDst = dst.UplinkDwellTime
 				} else {
-					newDst = &ADRAckLimitExponentValue{}
-					dst.ADRAckLimitExponent = newDst
+					newDst = &BoolValue{}
+					dst.UplinkDwellTime = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.ADRAckLimitExponent = src.ADRAckLimitExponent
+					dst.UplinkDwellTime = src.UplinkDwellTime
 				} else {
-					dst.ADRAckLimitExponent = nil
+					dst.UplinkDwellTime = nil
+				}
+			}
+		case "downlink_dwell_time":
+			if len(subs) > 0 {
+				var newDst, newSrc *BoolValue
+				if (src == nil || src.DownlinkDwellTime == nil) && dst.DownlinkDwellTime == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DownlinkDwellTime
+				}
+				if dst.DownlinkDwellTime != nil {
+					newDst = dst.DownlinkDwellTime
+				} else {
+					newDst = &BoolValue{}
+					dst.DownlinkDwellTime = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DownlinkDwellTime = src.DownlinkDwellTime
+				} else {
+					dst.DownlinkDwellTime = nil
+				}
+			}
+		case "adr_ack_limit_exponent":
+			if len(subs) > 0 {
+				var newDst, newSrc *ADRAckLimitExponentValue
+				if (src == nil || src.AdrAckLimitExponent == nil) && dst.AdrAckLimitExponent == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.AdrAckLimitExponent
+				}
+				if dst.AdrAckLimitExponent != nil {
+					newDst = dst.AdrAckLimitExponent
+				} else {
+					newDst = &ADRAckLimitExponentValue{}
+					dst.AdrAckLimitExponent = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.AdrAckLimitExponent = src.AdrAckLimitExponent
+				} else {
+					dst.AdrAckLimitExponent = nil
 				}
 			}
 		case "adr_ack_delay_exponent":
 			if len(subs) > 0 {
 				var newDst, newSrc *ADRAckDelayExponentValue
-				if (src == nil || src.ADRAckDelayExponent == nil) && dst.ADRAckDelayExponent == nil {
+				if (src == nil || src.AdrAckDelayExponent == nil) && dst.AdrAckDelayExponent == nil {
 					continue
 				}
 				if src != nil {
-					newSrc = src.ADRAckDelayExponent
+					newSrc = src.AdrAckDelayExponent
 				}
-				if dst.ADRAckDelayExponent != nil {
-					newDst = dst.ADRAckDelayExponent
+				if dst.AdrAckDelayExponent != nil {
+					newDst = dst.AdrAckDelayExponent
 				} else {
 					newDst = &ADRAckDelayExponentValue{}
-					dst.ADRAckDelayExponent = newDst
+					dst.AdrAckDelayExponent = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.ADRAckDelayExponent = src.ADRAckDelayExponent
+					dst.AdrAckDelayExponent = src.AdrAckDelayExponent
 				} else {
-					dst.ADRAckDelayExponent = nil
+					dst.AdrAckDelayExponent = nil
 				}
 			}
 		case "ping_slot_data_rate_index_value":
@@ -381,148 +432,6 @@ func (dst *MACParameters) SetFields(src *MACParameters, paths ...string) error {
 	return nil
 }
 
-func (dst *EndDeviceBrand) SetFields(src *EndDeviceBrand, paths ...string) error {
-	for name, subs := range _processPaths(paths) {
-		switch name {
-		case "id":
-			if len(subs) > 0 {
-				return fmt.Errorf("'id' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.ID = src.ID
-			} else {
-				var zero string
-				dst.ID = zero
-			}
-		case "name":
-			if len(subs) > 0 {
-				return fmt.Errorf("'name' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Name = src.Name
-			} else {
-				var zero string
-				dst.Name = zero
-			}
-		case "url":
-			if len(subs) > 0 {
-				return fmt.Errorf("'url' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.URL = src.URL
-			} else {
-				var zero string
-				dst.URL = zero
-			}
-		case "logos":
-			if len(subs) > 0 {
-				return fmt.Errorf("'logos' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Logos = src.Logos
-			} else {
-				dst.Logos = nil
-			}
-
-		default:
-			return fmt.Errorf("invalid field: '%s'", name)
-		}
-	}
-	return nil
-}
-
-func (dst *EndDeviceModel) SetFields(src *EndDeviceModel, paths ...string) error {
-	for name, subs := range _processPaths(paths) {
-		switch name {
-		case "brand_id":
-			if len(subs) > 0 {
-				return fmt.Errorf("'brand_id' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.BrandID = src.BrandID
-			} else {
-				var zero string
-				dst.BrandID = zero
-			}
-		case "id":
-			if len(subs) > 0 {
-				return fmt.Errorf("'id' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.ID = src.ID
-			} else {
-				var zero string
-				dst.ID = zero
-			}
-		case "name":
-			if len(subs) > 0 {
-				return fmt.Errorf("'name' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Name = src.Name
-			} else {
-				var zero string
-				dst.Name = zero
-			}
-
-		default:
-			return fmt.Errorf("invalid field: '%s'", name)
-		}
-	}
-	return nil
-}
-
-func (dst *EndDeviceVersionIdentifiers) SetFields(src *EndDeviceVersionIdentifiers, paths ...string) error {
-	for name, subs := range _processPaths(paths) {
-		switch name {
-		case "brand_id":
-			if len(subs) > 0 {
-				return fmt.Errorf("'brand_id' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.BrandID = src.BrandID
-			} else {
-				var zero string
-				dst.BrandID = zero
-			}
-		case "model_id":
-			if len(subs) > 0 {
-				return fmt.Errorf("'model_id' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.ModelID = src.ModelID
-			} else {
-				var zero string
-				dst.ModelID = zero
-			}
-		case "hardware_version":
-			if len(subs) > 0 {
-				return fmt.Errorf("'hardware_version' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.HardwareVersion = src.HardwareVersion
-			} else {
-				var zero string
-				dst.HardwareVersion = zero
-			}
-		case "firmware_version":
-			if len(subs) > 0 {
-				return fmt.Errorf("'firmware_version' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.FirmwareVersion = src.FirmwareVersion
-			} else {
-				var zero string
-				dst.FirmwareVersion = zero
-			}
-
-		default:
-			return fmt.Errorf("invalid field: '%s'", name)
-		}
-	}
-	return nil
-}
-
 func (dst *EndDeviceVersion) SetFields(src *EndDeviceVersion, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -549,20 +458,20 @@ func (dst *EndDeviceVersion) SetFields(src *EndDeviceVersion, paths ...string) e
 				return fmt.Errorf("'lorawan_version' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.LoRaWANVersion = src.LoRaWANVersion
+				dst.LorawanVersion = src.LorawanVersion
 			} else {
 				var zero MACVersion
-				dst.LoRaWANVersion = zero
+				dst.LorawanVersion = zero
 			}
 		case "lorawan_phy_version":
 			if len(subs) > 0 {
 				return fmt.Errorf("'lorawan_phy_version' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.LoRaWANPHYVersion = src.LoRaWANPHYVersion
+				dst.LorawanPhyVersion = src.LorawanPhyVersion
 			} else {
 				var zero PHYVersion
-				dst.LoRaWANPHYVersion = zero
+				dst.LorawanPhyVersion = zero
 			}
 		case "frequency_plan_id":
 			if len(subs) > 0 {
@@ -758,21 +667,53 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "ping_slot_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'ping_slot_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.PingSlotFrequency = src.PingSlotFrequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.PingSlotFrequency == nil) && dst.PingSlotFrequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.PingSlotFrequency
+				}
+				if dst.PingSlotFrequency != nil {
+					newDst = dst.PingSlotFrequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.PingSlotFrequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.PingSlotFrequency = nil
+				if src != nil {
+					dst.PingSlotFrequency = src.PingSlotFrequency
+				} else {
+					dst.PingSlotFrequency = nil
+				}
 			}
 		case "beacon_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'beacon_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.BeaconFrequency = src.BeaconFrequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.BeaconFrequency == nil) && dst.BeaconFrequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.BeaconFrequency
+				}
+				if dst.BeaconFrequency != nil {
+					newDst = dst.BeaconFrequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.BeaconFrequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.BeaconFrequency = nil
+				if src != nil {
+					dst.BeaconFrequency = src.BeaconFrequency
+				} else {
+					dst.BeaconFrequency = nil
+				}
 			}
 		case "class_c_timeout":
 			if len(subs) > 0 {
@@ -810,12 +751,28 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "rx1_data_rate_offset":
 			if len(subs) > 0 {
-				return fmt.Errorf("'rx1_data_rate_offset' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Rx1DataRateOffset = src.Rx1DataRateOffset
+				var newDst, newSrc *DataRateOffsetValue
+				if (src == nil || src.Rx1DataRateOffset == nil) && dst.Rx1DataRateOffset == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.Rx1DataRateOffset
+				}
+				if dst.Rx1DataRateOffset != nil {
+					newDst = dst.Rx1DataRateOffset
+				} else {
+					newDst = &DataRateOffsetValue{}
+					dst.Rx1DataRateOffset = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.Rx1DataRateOffset = nil
+				if src != nil {
+					dst.Rx1DataRateOffset = src.Rx1DataRateOffset
+				} else {
+					dst.Rx1DataRateOffset = nil
+				}
 			}
 		case "rx2_data_rate_index":
 			if len(subs) > 0 {
@@ -844,12 +801,28 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "rx2_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'rx2_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Rx2Frequency = src.Rx2Frequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.Rx2Frequency == nil) && dst.Rx2Frequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.Rx2Frequency
+				}
+				if dst.Rx2Frequency != nil {
+					newDst = dst.Rx2Frequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.Rx2Frequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.Rx2Frequency = nil
+				if src != nil {
+					dst.Rx2Frequency = src.Rx2Frequency
+				} else {
+					dst.Rx2Frequency = nil
+				}
 			}
 		case "factory_preset_frequencies":
 			if len(subs) > 0 {
@@ -887,39 +860,87 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "supports_32_bit_f_cnt":
 			if len(subs) > 0 {
-				return fmt.Errorf("'supports_32_bit_f_cnt' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.Supports32BitFCnt = src.Supports32BitFCnt
+				var newDst, newSrc *BoolValue
+				if (src == nil || src.Supports32BitFCnt == nil) && dst.Supports32BitFCnt == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.Supports32BitFCnt
+				}
+				if dst.Supports32BitFCnt != nil {
+					newDst = dst.Supports32BitFCnt
+				} else {
+					newDst = &BoolValue{}
+					dst.Supports32BitFCnt = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.Supports32BitFCnt = nil
+				if src != nil {
+					dst.Supports32BitFCnt = src.Supports32BitFCnt
+				} else {
+					dst.Supports32BitFCnt = nil
+				}
 			}
 		case "use_adr":
 			if len(subs) > 0 {
-				return fmt.Errorf("'use_adr' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.UseADR = src.UseADR
+				var newDst, newSrc *BoolValue
+				if (src == nil || src.UseAdr == nil) && dst.UseAdr == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.UseAdr
+				}
+				if dst.UseAdr != nil {
+					newDst = dst.UseAdr
+				} else {
+					newDst = &BoolValue{}
+					dst.UseAdr = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.UseADR = nil
+				if src != nil {
+					dst.UseAdr = src.UseAdr
+				} else {
+					dst.UseAdr = nil
+				}
 			}
 		case "adr_margin":
 			if len(subs) > 0 {
 				return fmt.Errorf("'adr_margin' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ADRMargin = src.ADRMargin
+				dst.AdrMargin = src.AdrMargin
 			} else {
-				dst.ADRMargin = nil
+				dst.AdrMargin = nil
 			}
 		case "resets_f_cnt":
 			if len(subs) > 0 {
-				return fmt.Errorf("'resets_f_cnt' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.ResetsFCnt = src.ResetsFCnt
+				var newDst, newSrc *BoolValue
+				if (src == nil || src.ResetsFCnt == nil) && dst.ResetsFCnt == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.ResetsFCnt
+				}
+				if dst.ResetsFCnt != nil {
+					newDst = dst.ResetsFCnt
+				} else {
+					newDst = &BoolValue{}
+					dst.ResetsFCnt = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.ResetsFCnt = nil
+				if src != nil {
+					dst.ResetsFCnt = src.ResetsFCnt
+				} else {
+					dst.ResetsFCnt = nil
+				}
 			}
 		case "status_time_periodicity":
 			if len(subs) > 0 {
@@ -966,12 +987,28 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "desired_rx1_data_rate_offset":
 			if len(subs) > 0 {
-				return fmt.Errorf("'desired_rx1_data_rate_offset' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.DesiredRx1DataRateOffset = src.DesiredRx1DataRateOffset
+				var newDst, newSrc *DataRateOffsetValue
+				if (src == nil || src.DesiredRx1DataRateOffset == nil) && dst.DesiredRx1DataRateOffset == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredRx1DataRateOffset
+				}
+				if dst.DesiredRx1DataRateOffset != nil {
+					newDst = dst.DesiredRx1DataRateOffset
+				} else {
+					newDst = &DataRateOffsetValue{}
+					dst.DesiredRx1DataRateOffset = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.DesiredRx1DataRateOffset = nil
+				if src != nil {
+					dst.DesiredRx1DataRateOffset = src.DesiredRx1DataRateOffset
+				} else {
+					dst.DesiredRx1DataRateOffset = nil
+				}
 			}
 		case "desired_rx2_data_rate_index":
 			if len(subs) > 0 {
@@ -1000,12 +1037,28 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "desired_rx2_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'desired_rx2_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.DesiredRx2Frequency = src.DesiredRx2Frequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.DesiredRx2Frequency == nil) && dst.DesiredRx2Frequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredRx2Frequency
+				}
+				if dst.DesiredRx2Frequency != nil {
+					newDst = dst.DesiredRx2Frequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.DesiredRx2Frequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.DesiredRx2Frequency = nil
+				if src != nil {
+					dst.DesiredRx2Frequency = src.DesiredRx2Frequency
+				} else {
+					dst.DesiredRx2Frequency = nil
+				}
 			}
 		case "desired_max_duty_cycle":
 			if len(subs) > 0 {
@@ -1035,51 +1088,51 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 		case "desired_adr_ack_limit_exponent":
 			if len(subs) > 0 {
 				var newDst, newSrc *ADRAckLimitExponentValue
-				if (src == nil || src.DesiredADRAckLimitExponent == nil) && dst.DesiredADRAckLimitExponent == nil {
+				if (src == nil || src.DesiredAdrAckLimitExponent == nil) && dst.DesiredAdrAckLimitExponent == nil {
 					continue
 				}
 				if src != nil {
-					newSrc = src.DesiredADRAckLimitExponent
+					newSrc = src.DesiredAdrAckLimitExponent
 				}
-				if dst.DesiredADRAckLimitExponent != nil {
-					newDst = dst.DesiredADRAckLimitExponent
+				if dst.DesiredAdrAckLimitExponent != nil {
+					newDst = dst.DesiredAdrAckLimitExponent
 				} else {
 					newDst = &ADRAckLimitExponentValue{}
-					dst.DesiredADRAckLimitExponent = newDst
+					dst.DesiredAdrAckLimitExponent = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.DesiredADRAckLimitExponent = src.DesiredADRAckLimitExponent
+					dst.DesiredAdrAckLimitExponent = src.DesiredAdrAckLimitExponent
 				} else {
-					dst.DesiredADRAckLimitExponent = nil
+					dst.DesiredAdrAckLimitExponent = nil
 				}
 			}
 		case "desired_adr_ack_delay_exponent":
 			if len(subs) > 0 {
 				var newDst, newSrc *ADRAckDelayExponentValue
-				if (src == nil || src.DesiredADRAckDelayExponent == nil) && dst.DesiredADRAckDelayExponent == nil {
+				if (src == nil || src.DesiredAdrAckDelayExponent == nil) && dst.DesiredAdrAckDelayExponent == nil {
 					continue
 				}
 				if src != nil {
-					newSrc = src.DesiredADRAckDelayExponent
+					newSrc = src.DesiredAdrAckDelayExponent
 				}
-				if dst.DesiredADRAckDelayExponent != nil {
-					newDst = dst.DesiredADRAckDelayExponent
+				if dst.DesiredAdrAckDelayExponent != nil {
+					newDst = dst.DesiredAdrAckDelayExponent
 				} else {
 					newDst = &ADRAckDelayExponentValue{}
-					dst.DesiredADRAckDelayExponent = newDst
+					dst.DesiredAdrAckDelayExponent = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.DesiredADRAckDelayExponent = src.DesiredADRAckDelayExponent
+					dst.DesiredAdrAckDelayExponent = src.DesiredAdrAckDelayExponent
 				} else {
-					dst.DesiredADRAckDelayExponent = nil
+					dst.DesiredAdrAckDelayExponent = nil
 				}
 			}
 		case "desired_ping_slot_data_rate_index":
@@ -1109,21 +1162,78 @@ func (dst *MACSettings) SetFields(src *MACSettings, paths ...string) error {
 			}
 		case "desired_ping_slot_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'desired_ping_slot_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.DesiredPingSlotFrequency = src.DesiredPingSlotFrequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.DesiredPingSlotFrequency == nil) && dst.DesiredPingSlotFrequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredPingSlotFrequency
+				}
+				if dst.DesiredPingSlotFrequency != nil {
+					newDst = dst.DesiredPingSlotFrequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.DesiredPingSlotFrequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.DesiredPingSlotFrequency = nil
+				if src != nil {
+					dst.DesiredPingSlotFrequency = src.DesiredPingSlotFrequency
+				} else {
+					dst.DesiredPingSlotFrequency = nil
+				}
 			}
 		case "desired_beacon_frequency":
 			if len(subs) > 0 {
-				return fmt.Errorf("'desired_beacon_frequency' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.DesiredBeaconFrequency = src.DesiredBeaconFrequency
+				var newDst, newSrc *FrequencyValue
+				if (src == nil || src.DesiredBeaconFrequency == nil) && dst.DesiredBeaconFrequency == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredBeaconFrequency
+				}
+				if dst.DesiredBeaconFrequency != nil {
+					newDst = dst.DesiredBeaconFrequency
+				} else {
+					newDst = &FrequencyValue{}
+					dst.DesiredBeaconFrequency = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
 			} else {
-				dst.DesiredBeaconFrequency = nil
+				if src != nil {
+					dst.DesiredBeaconFrequency = src.DesiredBeaconFrequency
+				} else {
+					dst.DesiredBeaconFrequency = nil
+				}
+			}
+		case "desired_max_eirp":
+			if len(subs) > 0 {
+				var newDst, newSrc *DeviceEIRPValue
+				if (src == nil || src.DesiredMaxEirp == nil) && dst.DesiredMaxEirp == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DesiredMaxEirp
+				}
+				if dst.DesiredMaxEirp != nil {
+					newDst = dst.DesiredMaxEirp
+				} else {
+					newDst = &DeviceEIRPValue{}
+					dst.DesiredMaxEirp = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DesiredMaxEirp = src.DesiredMaxEirp
+				} else {
+					dst.DesiredMaxEirp = nil
+				}
 			}
 
 		default:
@@ -1187,10 +1297,10 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 				return fmt.Errorf("'lorawan_version' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.LoRaWANVersion = src.LoRaWANVersion
+				dst.LorawanVersion = src.LorawanVersion
 			} else {
 				var zero MACVersion
-				dst.LoRaWANVersion = zero
+				dst.LorawanVersion = zero
 			}
 		case "last_confirmed_downlink_at":
 			if len(subs) > 0 {
@@ -1306,7 +1416,7 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 			}
 		case "pending_join_request":
 			if len(subs) > 0 {
-				var newDst, newSrc *JoinRequest
+				var newDst, newSrc *MACState_JoinRequest
 				if (src == nil || src.PendingJoinRequest == nil) && dst.PendingJoinRequest == nil {
 					continue
 				}
@@ -1316,7 +1426,7 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 				if dst.PendingJoinRequest != nil {
 					newDst = dst.PendingJoinRequest
 				} else {
-					newDst = &JoinRequest{}
+					newDst = &MACState_JoinRequest{}
 					dst.PendingJoinRequest = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
@@ -1371,18 +1481,18 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 				return fmt.Errorf("'rejected_adr_data_rate_indexes' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.RejectedADRDataRateIndexes = src.RejectedADRDataRateIndexes
+				dst.RejectedAdrDataRateIndexes = src.RejectedAdrDataRateIndexes
 			} else {
-				dst.RejectedADRDataRateIndexes = nil
+				dst.RejectedAdrDataRateIndexes = nil
 			}
 		case "rejected_adr_tx_power_indexes":
 			if len(subs) > 0 {
 				return fmt.Errorf("'rejected_adr_tx_power_indexes' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.RejectedADRTxPowerIndexes = src.RejectedADRTxPowerIndexes
+				dst.RejectedAdrTxPowerIndexes = src.RejectedAdrTxPowerIndexes
 			} else {
-				dst.RejectedADRTxPowerIndexes = nil
+				dst.RejectedAdrTxPowerIndexes = nil
 			}
 		case "rejected_frequencies":
 			if len(subs) > 0 {
@@ -1410,6 +1520,16 @@ func (dst *MACState) SetFields(src *MACState, paths ...string) error {
 				dst.RejectedDataRateRanges = src.RejectedDataRateRanges
 			} else {
 				dst.RejectedDataRateRanges = nil
+			}
+		case "last_adr_change_f_cnt_up":
+			if len(subs) > 0 {
+				return fmt.Errorf("'last_adr_change_f_cnt_up' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.LastAdrChangeFCntUp = src.LastAdrChangeFCntUp
+			} else {
+				var zero uint32
+				dst.LastAdrChangeFCntUp = zero
 			}
 
 		default:
@@ -1682,20 +1802,20 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 				return fmt.Errorf("'lorawan_version' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.LoRaWANVersion = src.LoRaWANVersion
+				dst.LorawanVersion = src.LorawanVersion
 			} else {
 				var zero MACVersion
-				dst.LoRaWANVersion = zero
+				dst.LorawanVersion = zero
 			}
 		case "lorawan_phy_version":
 			if len(subs) > 0 {
 				return fmt.Errorf("'lorawan_phy_version' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.LoRaWANPHYVersion = src.LoRaWANPHYVersion
+				dst.LorawanPhyVersion = src.LorawanPhyVersion
 			} else {
 				var zero PHYVersion
-				dst.LoRaWANPHYVersion = zero
+				dst.LorawanPhyVersion = zero
 			}
 		case "frequency_plan_id":
 			if len(subs) > 0 {
@@ -1777,9 +1897,9 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 				return fmt.Errorf("'net_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.NetID = src.NetID
+				dst.NetId = src.NetId
 			} else {
-				dst.NetID = nil
+				dst.NetId = nil
 			}
 		case "mac_settings":
 			if len(subs) > 0 {
@@ -1993,33 +2113,6 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 				var zero int32
 				dst.DownlinkMargin = zero
 			}
-		case "recent_adr_uplinks":
-			if len(subs) > 0 {
-				return fmt.Errorf("'recent_adr_uplinks' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.RecentADRUplinks = src.RecentADRUplinks
-			} else {
-				dst.RecentADRUplinks = nil
-			}
-		case "recent_uplinks":
-			if len(subs) > 0 {
-				return fmt.Errorf("'recent_uplinks' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.RecentUplinks = src.RecentUplinks
-			} else {
-				dst.RecentUplinks = nil
-			}
-		case "recent_downlinks":
-			if len(subs) > 0 {
-				return fmt.Errorf("'recent_downlinks' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.RecentDownlinks = src.RecentDownlinks
-			} else {
-				dst.RecentDownlinks = nil
-			}
 		case "queued_application_downlinks":
 			if len(subs) > 0 {
 				return fmt.Errorf("'queued_application_downlinks' has no subfields, but %s were specified", subs)
@@ -2127,6 +2220,15 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 			} else {
 				dst.SkipPayloadCryptoOverride = nil
 			}
+		case "activated_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'activated_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ActivatedAt = src.ActivatedAt
+			} else {
+				dst.ActivatedAt = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -2146,6 +2248,36 @@ func (dst *EndDevices) SetFields(src *EndDevices, paths ...string) error {
 				dst.EndDevices = src.EndDevices
 			} else {
 				dst.EndDevices = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *DevAddrPrefix) SetFields(src *DevAddrPrefix, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "dev_addr":
+			if len(subs) > 0 {
+				return fmt.Errorf("'dev_addr' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DevAddr = src.DevAddr
+			} else {
+				dst.DevAddr = nil
+			}
+		case "length":
+			if len(subs) > 0 {
+				return fmt.Errorf("'length' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Length = src.Length
+			} else {
+				var zero uint32
+				dst.Length = zero
 			}
 
 		default:
@@ -2212,8 +2344,7 @@ func (dst *UpdateEndDeviceRequest) SetFields(src *UpdateEndDeviceRequest, paths 
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -2251,8 +2382,7 @@ func (dst *GetEndDeviceRequest) SetFields(src *GetEndDeviceRequest, paths ...str
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -2270,20 +2400,20 @@ func (dst *GetEndDeviceIdentifiersForEUIsRequest) SetFields(src *GetEndDeviceIde
 				return fmt.Errorf("'join_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.JoinEUI = src.JoinEUI
+				dst.JoinEui = src.JoinEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.JoinEUI = zero
+				dst.JoinEui = zero
 			}
 		case "dev_eui":
 			if len(subs) > 0 {
 				return fmt.Errorf("'dev_eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.DevEUI = src.DevEUI
+				dst.DevEui = src.DevEui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.DevEUI = zero
+				dst.DevEui = zero
 			}
 
 		default:
@@ -2321,8 +2451,7 @@ func (dst *ListEndDevicesRequest) SetFields(src *ListEndDevicesRequest, paths ..
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 		case "order":
 			if len(subs) > 0 {
@@ -2390,8 +2519,45 @@ func (dst *SetEndDeviceRequest) SetFields(src *SetEndDeviceRequest, paths ...str
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *ResetAndGetEndDeviceRequest) SetFields(src *ResetAndGetEndDeviceRequest, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "end_device_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *EndDeviceIdentifiers
+				if src != nil {
+					newSrc = &src.EndDeviceIdentifiers
+				}
+				newDst = &dst.EndDeviceIdentifiers
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.EndDeviceIdentifiers = src.EndDeviceIdentifiers
+				} else {
+					var zero EndDeviceIdentifiers
+					dst.EndDeviceIdentifiers = zero
+				}
+			}
+		case "field_mask":
+			if len(subs) > 0 {
+				return fmt.Errorf("'field_mask' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FieldMask = src.FieldMask
+			} else {
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -2429,8 +2595,7 @@ func (dst *EndDeviceTemplate) SetFields(src *EndDeviceTemplate, paths ...string)
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 		case "mapping_key":
 			if len(subs) > 0 {
@@ -2601,6 +2766,70 @@ func (dst *MACParameters_Channel) SetFields(src *MACParameters_Channel, paths ..
 	return nil
 }
 
+func (dst *MACState_JoinRequest) SetFields(src *MACState_JoinRequest, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "downlink_settings":
+			if len(subs) > 0 {
+				var newDst, newSrc *DLSettings
+				if src != nil {
+					newSrc = &src.DownlinkSettings
+				}
+				newDst = &dst.DownlinkSettings
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DownlinkSettings = src.DownlinkSettings
+				} else {
+					var zero DLSettings
+					dst.DownlinkSettings = zero
+				}
+			}
+		case "rx_delay":
+			if len(subs) > 0 {
+				return fmt.Errorf("'rx_delay' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RxDelay = src.RxDelay
+			} else {
+				var zero RxDelay
+				dst.RxDelay = zero
+			}
+		case "cf_list":
+			if len(subs) > 0 {
+				var newDst, newSrc *CFList
+				if (src == nil || src.CFList == nil) && dst.CFList == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.CFList
+				}
+				if dst.CFList != nil {
+					newDst = dst.CFList
+				} else {
+					newDst = &CFList{}
+					dst.CFList = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.CFList = src.CFList
+				} else {
+					dst.CFList = nil
+				}
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -2615,7 +2844,7 @@ func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...str
 			}
 		case "request":
 			if len(subs) > 0 {
-				var newDst, newSrc *JoinRequest
+				var newDst, newSrc *MACState_JoinRequest
 				if src != nil {
 					newSrc = &src.Request
 				}
@@ -2627,7 +2856,7 @@ func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...str
 				if src != nil {
 					dst.Request = src.Request
 				} else {
-					var zero JoinRequest
+					var zero MACState_JoinRequest
 					dst.Request = zero
 				}
 			}
@@ -2657,6 +2886,26 @@ func (dst *MACState_JoinAccept) SetFields(src *MACState_JoinAccept, paths ...str
 				dst.CorrelationIDs = src.CorrelationIDs
 			} else {
 				dst.CorrelationIDs = nil
+			}
+		case "dev_addr":
+			if len(subs) > 0 {
+				return fmt.Errorf("'dev_addr' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DevAddr = src.DevAddr
+			} else {
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.DevAddr
+				dst.DevAddr = zero
+			}
+		case "net_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'net_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.NetId = src.NetId
+			} else {
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
+				dst.NetId = zero
 			}
 
 		default:

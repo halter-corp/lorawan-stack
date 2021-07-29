@@ -84,6 +84,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted applications.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -595,7 +602,8 @@
     },
     "/applications/{application_ids.application_id}/devices/{device_id}": {
       "delete": {
-        "summary": "Delete the end device with the given IDs.\nBefore deleting an end device from the EndDeviceRegistry (the Identity Server),\nthe device needs to be deleted from the JsEndDeviceRegistry, AsEndDeviceRegistry and NsEndDeviceRegistry.\nThis is NOT done automatically.",
+        "summary": "Delete the end device with the given IDs.",
+        "description": "Before deleting an end device it first needs to be deleted from the\nNsEndDeviceRegistry, the AsEndDeviceRegistry and the JsEndDeviceRegistry.\nThis is NOT done automatically.",
         "operationId": "EndDeviceRegistry_Delete",
         "responses": {
           "200": {
@@ -685,6 +693,100 @@
         ]
       }
     },
+    "/applications/{application_id}/dev-eui": {
+      "post": {
+        "summary": "Request DevEUI from the configured address block for a device inside the application.\nThe maximum number of DevEUI's issued per application can be configured.",
+        "operationId": "ApplicationRegistry_IssueDevEUI",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3IssueDevEUIResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApplicationRegistry"
+        ]
+      }
+    },
+    "/applications/{application_id}/purge": {
+      "delete": {
+        "summary": "Purge the application. This will release the application ID for reuse.\nAll end devices must be deleted from the application before it can be deleted.\nThe application owner is responsible for clearing data from any (external) integrations\nthat may store and expose data by application ID",
+        "operationId": "ApplicationRegistry_Purge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApplicationRegistry"
+        ]
+      }
+    },
+    "/applications/{application_id}/restore": {
+      "post": {
+        "summary": "Restore a recently deleted application.",
+        "description": "Deployment configuration may specify if, and for how long after deletion,\nentities can be restored.",
+        "operationId": "ApplicationRegistry_Restore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApplicationRegistry"
+        ]
+      }
+    },
     "/applications/{application_id}/rights": {
       "get": {
         "summary": "List the rights the caller has on this application.",
@@ -718,7 +820,8 @@
     },
     "/applications/{end_device.ids.application_ids.application_id}/devices": {
       "post": {
-        "summary": "Create a new end device within an application.\nAfter creating a device in the EndDeviceRegistry (Identity Server), it still\nneeds to be created in the NsEndDeviceRegistry, AsEndDeviceRegistry and JsEndDeviceRegistry.",
+        "summary": "Create a new end device within an application.",
+        "description": "After registering an end device, it also needs to be registered in\nthe NsEndDeviceRegistry that is exposed by the Network Server,\nthe AsEndDeviceRegistry that is exposed by the Application Server,\nand the JsEndDeviceRegistry that is exposed by the Join Server.",
         "operationId": "EndDeviceRegistry_Create",
         "responses": {
           "200": {
@@ -757,7 +860,7 @@
     },
     "/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}": {
       "put": {
-        "summary": "Update the OAuth client, changing the fields specified by the field mask to the provided values.",
+        "summary": "Update the end device, changing the fields specified by the field mask to the provided values.",
         "operationId": "EndDeviceRegistry_Update",
         "responses": {
           "200": {
@@ -1174,6 +1277,7 @@
     },
     "/as/applications/{application_ids.application_id}/packages/storage/{type}": {
       "get": {
+        "summary": "Returns a stream of application messages that have been stored in the database.",
         "operationId": "ApplicationUpStorage_GetStoredApplicationUp2",
         "responses": {
           "200": {
@@ -1252,7 +1356,7 @@
           },
           {
             "name": "after",
-            "description": "Query upstream messages after this timestamp only.",
+            "description": "Query upstream messages after this timestamp only. Cannot be used in conjunction with last.",
             "in": "query",
             "required": false,
             "type": "string",
@@ -1260,7 +1364,7 @@
           },
           {
             "name": "before",
-            "description": "Query upstream messages before this timestamp only.",
+            "description": "Query upstream messages before this timestamp only. Cannot be used in conjunction with last.",
             "in": "query",
             "required": false,
             "type": "string",
@@ -1277,6 +1381,24 @@
           {
             "name": "order",
             "description": "Order results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "last",
+            "description": "Query upstream messages that have arrived in the last minutes or hours. Cannot be used in conjunction with after and before.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -1634,6 +1756,94 @@
         ]
       }
     },
+    "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/decode": {
+      "post": {
+        "operationId": "AppAs_DecodeDownlink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3DecodeDownlinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "end_device_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "end_device_ids.device_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3DecodeDownlinkRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AppAs"
+        ]
+      }
+    },
+    "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/encode": {
+      "post": {
+        "operationId": "AppAs_EncodeDownlink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3EncodeDownlinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "end_device_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "end_device_ids.device_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3EncodeDownlinkRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AppAs"
+        ]
+      }
+    },
     "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/push": {
       "post": {
         "summary": "Push downlink messages to the end of the downlink queue.",
@@ -1794,6 +2004,7 @@
     },
     "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/packages/storage/{type}": {
       "get": {
+        "summary": "Returns a stream of application messages that have been stored in the database.",
         "operationId": "ApplicationUpStorage_GetStoredApplicationUp",
         "responses": {
           "200": {
@@ -1872,7 +2083,7 @@
           },
           {
             "name": "after",
-            "description": "Query upstream messages after this timestamp only.",
+            "description": "Query upstream messages after this timestamp only. Cannot be used in conjunction with last.",
             "in": "query",
             "required": false,
             "type": "string",
@@ -1880,7 +2091,7 @@
           },
           {
             "name": "before",
-            "description": "Query upstream messages before this timestamp only.",
+            "description": "Query upstream messages before this timestamp only. Cannot be used in conjunction with last.",
             "in": "query",
             "required": false,
             "type": "string",
@@ -1900,10 +2111,72 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "last",
+            "description": "Query upstream messages that have arrived in the last minutes or hours. Cannot be used in conjunction with after and before.",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
           "ApplicationUpStorage"
+        ]
+      }
+    },
+    "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/decode": {
+      "post": {
+        "operationId": "AppAs_DecodeUplink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3DecodeUplinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "end_device_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "end_device_ids.device_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3DecodeUplinkRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AppAs"
         ]
       }
     },
@@ -2223,6 +2496,28 @@
         ],
         "tags": [
           "ApplicationPackageRegistry"
+        ]
+      }
+    },
+    "/as/configuration": {
+      "get": {
+        "operationId": "As_GetConfiguration",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3GetAsConfigurationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "As"
         ]
       }
     },
@@ -2783,7 +3078,7 @@
     },
     "/clients": {
       "get": {
-        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields sepcified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
+        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields specified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
         "operationId": "ClientRegistry_List",
         "responses": {
           "200": {
@@ -2854,6 +3149,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted clients.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -3161,6 +3463,69 @@
         ]
       }
     },
+    "/clients/{client_id}/purge": {
+      "delete": {
+        "summary": "Purge the client. This will release the client ID for reuse.",
+        "operationId": "ClientRegistry_Purge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ClientRegistry"
+        ]
+      }
+    },
+    "/clients/{client_id}/restore": {
+      "post": {
+        "summary": "Restore a recently deleted client.",
+        "description": "Deployment configuration may specify if, and for how long after deletion,\nentities can be restored.",
+        "operationId": "ClientRegistry_Restore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ClientRegistry"
+        ]
+      }
+    },
     "/clients/{client_id}/rights": {
       "get": {
         "summary": "List the rights the caller has on this application.",
@@ -3268,8 +3633,612 @@
         ]
       }
     },
+    "/dr/applications/{application_ids.application_id}/brands": {
+      "get": {
+        "operationId": "DeviceRepository_ListBrands",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3ListEndDeviceBrandsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "order_by",
+            "description": "Order (for pagination).",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "search",
+            "description": "Search for brands matching a query string.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{brand_id}": {
+      "get": {
+        "operationId": "DeviceRepository_GetBrand",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3EndDeviceBrand"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "brand_id",
+            "description": "Brand identifier, as defined in the Device Repository.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{brand_id}/models": {
+      "get": {
+        "operationId": "DeviceRepository_ListModels",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3ListEndDeviceModelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "brand_id",
+            "description": "List end devices from a specific brand.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "order_by",
+            "description": "Order end devices.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "search",
+            "description": "List end devices matching a query string.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{brand_id}/models/{model_id}": {
+      "get": {
+        "operationId": "DeviceRepository_GetModel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3EndDeviceModel"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "brand_id",
+            "description": "Brand identifier, as defined in the Device Repository.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "model_id",
+            "description": "Model identifier, as defined in the Device Repository.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/decoder": {
+      "get": {
+        "operationId": "DeviceRepository_GetDownlinkDecoder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3MessagePayloadDecoder"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.brand_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.model_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.firmware_version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.band_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.hardware_version",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/encoder": {
+      "get": {
+        "operationId": "DeviceRepository_GetDownlinkEncoder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3MessagePayloadEncoder"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.brand_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.model_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.firmware_version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.band_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.hardware_version",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/uplink/decoder": {
+      "get": {
+        "operationId": "DeviceRepository_GetUplinkDecoder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3MessagePayloadDecoder"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.brand_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.model_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.firmware_version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.band_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.hardware_version",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/template": {
+      "get": {
+        "operationId": "DeviceRepository_GetTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3EndDeviceTemplate"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.brand_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.model_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.firmware_version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.band_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version_ids.hardware_version",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
+    "/dr/applications/{application_ids.application_id}/models": {
+      "get": {
+        "operationId": "DeviceRepository_ListModels2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3ListEndDeviceModelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "brand_id",
+            "description": "List end devices from a specific brand.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "order_by",
+            "description": "Order end devices.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "search",
+            "description": "List end devices matching a query string.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field_mask.paths",
+            "description": "The set of field mask paths.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "DeviceRepository"
+        ]
+      }
+    },
     "/edcs/applications/{application_ids.application_id}/authorize": {
       "post": {
+        "summary": "Authorize the End Device Claiming Server to claim devices registered in the given application. The application\nidentifiers are the source application, where the devices are registered before they are claimed.\nThe API key is used to access the application, find the device, verify the claim request and delete the end device\nfrom the source application.",
         "operationId": "EndDeviceClaimingServer_AuthorizeApplication",
         "responses": {
           "200": {
@@ -3308,6 +4277,7 @@
     },
     "/edcs/applications/{application_id}/authorize": {
       "delete": {
+        "summary": "Unauthorize the End Device Claiming Server to claim devices in the given application.\nThis reverts the authorization given with rpc AuthorizeApplication.",
         "operationId": "EndDeviceClaimingServer_UnauthorizeApplication",
         "responses": {
           "200": {
@@ -3476,6 +4446,36 @@
         ]
       }
     },
+    "/events/related": {
+      "get": {
+        "operationId": "Events_FindRelated",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3FindRelatedEventsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "correlation_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Events"
+        ]
+      }
+    },
     "/gateways": {
       "get": {
         "summary": "List gateways where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the gateways the caller\nhas access to.\nSimilar to Get, this selects the fields given by the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
@@ -3549,6 +4549,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted gateways.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -4080,6 +5087,77 @@
         ]
       }
     },
+    "/gateways/{gateway_id}/purge": {
+      "delete": {
+        "summary": "Purge the gateway. This will release both gateway ID and EUI for reuse.\nThe gateway owner is responsible for clearing data from any (external) integrations\nthat may store and expose data by gateway ID.",
+        "operationId": "GatewayRegistry_Purge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "gateway_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "eui",
+            "description": "Secondary identifier, which can only be used in specific requests.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "GatewayRegistry"
+        ]
+      }
+    },
+    "/gateways/{gateway_id}/restore": {
+      "post": {
+        "summary": "Restore a recently deleted gateway. This does not restore the EUI,\nas that was released when deleting the gateway.",
+        "description": "Deployment configuration may specify if, and for how long after deletion,\nentities can be restored.",
+        "operationId": "GatewayRegistry_Restore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "gateway_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GatewayRegistry"
+        ]
+      }
+    },
     "/gateways/{gateway_id}/rights": {
       "get": {
         "summary": "List the rights the caller has on this gateway.",
@@ -4116,6 +5194,117 @@
         ],
         "tags": [
           "GatewayAccess"
+        ]
+      }
+    },
+    "/gcls/claim": {
+      "post": {
+        "summary": "Claims a gateway by claim authentication code or QR code and transfers the gateway to the target user.",
+        "operationId": "GatewayClaimingServer_Claim",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3ClaimGatewayRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayClaimingServer"
+        ]
+      }
+    },
+    "/gcls/gateways/{gateway_ids.gateway_id}/authorize": {
+      "post": {
+        "summary": "AuthorizeGateway allows a gateway to be claimed.",
+        "operationId": "GatewayClaimingServer_AuthorizeGateway",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "gateway_ids.gateway_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3AuthorizeGatewayRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayClaimingServer"
+        ]
+      }
+    },
+    "/gcls/gateways/{gateway_id}/authorize": {
+      "delete": {
+        "summary": "UnauthorizeGateway prevents a gateway from being claimed.",
+        "operationId": "GatewayClaimingServer_UnauthorizeGateway",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "gateway_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "eui",
+            "description": "Secondary identifier, which can only be used in specific requests.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "GatewayClaimingServer"
         ]
       }
     },
@@ -4339,6 +5528,7 @@
     },
     "/is/configuration": {
       "get": {
+        "summary": "Get the configuration of the Identity Server. The response is typically used\nto enable or disable features in a user interface.",
         "operationId": "Is_GetConfiguration",
         "responses": {
           "200": {
@@ -4734,6 +5924,7 @@
     },
     "/js/join_eui_prefixes": {
       "get": {
+        "summary": "Request the JoinEUI prefixes that are configured for this Join Server.",
         "operationId": "Js_GetJoinEUIPrefixes",
         "responses": {
           "200": {
@@ -4969,6 +6160,100 @@
         "tags": [
           "NsEndDeviceRegistry"
         ]
+      },
+      "patch": {
+        "summary": "ResetFactoryDefaults resets device state to factory defaults.",
+        "operationId": "NsEndDeviceRegistry_ResetFactoryDefaults",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3EndDevice"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "end_device_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "end_device_ids.device_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3ResetAndGetEndDeviceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NsEndDeviceRegistry"
+        ]
+      }
+    },
+    "/ns/default_mac_settings/{frequency_plan_id}/{lorawan_phy_version}": {
+      "get": {
+        "summary": "GetDefaultMACSettings retrieves the default MAC settings for a frequency plan.",
+        "operationId": "Ns_GetDefaultMACSettings",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3MACSettings"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "frequency_plan_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "lorawan_phy_version",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "enum": [
+              "PHY_UNKNOWN",
+              "TS001_V1_0",
+              "TS001_V1_0_1",
+              "RP001_V1_0_2",
+              "RP001_V1_0_2_REV_B",
+              "RP001_V1_1_REV_A",
+              "RP001_V1_1_REV_B",
+              "RP001_V1_0_3_REV_A",
+              "RP002_V1_0_0",
+              "RP002_V1_0_1",
+              "RP002_V1_0_2",
+              "RP002_V1_0_3"
+            ]
+          }
+        ],
+        "tags": [
+          "Ns"
+        ]
       }
     },
     "/ns/dev_addr": {
@@ -5067,6 +6352,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted organizations.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -5147,6 +6439,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted applications.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -5194,7 +6493,7 @@
     },
     "/organizations/{collaborator.organization_ids.organization_id}/clients": {
       "get": {
-        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields sepcified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
+        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields specified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
         "operationId": "ClientRegistry_List3",
         "responses": {
           "200": {
@@ -5265,6 +6564,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted clients.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -5383,6 +6689,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted gateways.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -5847,6 +7160,71 @@
         ]
       }
     },
+    "/organizations/{organization_id}/purge": {
+      "delete": {
+        "summary": "Purge the organization. This will release the organization ID for reuse.\nThe user is responsible for clearing data from any (external) integrations\nthat may store and expose data by user or organization ID.",
+        "operationId": "OrganizationRegistry_Purge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "organization_id",
+            "description": "This ID shares namespace with user IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrganizationRegistry"
+        ]
+      }
+    },
+    "/organizations/{organization_id}/restore": {
+      "post": {
+        "summary": "Restore a recently deleted organization.",
+        "description": "Deployment configuration may specify if, and for how long after deletion,\nentities can be restored.",
+        "operationId": "OrganizationRegistry_Restore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "organization_id",
+            "description": "This ID shares namespace with user IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OrganizationRegistry"
+        ]
+      }
+    },
     "/organizations/{organization_id}/rights": {
       "get": {
         "summary": "List the rights the caller has on this organization.",
@@ -5876,6 +7254,744 @@
         ],
         "tags": [
           "OrganizationAccess"
+        ]
+      }
+    },
+    "/pba/forwarders/policies": {
+      "get": {
+        "summary": "List the routing policies that Forwarders configured with Packet Broker Agent as Home Network.\nListing routing policies requires administrative access.",
+        "operationId": "Pba_ListForwarderRoutingPolicies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerRoutingPolicies"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "home_network_id.net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "home_network_id.tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks": {
+      "get": {
+        "summary": "List the listed home networks for which routing policies can be configured.\nListing home networks requires administrative access.",
+        "operationId": "Pba_ListHomeNetworks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerNetworks"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tenant_id_contains",
+            "description": "Filter by tenant ID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "name_contains",
+            "description": "Filter by name.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies": {
+      "get": {
+        "summary": "List the routing policies that Packet Broker Agent as Forwarder configured with Home Networks.\nListing routing policies requires administrative access.",
+        "operationId": "Pba_ListHomeNetworkRoutingPolicies",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerRoutingPolicies"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies/default": {
+      "get": {
+        "summary": "Get the default routing policy.\nGetting routing policies requires administrative access.",
+        "operationId": "Pba_GetHomeNetworkDefaultRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerDefaultRoutingPolicy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
+        ]
+      },
+      "delete": {
+        "summary": "Deletes the default routing policy.\nDeleting routing policies requires administrative access.",
+        "operationId": "Pba_DeleteHomeNetworkDefaultRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
+        ]
+      },
+      "post": {
+        "summary": "Set the default routing policy.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkDefaultRoutingPolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerDefaultRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      },
+      "put": {
+        "summary": "Set the default routing policy.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkDefaultRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerDefaultRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies/{home_network_id.net_id}": {
+      "post": {
+        "summary": "Set the routing policy for the given Home Network.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkRoutingPolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "home_network_id.net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      },
+      "put": {
+        "summary": "Set the routing policy for the given Home Network.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "home_network_id.net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies/{home_network_id.net_id}/{home_network_id.tenant_id}": {
+      "post": {
+        "summary": "Set the routing policy for the given Home Network.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkRoutingPolicy4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "home_network_id.net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "home_network_id.tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      },
+      "put": {
+        "summary": "Set the routing policy for the given Home Network.\nSetting routing policies requires administrative access.",
+        "operationId": "Pba_SetHomeNetworkRoutingPolicy3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "home_network_id.net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "home_network_id.tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3SetPacketBrokerRoutingPolicyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies/{net_id}": {
+      "get": {
+        "summary": "Get the routing policy for the given Home Network.\nGetting routing policies requires administrative access.",
+        "operationId": "Pba_GetHomeNetworkRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerRoutingPolicy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      },
+      "delete": {
+        "summary": "Delete the routing policy for the given Home Network.\nDeleting routing policies requires administrative access.",
+        "operationId": "Pba_DeleteHomeNetworkRoutingPolicy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/home-networks/policies/{net_id}/{tenant_id}": {
+      "get": {
+        "summary": "Get the routing policy for the given Home Network.\nGetting routing policies requires administrative access.",
+        "operationId": "Pba_GetHomeNetworkRoutingPolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerRoutingPolicy"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      },
+      "delete": {
+        "summary": "Delete the routing policy for the given Home Network.\nDeleting routing policies requires administrative access.",
+        "operationId": "Pba_DeleteHomeNetworkRoutingPolicy2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "net_id",
+            "description": "LoRa Alliance NetID.",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tenant_id",
+            "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/info": {
+      "get": {
+        "summary": "Get information about the Packet Broker registration.\nViewing Packet Packet information requires administrative access.",
+        "operationId": "Pba_GetInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/networks": {
+      "get": {
+        "summary": "List all listed networks.\nListing networks requires administrative access.",
+        "operationId": "Pba_ListNetworks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerNetworks"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "with_routing_policy",
+            "description": "If true, list only the Forwarders and Home Networks with whom a routing policy has been defined in either direction.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "tenant_id_contains",
+            "description": "Filter by tenant ID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "name_contains",
+            "description": "Filter by name.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Pba"
+        ]
+      }
+    },
+    "/pba/registration": {
+      "delete": {
+        "summary": "Deregister from Packet Broker.\nPacket Broker deregistration requires administrative access.",
+        "operationId": "Pba_Deregister",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
+        ]
+      },
+      "post": {
+        "summary": "Register with Packet Broker. If no registration exists, it will be created. Any existing registration will be updated.\nAll registration settings are taken from Packet Broker Agent configuration and caller context.\nPacket Broker registration requires administrative access.",
+        "operationId": "Pba_Register2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerNetwork"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
+        ]
+      },
+      "put": {
+        "summary": "Register with Packet Broker. If no registration exists, it will be created. Any existing registration will be updated.\nAll registration settings are taken from Packet Broker Agent configuration and caller context.\nPacket Broker registration requires administrative access.",
+        "operationId": "Pba_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3PacketBrokerNetwork"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Pba"
         ]
       }
     },
@@ -5956,6 +8072,7 @@
         "parameters": [
           {
             "name": "format_id",
+            "description": "QR code format identifier. Enumerate available formats with rpc ListFormats in the EndDeviceQRCodeGenerator service.",
             "in": "path",
             "required": true,
             "type": "string"
@@ -5968,6 +8085,7 @@
     },
     "/search/applications": {
       "get": {
+        "summary": "Search for applications that match the conditions specified in the request.\nNon-admin users will only match applications that they have rights on.",
         "operationId": "EntityRegistrySearch_SearchApplications",
         "responses": {
           "200": {
@@ -5986,21 +8104,21 @@
         "parameters": [
           {
             "name": "id_contains",
-            "description": "Find entities where the ID contains this substring.",
+            "description": "Find applications where the ID contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "name_contains",
-            "description": "Find entities where the name contains this substring.",
+            "description": "Find applications where the name contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "description_contains",
-            "description": "Find entities where the description contains this substring.",
+            "description": "Find applications where the description contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6038,6 +8156,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted applications.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6047,6 +8172,7 @@
     },
     "/search/applications/{application_ids.application_id}/devices": {
       "get": {
+        "summary": "Search for end devices in the given application that match the conditions specified in the request.",
         "operationId": "EndDeviceRegistrySearch_SearchEndDevices",
         "responses": {
           "200": {
@@ -6153,6 +8279,7 @@
     },
     "/search/clients": {
       "get": {
+        "summary": "Search for OAuth clients that match the conditions specified in the request.\nNon-admin users will only match OAuth clients that they have rights on.",
         "operationId": "EntityRegistrySearch_SearchClients",
         "responses": {
           "200": {
@@ -6171,24 +8298,42 @@
         "parameters": [
           {
             "name": "id_contains",
-            "description": "Find entities where the ID contains this substring.",
+            "description": "Find OAuth clients where the ID contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "name_contains",
-            "description": "Find entities where the name contains this substring.",
+            "description": "Find OAuth clients where the name contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "description_contains",
-            "description": "Find entities where the description contains this substring.",
+            "description": "Find OAuth clients where the description contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "state",
+            "description": "Find OAuth clients where the state is any of these states.\n\n - STATE_REQUESTED: Denotes that the entity has been requested and is pending review by an admin.\n - STATE_APPROVED: Denotes that the entity has been reviewed and approved by an admin.\n - STATE_REJECTED: Denotes that the entity has been reviewed and rejected by an admin.\n - STATE_FLAGGED: Denotes that the entity has been flagged and is pending review by an admin.\n - STATE_SUSPENDED: Denotes that the entity has been reviewed and suspended by an admin.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "STATE_REQUESTED",
+                "STATE_APPROVED",
+                "STATE_REJECTED",
+                "STATE_FLAGGED",
+                "STATE_SUSPENDED"
+              ]
+            },
+            "collectionFormat": "multi"
           },
           {
             "name": "field_mask.paths",
@@ -6223,6 +8368,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted OAuth clients.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6232,6 +8384,7 @@
     },
     "/search/gateways": {
       "get": {
+        "summary": "Search for gateways that match the conditions specified in the request.\nNon-admin users will only match gateways that they have rights on.",
         "operationId": "EntityRegistrySearch_SearchGateways",
         "responses": {
           "200": {
@@ -6250,21 +8403,28 @@
         "parameters": [
           {
             "name": "id_contains",
-            "description": "Find entities where the ID contains this substring.",
+            "description": "Find gateways where the ID contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "name_contains",
-            "description": "Find entities where the name contains this substring.",
+            "description": "Find gateways where the name contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "description_contains",
-            "description": "Find entities where the description contains this substring.",
+            "description": "Find gateways where the description contains this substring.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "eui_contains",
+            "description": "Find gateways where the (hexadecimal) EUI contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6302,6 +8462,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted gateways.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6311,6 +8478,7 @@
     },
     "/search/organizations": {
       "get": {
+        "summary": "Search for organizations that match the conditions specified in the request.\nNon-admin users will only match organizations that they have rights on.",
         "operationId": "EntityRegistrySearch_SearchOrganizations",
         "responses": {
           "200": {
@@ -6329,21 +8497,21 @@
         "parameters": [
           {
             "name": "id_contains",
-            "description": "Find entities where the ID contains this substring.",
+            "description": "Find organizations where the ID contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "name_contains",
-            "description": "Find entities where the name contains this substring.",
+            "description": "Find organizations where the name contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "description_contains",
-            "description": "Find entities where the description contains this substring.",
+            "description": "Find organizations where the description contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6381,6 +8549,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted organizations.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6390,6 +8565,7 @@
     },
     "/search/users": {
       "get": {
+        "summary": "Search for users that match the conditions specified in the request.\nThis is only available to admin users.",
         "operationId": "EntityRegistrySearch_SearchUsers",
         "responses": {
           "200": {
@@ -6408,24 +8584,42 @@
         "parameters": [
           {
             "name": "id_contains",
-            "description": "Find entities where the ID contains this substring.",
+            "description": "Find users where the ID contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "name_contains",
-            "description": "Find entities where the name contains this substring.",
+            "description": "Find users where the name contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "description_contains",
-            "description": "Find entities where the description contains this substring.",
+            "description": "Find users where the description contains this substring.",
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "state",
+            "description": "Find users where the state is any of these states.\n\n - STATE_REQUESTED: Denotes that the entity has been requested and is pending review by an admin.\n - STATE_APPROVED: Denotes that the entity has been reviewed and approved by an admin.\n - STATE_REJECTED: Denotes that the entity has been reviewed and rejected by an admin.\n - STATE_FLAGGED: Denotes that the entity has been flagged and is pending review by an admin.\n - STATE_SUSPENDED: Denotes that the entity has been reviewed and suspended by an admin.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "STATE_REQUESTED",
+                "STATE_APPROVED",
+                "STATE_REJECTED",
+                "STATE_FLAGGED",
+                "STATE_SUSPENDED"
+              ]
+            },
+            "collectionFormat": "multi"
           },
           {
             "name": "field_mask.paths",
@@ -6460,6 +8654,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted users.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6519,6 +8720,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted users.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6630,6 +8838,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted applications.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6677,7 +8892,7 @@
     },
     "/users/{collaborator.user_ids.user_id}/clients": {
       "get": {
-        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields sepcified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
+        "summary": "List OAuth clients where the given user or organization is a direct collaborator.\nIf no user or organization is given, this returns the OAuth clients the caller\nhas access to.\nSimilar to Get, this selects the fields specified in the field mask.\nMore or less fields may be returned, depending on the rights of the caller.",
         "operationId": "ClientRegistry_List2",
         "responses": {
           "200": {
@@ -6748,6 +8963,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted clients.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6866,6 +9088,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted gateways.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -6984,6 +9213,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "deleted",
+            "description": "Only return recently deleted organizations.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -7307,6 +9543,7 @@
     },
     "/users/{user_ids.user_id}/authorizations": {
       "get": {
+        "summary": "List OAuth clients that are authorized by the user.",
         "operationId": "OAuthAuthorizationRegistry_List",
         "responses": {
           "200": {
@@ -7368,6 +9605,7 @@
     },
     "/users/{user_ids.user_id}/authorizations/{client_ids.client_id}": {
       "delete": {
+        "summary": "Delete (de-authorize) an OAuth client for the user.",
         "operationId": "OAuthAuthorizationRegistry_Delete",
         "responses": {
           "200": {
@@ -7412,6 +9650,7 @@
     },
     "/users/{user_ids.user_id}/authorizations/{client_ids.client_id}/tokens": {
       "get": {
+        "summary": "List OAuth access tokens issued to the OAuth client on behalf of the user.",
         "operationId": "OAuthAuthorizationRegistry_ListTokens",
         "responses": {
           "200": {
@@ -7479,6 +9718,7 @@
     },
     "/users/{user_ids.user_id}/authorizations/{client_ids.client_id}/tokens/{id}": {
       "delete": {
+        "summary": "Delete (invalidate) an OAuth access token.",
         "operationId": "OAuthAuthorizationRegistry_DeleteToken",
         "responses": {
           "200": {
@@ -7524,6 +9764,38 @@
         ],
         "tags": [
           "OAuthAuthorizationRegistry"
+        ]
+      }
+    },
+    "/users/{user_ids.user_id}/login-tokens": {
+      "post": {
+        "summary": "Create a login token that can be used for a one-time login as a user.",
+        "operationId": "UserAccess_CreateLoginToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3CreateLoginTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_ids.user_id",
+            "description": "This ID shares namespace with organization IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserAccess"
         ]
       }
     },
@@ -7745,6 +10017,78 @@
         ]
       }
     },
+    "/users/{user_id}/purge": {
+      "delete": {
+        "summary": "Purge the user. This will release the user ID for reuse.\nThe user is responsible for clearing data from any (external) integrations\nthat may store and expose data by user or organization ID.",
+        "operationId": "UserRegistry_Purge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "description": "This ID shares namespace with organization IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "description": "Secondary identifier, which can only be used in specific requests.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserRegistry"
+        ]
+      }
+    },
+    "/users/{user_id}/restore": {
+      "post": {
+        "summary": "Restore a recently deleted user.",
+        "description": "Deployment configuration may specify if, and for how long after deletion,\nentities can be restored.",
+        "operationId": "UserRegistry_Restore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_id",
+            "description": "This ID shares namespace with organization IDs.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserRegistry"
+        ]
+      }
+    },
     "/users/{user_id}/rights": {
       "get": {
         "summary": "List the rights the caller has on this user.",
@@ -7924,6 +10268,14 @@
       },
       "description": "The NATS provider settings."
     },
+    "AsConfigurationPubSub": {
+      "type": "object",
+      "properties": {
+        "providers": {
+          "$ref": "#/definitions/PubSubProviders"
+        }
+      }
+    },
     "AuthInfoResponseAPIKeyAccess": {
       "type": "object",
       "properties": {
@@ -7935,18 +10287,34 @@
         }
       }
     },
-    "ClaimEndDeviceRequestAuthenticatedIdentifiers": {
+    "CUPSRedirectionClientTLS": {
       "type": "object",
       "properties": {
-        "join_eui": {
+        "cert": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "PEM encoded Client Certificate."
         },
-        "dev_eui": {
+        "key": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "PEM encoded Client Private Key."
+        }
+      }
+    },
+    "CompliancesCompliance": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string"
         },
-        "authentication_code": {
+        "norm": {
+          "type": "string"
+        },
+        "standard": {
+          "type": "string"
+        },
+        "version": {
           "type": "string"
         }
       }
@@ -8006,6 +10374,174 @@
         }
       }
     },
+    "EndDeviceModelBattery": {
+      "type": "object",
+      "properties": {
+        "replaceable": {
+          "type": "boolean",
+          "description": "Whether the device battery can be replaced."
+        },
+        "type": {
+          "type": "string",
+          "description": "Battery type."
+        }
+      }
+    },
+    "EndDeviceModelCompliances": {
+      "type": "object",
+      "properties": {
+        "safety": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CompliancesCompliance"
+          },
+          "description": "List of safety standards the device is compliant with."
+        },
+        "radio_equipment": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CompliancesCompliance"
+          },
+          "description": "List of radio equipment standards the device is compliant with."
+        }
+      }
+    },
+    "EndDeviceModelDimensions": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "format": "float",
+          "description": "Device width (mm)."
+        },
+        "height": {
+          "type": "number",
+          "format": "float",
+          "description": "Device height (mm)."
+        },
+        "diameter": {
+          "type": "number",
+          "format": "float",
+          "description": "Device diameter (mm)."
+        },
+        "length": {
+          "type": "number",
+          "format": "float",
+          "description": "Device length (mm)."
+        }
+      }
+    },
+    "EndDeviceModelFirmwareVersion": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Firmware version string."
+        },
+        "numeric": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Numeric firmware revision number."
+        },
+        "supported_hardware_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Hardware versions supported by this firmware version."
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/FirmwareVersionProfile"
+          },
+          "description": "Device profiles for each supported region (band)."
+        }
+      }
+    },
+    "EndDeviceModelHardwareVersion": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Hardware version string."
+        },
+        "numeric": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Numberic hardware revision number."
+        },
+        "part_number": {
+          "type": "string",
+          "description": "Hardware part number."
+        }
+      }
+    },
+    "EndDeviceModelOperatingConditions": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "$ref": "#/definitions/OperatingConditionsLimits",
+          "description": "Temperature operating conditions (Celsius)."
+        },
+        "relative_humidity": {
+          "$ref": "#/definitions/OperatingConditionsLimits",
+          "description": "Relative humidity operating conditions (Fraction, in range [0, 1])."
+        }
+      }
+    },
+    "EndDeviceModelPhotos": {
+      "type": "object",
+      "properties": {
+        "main": {
+          "type": "string",
+          "description": "Main device photo."
+        },
+        "other": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of other device photos."
+        }
+      }
+    },
+    "EndDeviceModelReseller": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Reseller name."
+        },
+        "region": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Reseller regions."
+        },
+        "url": {
+          "type": "string",
+          "description": "Reseller URL."
+        }
+      }
+    },
+    "EndDeviceModelVideos": {
+      "type": "object",
+      "properties": {
+        "main": {
+          "type": "string",
+          "description": "Link to main device video."
+        },
+        "other": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Links to other device videos."
+        }
+      }
+    },
     "EventAuthentication": {
       "type": "object",
       "properties": {
@@ -8020,6 +10556,27 @@
         "token_id": {
           "type": "string",
           "description": "The ID of the token that was used."
+        }
+      }
+    },
+    "FirmwareVersionProfile": {
+      "type": "object",
+      "properties": {
+        "vendor_id": {
+          "type": "string",
+          "description": "Vendor ID of the profile, as defined in the Device Repository.\nIf this value is set, the profile is loaded from this vendor's folder.\nIf this value is not set, the profile is loaded from the current (end device's) vendor."
+        },
+        "profile_id": {
+          "type": "string",
+          "description": "Profile identifier, as defined in the Device Repository."
+        },
+        "lorawan_certified": {
+          "type": "boolean",
+          "description": "Whether the device is LoRaWAN certified."
+        },
+        "codec_id": {
+          "type": "string",
+          "description": "Payload formatter codec identifier, as defined in the Device Repository."
         }
       }
     },
@@ -8062,6 +10619,16 @@
         }
       }
     },
+    "GatewayLRFHSS": {
+      "type": "object",
+      "properties": {
+        "supported": {
+          "type": "boolean",
+          "description": "The gateway supports the LR-FHSS uplink channels."
+        }
+      },
+      "description": "LR-FHSS gateway capabilities."
+    },
     "GatewayRadioTxConfiguration": {
       "type": "object",
       "properties": {
@@ -8084,7 +10651,8 @@
       "properties": {
         "image_size": {
           "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "description": "Requested QR code image dimension in pixels."
         }
       }
     },
@@ -8121,6 +10689,9 @@
         },
         "password_requirements": {
           "$ref": "#/definitions/UserRegistrationPasswordRequirements"
+        },
+        "enabled": {
+          "type": "boolean"
         }
       }
     },
@@ -8279,7 +10850,7 @@
       "type": "object",
       "properties": {
         "rejoin_type": {
-          "$ref": "#/definitions/v3RejoinType"
+          "$ref": "#/definitions/v3RejoinRequestType"
         },
         "data_rate_index": {
           "$ref": "#/definitions/v3DataRateIndex"
@@ -8483,8 +11054,7 @@
           "$ref": "#/definitions/v3DataRateIndex"
         },
         "rx1_data_rate_offset": {
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/v3DataRateOffset"
         },
         "rx2_frequency": {
           "type": "string",
@@ -8546,8 +11116,7 @@
           "description": "Payload of the join-accept received from Join Server."
         },
         "request": {
-          "$ref": "#/definitions/v3JoinRequest",
-          "description": "JoinRequest sent to Join Server."
+          "$ref": "#/definitions/v3MACStateJoinRequest"
         },
         "keys": {
           "$ref": "#/definitions/v3SessionKeys",
@@ -8558,6 +11127,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "dev_addr": {
+          "type": "string",
+          "format": "byte"
+        },
+        "net_id": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -8569,6 +11146,21 @@
         "EXACTLY_ONCE"
       ],
       "default": "AT_MOST_ONCE"
+    },
+    "OperatingConditionsLimits": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number",
+          "format": "float",
+          "description": "Min value of operating conditions range."
+        },
+        "max": {
+          "type": "number",
+          "format": "float",
+          "description": "Max value of operating conditions range."
+        }
+      }
     },
     "PictureEmbedded": {
       "type": "object",
@@ -8583,6 +11175,16 @@
           "description": "Picture data. A data URI can be constructed as follows:\n`data:\u003cmime_type\u003e;base64,\u003cdata\u003e`."
         }
       }
+    },
+    "ProvidersStatus": {
+      "type": "string",
+      "enum": [
+        "ENABLED",
+        "WARNING",
+        "DISABLED"
+      ],
+      "default": "ENABLED",
+      "description": " - ENABLED: No restrictions are in place.\n - WARNING: Warnings are being emitted that the provider will be deprecated in the future.\n - DISABLED: New integrations cannot be set up, and old ones do not start."
     },
     "ProvisionEndDevicesRequestIdentifiersFromData": {
       "type": "object",
@@ -8619,6 +11221,17 @@
           "type": "string",
           "format": "byte",
           "description": "DevEUI to start issuing from."
+        }
+      }
+    },
+    "PubSubProviders": {
+      "type": "object",
+      "properties": {
+        "mqtt": {
+          "$ref": "#/definitions/ProvidersStatus"
+        },
+        "nats": {
+          "$ref": "#/definitions/ProvidersStatus"
         }
       }
     },
@@ -8690,6 +11303,14 @@
         }
       }
     },
+    "lorawanv3BoolValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
     "lorawanv3ContactInfoValidation": {
       "type": "object",
       "properties": {
@@ -8715,6 +11336,19 @@
         "expires_at": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "lorawanv3GatewayIdentifiers": {
+      "type": "object",
+      "properties": {
+        "gateway_id": {
+          "type": "string"
+        },
+        "eui": {
+          "type": "string",
+          "format": "byte",
+          "description": "Secondary identifier, which can only be used in specific requests."
         }
       }
     },
@@ -8799,7 +11433,8 @@
         "rejoin_request_payload": {
           "$ref": "#/definitions/v3RejoinRequestPayload"
         }
-      }
+      },
+      "title": "Message represents a LoRaWAN message"
     },
     "protobufAny": {
       "type": "object",
@@ -8965,6 +11600,18 @@
             "$ref": "#/definitions/v3Right"
           },
           "description": "Rights that are granted to this API key."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -9032,6 +11679,10 @@
           "type": "string",
           "format": "date-time"
         },
+        "deleted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "name": {
           "type": "string"
         },
@@ -9051,6 +11702,10 @@
             "$ref": "#/definitions/v3ContactInfo"
           },
           "description": "Contact information for this application. Typically used to indicate who to contact with technical/security questions about the application."
+        },
+        "dev_eui_counter": {
+          "type": "integer",
+          "format": "int64"
         }
       },
       "description": "Application is the message that defines an Application in the network."
@@ -9170,6 +11825,10 @@
         "last_f_cnt_down": {
           "type": "integer",
           "format": "int64"
+        },
+        "session_key_id": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -9206,14 +11865,6 @@
     "v3ApplicationLink": {
       "type": "object",
       "properties": {
-        "network_server_address": {
-          "type": "string",
-          "description": "The address of the external Network Server where to link to.\nThe typical format of the address is \"host:port\". If the port is omitted,\nthe normal port inference (with DNS lookup, otherwise defaults) is used.\nLeave empty when linking to a cluster Network Server."
-        },
-        "api_key": {
-          "type": "string",
-          "description": "The API key to use to link the Application Server to Network Server.\nThis API key needs to have RIGHT_APPLICATION_LINK."
-        },
         "default_formatters": {
           "$ref": "#/definitions/v3MessagePayloadFormatters",
           "description": "Default message payload formatters to use when there are no formatters\ndefined on the end device level."
@@ -9567,7 +12218,8 @@
           "type": "boolean",
           "description": "Signals if the message is coming from the Network Server or is simulated."
         }
-      }
+      },
+      "description": "Application uplink message."
     },
     "v3ApplicationUplink": {
       "type": "object",
@@ -9639,6 +12291,14 @@
             "$ref": "#/definitions/lorawanv3Location"
           },
           "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
         }
       }
     },
@@ -9845,6 +12505,9 @@
         },
         "default_value": {
           "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
         }
       },
       "description": "ApplicationWebhookTemplateField represents a custom field that needs to be filled by the user in order to use the template.\nA field can be an API key, an username or password, or any custom platform specific field (such as region).\nThe fields are meant to be replaced inside the URLs and headers when the webhook is created."
@@ -9899,6 +12562,15 @@
         }
       }
     },
+    "v3AsConfiguration": {
+      "type": "object",
+      "properties": {
+        "pubsub": {
+          "$ref": "#/definitions/AsConfigurationPubSub"
+        }
+      },
+      "description": "Application Server configuration."
+    },
     "v3AuthInfoResponse": {
       "type": "object",
       "properties": {
@@ -9925,6 +12597,17 @@
       "properties": {
         "application_ids": {
           "$ref": "#/definitions/v3ApplicationIdentifiers"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "v3AuthorizeGatewayRequest": {
+      "type": "object",
+      "properties": {
+        "gateway_ids": {
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "api_key": {
           "type": "string"
@@ -9962,15 +12645,43 @@
       ],
       "default": "FREQUENCIES"
     },
+    "v3CUPSRedirection": {
+      "type": "object",
+      "properties": {
+        "target_cups_uri": {
+          "type": "string",
+          "description": "CUPS URI for LoRa Basics Station CUPS redirection."
+        },
+        "current_gateway_key": {
+          "type": "string",
+          "description": "The key set in the gateway to authenticate itself."
+        },
+        "target_cups_trust": {
+          "type": "string",
+          "format": "byte",
+          "description": "Optional PEM encoded CA Root certificate. If this field is empty, DCS will attempt to dial the Target CUPS server and fetch the CA."
+        },
+        "client_tls": {
+          "$ref": "#/definitions/CUPSRedirectionClientTLS",
+          "title": "TODO: Support mTLS (https://github.com/TheThingsNetwork/lorawan-stack/issues/137)"
+        },
+        "auth_token": {
+          "type": "string",
+          "description": "The Device Claiming Server will fill this field with a The Things Stack API Key."
+        }
+      }
+    },
     "v3ClaimEndDeviceRequest": {
       "type": "object",
       "properties": {
         "authenticated_identifiers": {
-          "$ref": "#/definitions/ClaimEndDeviceRequestAuthenticatedIdentifiers"
+          "$ref": "#/definitions/v3ClaimEndDeviceRequestAuthenticatedIdentifiers",
+          "description": "Authenticated identifiers."
         },
         "qr_code": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "Raw QR code contents."
         },
         "target_application_ids": {
           "$ref": "#/definitions/v3ApplicationIdentifiers",
@@ -10011,6 +12722,70 @@
         }
       }
     },
+    "v3ClaimEndDeviceRequestAuthenticatedIdentifiers": {
+      "type": "object",
+      "properties": {
+        "join_eui": {
+          "type": "string",
+          "format": "byte",
+          "description": "JoinEUI (or AppEUI) of the device to claim."
+        },
+        "dev_eui": {
+          "type": "string",
+          "format": "byte",
+          "description": "DevEUI of the device to claim."
+        },
+        "authentication_code": {
+          "type": "string",
+          "description": "Authentication code to prove ownership.\nIn the LoRa Alliance TR005 specification, this equals the OwnerToken."
+        }
+      }
+    },
+    "v3ClaimGatewayRequest": {
+      "type": "object",
+      "properties": {
+        "authenticated_identifiers": {
+          "$ref": "#/definitions/v3ClaimGatewayRequestAuthenticatedIdentifiers"
+        },
+        "qr_code": {
+          "type": "string",
+          "format": "byte"
+        },
+        "collaborator": {
+          "$ref": "#/definitions/v3OrganizationOrUserIdentifiers",
+          "description": "Collaborator to grant all rights on the target gateway."
+        },
+        "target_gateway_id": {
+          "type": "string",
+          "title": "Gateway ID for the target gateway. This must be a unique value.\nIf this is not set, the target ID for the target gateway will be set to `eui-\u003cgateway-eui\u003e`"
+        },
+        "target_gateway_server_address": {
+          "type": "string",
+          "description": "Target Gateway Server Address for the target gateway."
+        },
+        "cups_redirection": {
+          "$ref": "#/definitions/v3CUPSRedirection",
+          "description": "Parameters to set CUPS redirection for the gateway."
+        },
+        "target_frequency_plan_id": {
+          "type": "string",
+          "description": "Frequency plan ID of the target gateway.\nThis equals the first element of the frequency_plan_ids field."
+        }
+      }
+    },
+    "v3ClaimGatewayRequestAuthenticatedIdentifiers": {
+      "type": "object",
+      "properties": {
+        "gateway_eui": {
+          "type": "string",
+          "format": "byte"
+        },
+        "authentication_code": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "v3Class": {
       "type": "string",
       "enum": [
@@ -10031,6 +12806,10 @@
           "format": "date-time"
         },
         "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deleted_at": {
           "type": "string",
           "format": "date-time"
         },
@@ -10074,7 +12853,11 @@
         },
         "state": {
           "$ref": "#/definitions/v3State",
-          "description": "The reviewing state of the client.\nThis field can only be modified by admins."
+          "description": "The reviewing state of the client.\nThis field can only be modified by admins.\nIf state_description is not updated when updating state, state_description is cleared."
+        },
+        "state_description": {
+          "type": "string",
+          "description": "A description for the state field.\nThis field can only be modified by admins, and should typically only be updated\nwhen also updating `state`."
         },
         "skip_authorization": {
           "type": "boolean",
@@ -10260,6 +13043,10 @@
           "items": {
             "$ref": "#/definitions/v3Right"
           }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -10299,7 +13086,7 @@
       "type": "object",
       "properties": {
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "name": {
           "type": "string"
@@ -10309,6 +13096,10 @@
           "items": {
             "$ref": "#/definitions/v3Right"
           }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -10321,6 +13112,15 @@
         "collaborator": {
           "$ref": "#/definitions/v3OrganizationOrUserIdentifiers",
           "description": "Collaborator to grant all rights on the newly created gateway."
+        }
+      }
+    },
+    "v3CreateLoginTokenResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "The token that can be used for logging in as the user.\nThis field is only present if a token was created by an admin user for a non-admin user."
         }
       }
     },
@@ -10338,6 +13138,10 @@
           "items": {
             "$ref": "#/definitions/v3Right"
           }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -10367,6 +13171,10 @@
           "items": {
             "$ref": "#/definitions/v3Right"
           }
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -10386,20 +13194,25 @@
       "type": "object",
       "properties": {
         "ids": {
-          "$ref": "#/definitions/v3EndDeviceIdentifiers"
+          "$ref": "#/definitions/v3EndDeviceIdentifiers",
+          "description": "End device identifiers for the cryptographic operation."
         },
         "lorawan_version": {
-          "$ref": "#/definitions/v3MACVersion"
+          "$ref": "#/definitions/v3MACVersion",
+          "description": "LoRaWAN version to use for the cryptographic operation."
         },
         "payload": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "Raw input payload."
         },
         "provisioner_id": {
-          "type": "string"
+          "type": "string",
+          "description": "Provisioner that provisioned the end device."
         },
         "provisioning_data": {
-          "type": "object"
+          "type": "object",
+          "description": "Provisioning data for the provisioner."
         }
       }
     },
@@ -10408,7 +13221,8 @@
       "properties": {
         "payload": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "Raw output payload."
         }
       }
     },
@@ -10416,8 +13230,7 @@
       "type": "object",
       "properties": {
         "rx1_dr_offset": {
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/v3DataRateOffset"
         },
         "rx2_dr": {
           "$ref": "#/definitions/v3DataRateIndex"
@@ -10436,6 +13249,9 @@
         },
         "fsk": {
           "$ref": "#/definitions/v3FSKDataRate"
+        },
+        "lrfhss": {
+          "$ref": "#/definitions/v3LRFHSSDataRate"
         }
       }
     },
@@ -10469,6 +13285,119 @@
         }
       }
     },
+    "v3DataRateOffset": {
+      "type": "string",
+      "enum": [
+        "DATA_RATE_OFFSET_0",
+        "DATA_RATE_OFFSET_1",
+        "DATA_RATE_OFFSET_2",
+        "DATA_RATE_OFFSET_3",
+        "DATA_RATE_OFFSET_4",
+        "DATA_RATE_OFFSET_5",
+        "DATA_RATE_OFFSET_6",
+        "DATA_RATE_OFFSET_7"
+      ],
+      "default": "DATA_RATE_OFFSET_0"
+    },
+    "v3DataRateOffsetValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v3DataRateOffset"
+        }
+      }
+    },
+    "v3DecodeDownlinkRequest": {
+      "type": "object",
+      "properties": {
+        "end_device_ids": {
+          "$ref": "#/definitions/v3EndDeviceIdentifiers"
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers"
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3ApplicationDownlink"
+        },
+        "formatter": {
+          "$ref": "#/definitions/v3PayloadFormatter"
+        },
+        "parameter": {
+          "type": "string"
+        }
+      }
+    },
+    "v3DecodeDownlinkResponse": {
+      "type": "object",
+      "properties": {
+        "downlink": {
+          "$ref": "#/definitions/v3ApplicationDownlink"
+        }
+      }
+    },
+    "v3DecodeUplinkRequest": {
+      "type": "object",
+      "properties": {
+        "end_device_ids": {
+          "$ref": "#/definitions/v3EndDeviceIdentifiers"
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers"
+        },
+        "uplink": {
+          "$ref": "#/definitions/v3ApplicationUplink"
+        },
+        "formatter": {
+          "$ref": "#/definitions/v3PayloadFormatter"
+        },
+        "parameter": {
+          "type": "string"
+        }
+      }
+    },
+    "v3DecodeUplinkResponse": {
+      "type": "object",
+      "properties": {
+        "uplink": {
+          "$ref": "#/definitions/v3ApplicationUplink"
+        }
+      }
+    },
+    "v3DecodedMessagePayload": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v3DevAddrPrefix": {
+      "type": "object",
+      "properties": {
+        "dev_addr": {
+          "type": "string",
+          "format": "byte",
+          "description": "DevAddr base."
+        },
+        "length": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of most significant bits from dev_addr that are used as prefix."
+        }
+      }
+    },
     "v3DeviceEIRP": {
       "type": "string",
       "enum": [
@@ -10490,6 +13419,14 @@
         "DEVICE_EIRP_36"
       ],
       "default": "DEVICE_EIRP_8"
+    },
+    "v3DeviceEIRPValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v3DeviceEIRP"
+        }
+      }
     },
     "v3DownlinkMessage": {
       "type": "object",
@@ -10515,6 +13452,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "session_key_id": {
+          "type": "string",
+          "format": "byte"
         }
       },
       "title": "Downlink message from the network to the end device"
@@ -10551,6 +13492,59 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/v3ApplicationDownlink"
+          }
+        }
+      }
+    },
+    "v3EncodeDownlinkRequest": {
+      "type": "object",
+      "properties": {
+        "end_device_ids": {
+          "$ref": "#/definitions/v3EndDeviceIdentifiers"
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers"
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3ApplicationDownlink"
+        },
+        "formatter": {
+          "$ref": "#/definitions/v3PayloadFormatter"
+        },
+        "parameter": {
+          "type": "string"
+        }
+      }
+    },
+    "v3EncodeDownlinkResponse": {
+      "type": "object",
+      "properties": {
+        "downlink": {
+          "$ref": "#/definitions/v3ApplicationDownlink"
+        }
+      }
+    },
+    "v3EncodedMessagePayload": {
+      "type": "object",
+      "properties": {
+        "f_port": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "frm_payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }
@@ -10741,27 +13735,6 @@
           "format": "int32",
           "description": "Demodulation signal-to-noise ratio (dB).\nReceived via the DevStatus MAC command at last_dev_status_received_at.\nStored in Network Server."
         },
-        "recent_adr_uplinks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v3UplinkMessage"
-          },
-          "title": "Recent uplink messages with ADR bit set to 1 sorted by time. Stored in Network Server.\nThe field is reset each time an uplink message carrying MACPayload is received with ADR bit set to 0.\nThe number of messages stored is in the range [0,20];"
-        },
-        "recent_uplinks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v3UplinkMessage"
-          },
-          "description": "Recent uplink messages sorted by time. Stored in Network Server.\nThe number of messages stored may depend on configuration."
-        },
-        "recent_downlinks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v3DownlinkMessage"
-          },
-          "description": "Recent downlink messages sorted by time. Stored in Network Server.\nThe number of messages stored may depend on configuration."
-        },
         "queued_application_downlinks": {
           "type": "array",
           "items": {
@@ -10796,6 +13769,11 @@
         "skip_payload_crypto_override": {
           "type": "boolean",
           "description": "Skip decryption of uplink payloads and encryption of downlink payloads.\nThis field overrides the application-level setting."
+        },
+        "activated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the device has been activated. Stored in the Entity Registry.\nThis field is set by the Application Server when an end device sends\nits first uplink.\nThe Application Server will use the field in order to avoid repeated\ncalls to the Entity Registry.\nThe field cannot be unset once set."
         }
       },
       "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -10816,6 +13794,48 @@
         }
       },
       "description": "Authentication code for end devices."
+    },
+    "v3EndDeviceBrand": {
+      "type": "object",
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "description": "Brand identifier, as specified in the Device Repository."
+        },
+        "name": {
+          "type": "string",
+          "description": "Brand name."
+        },
+        "private_enterprise_number": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Private Enterprise Number (PEN) assigned by IANA."
+        },
+        "organization_unique_identifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Organization Unique Identifiers (OUI) assigned by IEEE."
+        },
+        "lora_alliance_vendor_id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "VendorID managed by the LoRa Alliance, as defined in TR005."
+        },
+        "website": {
+          "type": "string",
+          "description": "Brand website URL."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address."
+        },
+        "logo": {
+          "type": "string",
+          "description": "Path to brand logo."
+        }
+      }
     },
     "v3EndDeviceIdentifiers": {
       "type": "object",
@@ -10840,6 +13860,114 @@
           "type": "string",
           "format": "byte",
           "description": "The LoRaWAN DevAddr."
+        }
+      }
+    },
+    "v3EndDeviceModel": {
+      "type": "object",
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "description": "Brand identifier, as defined in the Device Repository."
+        },
+        "model_id": {
+          "type": "string",
+          "description": "Model identifier, as defined in the Device Repository."
+        },
+        "name": {
+          "type": "string",
+          "description": "Model name, as defined in the Device Repository."
+        },
+        "description": {
+          "type": "string",
+          "description": "Model description."
+        },
+        "hardware_versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EndDeviceModelHardwareVersion"
+          },
+          "description": "Available hardware versions."
+        },
+        "firmware_versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EndDeviceModelFirmwareVersion"
+          },
+          "description": "Available firmware versions."
+        },
+        "sensors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of sensors included in the device."
+        },
+        "dimensions": {
+          "$ref": "#/definitions/EndDeviceModelDimensions",
+          "description": "Device dimensions."
+        },
+        "weight": {
+          "type": "number",
+          "format": "float",
+          "description": "Device weight (gram)."
+        },
+        "battery": {
+          "$ref": "#/definitions/EndDeviceModelBattery",
+          "description": "Device battery information."
+        },
+        "operating_conditions": {
+          "$ref": "#/definitions/EndDeviceModelOperatingConditions",
+          "description": "Device operating conditions."
+        },
+        "ip_code": {
+          "type": "string",
+          "description": "Device IP rating code."
+        },
+        "key_provisioning": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3KeyProvisioning"
+          },
+          "description": "Supported key provisioning methods."
+        },
+        "key_security": {
+          "$ref": "#/definitions/v3KeySecurity",
+          "description": "Device key security."
+        },
+        "photos": {
+          "$ref": "#/definitions/EndDeviceModelPhotos",
+          "description": "Device photos."
+        },
+        "videos": {
+          "$ref": "#/definitions/EndDeviceModelVideos",
+          "description": "Device videos."
+        },
+        "product_url": {
+          "type": "string",
+          "description": "Device information page URL."
+        },
+        "datasheet_url": {
+          "type": "string",
+          "description": "Device datasheet URL."
+        },
+        "resellers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EndDeviceModelReseller"
+          },
+          "description": "Reseller URLs."
+        },
+        "compliances": {
+          "$ref": "#/definitions/EndDeviceModelCompliances",
+          "description": "List of standards the device is compliant with."
+        },
+        "additional_radios": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of any additional radios included in the device."
         }
       }
     },
@@ -10899,6 +14027,9 @@
         },
         "firmware_version": {
           "type": "string"
+        },
+        "band_id": {
+          "type": "string"
         }
       },
       "description": "Identifies an end device model with version information."
@@ -10927,7 +14058,7 @@
           "$ref": "#/definitions/v3EndDeviceIdentifiers"
         },
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "organization_ids": {
           "$ref": "#/definitions/v3OrganizationIdentifiers"
@@ -11094,6 +14225,17 @@
         }
       }
     },
+    "v3FindRelatedEventsResponse": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3Event"
+          }
+        }
+      }
+    },
     "v3FrequencyPlanDescription": {
       "type": "object",
       "properties": {
@@ -11114,17 +14256,30 @@
         }
       }
     },
+    "v3FrequencyValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
     "v3Gateway": {
       "type": "object",
       "properties": {
         "ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "created_at": {
           "type": "string",
           "format": "date-time"
         },
         "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deleted_at": {
           "type": "string",
           "format": "date-time"
         },
@@ -11208,6 +14363,28 @@
         "lbs_lns_secret": {
           "$ref": "#/definitions/v3Secret",
           "description": "The LoRa Basics Station LNS secret.\nThis is either an auth token (such as an API Key) or a TLS private certificate.\nRequires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value."
+        },
+        "claim_authentication_code": {
+          "$ref": "#/definitions/v3GatewayClaimAuthenticationCode",
+          "description": "The authentication code for gateway claiming.\nRequires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value.\nThe entire field must be used in RPCs since sub-fields are validated wrt to each other. Direct selection/update of sub-fields only are not allowed.\nUse the top level field mask `claim_authentication_code` even when updating single fields."
+        },
+        "target_cups_uri": {
+          "type": "string",
+          "description": "CUPS URI for LoRa Basics Station CUPS redirection.\nThe CUPS Trust field will be automatically fetched from the cert chain presented by the target server."
+        },
+        "target_cups_key": {
+          "$ref": "#/definitions/v3Secret",
+          "description": "CUPS Key for LoRa Basics Station CUPS redirection.\nIf redirecting to another instance of TTS, use the CUPS API Key for the gateway on the target instance.\nRequires the RIGHT_GATEWAY_READ_SECRETS for reading and RIGHT_GATEWAY_WRITE_SECRETS for updating this value."
+        },
+        "require_authenticated_connection": {
+          "type": "boolean",
+          "description": "Require an authenticated gateway connection. This prevents the gateway from using the UDP protocol and requires authentication when using other protocols."
+        },
+        "lrfhss": {
+          "$ref": "#/definitions/GatewayLRFHSS"
+        },
+        "disable_packet_broker_forwarding": {
+          "type": "boolean"
         }
       },
       "description": "Gateway is the message that defines a gateway on the network."
@@ -11218,7 +14395,7 @@
         "gain": {
           "type": "number",
           "format": "float",
-          "description": "gain is the antenna gain relative to this gateway, in dBi."
+          "description": "Antenna gain relative to the gateway, in dBi."
         },
         "location": {
           "$ref": "#/definitions/lorawanv3Location",
@@ -11229,6 +14406,9 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "placement": {
+          "$ref": "#/definitions/v3GatewayAntennaPlacement"
         }
       },
       "description": "GatewayAntenna is the message that defines a gateway antenna."
@@ -11237,13 +14417,39 @@
       "type": "object",
       "properties": {
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "antenna_index": {
           "type": "integer",
           "format": "int64"
         }
       }
+    },
+    "v3GatewayAntennaPlacement": {
+      "type": "string",
+      "enum": [
+        "PLACEMENT_UNKNOWN",
+        "INDOOR",
+        "OUTDOOR"
+      ],
+      "default": "PLACEMENT_UNKNOWN"
+    },
+    "v3GatewayClaimAuthenticationCode": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "$ref": "#/definitions/v3Secret"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "Authentication code for claiming gateways."
     },
     "v3GatewayConnectionStats": {
       "type": "object",
@@ -11300,19 +14506,6 @@
         }
       },
       "description": "GatewayDown contains downlink messages for the gateway."
-    },
-    "v3GatewayIdentifiers": {
-      "type": "object",
-      "properties": {
-        "gateway_id": {
-          "type": "string"
-        },
-        "eui": {
-          "type": "string",
-          "format": "byte",
-          "description": "Secondary identifier, which can only be used in specific requests."
-        }
-      }
     },
     "v3GatewayRadio": {
       "type": "object",
@@ -11420,19 +14613,23 @@
           "type": "string",
           "format": "byte"
         }
-      }
+      },
+      "description": "Response of GenerateDevAddr."
     },
     "v3GenerateEndDeviceQRCodeRequest": {
       "type": "object",
       "properties": {
         "format_id": {
-          "type": "string"
+          "type": "string",
+          "description": "QR code format identifier. Enumerate available formats with rpc ListFormats in the EndDeviceQRCodeGenerator service."
         },
         "end_device": {
-          "$ref": "#/definitions/v3EndDevice"
+          "$ref": "#/definitions/v3EndDevice",
+          "description": "End device to use as input to generate the QR code."
         },
         "image": {
-          "$ref": "#/definitions/GenerateEndDeviceQRCodeRequestImage"
+          "$ref": "#/definitions/GenerateEndDeviceQRCodeRequestImage",
+          "description": "If set, the server will render the QR code image according to these settings."
         }
       }
     },
@@ -11440,11 +14637,20 @@
       "type": "object",
       "properties": {
         "text": {
-          "type": "string"
+          "type": "string",
+          "description": "Text representation of the QR code contents."
         },
         "image": {
           "$ref": "#/definitions/v3Picture",
           "description": "QR code in PNG format, if requested."
+        }
+      }
+    },
+    "v3GetAsConfigurationResponse": {
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "$ref": "#/definitions/v3AsConfiguration"
         }
       }
     },
@@ -11508,6 +14714,15 @@
         }
       }
     },
+    "v3IssueDevEUIResponse": {
+      "type": "object",
+      "properties": {
+        "dev_eui": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "v3JoinAcceptPayload": {
       "type": "object",
       "properties": {
@@ -11562,49 +14777,6 @@
         }
       }
     },
-    "v3JoinRequest": {
-      "type": "object",
-      "properties": {
-        "raw_payload": {
-          "type": "string",
-          "format": "byte"
-        },
-        "payload": {
-          "$ref": "#/definitions/lorawanv3Message"
-        },
-        "dev_addr": {
-          "type": "string",
-          "format": "byte"
-        },
-        "selected_mac_version": {
-          "$ref": "#/definitions/v3MACVersion"
-        },
-        "net_id": {
-          "type": "string",
-          "format": "byte"
-        },
-        "downlink_settings": {
-          "$ref": "#/definitions/v3DLSettings"
-        },
-        "rx_delay": {
-          "$ref": "#/definitions/v3RxDelay"
-        },
-        "cf_list": {
-          "$ref": "#/definitions/v3CFList",
-          "description": "Optional CFList."
-        },
-        "correlation_ids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "consumed_airtime": {
-          "type": "string",
-          "description": "Consumed airtime for the transmission of the join request. Calculated by Network Server using the RawPayload size and the transmission settings."
-        }
-      }
-    },
     "v3JoinRequestPayload": {
       "type": "object",
       "properties": {
@@ -11621,6 +14793,16 @@
           "format": "byte"
         }
       }
+    },
+    "v3JoinRequestType": {
+      "type": "string",
+      "enum": [
+        "REJOIN_CONTEXT",
+        "REJOIN_SESSION",
+        "REJOIN_KEYS",
+        "JOIN"
+      ],
+      "default": "REJOIN_CONTEXT"
     },
     "v3JoinResponse": {
       "type": "object",
@@ -11658,6 +14840,64 @@
         "encrypted_key": {
           "type": "string",
           "format": "byte"
+        }
+      }
+    },
+    "v3KeyProvisioning": {
+      "type": "string",
+      "enum": [
+        "KEY_PROVISIONING_UNKNOWN",
+        "KEY_PROVISIONING_CUSTOM",
+        "KEY_PROVISIONING_JOIN_SERVER",
+        "KEY_PROVISIONING_MANIFEST"
+      ],
+      "default": "KEY_PROVISIONING_UNKNOWN",
+      "description": " - KEY_PROVISIONING_UNKNOWN: Unknown Key Provisioning.\n - KEY_PROVISIONING_CUSTOM: Custom Key Provisioning.\n - KEY_PROVISIONING_JOIN_SERVER: Key Provisioning from the Global Join Server.\n - KEY_PROVISIONING_MANIFEST: Key Provisioning from Manifest."
+    },
+    "v3KeySecurity": {
+      "type": "string",
+      "enum": [
+        "KEY_SECURITY_UNKNOWN",
+        "KEY_SECURITY_NONE",
+        "KEY_SECURITY_READ_PROTECTED",
+        "KEY_SECURITY_SECURE_ELEMENT"
+      ],
+      "default": "KEY_SECURITY_UNKNOWN",
+      "description": " - KEY_SECURITY_UNKNOWN: Unknown key security.\n - KEY_SECURITY_NONE: No key security.\n - KEY_SECURITY_READ_PROTECTED: Read Protected key security.\n - KEY_SECURITY_SECURE_ELEMENT: Key security using the Security Element."
+    },
+    "v3LRFHSSDataRate": {
+      "type": "object",
+      "properties": {
+        "modulation_type": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "operating_channel_width": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Operating Channel Width (kHz)."
+        }
+      }
+    },
+    "v3ListEndDeviceBrandsResponse": {
+      "type": "object",
+      "properties": {
+        "brands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3EndDeviceBrand"
+          }
+        }
+      }
+    },
+    "v3ListEndDeviceModelsResponse": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3EndDeviceModel"
+          }
         }
       }
     },
@@ -11868,8 +15108,7 @@
           "description": "Rx1 delay (Rx2 delay is Rx1 delay + 1 second)."
         },
         "rx1_data_rate_offset": {
-          "type": "integer",
-          "format": "int64",
+          "$ref": "#/definitions/v3DataRateOffset",
           "description": "Data rate offset for Rx1."
         },
         "rx2_data_rate_index": {
@@ -11915,11 +15154,11 @@
           "description": "Configured uplink channels and optionally Rx1 frequency."
         },
         "uplink_dwell_time": {
-          "type": "boolean",
+          "$ref": "#/definitions/lorawanv3BoolValue",
           "description": "Whether uplink dwell time is set (400ms).\nIf this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it)."
         },
         "downlink_dwell_time": {
-          "type": "boolean",
+          "$ref": "#/definitions/lorawanv3BoolValue",
           "description": "Whether downlink dwell time is set (400ms).\nIf this field is not set, then the value is either unknown or irrelevant(Network Server cannot modify it)."
         },
         "adr_ack_limit_exponent": {
@@ -12004,13 +15243,11 @@
           "description": "Data rate index of the class B ping slot.\nIf unset, the default value from Network Server configuration will be used."
         },
         "ping_slot_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "Frequency of the class B ping slot (Hz).\nIf unset, the default value from Network Server configuration will be used."
         },
         "beacon_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "Frequency of the class B beacon (Hz).\nIf unset, the default value from Network Server configuration will be used."
         },
         "class_c_timeout": {
@@ -12022,8 +15259,7 @@
           "description": "Class A Rx1 delay.\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
         },
         "rx1_data_rate_offset": {
-          "type": "integer",
-          "format": "int64",
+          "$ref": "#/definitions/v3DataRateOffsetValue",
           "description": "Rx1 data rate offset.\nIf unset, the default value from Network Server configuration will be used."
         },
         "rx2_data_rate_index": {
@@ -12031,8 +15267,7 @@
           "description": "Data rate index for Rx2.\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
         },
         "rx2_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "Frequency for Rx2 (Hz).\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
         },
         "factory_preset_frequencies": {
@@ -12048,11 +15283,11 @@
           "description": "Maximum uplink duty cycle (of all channels)."
         },
         "supports_32_bit_f_cnt": {
-          "type": "boolean",
+          "$ref": "#/definitions/lorawanv3BoolValue",
           "description": "Whether the device supports 32-bit frame counters.\nIf unset, the default value from Network Server configuration will be used."
         },
         "use_adr": {
-          "type": "boolean",
+          "$ref": "#/definitions/lorawanv3BoolValue",
           "description": "Whether the Network Server should use ADR for the device.\nIf unset, the default value from Network Server configuration will be used."
         },
         "adr_margin": {
@@ -12061,7 +15296,7 @@
           "description": "The ADR margin tells the network server how much margin it should add in ADR requests.\nA bigger margin is less efficient, but gives a better chance of successful reception.\nIf unset, the default value from Network Server configuration will be used."
         },
         "resets_f_cnt": {
-          "type": "boolean",
+          "$ref": "#/definitions/lorawanv3BoolValue",
           "description": "Whether the device resets the frame counters (not LoRaWAN compliant).\nIf unset, the default value from Network Server configuration will be used."
         },
         "status_time_periodicity": {
@@ -12078,8 +15313,7 @@
           "description": "The Rx1 delay Network Server should configure device to use via MAC commands or Join-Accept.\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
         },
         "desired_rx1_data_rate_offset": {
-          "type": "integer",
-          "format": "int64",
+          "$ref": "#/definitions/v3DataRateOffsetValue",
           "description": "The Rx1 data rate offset Network Server should configure device to use via MAC commands or Join-Accept.\nIf unset, the default value from Network Server configuration will be used."
         },
         "desired_rx2_data_rate_index": {
@@ -12087,8 +15321,7 @@
           "description": "The Rx2 data rate index Network Server should configure device to use via MAC commands or Join-Accept.\nIf unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used."
         },
         "desired_rx2_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "The Rx2 frequency index Network Server should configure device to use via MAC commands.\nIf unset, the default value from frequency plan, Network Server configuration or regional parameters specification will be used."
         },
         "desired_max_duty_cycle": {
@@ -12108,14 +15341,16 @@
           "description": "The data rate index of the class B ping slot Network Server should configure device to use via MAC commands.\nIf unset, the default value from Network Server configuration will be used."
         },
         "desired_ping_slot_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "The frequency of the class B ping slot (Hz) Network Server should configure device to use via MAC commands.\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
         },
         "desired_beacon_frequency": {
-          "type": "string",
-          "format": "uint64",
+          "$ref": "#/definitions/v3FrequencyValue",
           "description": "The frequency of the class B beacon (Hz) Network Server should configure device to use via MAC commands.\nIf unset, the default value from Network Server configuration will be used."
+        },
+        "desired_max_eirp": {
+          "$ref": "#/definitions/v3DeviceEIRPValue",
+          "description": "Maximum EIRP (dBm).\nIf unset, the default value from regional parameters specification will be used."
         }
       }
     },
@@ -12175,8 +15410,8 @@
           "description": "Queued join-accept.\nSet each time a (re-)join request accept is received from Join Server and removed each time a downlink is scheduled."
         },
         "pending_join_request": {
-          "$ref": "#/definitions/v3JoinRequest",
-          "description": "Pending join request.\nSet each time a join accept is scheduled and removed each time an uplink is received from the device."
+          "$ref": "#/definitions/v3MACStateJoinRequest",
+          "description": "Pending join request.\nSet each time a join-accept is scheduled and removed each time an uplink is received from the device."
         },
         "rx_windows_available": {
           "type": "boolean",
@@ -12235,9 +15470,28 @@
             "$ref": "#/definitions/MACStateDataRateRanges"
           },
           "description": "Data rate ranges rejected by the device per frequency."
+        },
+        "last_adr_change_f_cnt_up": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Frame counter of uplink, which confirmed the last ADR parameter change."
         }
       },
       "description": "MACState represents the state of MAC layer of the device.\nMACState is reset on each join for OTAA or ResetInd for ABP devices.\nThis is used internally by the Network Server."
+    },
+    "v3MACStateJoinRequest": {
+      "type": "object",
+      "properties": {
+        "downlink_settings": {
+          "$ref": "#/definitions/v3DLSettings"
+        },
+        "rx_delay": {
+          "$ref": "#/definitions/v3RxDelay"
+        },
+        "cf_list": {
+          "$ref": "#/definitions/v3CFList"
+        }
+      }
     },
     "v3MACVersion": {
       "type": "string",
@@ -12302,6 +15556,78 @@
       ],
       "default": "LORAWAN_R1"
     },
+    "v3MessagePayloadDecoder": {
+      "type": "object",
+      "properties": {
+        "formatter": {
+          "$ref": "#/definitions/v3PayloadFormatter",
+          "description": "Payload formatter type."
+        },
+        "formatter_parameter": {
+          "type": "string",
+          "description": "Parameter for the formatter, must be set together."
+        },
+        "codec_id": {
+          "type": "string"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3MessagePayloadDecoderExample"
+          }
+        }
+      }
+    },
+    "v3MessagePayloadDecoderExample": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/definitions/v3EncodedMessagePayload"
+        },
+        "output": {
+          "$ref": "#/definitions/v3DecodedMessagePayload"
+        }
+      }
+    },
+    "v3MessagePayloadEncoder": {
+      "type": "object",
+      "properties": {
+        "formatter": {
+          "$ref": "#/definitions/v3PayloadFormatter",
+          "description": "Payload formatter type."
+        },
+        "formatter_parameter": {
+          "type": "string",
+          "description": "Parameter for the formatter, must be set together."
+        },
+        "codec_id": {
+          "type": "string"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3MessagePayloadEncoderExample"
+          }
+        }
+      }
+    },
+    "v3MessagePayloadEncoderExample": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/definitions/v3DecodedMessagePayload"
+        },
+        "output": {
+          "$ref": "#/definitions/v3EncodedMessagePayload"
+        }
+      }
+    },
     "v3MessagePayloadFormatters": {
       "type": "object",
       "properties": {
@@ -12311,7 +15637,7 @@
         },
         "up_formatter_parameter": {
           "type": "string",
-          "description": "Parameter for the up_formatter, must be set together."
+          "description": "Parameter for the up_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration."
         },
         "down_formatter": {
           "$ref": "#/definitions/v3PayloadFormatter",
@@ -12319,7 +15645,7 @@
         },
         "down_formatter_parameter": {
           "type": "string",
-          "description": "Parameter for the down_formatter, must be set together."
+          "description": "Parameter for the down_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration."
         }
       }
     },
@@ -12344,6 +15670,25 @@
         "MINOR_RFU_15"
       ],
       "default": "MINOR_RFU_0"
+    },
+    "v3NetworkIdentifiers": {
+      "type": "object",
+      "properties": {
+        "net_id": {
+          "type": "string",
+          "format": "byte",
+          "description": "LoRa Alliance NetID."
+        },
+        "tenant_id": {
+          "type": "string",
+          "description": "Optional tenant identifier for multi-tenant deployments."
+        },
+        "cluster_id": {
+          "type": "string",
+          "description": "Cluster identifier of the Network Server."
+        }
+      },
+      "description": "Identifies a Network Server."
     },
     "v3NwkSKeysResponse": {
       "type": "object",
@@ -12460,6 +15805,10 @@
           "type": "string",
           "format": "date-time"
         },
+        "deleted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "name": {
           "type": "string"
         },
@@ -12518,15 +15867,126 @@
       "type": "string",
       "enum": [
         "PHY_UNKNOWN",
-        "PHY_V1_0",
-        "PHY_V1_0_1",
-        "PHY_V1_0_2_REV_A",
-        "PHY_V1_0_2_REV_B",
-        "PHY_V1_1_REV_A",
-        "PHY_V1_1_REV_B",
-        "PHY_V1_0_3_REV_A"
+        "TS001_V1_0",
+        "TS001_V1_0_1",
+        "RP001_V1_0_2",
+        "RP001_V1_0_2_REV_B",
+        "RP001_V1_1_REV_A",
+        "RP001_V1_1_REV_B",
+        "RP001_V1_0_3_REV_A",
+        "RP002_V1_0_0",
+        "RP002_V1_0_1",
+        "RP002_V1_0_2",
+        "RP002_V1_0_3"
       ],
       "default": "PHY_UNKNOWN"
+    },
+    "v3PacketBrokerDefaultRoutingPolicy": {
+      "type": "object",
+      "properties": {
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the policy got last updated."
+        },
+        "uplink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyUplink",
+          "description": "Uplink policy."
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyDownlink",
+          "description": "Downlink policy."
+        }
+      }
+    },
+    "v3PacketBrokerDevAddrBlock": {
+      "type": "object",
+      "properties": {
+        "dev_addr_prefix": {
+          "$ref": "#/definitions/v3DevAddrPrefix"
+        },
+        "home_network_cluster_id": {
+          "type": "string"
+        }
+      }
+    },
+    "v3PacketBrokerGateway": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "$ref": "#/definitions/v3PacketBrokerGatewayGatewayIdentifiers"
+        },
+        "contact_info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3ContactInfo"
+          }
+        },
+        "antennas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3GatewayAntenna"
+          }
+        },
+        "status_public": {
+          "type": "boolean"
+        },
+        "location_public": {
+          "type": "boolean"
+        },
+        "frequency_plan_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "update_location_from_status": {
+          "type": "boolean"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "rx_rate": {
+          "type": "number",
+          "format": "float",
+          "description": "Received packets rate (number of packets per hour).\nThis field gets updated when a value is set."
+        },
+        "tx_rate": {
+          "type": "number",
+          "format": "float",
+          "description": "Transmitted packets rate (number of packets per hour).\nThis field gets updated when a value is set."
+        }
+      },
+      "description": "Gateway respresentation for Packet Broker.\nThis is a subset and superset of the Gateway message using the same data types and field tags to achieve initial wire compatibility.\nThere is no (longer) wire compatibility needed; new fields may use any tag."
+    },
+    "v3PacketBrokerGatewayGatewayIdentifiers": {
+      "type": "object",
+      "properties": {
+        "gateway_id": {
+          "type": "string"
+        },
+        "eui": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "v3PacketBrokerInfo": {
+      "type": "object",
+      "properties": {
+        "registration": {
+          "$ref": "#/definitions/v3PacketBrokerNetwork",
+          "description": "The current registration, unset if there isn't a registration."
+        },
+        "forwarder_enabled": {
+          "type": "boolean",
+          "description": "Whether the server is configured as Forwarder (with gateways)."
+        },
+        "home_network_enabled": {
+          "type": "boolean",
+          "description": "Whether the server is configured as Home Network (with end devices)."
+        }
+      }
     },
     "v3PacketBrokerMetadata": {
       "type": "object",
@@ -12544,9 +16004,18 @@
           "type": "string",
           "description": "Tenant ID managed by the Packet Broker Forwarder Member."
         },
-        "forwarder_id": {
+        "forwarder_cluster_id": {
           "type": "string",
-          "description": "Forwarder identifier issued by the Packet Broker Forwarder Member."
+          "description": "Forwarder Cluster ID of the Packet Broker Forwarder."
+        },
+        "forwarder_gateway_eui": {
+          "type": "string",
+          "format": "byte",
+          "description": "Forwarder gateway EUI."
+        },
+        "forwarder_gateway_id": {
+          "type": "string",
+          "description": "Forwarder gateway ID."
         },
         "home_network_net_id": {
           "type": "string",
@@ -12557,12 +16026,72 @@
           "type": "string",
           "description": "Tenant ID managed by the Packet Broker Home Network Member.\nThis value is empty if it cannot be determined by the Packet Broker Router."
         },
+        "home_network_cluster_id": {
+          "type": "string",
+          "description": "Home Network Cluster ID of the Packet Broker Home Network."
+        },
         "hops": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v3PacketBrokerRouteHop"
           },
           "description": "Hops that the message passed. Each Packet Broker Router service appends an entry."
+        }
+      }
+    },
+    "v3PacketBrokerNetwork": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/v3PacketBrokerNetworkIdentifier",
+          "description": "Packet Broker network identifier."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the network."
+        },
+        "dev_addr_blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3PacketBrokerDevAddrBlock"
+          },
+          "description": "DevAddr blocks that are assigned to this registration."
+        },
+        "contact_info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3ContactInfo"
+          },
+          "description": "Contact information."
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "Whether the network is listed so it can be viewed by other networks."
+        }
+      }
+    },
+    "v3PacketBrokerNetworkIdentifier": {
+      "type": "object",
+      "properties": {
+        "net_id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "LoRa Alliance NetID."
+        },
+        "tenant_id": {
+          "type": "string",
+          "description": "Tenant identifier if the registration leases DevAddr blocks from a NetID."
+        }
+      }
+    },
+    "v3PacketBrokerNetworks": {
+      "type": "object",
+      "properties": {
+        "networks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3PacketBrokerNetwork"
+          }
         }
       }
     },
@@ -12589,6 +16118,85 @@
         "receiver_agent": {
           "type": "string",
           "description": "Receiver agent."
+        }
+      }
+    },
+    "v3PacketBrokerRoutingPolicies": {
+      "type": "object",
+      "properties": {
+        "policies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3PacketBrokerRoutingPolicy"
+          }
+        }
+      }
+    },
+    "v3PacketBrokerRoutingPolicy": {
+      "type": "object",
+      "properties": {
+        "forwarder_id": {
+          "$ref": "#/definitions/v3PacketBrokerNetworkIdentifier",
+          "description": "Packet Broker identifier of the Forwarder."
+        },
+        "home_network_id": {
+          "$ref": "#/definitions/v3PacketBrokerNetworkIdentifier",
+          "description": "Packet Broker identifier of the Home Network."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the policy got last updated."
+        },
+        "uplink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyUplink",
+          "description": "Uplink policy."
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyDownlink",
+          "description": "Downlink policy."
+        }
+      }
+    },
+    "v3PacketBrokerRoutingPolicyDownlink": {
+      "type": "object",
+      "properties": {
+        "join_accept": {
+          "type": "boolean",
+          "description": "Allow join-accept messages."
+        },
+        "mac_data": {
+          "type": "boolean",
+          "description": "Allow downlink messages with FPort of 0."
+        },
+        "application_data": {
+          "type": "boolean",
+          "description": "Allow downlink messages with FPort between 1 and 255."
+        }
+      }
+    },
+    "v3PacketBrokerRoutingPolicyUplink": {
+      "type": "object",
+      "properties": {
+        "join_request": {
+          "type": "boolean",
+          "description": "Forward join-request messages."
+        },
+        "mac_data": {
+          "type": "boolean",
+          "description": "Forward uplink messages with FPort of 0."
+        },
+        "application_data": {
+          "type": "boolean",
+          "description": "Forward uplink messages with FPort between 1 and 255."
+        },
+        "signal_quality": {
+          "type": "boolean",
+          "description": "Forward RSSI and SNR."
+        },
+        "localization": {
+          "type": "boolean",
+          "description": "Forward gateway location, RSSI, SNR and fine timestamp."
         }
       }
     },
@@ -12703,7 +16311,8 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/v3QRCodeFormat"
-          }
+          },
+          "description": "Available formats. The map key is the format identifier."
         }
       }
     },
@@ -12747,7 +16356,7 @@
       "type": "object",
       "properties": {
         "rejoin_type": {
-          "$ref": "#/definitions/v3RejoinType"
+          "$ref": "#/definitions/v3RejoinRequestType"
         },
         "net_id": {
           "type": "string",
@@ -12766,6 +16375,15 @@
           "format": "int64"
         }
       }
+    },
+    "v3RejoinRequestType": {
+      "type": "string",
+      "enum": [
+        "CONTEXT",
+        "SESSION",
+        "KEYS"
+      ],
+      "default": "CONTEXT"
     },
     "v3RejoinTimeExponent": {
       "type": "string",
@@ -12789,14 +16407,17 @@
       ],
       "default": "REJOIN_TIME_0"
     },
-    "v3RejoinType": {
-      "type": "string",
-      "enum": [
-        "CONTEXT",
-        "SESSION",
-        "KEYS"
-      ],
-      "default": "CONTEXT"
+    "v3ResetAndGetEndDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "end_device_ids": {
+          "$ref": "#/definitions/v3EndDeviceIdentifiers"
+        },
+        "field_mask": {
+          "$ref": "#/definitions/protobufFieldMask",
+          "description": "The names of the end device fields that should be returned.\nSee the API reference for which fields can be returned by the different services."
+        }
+      }
     },
     "v3Right": {
       "type": "string",
@@ -12862,7 +16483,7 @@
         "RIGHT_ALL"
       ],
       "default": "right_invalid",
-      "description": "Right is the enum that defines all the different rights to do something in the network.\n\n - RIGHT_USER_INFO: The right to view user information.\n - RIGHT_USER_SETTINGS_BASIC: The right to edit basic user settings.\n - RIGHT_USER_SETTINGS_API_KEYS: The right to view and edit user API keys.\n - RIGHT_USER_DELETE: The right to delete user account.\n - RIGHT_USER_AUTHORIZED_CLIENTS: The right to view and edit authorized OAuth clients of the user.\n - RIGHT_USER_APPLICATIONS_LIST: The right to list applications the user is a collaborator of.\n - RIGHT_USER_APPLICATIONS_CREATE: The right to create an application under the user account.\n - RIGHT_USER_GATEWAYS_LIST: The right to list gateways the user is a collaborator of.\n - RIGHT_USER_GATEWAYS_CREATE: The right to create a gateway under the account of the user.\n - RIGHT_USER_CLIENTS_LIST: The right to list OAuth clients the user is a collaborator of.\n - RIGHT_USER_CLIENTS_CREATE: The right to create an OAuth client under the account of the user.\n - RIGHT_USER_ORGANIZATIONS_LIST: The right to list organizations the user is a member of.\n - RIGHT_USER_ORGANIZATIONS_CREATE: The right to create an organization under the user account.\n - RIGHT_USER_ALL: The pseudo-right for all (current and future) user rights.\n - RIGHT_APPLICATION_INFO: The right to view application information.\n - RIGHT_APPLICATION_SETTINGS_BASIC: The right to edit basic application settings.\n - RIGHT_APPLICATION_SETTINGS_API_KEYS: The right to view and edit application API keys.\n - RIGHT_APPLICATION_SETTINGS_COLLABORATORS: The right to view and edit application collaborators.\n - RIGHT_APPLICATION_SETTINGS_PACKAGES: The right to view and edit application packages and associations.\n - RIGHT_APPLICATION_DELETE: The right to delete application.\n - RIGHT_APPLICATION_DEVICES_READ: The right to view devices in application.\n - RIGHT_APPLICATION_DEVICES_WRITE: The right to create devices in application.\n - RIGHT_APPLICATION_DEVICES_READ_KEYS: The right to view device keys in application.\nNote that keys may not be stored in a way that supports viewing them.\n - RIGHT_APPLICATION_DEVICES_WRITE_KEYS: The right to edit device keys in application.\n - RIGHT_APPLICATION_TRAFFIC_READ: The right to read application traffic (uplink and downlink).\n - RIGHT_APPLICATION_TRAFFIC_UP_WRITE: The right to write uplink application traffic.\n - RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE: The right to write downlink application traffic.\n - RIGHT_APPLICATION_LINK: The right to link as Application to a Network Server for traffic exchange,\ni.e. read uplink and write downlink (API keys only).\nThis right is typically only given to an Application Server.\nThis right implies RIGHT_APPLICATION_INFO.\n - RIGHT_APPLICATION_ALL: The pseudo-right for all (current and future) application rights.\n - RIGHT_CLIENT_ALL: The pseudo-right for all (current and future) OAuth client rights.\n - RIGHT_GATEWAY_INFO: The right to view gateway information.\n - RIGHT_GATEWAY_SETTINGS_BASIC: The right to edit basic gateway settings.\n - RIGHT_GATEWAY_SETTINGS_API_KEYS: The right to view and edit gateway API keys.\n - RIGHT_GATEWAY_SETTINGS_COLLABORATORS: The right to view and edit gateway collaborators.\n - RIGHT_GATEWAY_DELETE: The right to delete gateway.\n - RIGHT_GATEWAY_TRAFFIC_READ: The right to read gateway traffic.\n - RIGHT_GATEWAY_TRAFFIC_DOWN_WRITE: The right to write downlink gateway traffic.\n - RIGHT_GATEWAY_LINK: The right to link as Gateway to a Gateway Server for traffic exchange,\ni.e. write uplink and read downlink (API keys only)\nThis right is typically only given to a gateway.\nThis right implies RIGHT_GATEWAY_INFO.\n - RIGHT_GATEWAY_STATUS_READ: The right to view gateway status.\n - RIGHT_GATEWAY_LOCATION_READ: The right to view view gateway location.\n - RIGHT_GATEWAY_WRITE_SECRETS: The right to store secrets associated with this gateway.\n - RIGHT_GATEWAY_READ_SECRETS: The right to retrieve secrets associated with this gateway.\n - RIGHT_GATEWAY_ALL: The pseudo-right for all (current and future) gateway rights.\n - RIGHT_ORGANIZATION_INFO: The right to view organization information.\n - RIGHT_ORGANIZATION_SETTINGS_BASIC: The right to edit basic organization settings.\n - RIGHT_ORGANIZATION_SETTINGS_API_KEYS: The right to view and edit organization API keys.\n - RIGHT_ORGANIZATION_SETTINGS_MEMBERS: The right to view and edit organization members.\n - RIGHT_ORGANIZATION_DELETE: The right to delete organization.\n - RIGHT_ORGANIZATION_APPLICATIONS_LIST: The right to list the applications the organization is a collaborator of.\n - RIGHT_ORGANIZATION_APPLICATIONS_CREATE: The right to create an application under the organization.\n - RIGHT_ORGANIZATION_GATEWAYS_LIST: The right to list the gateways the organization is a collaborator of.\n - RIGHT_ORGANIZATION_GATEWAYS_CREATE: The right to create a gateway under the organization.\n - RIGHT_ORGANIZATION_CLIENTS_LIST: The right to list the OAuth clients the organization is a collaborator of.\n - RIGHT_ORGANIZATION_CLIENTS_CREATE: The right to create an OAuth client under the organization.\n - RIGHT_ORGANIZATION_ADD_AS_COLLABORATOR: The right to add the organization as a collaborator on an existing entity.\n - RIGHT_ORGANIZATION_ALL: The pseudo-right for all (current and future) organization rights.\n - RIGHT_SEND_INVITES: The right to send invites to new users.\nNote that this is not prefixed with \"USER_\"; it is not a right on the user entity.\n - RIGHT_ALL: The pseudo-right for all (current and future) possible rights."
+      "description": "Right is the enum that defines all the different rights to do something in the network.\n\n - RIGHT_USER_INFO: The right to view user information.\n - RIGHT_USER_SETTINGS_BASIC: The right to edit basic user settings.\n - RIGHT_USER_SETTINGS_API_KEYS: The right to view and edit user API keys.\n - RIGHT_USER_DELETE: The right to delete user account.\n - RIGHT_USER_AUTHORIZED_CLIENTS: The right to view and edit authorized OAuth clients of the user.\n - RIGHT_USER_APPLICATIONS_LIST: The right to list applications the user is a collaborator of.\n - RIGHT_USER_APPLICATIONS_CREATE: The right to create an application under the user account.\n - RIGHT_USER_GATEWAYS_LIST: The right to list gateways the user is a collaborator of.\n - RIGHT_USER_GATEWAYS_CREATE: The right to create a gateway under the account of the user.\n - RIGHT_USER_CLIENTS_LIST: The right to list OAuth clients the user is a collaborator of.\n - RIGHT_USER_CLIENTS_CREATE: The right to create an OAuth client under the account of the user.\n - RIGHT_USER_ORGANIZATIONS_LIST: The right to list organizations the user is a member of.\n - RIGHT_USER_ORGANIZATIONS_CREATE: The right to create an organization under the user account.\n - RIGHT_USER_ALL: The pseudo-right for all (current and future) user rights.\n - RIGHT_APPLICATION_INFO: The right to view application information.\n - RIGHT_APPLICATION_SETTINGS_BASIC: The right to edit basic application settings.\n - RIGHT_APPLICATION_SETTINGS_API_KEYS: The right to view and edit application API keys.\n - RIGHT_APPLICATION_SETTINGS_COLLABORATORS: The right to view and edit application collaborators.\n - RIGHT_APPLICATION_SETTINGS_PACKAGES: The right to view and edit application packages and associations.\n - RIGHT_APPLICATION_DELETE: The right to delete application.\n - RIGHT_APPLICATION_DEVICES_READ: The right to view devices in application.\n - RIGHT_APPLICATION_DEVICES_WRITE: The right to create devices in application.\n - RIGHT_APPLICATION_DEVICES_READ_KEYS: The right to view device keys in application.\nNote that keys may not be stored in a way that supports viewing them.\n - RIGHT_APPLICATION_DEVICES_WRITE_KEYS: The right to edit device keys in application.\n - RIGHT_APPLICATION_TRAFFIC_READ: The right to read application traffic (uplink and downlink).\n - RIGHT_APPLICATION_TRAFFIC_UP_WRITE: The right to write uplink application traffic.\n - RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE: The right to write downlink application traffic.\n - RIGHT_APPLICATION_LINK: The right to link as Application to a Network Server for traffic exchange,\ni.e. read uplink and write downlink (API keys only).\nThis right is typically only given to an Application Server.\nThis right implies RIGHT_APPLICATION_INFO, RIGHT_APPLICATION_TRAFFIC_READ,\nand RIGHT_APPLICATION_TRAFFIC_DOWN_WRITE.\n - RIGHT_APPLICATION_ALL: The pseudo-right for all (current and future) application rights.\n - RIGHT_CLIENT_ALL: The pseudo-right for all (current and future) OAuth client rights.\n - RIGHT_GATEWAY_INFO: The right to view gateway information.\n - RIGHT_GATEWAY_SETTINGS_BASIC: The right to edit basic gateway settings.\n - RIGHT_GATEWAY_SETTINGS_API_KEYS: The right to view and edit gateway API keys.\n - RIGHT_GATEWAY_SETTINGS_COLLABORATORS: The right to view and edit gateway collaborators.\n - RIGHT_GATEWAY_DELETE: The right to delete gateway.\n - RIGHT_GATEWAY_TRAFFIC_READ: The right to read gateway traffic.\n - RIGHT_GATEWAY_TRAFFIC_DOWN_WRITE: The right to write downlink gateway traffic.\n - RIGHT_GATEWAY_LINK: The right to link as Gateway to a Gateway Server for traffic exchange,\ni.e. write uplink and read downlink (API keys only)\nThis right is typically only given to a gateway.\nThis right implies RIGHT_GATEWAY_INFO.\n - RIGHT_GATEWAY_STATUS_READ: The right to view gateway status.\n - RIGHT_GATEWAY_LOCATION_READ: The right to view view gateway location.\n - RIGHT_GATEWAY_WRITE_SECRETS: The right to store secrets associated with this gateway.\n - RIGHT_GATEWAY_READ_SECRETS: The right to retrieve secrets associated with this gateway.\n - RIGHT_GATEWAY_ALL: The pseudo-right for all (current and future) gateway rights.\n - RIGHT_ORGANIZATION_INFO: The right to view organization information.\n - RIGHT_ORGANIZATION_SETTINGS_BASIC: The right to edit basic organization settings.\n - RIGHT_ORGANIZATION_SETTINGS_API_KEYS: The right to view and edit organization API keys.\n - RIGHT_ORGANIZATION_SETTINGS_MEMBERS: The right to view and edit organization members.\n - RIGHT_ORGANIZATION_DELETE: The right to delete organization.\n - RIGHT_ORGANIZATION_APPLICATIONS_LIST: The right to list the applications the organization is a collaborator of.\n - RIGHT_ORGANIZATION_APPLICATIONS_CREATE: The right to create an application under the organization.\n - RIGHT_ORGANIZATION_GATEWAYS_LIST: The right to list the gateways the organization is a collaborator of.\n - RIGHT_ORGANIZATION_GATEWAYS_CREATE: The right to create a gateway under the organization.\n - RIGHT_ORGANIZATION_CLIENTS_LIST: The right to list the OAuth clients the organization is a collaborator of.\n - RIGHT_ORGANIZATION_CLIENTS_CREATE: The right to create an OAuth client under the organization.\n - RIGHT_ORGANIZATION_ADD_AS_COLLABORATOR: The right to add the organization as a collaborator on an existing entity.\n - RIGHT_ORGANIZATION_ALL: The pseudo-right for all (current and future) organization rights.\n - RIGHT_SEND_INVITES: The right to send invites to new users.\nNote that this is not prefixed with \"USER_\"; it is not a right on the user entity.\n - RIGHT_ALL: The pseudo-right for all (current and future) possible rights."
     },
     "v3Rights": {
       "type": "object",
@@ -12927,7 +16548,7 @@
       "type": "object",
       "properties": {
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "packet_broker": {
           "$ref": "#/definitions/v3PacketBrokerMetadata"
@@ -13006,6 +16627,16 @@
           "format": "int64",
           "description": "Index of the gateway channel that received the message."
         },
+        "hopping_width": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Hopping width; a number describing the number of steps of the LR-FHSS grid."
+        },
+        "frequency_drift": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Frequency drift in Hz between start and end of an LR-FHSS packet (signed)."
+        },
         "advanced": {
           "type": "object",
           "title": "Advanced metadata fields\n- can be used for advanced information or experimental features that are not yet formally defined in the API\n- field names are written in snake_case"
@@ -13019,6 +16650,18 @@
         "delay": {
           "type": "string",
           "description": "The amount of time between the message has been scheduled and it will be transmitted by the gateway."
+        },
+        "downlink_path": {
+          "$ref": "#/definitions/v3DownlinkPath",
+          "description": "Downlink path chosen by the Gateway Server."
+        },
+        "rx1": {
+          "type": "boolean",
+          "description": "Whether RX1 has been chosen for the downlink message.\nBoth RX1 and RX2 can be used for transmitting the same message by the same gateway."
+        },
+        "rx2": {
+          "type": "boolean",
+          "description": "Whether RX2 has been chosen for the downlink message.\nBoth RX1 and RX2 can be used for transmitting the same message by the same gateway."
         }
       }
     },
@@ -13226,7 +16869,7 @@
       "type": "object",
       "properties": {
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "collaborator": {
           "$ref": "#/definitions/v3Collaborator"
@@ -13241,6 +16884,36 @@
         },
         "collaborator": {
           "$ref": "#/definitions/v3Collaborator"
+        }
+      }
+    },
+    "v3SetPacketBrokerDefaultRoutingPolicyRequest": {
+      "type": "object",
+      "properties": {
+        "uplink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyUplink",
+          "description": "Uplink policy."
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyDownlink",
+          "description": "Downlink policy."
+        }
+      }
+    },
+    "v3SetPacketBrokerRoutingPolicyRequest": {
+      "type": "object",
+      "properties": {
+        "home_network_id": {
+          "$ref": "#/definitions/v3PacketBrokerNetworkIdentifier",
+          "description": "Packet Broker identifier of the Home Network."
+        },
+        "uplink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyUplink",
+          "description": "Uplink policy."
+        },
+        "downlink": {
+          "$ref": "#/definitions/v3PacketBrokerRoutingPolicyDownlink",
+          "description": "Downlink policy."
         }
       }
     },
@@ -13284,10 +16957,15 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Correlation IDs for the downlink message.\nSet automatically by the UDP and LBS frontends.\nFor gRPC and the MQTT v3 frontends, the correlation IDs must match the ones of the downlink message the Tx acknowledgment message refers to."
         },
         "result": {
           "$ref": "#/definitions/TxAcknowledgmentResult"
+        },
+        "downlink_message": {
+          "$ref": "#/definitions/v3DownlinkMessage",
+          "description": "The acknowledged downlink message. Set by the Gateway Server."
         }
       }
     },
@@ -13338,6 +17016,10 @@
         "frequency_plan_id": {
           "type": "string",
           "description": "Frequency plan ID from which the frequencies in this message are retrieved."
+        },
+        "lorawan_phy_version": {
+          "$ref": "#/definitions/v3PHYVersion",
+          "description": "The regional parameters version used to interpret the data rate indices in this message."
         },
         "advanced": {
           "type": "object",
@@ -13408,6 +17090,10 @@
         },
         "api_key": {
           "$ref": "#/definitions/v3APIKey"
+        },
+        "field_mask": {
+          "$ref": "#/definitions/protobufFieldMask",
+          "description": "The names of the api key fields that should be updated."
         }
       }
     },
@@ -13451,10 +17137,14 @@
       "type": "object",
       "properties": {
         "gateway_ids": {
-          "$ref": "#/definitions/v3GatewayIdentifiers"
+          "$ref": "#/definitions/lorawanv3GatewayIdentifiers"
         },
         "api_key": {
           "$ref": "#/definitions/v3APIKey"
+        },
+        "field_mask": {
+          "$ref": "#/definitions/protobufFieldMask",
+          "description": "The names of the api key fields that should be updated."
         }
       }
     },
@@ -13478,6 +17168,10 @@
         },
         "api_key": {
           "$ref": "#/definitions/v3APIKey"
+        },
+        "field_mask": {
+          "$ref": "#/definitions/protobufFieldMask",
+          "description": "The names of the api key fields that should be updated."
         }
       }
     },
@@ -13493,6 +17187,15 @@
         }
       }
     },
+    "v3UpdatePacketBrokerGatewayResponse": {
+      "type": "object",
+      "properties": {
+        "online_ttl": {
+          "type": "string",
+          "description": "Time to live of the online status."
+        }
+      }
+    },
     "v3UpdateUserAPIKeyRequest": {
       "type": "object",
       "properties": {
@@ -13501,6 +17204,10 @@
         },
         "api_key": {
           "$ref": "#/definitions/v3APIKey"
+        },
+        "field_mask": {
+          "$ref": "#/definitions/protobufFieldMask",
+          "description": "The names of the api key fields that should be updated."
         }
       }
     },
@@ -13590,6 +17297,10 @@
           "type": "string",
           "format": "date-time"
         },
+        "deleted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "name": {
           "type": "string"
         },
@@ -13633,6 +17344,10 @@
         "state": {
           "$ref": "#/definitions/v3State",
           "description": "The reviewing state of the user.\nThis field can only be modified by admins."
+        },
+        "state_description": {
+          "type": "string",
+          "description": "A description for the state field.\nThis field can only be modified by admins, and should typically only be updated\nwhen also updating `state`."
         },
         "admin": {
           "type": "boolean",

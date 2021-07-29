@@ -6,12 +6,7 @@ package ttnpb
 import (
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
@@ -21,6 +16,10 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -35,6 +34,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Response of GenerateDevAddr.
 type GenerateDevAddrResponse struct {
 	DevAddr              *go_thethings_network_lorawan_stack_v3_pkg_types.DevAddr `protobuf:"bytes,1,opt,name=dev_addr,json=devAddr,proto3,customtype=go.thethings.network/lorawan-stack/v3/pkg/types.DevAddr" json:"dev_addr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                                 `json:"-"`
@@ -47,25 +47,16 @@ func (*GenerateDevAddrResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c77e7504ad1081b8, []int{0}
 }
 func (m *GenerateDevAddrResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GenerateDevAddrResponse.Unmarshal(m, b)
 }
 func (m *GenerateDevAddrResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GenerateDevAddrResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GenerateDevAddrResponse.Marshal(b, m, deterministic)
 }
 func (m *GenerateDevAddrResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GenerateDevAddrResponse.Merge(m, src)
 }
 func (m *GenerateDevAddrResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GenerateDevAddrResponse.Size(m)
 }
 func (m *GenerateDevAddrResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_GenerateDevAddrResponse.DiscardUnknown(m)
@@ -73,9 +64,56 @@ func (m *GenerateDevAddrResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GenerateDevAddrResponse proto.InternalMessageInfo
 
+// Request of GetDefaultMACSettings.
+type GetDefaultMACSettingsRequest struct {
+	FrequencyPlanID      string     `protobuf:"bytes,1,opt,name=frequency_plan_id,json=frequencyPlanId,proto3" json:"frequency_plan_id,omitempty"`
+	LorawanPhyVersion    PHYVersion `protobuf:"varint,2,opt,name=lorawan_phy_version,json=lorawanPhyVersion,proto3,enum=ttn.lorawan.v3.PHYVersion" json:"lorawan_phy_version,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
+}
+
+func (m *GetDefaultMACSettingsRequest) Reset()      { *m = GetDefaultMACSettingsRequest{} }
+func (*GetDefaultMACSettingsRequest) ProtoMessage() {}
+func (*GetDefaultMACSettingsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c77e7504ad1081b8, []int{1}
+}
+func (m *GetDefaultMACSettingsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDefaultMACSettingsRequest.Unmarshal(m, b)
+}
+func (m *GetDefaultMACSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDefaultMACSettingsRequest.Marshal(b, m, deterministic)
+}
+func (m *GetDefaultMACSettingsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDefaultMACSettingsRequest.Merge(m, src)
+}
+func (m *GetDefaultMACSettingsRequest) XXX_Size() int {
+	return xxx_messageInfo_GetDefaultMACSettingsRequest.Size(m)
+}
+func (m *GetDefaultMACSettingsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDefaultMACSettingsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDefaultMACSettingsRequest proto.InternalMessageInfo
+
+func (m *GetDefaultMACSettingsRequest) GetFrequencyPlanID() string {
+	if m != nil {
+		return m.FrequencyPlanID
+	}
+	return ""
+}
+
+func (m *GetDefaultMACSettingsRequest) GetLorawanPhyVersion() PHYVersion {
+	if m != nil {
+		return m.LorawanPhyVersion
+	}
+	return PHY_UNKNOWN
+}
+
 func init() {
 	proto.RegisterType((*GenerateDevAddrResponse)(nil), "ttn.lorawan.v3.GenerateDevAddrResponse")
 	golang_proto.RegisterType((*GenerateDevAddrResponse)(nil), "ttn.lorawan.v3.GenerateDevAddrResponse")
+	proto.RegisterType((*GetDefaultMACSettingsRequest)(nil), "ttn.lorawan.v3.GetDefaultMACSettingsRequest")
+	golang_proto.RegisterType((*GetDefaultMACSettingsRequest)(nil), "ttn.lorawan.v3.GetDefaultMACSettingsRequest")
 }
 
 func init() {
@@ -86,52 +124,63 @@ func init() {
 }
 
 var fileDescriptor_c77e7504ad1081b8 = []byte{
-	// 717 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x41, 0x48, 0x1b, 0x4b,
-	0x18, 0x9e, 0x89, 0xe2, 0x7b, 0x0c, 0xa2, 0xbc, 0x79, 0xf2, 0x5e, 0x9b, 0xb6, 0x53, 0x89, 0x96,
-	0x8a, 0xe0, 0x6c, 0x89, 0x87, 0x82, 0x3d, 0x29, 0x09, 0xb1, 0x60, 0xa4, 0x6a, 0xed, 0xc1, 0x4b,
-	0xd8, 0x64, 0x7f, 0x37, 0x4b, 0xe2, 0xec, 0xba, 0x33, 0x89, 0x48, 0x11, 0xa4, 0x87, 0xe2, 0xb1,
-	0x50, 0x0a, 0x3d, 0xf6, 0x52, 0xf0, 0x28, 0xbd, 0xd4, 0x53, 0xf1, 0xe8, 0x51, 0xe8, 0x45, 0x7a,
-	0x10, 0xb3, 0xdb, 0x83, 0xd0, 0x8b, 0x47, 0x8f, 0x25, 0x9b, 0xc4, 0x98, 0xac, 0x11, 0x6d, 0x7b,
-	0x9b, 0xc9, 0xff, 0xfd, 0xff, 0xf7, 0xfd, 0xdf, 0x7c, 0x59, 0xf2, 0xa0, 0x68, 0xbb, 0xfa, 0x9a,
-	0x2e, 0xc6, 0xa4, 0xd2, 0x73, 0x05, 0x4d, 0x77, 0x2c, 0x4d, 0x80, 0x5a, 0xb3, 0xdd, 0x82, 0x04,
-	0xb7, 0x0c, 0x2e, 0x77, 0x5c, 0x5b, 0xd9, 0xb4, 0x4f, 0x29, 0xc1, 0xeb, 0x50, 0x5e, 0x1e, 0x8f,
-	0x8e, 0x99, 0x96, 0xca, 0x97, 0xb2, 0x3c, 0x67, 0xaf, 0x68, 0xa6, 0x6d, 0xda, 0x5a, 0x00, 0xcb,
-	0x96, 0x96, 0x83, 0x5b, 0x70, 0x09, 0x4e, 0xb5, 0xf6, 0xe8, 0x5d, 0xd3, 0xb6, 0xcd, 0x22, 0x04,
-	0xe3, 0x75, 0x21, 0x6c, 0xa5, 0x2b, 0xcb, 0x16, 0xb2, 0x5e, 0xbd, 0x53, 0xaf, 0x9e, 0xcf, 0x80,
-	0x15, 0x47, 0xad, 0xd7, 0x8b, 0xb1, 0xb0, 0x40, 0x10, 0x46, 0xc6, 0x80, 0xb2, 0x95, 0x83, 0x3a,
-	0x66, 0x28, 0x8c, 0xb1, 0x0c, 0x10, 0xca, 0x5a, 0xb6, 0xc0, 0x6d, 0xb0, 0x0c, 0x86, 0x41, 0x2b,
-	0x20, 0xa5, 0x6e, 0x42, 0x1d, 0x11, 0x5b, 0x25, 0xff, 0xa7, 0x40, 0x80, 0xab, 0x2b, 0x48, 0x40,
-	0x79, 0xd2, 0x30, 0xdc, 0x79, 0x90, 0x8e, 0x2d, 0x24, 0xd0, 0x17, 0xe4, 0x6f, 0x03, 0xca, 0x19,
-	0xdd, 0x30, 0xdc, 0x5b, 0x78, 0x10, 0x8f, 0xf4, 0x4e, 0x3d, 0xf9, 0x76, 0x74, 0xff, 0xb1, 0x69,
-	0x73, 0x95, 0x07, 0x95, 0xb7, 0x84, 0x29, 0x79, 0xdd, 0x37, 0xad, 0x95, 0xa7, 0x3c, 0xae, 0x39,
-	0x05, 0x53, 0x53, 0xeb, 0x0e, 0x48, 0xde, 0x18, 0xfb, 0x97, 0x51, 0x3b, 0xc4, 0x05, 0x89, 0xcc,
-	0x4a, 0x9a, 0x27, 0xfd, 0x6d, 0xc4, 0xf4, 0x3f, 0x5e, 0x33, 0x85, 0x37, 0x4c, 0xe1, 0xc9, 0xaa,
-	0x29, 0xd1, 0x87, 0xbc, 0xf5, 0x25, 0x78, 0x07, 0xc5, 0xb1, 0x81, 0x57, 0x5f, 0xbf, 0xbf, 0x8d,
-	0xf4, 0xd1, 0x5e, 0x4d, 0x48, 0xad, 0xa1, 0x3d, 0x7e, 0x14, 0x21, 0xdd, 0x93, 0x72, 0x56, 0xd2,
-	0x19, 0xd2, 0x3f, 0x63, 0x89, 0xc2, 0xa4, 0xe3, 0x14, 0xad, 0x5c, 0xf0, 0x1a, 0x1d, 0x29, 0xef,
-	0xb5, 0x53, 0x5e, 0x68, 0x5a, 0x74, 0x46, 0xf0, 0x23, 0x4c, 0x9f, 0x93, 0x81, 0x84, 0xbd, 0x26,
-	0x8a, 0x96, 0x28, 0xcc, 0x95, 0xa0, 0x04, 0xf3, 0xe0, 0x14, 0xf5, 0x1c, 0xd0, 0xe1, 0xf6, 0xd6,
-	0x36, 0xd4, 0x6a, 0x09, 0xa4, 0x8a, 0x76, 0x20, 0xa6, 0x73, 0xe4, 0x9f, 0x16, 0xfc, 0xb3, 0x92,
-	0xcc, 0xff, 0xe6, 0xc8, 0x4c, 0xdb, 0xc8, 0x19, 0x4b, 0xaa, 0xf0, 0xc8, 0xa4, 0x30, 0x12, 0x41,
-	0xbe, 0x9e, 0x36, 0x53, 0x14, 0x1d, 0xbe, 0xc2, 0x86, 0xc6, 0x4c, 0x19, 0x4f, 0x93, 0xee, 0x54,
-	0xd5, 0xdf, 0x24, 0xe9, 0x9d, 0xd6, 0x85, 0x51, 0x84, 0x45, 0xa7, 0x5a, 0xa0, 0x21, 0x13, 0x6b,
-	0xbf, 0xa7, 0x6b, 0x09, 0xec, 0xa4, 0x37, 0xfe, 0xa3, 0x9b, 0xfc, 0x3b, 0x2b, 0xcf, 0xf5, 0xcc,
-	0x83, 0x69, 0x49, 0xe5, 0xae, 0xd3, 0x4f, 0x98, 0x74, 0xa5, 0x40, 0xd1, 0xa1, 0x70, 0x1c, 0xd4,
-	0x05, 0x74, 0xcd, 0x8c, 0xdb, 0x1d, 0xf7, 0x8b, 0x15, 0x82, 0x94, 0x00, 0xcd, 0x55, 0x53, 0xa2,
-	0x37, 0x17, 0x92, 0xda, 0xcb, 0xe6, 0xbf, 0x2c, 0x63, 0x19, 0x92, 0x5f, 0x28, 0x5e, 0x72, 0xdf,
-	0xd0, 0x6a, 0xd0, 0x70, 0xdf, 0xf9, 0x71, 0x83, 0xbe, 0x8e, 0x90, 0xae, 0x85, 0xcb, 0x44, 0x2f,
-	0xdc, 0x4c, 0xf4, 0x17, 0x1c, 0xa8, 0xfe, 0x8c, 0xa3, 0x57, 0xca, 0xe6, 0xbf, 0x28, 0x9b, 0xb7,
-	0xca, 0x9e, 0xc0, 0xa3, 0x4b, 0xe9, 0xd8, 0xf4, 0x9f, 0x62, 0x9a, 0xc0, 0xa3, 0xf4, 0x1d, 0x26,
-	0x3d, 0x09, 0x28, 0x82, 0x82, 0x6b, 0x66, 0xaf, 0x43, 0x3c, 0x62, 0xe9, 0xc0, 0x88, 0xd4, 0x68,
-	0x32, 0xac, 0xee, 0xda, 0x8b, 0x37, 0x37, 0x9d, 0xfa, 0x88, 0xf7, 0x2b, 0x0c, 0x1f, 0x54, 0x18,
-	0x3e, 0xac, 0x30, 0x74, 0x5c, 0x61, 0xe8, 0xa4, 0xc2, 0xd0, 0x69, 0x85, 0xa1, 0xb3, 0x0a, 0xc3,
-	0x9b, 0x1e, 0xc3, 0x5b, 0x1e, 0x43, 0xdb, 0x1e, 0xc3, 0x3b, 0x1e, 0x43, 0xbb, 0x1e, 0x43, 0x7b,
-	0x1e, 0x43, 0xfb, 0x1e, 0xc3, 0x07, 0x1e, 0xc3, 0x87, 0x1e, 0x43, 0xc7, 0x1e, 0xc3, 0x27, 0x1e,
-	0x43, 0xa7, 0x1e, 0xc3, 0x67, 0x1e, 0x43, 0x9b, 0x3e, 0x43, 0x5b, 0x3e, 0xc3, 0x6f, 0x7c, 0x86,
-	0xde, 0xfb, 0x0c, 0x7f, 0xf0, 0x19, 0xda, 0xf6, 0x19, 0xda, 0xf1, 0x19, 0xde, 0xf5, 0x19, 0xde,
-	0xf3, 0x19, 0x5e, 0xd2, 0x6e, 0xf0, 0x19, 0x55, 0xc2, 0xc9, 0x66, 0x7b, 0x02, 0x1b, 0xc6, 0x7f,
-	0x06, 0x00, 0x00, 0xff, 0xff, 0xb5, 0x59, 0x26, 0x71, 0xbd, 0x06, 0x00, 0x00,
+	// 896 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0x41, 0x6f, 0x1b, 0x45,
+	0x14, 0xce, 0xb8, 0x21, 0x94, 0x51, 0x94, 0x90, 0x69, 0x28, 0xc1, 0x2d, 0x4e, 0xe4, 0x82, 0xa8,
+	0x02, 0xd9, 0x95, 0x9c, 0x03, 0x52, 0xb9, 0x60, 0xe3, 0xc4, 0x29, 0x22, 0x51, 0xea, 0xa4, 0x95,
+	0xda, 0xcb, 0x6a, 0xb2, 0xf3, 0xbc, 0x5e, 0x79, 0x3d, 0xb3, 0xdd, 0x19, 0xaf, 0xbb, 0x8a, 0x22,
+	0xa1, 0x1e, 0x38, 0x57, 0x42, 0x9c, 0xe1, 0xd8, 0x13, 0x07, 0x2e, 0x5c, 0x2a, 0xc4, 0x2f, 0xe0,
+	0xc2, 0x05, 0x71, 0xa8, 0xc0, 0xe1, 0xc0, 0x91, 0x73, 0x4f, 0xc8, 0xb3, 0xbb, 0x49, 0xbc, 0x6b,
+	0xa3, 0x04, 0x50, 0x6f, 0x6f, 0xf6, 0x7d, 0xf3, 0xbd, 0x6f, 0xbe, 0xf7, 0x66, 0x16, 0xbf, 0xeb,
+	0x89, 0x80, 0xf6, 0x29, 0x5f, 0x93, 0x8a, 0xda, 0x1d, 0x93, 0xfa, 0xae, 0xc9, 0x41, 0xf5, 0x45,
+	0xd0, 0x91, 0x10, 0x84, 0x10, 0x18, 0x7e, 0x20, 0x94, 0x20, 0x73, 0x4a, 0x71, 0x23, 0x81, 0x1a,
+	0xe1, 0x7a, 0xb1, 0xea, 0xb8, 0xaa, 0xdd, 0x3b, 0x30, 0x6c, 0xd1, 0x35, 0x81, 0x87, 0x22, 0xf2,
+	0x03, 0xf1, 0x28, 0x32, 0x35, 0xd8, 0x5e, 0x73, 0x80, 0xaf, 0x85, 0xd4, 0x73, 0x19, 0x55, 0x60,
+	0xe6, 0x82, 0x98, 0xb2, 0xb8, 0x76, 0x86, 0xc2, 0x11, 0x8e, 0x88, 0x37, 0x1f, 0xf4, 0x5a, 0x7a,
+	0xa5, 0x17, 0x3a, 0x4a, 0xe0, 0xd7, 0x1d, 0x21, 0x1c, 0x0f, 0xb4, 0x42, 0xca, 0xb9, 0x50, 0x54,
+	0xb9, 0x82, 0xcb, 0x24, 0x7b, 0x2d, 0xc9, 0x9e, 0x70, 0x40, 0xd7, 0x57, 0x51, 0x92, 0x2c, 0xe7,
+	0xcf, 0x08, 0x9c, 0x59, 0x0c, 0x42, 0xd7, 0x4e, 0xd5, 0xdc, 0xc8, 0x63, 0x5c, 0x06, 0x5c, 0xb9,
+	0x2d, 0x17, 0x82, 0xb4, 0xca, 0x4a, 0x1e, 0xd4, 0x05, 0x29, 0xa9, 0x03, 0x29, 0x62, 0x39, 0x8f,
+	0x48, 0x5d, 0xd3, 0x80, 0xf2, 0x43, 0xfc, 0x66, 0x03, 0x38, 0x04, 0x54, 0x41, 0x1d, 0xc2, 0x2a,
+	0x63, 0x41, 0x13, 0xa4, 0x2f, 0xb8, 0x04, 0x72, 0x0f, 0x5f, 0x66, 0x10, 0x5a, 0x94, 0xb1, 0x60,
+	0x09, 0xad, 0xa0, 0x9b, 0xb3, 0xb5, 0x8f, 0x7e, 0x7d, 0xbe, 0xfc, 0xa1, 0x23, 0x0c, 0xd5, 0x06,
+	0xd5, 0x76, 0xb9, 0x23, 0x8d, 0xa4, 0x37, 0xe6, 0x68, 0x99, 0x70, 0xdd, 0xf4, 0x3b, 0x8e, 0xa9,
+	0x22, 0x1f, 0xa4, 0x91, 0xd2, 0xbe, 0xca, 0xe2, 0xa0, 0xfc, 0x0c, 0xe1, 0xeb, 0x0d, 0x50, 0x75,
+	0x68, 0xd1, 0x9e, 0xa7, 0xb6, 0xab, 0x9f, 0xec, 0x81, 0x52, 0x43, 0xb6, 0x26, 0x3c, 0xec, 0x81,
+	0x54, 0x64, 0x13, 0x2f, 0xb4, 0x82, 0x61, 0xcc, 0xed, 0xc8, 0xf2, 0x3d, 0xca, 0x2d, 0x97, 0x69,
+	0x05, 0xaf, 0xd5, 0x8a, 0x2f, 0x6a, 0xd3, 0x41, 0x61, 0xe9, 0xe3, 0xc1, 0xf3, 0xe5, 0xf9, 0xcd,
+	0x14, 0xb3, 0xeb, 0x51, 0x7e, 0xbb, 0xde, 0x9c, 0x6f, 0x8d, 0x7c, 0x60, 0x64, 0x1f, 0x5f, 0x49,
+	0x74, 0x59, 0x7e, 0x3b, 0xb2, 0x42, 0x08, 0xa4, 0x2b, 0xf8, 0x52, 0x61, 0x05, 0xdd, 0x9c, 0xab,
+	0x14, 0x8d, 0xd1, 0x11, 0x32, 0x76, 0xb7, 0xee, 0xdf, 0x8b, 0x11, 0xb5, 0xcb, 0x2f, 0x6a, 0xaf,
+	0x3c, 0x46, 0x85, 0xd7, 0x51, 0x73, 0x21, 0x01, 0xec, 0xb6, 0xa3, 0x24, 0x59, 0xf9, 0xba, 0x80,
+	0x0b, 0x3b, 0x92, 0xb4, 0xf1, 0x7c, 0xc6, 0x38, 0x72, 0xd5, 0x88, 0xbb, 0x6e, 0xa4, 0x5d, 0x37,
+	0x36, 0x86, 0x5d, 0x2f, 0xbe, 0x97, 0x2d, 0x35, 0xc1, 0xf1, 0xf2, 0xe2, 0xe3, 0x9f, 0xff, 0xf8,
+	0xb2, 0x30, 0x47, 0x66, 0x4d, 0x2e, 0xcd, 0xd4, 0x7b, 0xf2, 0x2d, 0xc2, 0x6f, 0x8c, 0xf5, 0x8b,
+	0x7c, 0x90, 0x27, 0x9e, 0x6c, 0x6b, 0xf1, 0x5a, 0x16, 0x7d, 0x06, 0x53, 0xfe, 0x54, 0x97, 0xae,
+	0x93, 0x5a, 0x5c, 0x5a, 0x73, 0x58, 0x5d, 0x6a, 0x5b, 0x32, 0x41, 0x98, 0x87, 0xb9, 0x9e, 0x1c,
+	0x99, 0x87, 0x63, 0xfc, 0x3d, 0xaa, 0x3c, 0x29, 0xe0, 0xe9, 0xaa, 0xdc, 0x91, 0x64, 0x1f, 0x2f,
+	0xd6, 0x45, 0x9f, 0x7b, 0x2e, 0xef, 0xdc, 0xe9, 0x41, 0x0f, 0x9a, 0xe0, 0x7b, 0xd4, 0x06, 0xf2,
+	0x4e, 0x56, 0x49, 0x06, 0x15, 0xeb, 0x9d, 0x60, 0x27, 0xb9, 0x83, 0x17, 0x46, 0xf0, 0xbb, 0x3d,
+	0xd9, 0xfe, 0x8f, 0x94, 0x56, 0x86, 0xf2, 0x33, 0x57, 0xaa, 0x3c, 0xe5, 0x06, 0x67, 0x75, 0x7d,
+	0x47, 0x6f, 0x9f, 0xde, 0xc4, 0x62, 0x0e, 0x55, 0xf5, 0x7d, 0xcf, 0xb5, 0xf5, 0x6b, 0x90, 0x72,
+	0xca, 0xca, 0x53, 0x84, 0xa7, 0x1b, 0x43, 0x4b, 0x36, 0xf0, 0xec, 0x16, 0xe5, 0xcc, 0x83, 0xbb,
+	0xfe, 0x30, 0x43, 0xde, 0xce, 0x6e, 0x8f, 0xbf, 0x6f, 0xc7, 0xd7, 0x78, 0xa2, 0xe0, 0xfb, 0xf8,
+	0x6a, 0x13, 0x7c, 0x11, 0xa8, 0xfd, 0x47, 0x55, 0xbb, 0xc3, 0x45, 0xdf, 0x03, 0xe6, 0x74, 0x81,
+	0x2b, 0x92, 0x1f, 0x36, 0xaa, 0xa0, 0x4f, 0xa3, 0x2c, 0x70, 0x12, 0x75, 0xe5, 0xd9, 0x0c, 0xbe,
+	0xb2, 0x23, 0x4f, 0xce, 0xda, 0x04, 0xc7, 0x95, 0x2a, 0x88, 0xc8, 0x77, 0x08, 0x5f, 0x6a, 0x80,
+	0x22, 0x37, 0xc6, 0x0c, 0xdd, 0x19, 0x74, 0x6c, 0xf4, 0x5b, 0x13, 0xbd, 0x2b, 0x77, 0xf4, 0xa4,
+	0x01, 0xb1, 0x87, 0x93, 0x46, 0x4f, 0xcd, 0x92, 0xe6, 0xe1, 0xe9, 0x2b, 0x68, 0xb9, 0x4c, 0x1a,
+	0x67, 0x92, 0x63, 0xd6, 0x47, 0x66, 0x0c, 0xcd, 0xef, 0x3b, 0x09, 0x8f, 0xc8, 0x17, 0x05, 0x7c,
+	0x69, 0x6f, 0x9c, 0xe8, 0xbd, 0x8b, 0x89, 0xfe, 0x01, 0x69, 0xd5, 0xdf, 0xa3, 0xe2, 0x3f, 0xca,
+	0x36, 0xfe, 0xa5, 0x6c, 0x63, 0x54, 0xf6, 0x2d, 0xb4, 0xfa, 0x60, 0xbb, 0xbc, 0xf5, 0x7f, 0x55,
+	0xba, 0x85, 0x56, 0xc9, 0x4f, 0x08, 0x2f, 0x36, 0x41, 0x82, 0xda, 0xa4, 0xb6, 0x12, 0x41, 0x94,
+	0x3c, 0x13, 0x92, 0xbc, 0x9f, 0x3d, 0xb4, 0x46, 0x55, 0x39, 0xbb, 0x60, 0x5b, 0xb9, 0x36, 0xa8,
+	0x5d, 0x79, 0x19, 0x6d, 0x1d, 0x1e, 0xe8, 0x2b, 0x84, 0x67, 0xea, 0xe0, 0x81, 0x82, 0x73, 0x5e,
+	0xd4, 0x09, 0xf3, 0x5e, 0xde, 0xd6, 0xc2, 0x1b, 0xab, 0x1b, 0x79, 0xe1, 0xe7, 0x56, 0x7a, 0x2a,
+	0xad, 0x76, 0xf7, 0x97, 0xdf, 0x4b, 0x53, 0x9f, 0x0f, 0x4a, 0xe8, 0xe9, 0xa0, 0x84, 0x7e, 0x1b,
+	0x94, 0xd0, 0x9f, 0x83, 0xd2, 0xd4, 0x5f, 0x83, 0x12, 0x7a, 0x72, 0x5c, 0x9a, 0xfa, 0xe6, 0xb8,
+	0x34, 0xf5, 0xe3, 0x71, 0x09, 0x3d, 0x30, 0x2f, 0xf0, 0x17, 0x55, 0xdc, 0x3f, 0x38, 0x98, 0xd1,
+	0xaa, 0xd7, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff, 0x30, 0xe1, 0x13, 0x34, 0x20, 0x09, 0x00, 0x00,
 }
 
 func (this *GenerateDevAddrResponse) Equal(that interface{}) bool {
@@ -162,6 +211,33 @@ func (this *GenerateDevAddrResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetDefaultMACSettingsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetDefaultMACSettingsRequest)
+	if !ok {
+		that2, ok := that.(GetDefaultMACSettingsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.FrequencyPlanID != that1.FrequencyPlanID {
+		return false
+	}
+	if this.LorawanPhyVersion != that1.LorawanPhyVersion {
+		return false
+	}
+	return true
+}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -177,6 +253,8 @@ const _ = grpc.SupportPackageIsVersion4
 type NsClient interface {
 	// GenerateDevAddr requests a device address assignment from the Network Server.
 	GenerateDevAddr(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*GenerateDevAddrResponse, error)
+	// GetDefaultMACSettings retrieves the default MAC settings for a frequency plan.
+	GetDefaultMACSettings(ctx context.Context, in *GetDefaultMACSettingsRequest, opts ...grpc.CallOption) (*MACSettings, error)
 }
 
 type nsClient struct {
@@ -196,10 +274,21 @@ func (c *nsClient) GenerateDevAddr(ctx context.Context, in *types.Empty, opts ..
 	return out, nil
 }
 
+func (c *nsClient) GetDefaultMACSettings(ctx context.Context, in *GetDefaultMACSettingsRequest, opts ...grpc.CallOption) (*MACSettings, error) {
+	out := new(MACSettings)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.Ns/GetDefaultMACSettings", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NsServer is the server API for Ns service.
 type NsServer interface {
 	// GenerateDevAddr requests a device address assignment from the Network Server.
 	GenerateDevAddr(context.Context, *types.Empty) (*GenerateDevAddrResponse, error)
+	// GetDefaultMACSettings retrieves the default MAC settings for a frequency plan.
+	GetDefaultMACSettings(context.Context, *GetDefaultMACSettingsRequest) (*MACSettings, error)
 }
 
 // UnimplementedNsServer can be embedded to have forward compatible implementations.
@@ -208,6 +297,9 @@ type UnimplementedNsServer struct {
 
 func (*UnimplementedNsServer) GenerateDevAddr(ctx context.Context, req *types.Empty) (*GenerateDevAddrResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateDevAddr not implemented")
+}
+func (*UnimplementedNsServer) GetDefaultMACSettings(ctx context.Context, req *GetDefaultMACSettingsRequest) (*MACSettings, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDefaultMACSettings not implemented")
 }
 
 func RegisterNsServer(s *grpc.Server, srv NsServer) {
@@ -232,6 +324,24 @@ func _Ns_GenerateDevAddr_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Ns_GetDefaultMACSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDefaultMACSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NsServer).GetDefaultMACSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.Ns/GetDefaultMACSettings",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NsServer).GetDefaultMACSettings(ctx, req.(*GetDefaultMACSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Ns_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ttn.lorawan.v3.Ns",
 	HandlerType: (*NsServer)(nil),
@@ -239,6 +349,10 @@ var _Ns_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateDevAddr",
 			Handler:    _Ns_GenerateDevAddr_Handler,
+		},
+		{
+			MethodName: "GetDefaultMACSettings",
+			Handler:    _Ns_GetDefaultMACSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -249,9 +363,14 @@ var _Ns_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AsNsClient interface {
-	LinkApplication(ctx context.Context, opts ...grpc.CallOption) (AsNs_LinkApplicationClient, error)
+	// Replace the entire downlink queue with the specified messages.
+	// This can also be used to empty the queue by specifying no messages.
+	// Note that this will trigger an immediate downlink if a downlink slot is available.
 	DownlinkQueueReplace(ctx context.Context, in *DownlinkQueueRequest, opts ...grpc.CallOption) (*types.Empty, error)
+	// Push downlink messages to the end of the downlink queue.
+	// Note that this will trigger an immediate downlink if a downlink slot is available.
 	DownlinkQueuePush(ctx context.Context, in *DownlinkQueueRequest, opts ...grpc.CallOption) (*types.Empty, error)
+	// List the items currently in the downlink queue.
 	DownlinkQueueList(ctx context.Context, in *EndDeviceIdentifiers, opts ...grpc.CallOption) (*ApplicationDownlinks, error)
 }
 
@@ -261,37 +380,6 @@ type asNsClient struct {
 
 func NewAsNsClient(cc *grpc.ClientConn) AsNsClient {
 	return &asNsClient{cc}
-}
-
-func (c *asNsClient) LinkApplication(ctx context.Context, opts ...grpc.CallOption) (AsNs_LinkApplicationClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_AsNs_serviceDesc.Streams[0], "/ttn.lorawan.v3.AsNs/LinkApplication", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &asNsLinkApplicationClient{stream}
-	return x, nil
-}
-
-type AsNs_LinkApplicationClient interface {
-	Send(*types.Empty) error
-	Recv() (*ApplicationUp, error)
-	grpc.ClientStream
-}
-
-type asNsLinkApplicationClient struct {
-	grpc.ClientStream
-}
-
-func (x *asNsLinkApplicationClient) Send(m *types.Empty) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *asNsLinkApplicationClient) Recv() (*ApplicationUp, error) {
-	m := new(ApplicationUp)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func (c *asNsClient) DownlinkQueueReplace(ctx context.Context, in *DownlinkQueueRequest, opts ...grpc.CallOption) (*types.Empty, error) {
@@ -323,9 +411,14 @@ func (c *asNsClient) DownlinkQueueList(ctx context.Context, in *EndDeviceIdentif
 
 // AsNsServer is the server API for AsNs service.
 type AsNsServer interface {
-	LinkApplication(AsNs_LinkApplicationServer) error
+	// Replace the entire downlink queue with the specified messages.
+	// This can also be used to empty the queue by specifying no messages.
+	// Note that this will trigger an immediate downlink if a downlink slot is available.
 	DownlinkQueueReplace(context.Context, *DownlinkQueueRequest) (*types.Empty, error)
+	// Push downlink messages to the end of the downlink queue.
+	// Note that this will trigger an immediate downlink if a downlink slot is available.
 	DownlinkQueuePush(context.Context, *DownlinkQueueRequest) (*types.Empty, error)
+	// List the items currently in the downlink queue.
 	DownlinkQueueList(context.Context, *EndDeviceIdentifiers) (*ApplicationDownlinks, error)
 }
 
@@ -333,9 +426,6 @@ type AsNsServer interface {
 type UnimplementedAsNsServer struct {
 }
 
-func (*UnimplementedAsNsServer) LinkApplication(srv AsNs_LinkApplicationServer) error {
-	return status.Errorf(codes.Unimplemented, "method LinkApplication not implemented")
-}
 func (*UnimplementedAsNsServer) DownlinkQueueReplace(ctx context.Context, req *DownlinkQueueRequest) (*types.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownlinkQueueReplace not implemented")
 }
@@ -348,32 +438,6 @@ func (*UnimplementedAsNsServer) DownlinkQueueList(ctx context.Context, req *EndD
 
 func RegisterAsNsServer(s *grpc.Server, srv AsNsServer) {
 	s.RegisterService(&_AsNs_serviceDesc, srv)
-}
-
-func _AsNs_LinkApplication_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(AsNsServer).LinkApplication(&asNsLinkApplicationServer{stream})
-}
-
-type AsNs_LinkApplicationServer interface {
-	Send(*ApplicationUp) error
-	Recv() (*types.Empty, error)
-	grpc.ServerStream
-}
-
-type asNsLinkApplicationServer struct {
-	grpc.ServerStream
-}
-
-func (x *asNsLinkApplicationServer) Send(m *ApplicationUp) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *asNsLinkApplicationServer) Recv() (*types.Empty, error) {
-	m := new(types.Empty)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func _AsNs_DownlinkQueueReplace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -447,14 +511,7 @@ var _AsNs_serviceDesc = grpc.ServiceDesc{
 			Handler:    _AsNs_DownlinkQueueList_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "LinkApplication",
-			Handler:       _AsNs_LinkApplication_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "lorawan-stack/api/networkserver.proto",
 }
 
@@ -462,7 +519,10 @@ var _AsNs_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GsNsClient interface {
+	// Called by the Gateway Server when an uplink message arrives.
 	HandleUplink(ctx context.Context, in *UplinkMessage, opts ...grpc.CallOption) (*types.Empty, error)
+	// Called by the Gateway Server when a Tx acknowledgment arrives.
+	ReportTxAcknowledgment(ctx context.Context, in *GatewayTxAcknowledgment, opts ...grpc.CallOption) (*types.Empty, error)
 }
 
 type gsNsClient struct {
@@ -482,9 +542,21 @@ func (c *gsNsClient) HandleUplink(ctx context.Context, in *UplinkMessage, opts .
 	return out, nil
 }
 
+func (c *gsNsClient) ReportTxAcknowledgment(ctx context.Context, in *GatewayTxAcknowledgment, opts ...grpc.CallOption) (*types.Empty, error) {
+	out := new(types.Empty)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.GsNs/ReportTxAcknowledgment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GsNsServer is the server API for GsNs service.
 type GsNsServer interface {
+	// Called by the Gateway Server when an uplink message arrives.
 	HandleUplink(context.Context, *UplinkMessage) (*types.Empty, error)
+	// Called by the Gateway Server when a Tx acknowledgment arrives.
+	ReportTxAcknowledgment(context.Context, *GatewayTxAcknowledgment) (*types.Empty, error)
 }
 
 // UnimplementedGsNsServer can be embedded to have forward compatible implementations.
@@ -493,6 +565,9 @@ type UnimplementedGsNsServer struct {
 
 func (*UnimplementedGsNsServer) HandleUplink(ctx context.Context, req *UplinkMessage) (*types.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleUplink not implemented")
+}
+func (*UnimplementedGsNsServer) ReportTxAcknowledgment(ctx context.Context, req *GatewayTxAcknowledgment) (*types.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportTxAcknowledgment not implemented")
 }
 
 func RegisterGsNsServer(s *grpc.Server, srv GsNsServer) {
@@ -517,6 +592,24 @@ func _GsNs_HandleUplink_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GsNs_ReportTxAcknowledgment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GatewayTxAcknowledgment)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GsNsServer).ReportTxAcknowledgment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.GsNs/ReportTxAcknowledgment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GsNsServer).ReportTxAcknowledgment(ctx, req.(*GatewayTxAcknowledgment))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _GsNs_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ttn.lorawan.v3.GsNs",
 	HandlerType: (*GsNsServer)(nil),
@@ -524,6 +617,10 @@ var _GsNs_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HandleUplink",
 			Handler:    _GsNs_HandleUplink_Handler,
+		},
+		{
+			MethodName: "ReportTxAcknowledgment",
+			Handler:    _GsNs_ReportTxAcknowledgment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -539,6 +636,8 @@ type NsEndDeviceRegistryClient interface {
 	Get(ctx context.Context, in *GetEndDeviceRequest, opts ...grpc.CallOption) (*EndDevice, error)
 	// Set creates or updates the device.
 	Set(ctx context.Context, in *SetEndDeviceRequest, opts ...grpc.CallOption) (*EndDevice, error)
+	// ResetFactoryDefaults resets device state to factory defaults.
+	ResetFactoryDefaults(ctx context.Context, in *ResetAndGetEndDeviceRequest, opts ...grpc.CallOption) (*EndDevice, error)
 	// Delete deletes the device that matches the given identifiers.
 	// If there are multiple matches, an error will be returned.
 	Delete(ctx context.Context, in *EndDeviceIdentifiers, opts ...grpc.CallOption) (*types.Empty, error)
@@ -570,6 +669,15 @@ func (c *nsEndDeviceRegistryClient) Set(ctx context.Context, in *SetEndDeviceReq
 	return out, nil
 }
 
+func (c *nsEndDeviceRegistryClient) ResetFactoryDefaults(ctx context.Context, in *ResetAndGetEndDeviceRequest, opts ...grpc.CallOption) (*EndDevice, error) {
+	out := new(EndDevice)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.NsEndDeviceRegistry/ResetFactoryDefaults", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *nsEndDeviceRegistryClient) Delete(ctx context.Context, in *EndDeviceIdentifiers, opts ...grpc.CallOption) (*types.Empty, error) {
 	out := new(types.Empty)
 	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.NsEndDeviceRegistry/Delete", in, out, opts...)
@@ -586,6 +694,8 @@ type NsEndDeviceRegistryServer interface {
 	Get(context.Context, *GetEndDeviceRequest) (*EndDevice, error)
 	// Set creates or updates the device.
 	Set(context.Context, *SetEndDeviceRequest) (*EndDevice, error)
+	// ResetFactoryDefaults resets device state to factory defaults.
+	ResetFactoryDefaults(context.Context, *ResetAndGetEndDeviceRequest) (*EndDevice, error)
 	// Delete deletes the device that matches the given identifiers.
 	// If there are multiple matches, an error will be returned.
 	Delete(context.Context, *EndDeviceIdentifiers) (*types.Empty, error)
@@ -600,6 +710,9 @@ func (*UnimplementedNsEndDeviceRegistryServer) Get(ctx context.Context, req *Get
 }
 func (*UnimplementedNsEndDeviceRegistryServer) Set(ctx context.Context, req *SetEndDeviceRequest) (*EndDevice, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
+}
+func (*UnimplementedNsEndDeviceRegistryServer) ResetFactoryDefaults(ctx context.Context, req *ResetAndGetEndDeviceRequest) (*EndDevice, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetFactoryDefaults not implemented")
 }
 func (*UnimplementedNsEndDeviceRegistryServer) Delete(ctx context.Context, req *EndDeviceIdentifiers) (*types.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -645,6 +758,24 @@ func _NsEndDeviceRegistry_Set_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NsEndDeviceRegistry_ResetFactoryDefaults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetAndGetEndDeviceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NsEndDeviceRegistryServer).ResetFactoryDefaults(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.NsEndDeviceRegistry/ResetFactoryDefaults",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NsEndDeviceRegistryServer).ResetFactoryDefaults(ctx, req.(*ResetAndGetEndDeviceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _NsEndDeviceRegistry_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EndDeviceIdentifiers)
 	if err := dec(in); err != nil {
@@ -676,6 +807,10 @@ var _NsEndDeviceRegistry_serviceDesc = grpc.ServiceDesc{
 			Handler:    _NsEndDeviceRegistry_Set_Handler,
 		},
 		{
+			MethodName: "ResetFactoryDefaults",
+			Handler:    _NsEndDeviceRegistry_ResetFactoryDefaults_Handler,
+		},
+		{
 			MethodName: "Delete",
 			Handler:    _NsEndDeviceRegistry_Delete_Handler,
 		},
@@ -684,132 +819,6 @@ var _NsEndDeviceRegistry_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/networkserver.proto",
 }
 
-func (m *GenerateDevAddrResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GenerateDevAddrResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GenerateDevAddrResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.DevAddr != nil {
-		{
-			size := m.DevAddr.Size()
-			i -= size
-			if _, err := m.DevAddr.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-			i = encodeVarintNetworkserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintNetworkserver(dAtA []byte, offset int, v uint64) int {
-	offset -= sovNetworkserver(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func NewPopulatedGenerateDevAddrResponse(r randyNetworkserver, easy bool) *GenerateDevAddrResponse {
-	this := &GenerateDevAddrResponse{}
-	this.DevAddr = go_thethings_network_lorawan_stack_v3_pkg_types.NewPopulatedDevAddr(r)
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-type randyNetworkserver interface {
-	Float32() float32
-	Float64() float64
-	Int63() int64
-	Int31() int32
-	Uint32() uint32
-	Intn(n int) int
-}
-
-func randUTF8RuneNetworkserver(r randyNetworkserver) rune {
-	ru := r.Intn(62)
-	if ru < 10 {
-		return rune(ru + 48)
-	} else if ru < 36 {
-		return rune(ru + 55)
-	}
-	return rune(ru + 61)
-}
-func randStringNetworkserver(r randyNetworkserver) string {
-	v1 := r.Intn(100)
-	tmps := make([]rune, v1)
-	for i := 0; i < v1; i++ {
-		tmps[i] = randUTF8RuneNetworkserver(r)
-	}
-	return string(tmps)
-}
-func randUnrecognizedNetworkserver(r randyNetworkserver, maxFieldNumber int) (dAtA []byte) {
-	l := r.Intn(5)
-	for i := 0; i < l; i++ {
-		wire := r.Intn(4)
-		if wire == 3 {
-			wire = 5
-		}
-		fieldNumber := maxFieldNumber + r.Intn(100)
-		dAtA = randFieldNetworkserver(dAtA, r, fieldNumber, wire)
-	}
-	return dAtA
-}
-func randFieldNetworkserver(dAtA []byte, r randyNetworkserver, fieldNumber int, wire int) []byte {
-	key := uint32(fieldNumber)<<3 | uint32(wire)
-	switch wire {
-	case 0:
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(key))
-		v2 := r.Int63()
-		if r.Intn(2) == 0 {
-			v2 *= -1
-		}
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(v2))
-	case 1:
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	case 2:
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(key))
-		ll := r.Intn(100)
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(ll))
-		for j := 0; j < ll; j++ {
-			dAtA = append(dAtA, byte(r.Intn(256)))
-		}
-	default:
-		dAtA = encodeVarintPopulateNetworkserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	}
-	return dAtA
-}
-func encodeVarintPopulateNetworkserver(dAtA []byte, v uint64) []byte {
-	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
-		v >>= 7
-	}
-	dAtA = append(dAtA, uint8(v))
-	return dAtA
-}
 func (m *GenerateDevAddrResponse) Size() (n int) {
 	if m == nil {
 		return 0
@@ -823,11 +832,27 @@ func (m *GenerateDevAddrResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetDefaultMACSettingsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FrequencyPlanID)
+	if l > 0 {
+		n += 1 + l + sovNetworkserver(uint64(l))
+	}
+	if m.LorawanPhyVersion != 0 {
+		n += 1 + sovNetworkserver(uint64(m.LorawanPhyVersion))
+	}
+	return n
+}
+
 func sovNetworkserver(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozNetworkserver(x uint64) (n int) {
-	return sovNetworkserver((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovNetworkserver(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *GenerateDevAddrResponse) String() string {
 	if this == nil {
@@ -835,6 +860,17 @@ func (this *GenerateDevAddrResponse) String() string {
 	}
 	s := strings.Join([]string{`&GenerateDevAddrResponse{`,
 		`DevAddr:` + fmt.Sprintf("%v", this.DevAddr) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetDefaultMACSettingsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetDefaultMACSettingsRequest{`,
+		`FrequencyPlanID:` + fmt.Sprintf("%v", this.FrequencyPlanID) + `,`,
+		`LorawanPhyVersion:` + fmt.Sprintf("%v", this.LorawanPhyVersion) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -847,175 +883,3 @@ func valueToStringNetworkserver(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *GenerateDevAddrResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowNetworkserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GenerateDevAddrResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GenerateDevAddrResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DevAddr", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowNetworkserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthNetworkserver
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthNetworkserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			var v go_thethings_network_lorawan_stack_v3_pkg_types.DevAddr
-			m.DevAddr = &v
-			if err := m.DevAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipNetworkserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetworkserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthNetworkserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipNetworkserver(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowNetworkserver
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowNetworkserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowNetworkserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthNetworkserver
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupNetworkserver
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthNetworkserver
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthNetworkserver        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowNetworkserver          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupNetworkserver = fmt.Errorf("proto: unexpected end of group")
-)

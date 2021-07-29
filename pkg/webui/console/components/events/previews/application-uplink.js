@@ -26,13 +26,16 @@ import JSONPayload from './shared/json-payload'
 const ApplicationUplinkPreview = React.memo(({ event }) => {
   const { data, identifiers } = event
   const deviceIds = identifiers[0].device_ids
-  let snr
+  let snr, rssi
 
   if ('rx_metadata' in data) {
     snr = data.rx_metadata[0].snr
+    rssi = data.rx_metadata[0].rssi
   }
 
   const bandwidth = getByPath(data, 'settings.data_rate.lora.bandwidth')
+  const spreadingFactor = getByPath(data, 'settings.data_rate.lora.spreading_factor')
+  const dataRate = `SF${spreadingFactor}BW${bandwidth / 1000}`
 
   return (
     <DescriptionList>
@@ -48,8 +51,9 @@ const ApplicationUplinkPreview = React.memo(({ event }) => {
         <DescriptionList.Byte title={messages.MACPayload} data={data.frm_payload} convertToHex />
       )}
       <DescriptionList.Item title={messages.fPort} data={data.f_port} />
+      <DescriptionList.Item title={messages.dataRate} data={dataRate} />
       <DescriptionList.Item title={messages.snr} data={snr} />
-      <DescriptionList.Item title={messages.bandwidth} data={bandwidth} />
+      <DescriptionList.Item title={messages.rssi} data={rssi} />
     </DescriptionList>
   )
 })

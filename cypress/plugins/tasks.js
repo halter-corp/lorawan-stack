@@ -13,16 +13,27 @@
 // limitations under the License.
 
 const { execSync } = require('child_process')
+const fs = require('fs')
+const readline = require('readline')
 
+const { Client } = require('pg')
 const yaml = require('js-yaml')
 const codeCoverageTask = require('@cypress/code-coverage/task')
+
+const client = new Client({
+  user: 'root',
+  host: 'localhost',
+  database: 'ttn_lorawan_dev',
+  port: 26257,
+})
+client.connect()
 
 // `stackConfigTask` sources stack configuration entires to `Cypress` configuration while preserving
 // all entries from `cypress.json`.
 const stackConfigTask = (_, config) => {
   try {
     const out = execSync('go run ./cmd/ttn-lw-stack config --yml')
-    const yml = yaml.safeLoad(out)
+    const yml = yaml.load(out)
 
     // Cluster.
     config.asBaseUrl = yml.console.ui.as['base-url']
@@ -47,18 +58,64 @@ const stackConfigTask = (_, config) => {
     config.consoleAssetsRootPath = yml.console.ui['assets-base-url']
     config.consoleRootPath = new URL(yml.console.ui['canonical-url']).pathname
 
-    // OAuth.
-    config.oauthSiteName = yml.is.oauth.ui['site-name']
-    config.oauthSubTitle = yml.is.oauth.ui['sub-title']
-    config.oauthTitle = yml.is.oauth.ui.title
-    config.oauthRootPath = new URL(yml.is.oauth.ui['canonical-url']).pathname
-    config.oauthAssetsRootPath = yml.is.oauth.ui['assets-base-url']
+    // Account App.
+    config.accountAppSiteName = yml.is.oauth.ui['site-name']
+    config.accountAppSubTitle = yml.is.oauth.ui['sub-title']
+    config.accountAppTitle = yml.is.oauth.ui.title
+    config.accountAppRootPath = new URL(yml.is.oauth.ui['canonical-url']).pathname
+    config.accountAppAssetsRootPath = yml.is.oauth.ui['assets-base-url']
   } catch (err) {
     throw err
   }
 }
 
+const sqlTask = (on, _) => {
+  on('task', {
+    execSql: sql => {
+      return client.query(sql)
+    },
+    dropAndSeedDatabase: () => {
+      const sqlDump = fs.readFileSync('.cache/sqldump.sql')
+      return client.query(
+        `DROP DATABASE ttn_lorawan_dev; CREATE DATABASE ttn_lorawan_dev; ${sqlDump}`,
+      )
+    },
+  })
+}
+
+const stackLogTask = (on, _) => {
+  on('task', {
+    findEmailInStackLog: async (regExp, capturingGroup = 0) => {
+      const re = new RegExp(regExp, 'm')
+      const rl = readline.createInterface({
+        input: fs.createReadStream('.cache/devStack.log', { encoding: 'utf8' }),
+        output: process.stdout,
+        terminal: false,
+      })
+      const results = []
+      for await (const line of rl) {
+        if (line === '') {
+          continue
+        }
+        const parsed = JSON.parse(line)
+        if (parsed.msg !== 'Could not send email without email provider') {
+          continue
+        }
+        const match = parsed.body.match(re)
+        if (match) {
+          results.push(match)
+        }
+      }
+
+      // Return the most recent occurrence.
+      return results ? results.pop()[capturingGroup] : undefined
+    },
+  })
+}
+
 module.exports = {
   stackConfigTask,
   codeCoverageTask,
+  sqlTask,
+  stackLogTask,
 }

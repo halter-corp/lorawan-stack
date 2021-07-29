@@ -23,6 +23,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/messageprocessors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/peer"
@@ -37,9 +38,44 @@ type optionFunc func(*impl)
 
 func (f optionFunc) apply(i *impl) { f(i) }
 
+// EndDeviceFetcher retrieves end device information from identifiers.
+type EndDeviceFetcher interface {
+	Get(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, fieldMaskPaths ...string) (*ttnpb.EndDevice, error)
+}
+
+type defaultFetcher struct{}
+
+func (f *defaultFetcher) Get(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, fieldMaskPaths ...string) (*ttnpb.EndDevice, error) {
+	return &ttnpb.EndDevice{EndDeviceIdentifiers: ids}, nil
+}
+
+type defaultMessageProcessor struct{}
+
+func (p *defaultMessageProcessor) EncodeDownlink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, version *ttnpb.EndDeviceVersionIdentifiers, msg *ttnpb.ApplicationDownlink, formatter ttnpb.PayloadFormatter, parameter string) error {
+	return nil
+}
+
+func (p *defaultMessageProcessor) DecodeUplink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, version *ttnpb.EndDeviceVersionIdentifiers, msg *ttnpb.ApplicationUplink, formatter ttnpb.PayloadFormatter, parameter string) error {
+	return nil
+}
+
+func (p *defaultMessageProcessor) DecodeDownlink(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, version *ttnpb.EndDeviceVersionIdentifiers, msg *ttnpb.ApplicationDownlink, formatter ttnpb.PayloadFormatter, parameter string) error {
+	return nil
+}
+
+// SkipPayloadCryptoFunc is a function that checks if the end device should skip payload crypto operations.
+type SkipPayloadCryptoFunc func(ctx context.Context, ids ttnpb.EndDeviceIdentifiers) (bool, error)
+
+func defaultSkipPayloadCrypto(context.Context, ttnpb.EndDeviceIdentifiers) (bool, error) {
+	return false, nil
+}
+
 type impl struct {
 	server             io.Server
+	fetcher            EndDeviceFetcher
 	mqttConfigProvider config.MQTTConfigProvider
+	processor          messageprocessors.PayloadProcessor
+	skipPayloadCrypto  SkipPayloadCryptoFunc
 }
 
 // WithMQTTConfigProvider sets the MQTT configuration provider for the gRPC frontend.
@@ -49,9 +85,30 @@ func WithMQTTConfigProvider(provider config.MQTTConfigProvider) Option {
 	})
 }
 
+// WithEndDeviceFetcher sets the EndDeviceFetcher that will be used by the gRPC frontend.
+func WithEndDeviceFetcher(f EndDeviceFetcher) Option {
+	return optionFunc(func(i *impl) {
+		i.fetcher = f
+	})
+}
+
+// WithPayloadProcessor sets the PayloadProcessor that will be used by the gRPC frontend.
+func WithPayloadProcessor(processor messageprocessors.PayloadProcessor) Option {
+	return optionFunc(func(i *impl) {
+		i.processor = processor
+	})
+}
+
+// WithSkipPayloadCrypto sets the skip payload crypto predicate that will be used by the gRPC frontend.
+func WithSkipPayloadCrypto(f SkipPayloadCryptoFunc) Option {
+	return optionFunc(func(i *impl) {
+		i.skipPayloadCrypto = f
+	})
+}
+
 // New returns a new gRPC frontend.
 func New(server io.Server, opts ...Option) ttnpb.AppAsServer {
-	i := &impl{server: server}
+	i := &impl{server: server, fetcher: &defaultFetcher{}, processor: &defaultMessageProcessor{}, skipPayloadCrypto: defaultSkipPayloadCrypto}
 	for _, opt := range opts {
 		opt.apply(i)
 	}
@@ -74,7 +131,7 @@ func (s *impl) Subscribe(ids *ttnpb.ApplicationIdentifiers, stream ttnpb.AppAs_S
 	ctx = log.NewContextWithField(ctx, "application_uid", uid)
 	logger := log.FromContext(ctx)
 
-	sub, err := s.server.Subscribe(ctx, "grpc", *ids)
+	sub, err := s.server.Subscribe(ctx, "grpc", ids, true)
 	if err != nil {
 		logger.WithError(err).Warn("Failed to connect")
 		return errConnect.WithCause(err).WithAttributes("application_uid", uid)
@@ -150,13 +207,63 @@ func (s *impl) GetMQTTConnectionInfo(ctx context.Context, ids *ttnpb.Application
 	}, nil
 }
 
+var errPayloadCryptoSkipped = errors.DefineFailedPrecondition("payload_crypto_skipped", "payload crypto skipped")
+
 func (s *impl) SimulateUplink(ctx context.Context, up *ttnpb.ApplicationUp) (*pbtypes.Empty, error) {
 	if err := rights.RequireApplication(ctx, up.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_UP_WRITE); err != nil {
 		return nil, err
 	}
+	skip, err := s.skipPayloadCrypto(ctx, up.EndDeviceIdentifiers)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Debug("Failed to determine if the payload crypto should be skipped")
+	} else if skip {
+		return nil, errPayloadCryptoSkipped.New()
+	}
 	up.Simulated = true
-	if err := s.server.SendUp(ctx, up); err != nil {
+	dev, err := s.fetcher.Get(ctx, up.EndDeviceIdentifiers, "ids")
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Debug("Failed to fetch end device identifiers")
+	} else {
+		up.EndDeviceIdentifiers = dev.EndDeviceIdentifiers
+	}
+	if err := s.server.Publish(ctx, up); err != nil {
 		return nil, err
 	}
 	return ttnpb.Empty, nil
+}
+
+func (as *impl) EncodeDownlink(ctx context.Context, req *ttnpb.EncodeDownlinkRequest) (*ttnpb.EncodeDownlinkResponse, error) {
+	if err := rights.RequireApplication(ctx, req.EndDeviceIds.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
+		return nil, err
+	}
+	if err := as.processor.EncodeDownlink(ctx, *req.EndDeviceIds, req.VersionIds, req.Downlink, req.Formatter, req.Parameter); err != nil {
+		return nil, err
+	}
+	return &ttnpb.EncodeDownlinkResponse{
+		Downlink: req.Downlink,
+	}, nil
+}
+
+func (as *impl) DecodeUplink(ctx context.Context, req *ttnpb.DecodeUplinkRequest) (*ttnpb.DecodeUplinkResponse, error) {
+	if err := rights.RequireApplication(ctx, req.EndDeviceIds.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
+		return nil, err
+	}
+	if err := as.processor.DecodeUplink(ctx, *req.EndDeviceIds, req.VersionIds, req.Uplink, req.Formatter, req.Parameter); err != nil {
+		return nil, err
+	}
+	return &ttnpb.DecodeUplinkResponse{
+		Uplink: req.Uplink,
+	}, nil
+}
+
+func (as *impl) DecodeDownlink(ctx context.Context, req *ttnpb.DecodeDownlinkRequest) (*ttnpb.DecodeDownlinkResponse, error) {
+	if err := rights.RequireApplication(ctx, req.EndDeviceIds.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
+		return nil, err
+	}
+	if err := as.processor.DecodeDownlink(ctx, *req.EndDeviceIds, req.VersionIds, req.Downlink, req.Formatter, req.Parameter); err != nil {
+		return nil, err
+	}
+	return &ttnpb.DecodeDownlinkResponse{
+		Downlink: req.Downlink,
+	}, nil
 }

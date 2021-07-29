@@ -33,8 +33,7 @@ import (
 
 var shutdownTimeout = (1 << 3) * time.Second
 
-type impl struct {
-}
+type impl struct{}
 
 type connection struct {
 	mqtt.Client
@@ -49,36 +48,39 @@ func (c *connection) Shutdown(_ context.Context) error {
 var errConnectFailed = errors.Define("connect_failed", "connection to MQTT server failed")
 
 // OpenConnection implements provider.Provider using the MQTT driver.
-func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *provider.Connection, err error) {
-	provider, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_MQTT)
+func (impl) OpenConnection(ctx context.Context, target provider.Target, enabler provider.Enabler) (pc *provider.Connection, err error) {
+	provider, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_Mqtt)
 	if !ok {
 		panic("wrong provider type provided to OpenConnection")
 	}
+	if err := enabler.Enabled(ctx, target.GetProvider()); err != nil {
+		return nil, err
+	}
 
 	var tlsConfig *tls.Config
-	if provider.MQTT.UseTLS {
+	if provider.Mqtt.UseTls {
 		var err error
-		tlsConfig, err = createTLSConfig(provider.MQTT.TLSCA, provider.MQTT.TLSClientCert, provider.MQTT.TLSClientKey)
+		tlsConfig, err = createTLSConfig(provider.Mqtt.TlsCa, provider.Mqtt.TlsClientCert, provider.Mqtt.TlsClientKey)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	headers := make(http.Header, len(provider.MQTT.Headers))
-	for k, v := range provider.MQTT.Headers {
+	headers := make(http.Header, len(provider.Mqtt.Headers))
+	for k, v := range provider.Mqtt.Headers {
 		headers.Set(k, v)
 	}
 	settings := Settings{
-		URL:      provider.MQTT.ServerURL,
-		ClientID: provider.MQTT.ClientID,
-		Username: provider.MQTT.Username,
-		Password: provider.MQTT.Password,
+		URL:      provider.Mqtt.ServerUrl,
+		ClientID: provider.Mqtt.ClientId,
+		Username: provider.Mqtt.Username,
+		Password: provider.Mqtt.Password,
 		TLS:      tlsConfig,
 		HTTPHeadersProvider: func(ctx context.Context) (http.Header, error) {
 			return headers, nil
 		},
-		PublishQoS:   byte(provider.MQTT.PublishQoS),
-		SubscribeQoS: byte(provider.MQTT.SubscribeQoS),
+		PublishQoS:   byte(provider.Mqtt.PublishQos),
+		SubscribeQoS: byte(provider.Mqtt.SubscribeQos),
 	}
 	return OpenConnection(ctx, settings, target)
 }
@@ -265,5 +267,5 @@ func adaptURLScheme(initial string) (string, error) {
 }
 
 func init() {
-	provider.RegisterProvider(&ttnpb.ApplicationPubSub_MQTT{}, impl{})
+	provider.RegisterProvider(&ttnpb.ApplicationPubSub_Mqtt{}, impl{})
 }

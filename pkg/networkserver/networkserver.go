@@ -20,7 +20,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
@@ -28,6 +27,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/interop"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/random"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
@@ -105,6 +105,7 @@ type NetworkServer struct {
 	devices DeviceRegistry
 
 	netID      types.NetID
+	clusterID  string
 	newDevAddr newDevAddrFunc
 
 	applicationServers *sync.Map // string -> *applicationUpStream
@@ -124,16 +125,27 @@ type NetworkServer struct {
 
 	deviceKEKLabel        string
 	downlinkQueueCapacity int
+
+	scheduledDownlinkMatcher ScheduledDownlinkMatcher
 }
 
 // Option configures the NetworkServer.
 type Option func(ns *NetworkServer)
 
-var DefaultOptions []Option
+var (
+	DefaultOptions []Option
+
+	processTaskBackoff = &component.TaskBackoffConfig{
+		Jitter:       component.DefaultTaskBackoffConfig.Jitter,
+		IntervalFunc: component.MakeTaskBackoffIntervalFunc(true, component.DefaultTaskBackoffResetDuration, component.DefaultTaskBackoffIntervals[:]...),
+	}
+)
 
 const (
-	downlinkProcessTaskName = "process_downlink"
-	maxInt                  = int(^uint(0) >> 1)
+	applicationUplinkProcessTaskName = "process_application_uplink"
+	downlinkProcessTaskName          = "process_downlink"
+
+	maxInt = int(^uint(0) >> 1)
 )
 
 // New returns new NetworkServer.
@@ -151,6 +163,8 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 		panic(errInvalidConfiguration.WithCause(errors.New("DownlinkTasks is not specified")))
 	case conf.UplinkDeduplicator == nil:
 		panic(errInvalidConfiguration.WithCause(errors.New("UplinkDeduplicator is not specified")))
+	case conf.ScheduledDownlinkMatcher == nil:
+		panic(errInvalidConfiguration.WithCause(errors.New("ScheduledDownlinkMatcher is not specified")))
 	case conf.DownlinkQueueCapacity < 0:
 		return nil, errInvalidConfiguration.WithCause(errors.New("Downlink queue capacity must be greater than or equal to 0"))
 	case conf.DownlinkQueueCapacity > maxInt/2:
@@ -182,6 +196,13 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 			return c.GetTLSClientConfig(ctx)
 		}
 		interopConf.BlobConfig = c.GetBaseConfig(ctx).Blob
+		if interopConf.HTTPClient == nil {
+			httpClient, err := c.HTTPClient(ctx)
+			if err != nil {
+				return nil, err
+			}
+			interopConf.HTTPClient = httpClient
+		}
 
 		interopCl, err = interop.NewClient(ctx, interopConf)
 		if err != nil {
@@ -190,23 +211,26 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 	}
 
 	ns := &NetworkServer{
-		Component:             c,
-		ctx:                   ctx,
-		netID:                 conf.NetID,
-		newDevAddr:            makeNewDevAddrFunc(devAddrPrefixes...),
-		applicationServers:    &sync.Map{},
-		applicationUplinks:    conf.ApplicationUplinkQueue.Queue,
-		deduplicationWindow:   makeWindowDurationFunc(conf.DeduplicationWindow),
-		collectionWindow:      makeWindowDurationFunc(conf.DeduplicationWindow + conf.CooldownWindow),
-		devices:               wrapEndDeviceRegistryWithReplacedFields(conf.Devices, replacedEndDeviceFields...),
-		downlinkTasks:         conf.DownlinkTasks,
-		downlinkPriorities:    downlinkPriorities,
-		defaultMACSettings:    conf.DefaultMACSettings.Parse(),
-		interopClient:         interopCl,
-		uplinkDeduplicator:    conf.UplinkDeduplicator,
-		deviceKEKLabel:        conf.DeviceKEKLabel,
-		downlinkQueueCapacity: conf.DownlinkQueueCapacity,
+		Component:                c,
+		ctx:                      ctx,
+		netID:                    conf.NetID,
+		clusterID:                conf.ClusterID,
+		newDevAddr:               makeNewDevAddrFunc(devAddrPrefixes...),
+		applicationServers:       &sync.Map{},
+		applicationUplinks:       conf.ApplicationUplinkQueue.Queue,
+		deduplicationWindow:      makeWindowDurationFunc(conf.DeduplicationWindow),
+		collectionWindow:         makeWindowDurationFunc(conf.DeduplicationWindow + conf.CooldownWindow),
+		devices:                  wrapEndDeviceRegistryWithReplacedFields(conf.Devices, replacedEndDeviceFields...),
+		downlinkTasks:            conf.DownlinkTasks,
+		downlinkPriorities:       downlinkPriorities,
+		defaultMACSettings:       conf.DefaultMACSettings.Parse(),
+		interopClient:            interopCl,
+		uplinkDeduplicator:       conf.UplinkDeduplicator,
+		deviceKEKLabel:           conf.DeviceKEKLabel,
+		downlinkQueueCapacity:    conf.DownlinkQueueCapacity,
+		scheduledDownlinkMatcher: conf.ScheduledDownlinkMatcher,
 	}
+	ctx = ns.Context()
 
 	if len(opts) == 0 {
 		opts = DefaultOptions
@@ -224,16 +248,18 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.AsNs", cluster.HookName, c.ClusterAuthUnaryHook())
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.Ns", cluster.HookName, c.ClusterAuthUnaryHook())
 
-	ns.RegisterTask(&component.TaskConfig{
-		Context: ns.Context(),
-		ID:      downlinkProcessTaskName,
-		Func:    ns.processDownlinkTask,
-		Restart: component.TaskRestartAlways,
-		Backoff: &component.TaskBackoffConfig{
-			Jitter:       component.DefaultTaskBackoffConfig.Jitter,
-			IntervalFunc: component.MakeTaskBackoffIntervalFunc(true, component.DefaultTaskBackoffResetDuration, component.DefaultTaskBackoffIntervals[:]...),
-		},
-	})
+	for id, f := range map[string]func(context.Context) error{
+		applicationUplinkProcessTaskName: ns.processApplicationUplinkTask,
+		downlinkProcessTaskName:          ns.processDownlinkTask,
+	} {
+		ns.RegisterTask(&component.TaskConfig{
+			Context: ctx,
+			ID:      id,
+			Func:    f,
+			Restart: component.TaskRestartAlways,
+			Backoff: processTaskBackoff,
+		})
+	}
 	c.RegisterGRPC(ns)
 	return ns, nil
 }

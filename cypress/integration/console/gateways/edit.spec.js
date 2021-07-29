@@ -36,11 +36,11 @@ describe('Gateway general settings', () => {
         key: 'value',
       },
     }
-    cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
     cy.createGateway(gateway, user.ids.user_id)
   })
 
   it('displays newly created gateway values', () => {
+    cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
     cy.visit(
       `${Cypress.config('consoleRootPath')}/gateways/${gateway.ids.gateway_id}/general-settings`,
     )
@@ -72,23 +72,38 @@ describe('Gateway general settings', () => {
     cy.findDescriptionByLabelText('Gateway Server address')
       .should('contain', 'The address of the Gateway Server to connect to')
       .and('be.visible')
-    cy.findByLabelText('Gateway status')
-      .should('be.visible')
+    cy.findByLabelText('Require authenticated connection')
+      .should('exist')
       .and('have.attr', 'value', 'false')
+    cy.findDescriptionByLabelText('Require authenticated connection')
+      .should(
+        'contain',
+        'Controls whether this gateway may only connect if it uses an authenticated Basic Station or MQTT connection',
+      )
+      .and('be.visible')
+    cy.findByLabelText('Gateway status').should('exist').and('have.attr', 'value', 'false')
     cy.findDescriptionByLabelText('Gateway status')
-      .should('contain', 'The status of this gateway may be publicly displayed')
+      .should('contain', 'The status of this gateway may be visible to other users')
+      .and('be.visible')
+    cy.findDescriptionByLabelText('Gateway location')
+      .should(
+        'contain',
+        'The location of this gateway may be visible to other users and on public gateway maps',
+      )
       .and('be.visible')
     cy.findByTestId('key-value-map').within(() => {
-      cy.findByTestId('attributes[0].key')
-        .should('be.visible')
-        .and('have.attr', 'value', 'key')
+      cy.findByTestId('attributes[0].key').should('be.visible').and('have.attr', 'value', 'key')
       cy.findByTestId('attributes[0].value')
         .should('be.visible')
         .and('have.attr', 'value', gateway.attributes.key)
     })
-    cy.findByLabelText('Automatic updates')
-      .should('be.visible')
-      .and('have.attr', 'value', 'false')
+    cy.findByLabelText('Automatic updates').should('exist').and('have.attr', 'value', 'false')
+    cy.findDescriptionByLabelText('LoRa Basics Station LNS Authentication Key')
+      .should(
+        'contain',
+        'The Authentication Key for Lora Basics Station LNS connections. This field is ignored for other gateways.',
+      )
+      .and('be.visible')
     cy.findDescriptionByLabelText('Automatic updates')
       .should('contain', 'Gateway can be updated automatically')
       .and('be.visible')
@@ -105,10 +120,8 @@ describe('Gateway general settings', () => {
     cy.findByLabelText('Frequency plan').should('not.exist')
     cy.findByRole('button', { name: 'Expand' }).click()
     cy.findByLabelText('Frequency plan').should('be.visible')
-    cy.findByLabelText('Duty cycle')
-      .should('be.visible')
-      .and('have.attr', 'value', 'true')
-    cy.findDescriptionByLabelText('Duty cycle').should('be.visible')
+    cy.findByLabelText('Enforce duty cycle').should('exist').and('have.attr', 'value', 'true')
+    cy.findDescriptionByLabelText('Enforce duty cycle').should('be.visible')
     cy.findByTestId('schedule_anytime_delay')
       .should('be.visible')
       .and('have.attr', 'value', '0.523')
@@ -123,7 +136,7 @@ describe('Gateway general settings', () => {
     cy.findByTestId('modal-window')
       .should('be.visible')
       .within(() => {
-        cy.findByText('Delete gateway', { selector: 'h1' }).should('be.visible')
+        cy.findByText('Confirm deletion', { selector: 'h1' }).should('be.visible')
 
         cy.findByRole('button', { name: /Cancel/ }).should('be.visible')
         cy.findByRole('button', { name: /Delete gateway/ }).should('be.visible')

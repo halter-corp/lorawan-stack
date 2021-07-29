@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createRequestActions } from './lib'
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
 
 export const GET_APP_LINK_BASE = 'GET_APPLICATION_LINK'
 export const [
@@ -22,15 +22,18 @@ export const [
     success: getApplicationLinkSuccess,
     failure: getApplicationLinkFailure,
   },
-] = createRequestActions(GET_APP_LINK_BASE, id => ({ id }), (id, selector) => ({ selector }))
+] = createRequestActions(
+  GET_APP_LINK_BASE,
+  id => ({ id }),
+  (id, selector) => ({ selector }),
+)
 
 export const UPDATE_APP_LINK_SUCCESS = 'UPDATE_APPLICATION_LINK_SUCCESS'
 export const DELETE_APP_LINK_SUCCESS = 'DELETE_APPLICATION_LINK_SUCCESS'
 
-export const updateApplicationLinkSuccess = (link, stats) => ({
+export const updateApplicationLinkSuccess = link => ({
   type: UPDATE_APP_LINK_SUCCESS,
   link,
-  stats,
 })
 
 export const deleteApplicationLinkSuccess = () => ({ type: DELETE_APP_LINK_SUCCESS })

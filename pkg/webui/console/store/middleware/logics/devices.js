@@ -12,22 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { STACK_COMPONENTS_MAP } from 'ttn-lw'
+
 import api from '@console/api'
+
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
 import * as devices from '@console/store/actions/devices'
 import * as deviceTemplateFormats from '@console/store/actions/device-template-formats'
 
 import createEventsConnectLogics from './events'
-import createRequestLogic from './lib'
 
 const getDeviceLogic = createRequestLogic({
   type: devices.GET_DEV,
-  async process({ action }, dispatch) {
+  process: async ({ action }, dispatch) => {
     const {
       payload: { appId, deviceId },
-      meta: { selector, options },
+      meta: { selector },
     } = action
-    const dev = await api.device.get(appId, deviceId, selector, options)
+    const dev = await api.device.get(appId, deviceId, selector)
     dispatch(devices.startDeviceEventsStream(dev.ids))
     return dev
   },
@@ -36,7 +39,7 @@ const getDeviceLogic = createRequestLogic({
 const updateDeviceLogic = createRequestLogic(
   {
     type: devices.UPDATE_DEV,
-    async process({ action }) {
+    process: async ({ action }) => {
       const {
         payload: { appId, deviceId, patch },
       } = action
@@ -50,12 +53,12 @@ const updateDeviceLogic = createRequestLogic(
 
 const getDevicesListLogic = createRequestLogic({
   type: devices.GET_DEVICES_LIST,
-  async process({ action }) {
+  process: async ({ action }) => {
     const {
       id: appId,
       params: { page, limit, order, query },
     } = action.payload
-    const { selectors } = action.meta
+    const { selectors, options } = action.meta
 
     const data = query
       ? await api.devices.search(
@@ -70,13 +73,26 @@ const getDevicesListLogic = createRequestLogic({
         )
       : await api.devices.list(appId, { page, limit, order }, selectors)
 
+    if (options.withLastSeen) {
+      const macStateFetching = data.end_devices.map(async device => {
+        const deviceResult = await api.device.get(appId, device.ids.device_id, 'mac_state', [
+          STACK_COMPONENTS_MAP.ns,
+        ])
+        if ('mac_state' in deviceResult) {
+          device.mac_state = deviceResult.mac_state
+        }
+      })
+
+      await Promise.all(macStateFetching)
+    }
+
     return { entities: data.end_devices, totalCount: data.totalCount }
   },
 })
 
 const getDeviceTemplateFormatsLogic = createRequestLogic({
   type: deviceTemplateFormats.GET_DEVICE_TEMPLATE_FORMATS,
-  async process() {
+  process: async () => {
     const formats = await api.deviceTemplates.listFormats()
     return formats
   },

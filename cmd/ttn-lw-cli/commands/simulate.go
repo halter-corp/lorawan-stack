@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
 	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
 	"go.thethings.network/lorawan-stack/v3/pkg/encoding/lorawan"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -50,6 +51,11 @@ type simulateMetadataParams struct {
 	DataRateIndex     uint32           `protobuf:"varint,12,opt,name=data_rate_index,proto3" json:"data_rate_index,omitempty"`
 }
 
+var (
+	errDataRate  = errors.DefineInvalidArgument("data_rate", "data rate is invalid")
+	errFrequency = errors.DefineInvalidArgument("frequency", "frequency is invalid")
+)
+
 func (m *simulateMetadataParams) setDefaults() error {
 	if m.Time == nil || m.Time.IsZero() {
 		now := time.Now()
@@ -62,7 +68,7 @@ func (m *simulateMetadataParams) setDefaults() error {
 		m.BandID = band.EU_863_870
 	}
 	if m.LoRaWANPHYVersion == ttnpb.PHY_UNKNOWN {
-		m.LoRaWANPHYVersion = ttnpb.PHY_V1_0_2_REV_B
+		m.LoRaWANPHYVersion = ttnpb.RP001_V1_0_2_REV_B
 	}
 	phy, err := band.GetByID(m.BandID)
 	if err != nil {
@@ -75,31 +81,43 @@ func (m *simulateMetadataParams) setDefaults() error {
 	if m.Frequency == 0 {
 		m.Frequency = phy.UplinkChannels[int(m.ChannelIndex)].Frequency
 	} else if m.ChannelIndex == 0 {
-		for i, ch := range phy.UplinkChannels {
-			if ch.Frequency == m.Frequency {
-				m.ChannelIndex = uint32(i)
-				break
+		chIdx, err := func() (uint32, error) {
+			for i, ch := range phy.UplinkChannels {
+				if ch.Frequency == m.Frequency {
+					return uint32(i), nil
+				}
 			}
+			return 0, errFrequency.New()
+		}()
+		if err != nil {
+			return err
 		}
+		m.ChannelIndex = chIdx
 	}
 	if m.Bandwidth == 0 || m.SpreadingFactor == 0 {
 		drIdx := ttnpb.DataRateIndex(m.DataRateIndex)
-		if drIdx < phy.UplinkChannels[0].MinDataRate || drIdx > phy.UplinkChannels[0].MaxDataRate {
-			drIdx = phy.UplinkChannels[0].MaxDataRate
+		if drIdx < phy.UplinkChannels[m.ChannelIndex].MinDataRate || drIdx > phy.UplinkChannels[m.ChannelIndex].MaxDataRate {
+			drIdx = phy.UplinkChannels[m.ChannelIndex].MaxDataRate
 		}
 		dr, ok := phy.DataRates[drIdx]
 		if !ok {
 			return errInvalidDataRateIndex
 		}
-		lora := dr.Rate.GetLoRa()
+		lora := dr.Rate.GetLora()
 		m.SpreadingFactor, m.Bandwidth = lora.SpreadingFactor, lora.Bandwidth
 	} else if m.DataRateIndex == 0 {
-		for i, dr := range phy.DataRates {
-			if lora := dr.Rate.GetLoRa(); lora != nil && lora.SpreadingFactor == m.SpreadingFactor && lora.Bandwidth == m.Bandwidth {
-				m.DataRateIndex = uint32(i)
-				break
+		drIdx, err := func() (uint32, error) {
+			for i, dr := range phy.DataRates {
+				if lora := dr.Rate.GetLora(); lora != nil && lora.SpreadingFactor == m.SpreadingFactor && lora.Bandwidth == m.Bandwidth {
+					return uint32(i), nil
+				}
 			}
+			return 0, errDataRate.New()
+		}()
+		if err != nil {
+			return err
 		}
+		m.DataRateIndex = drIdx
 	}
 	return nil
 }
@@ -135,7 +153,18 @@ var (
 	simulateUplinkFlags      = util.FieldFlags(&simulateMetadataParams{})
 	simulateJoinRequestFlags = util.FieldFlags(&simulateJoinRequestParams{})
 	simulateDataUplinkFlags  = util.FieldFlags(&simulateDataUplinkParams{})
+
+	applicationUplinkFlags = util.FieldFlags(&ttnpb.ApplicationUplink{})
+
+	errApplicationServerDisabled = errors.DefineFailedPrecondition("application_server_disabled", "Application Server is disabled")
 )
+
+func simulateFlags() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.String("gateway-api-key", "", "API key used for linking the gateway (optional when using user authentication)")
+	flagSet.Bool("dry-run", false, "print the message instead of sending it")
+	return flagSet
+}
 
 func simulateDownlinkFlags() *pflag.FlagSet {
 	flagSet := &pflag.FlagSet{}
@@ -161,13 +190,15 @@ func simulate(cmd *cobra.Command, forUp func(*ttnpb.UplinkMessage) error, forDow
 		return err
 	}
 
-	uplinkParams.setDefaults()
+	if err := uplinkParams.setDefaults(); err != nil {
+		return err
+	}
 
 	upMsg := &ttnpb.UplinkMessage{
 		Settings: ttnpb.TxSettings{
 			DataRate: ttnpb.DataRate{
-				Modulation: &ttnpb.DataRate_LoRa{
-					LoRa: &ttnpb.LoRaDataRate{
+				Modulation: &ttnpb.DataRate_Lora{
+					Lora: &ttnpb.LoRaDataRate{
 						Bandwidth:       uplinkParams.Bandwidth,
 						SpreadingFactor: uplinkParams.SpreadingFactor,
 					},
@@ -209,7 +240,7 @@ func simulate(cmd *cobra.Command, forUp func(*ttnpb.UplinkMessage) error, forDow
 	linkCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	md := rpcmetadata.MD{
-		ID: gtwID.GatewayID,
+		ID: gtwID.GatewayId,
 	}
 	if apiKey, _ := cmd.Flags().GetString("gateway-api-key"); apiKey != "" {
 		md.AuthType = "Bearer"
@@ -259,7 +290,7 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 	if err != nil {
 		return err
 	}
-	phy, err = phy.Version(dev.LoRaWANPHYVersion)
+	phy, err = phy.Version(dev.LorawanPhyVersion)
 	if err != nil {
 		return err
 	}
@@ -275,15 +306,15 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 		var devEUI, joinEUI types.EUI64
 		var devNonce types.DevNonce
 		if joinReq := lastUpMsg.GetJoinRequestPayload(); joinReq != nil {
-			devEUI, joinEUI = joinReq.DevEUI, joinReq.JoinEUI
+			devEUI, joinEUI = joinReq.DevEui, joinReq.JoinEui
 			devNonce = joinReq.DevNonce
 		} else if rejoinReq := lastUpMsg.GetRejoinRequestPayload(); rejoinReq != nil {
-			devEUI, joinEUI = rejoinReq.DevEUI, rejoinReq.JoinEUI
+			devEUI, joinEUI = rejoinReq.DevEui, rejoinReq.JoinEui
 			devNonce = types.DevNonce{byte(rejoinReq.RejoinCnt), byte(rejoinReq.RejoinCnt >> 8)}
 		}
 
 		var key types.AES128Key
-		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
+		if dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
 			key = *dev.GetRootKeys().GetNwkKey().Key
 		} else {
 			key = *dev.GetRootKeys().GetAppKey().Key
@@ -302,13 +333,13 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 		}
 
 		var expectedMIC [4]byte
-		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
+		if dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
 			jsIntKey := crypto.DeriveJSIntKey(key, devEUI)
 			// TODO: Support RejoinRequest (https://github.com/TheThingsNetwork/lorawan-stack/issues/536)
 			expectedMIC, err = crypto.ComputeJoinAcceptMIC(
 				jsIntKey,
 				0xFF,
-				*dev.JoinEUI,
+				*dev.JoinEui,
 				lastUpMsg.GetJoinRequestPayload().DevNonce,
 				append([]byte{downMsg.RawPayload[0]}, joinAcceptBytes...),
 			)
@@ -327,7 +358,7 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 
 		dev.DevAddr, dev.Session.DevAddr = &joinAcceptPayload.DevAddr, joinAcceptPayload.DevAddr
 
-		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
+		if dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) >= 0 && joinAcceptPayload.OptNeg {
 			appSKey := crypto.DeriveAppSKey(*dev.GetRootKeys().GetAppKey().Key, joinAcceptPayload.JoinNonce, joinEUI, devNonce)
 			dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
 			logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
@@ -344,11 +375,11 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 			dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSEncKey}
 			logger.Infof("Derived NwkSEncKey %X (%s)", nwkSEncKey[:], base64.StdEncoding.EncodeToString(nwkSEncKey[:]))
 		} else {
-			appSKey := crypto.DeriveLegacyAppSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
+			appSKey := crypto.DeriveLegacyAppSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetId, devNonce)
 			dev.Session.SessionKeys.AppSKey = &ttnpb.KeyEnvelope{Key: &appSKey}
 			logger.Infof("Derived AppSKey %X (%s)", appSKey[:], base64.StdEncoding.EncodeToString(appSKey[:]))
 
-			nwkSKey := crypto.DeriveLegacyNwkSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetID, devNonce)
+			nwkSKey := crypto.DeriveLegacyNwkSKey(key, joinAcceptPayload.JoinNonce, joinAcceptPayload.NetId, devNonce)
 			dev.Session.SessionKeys.FNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
 			dev.Session.SessionKeys.SNwkSIntKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
 			dev.Session.SessionKeys.NwkSEncKey = &ttnpb.KeyEnvelope{Key: &nwkSKey}
@@ -358,7 +389,7 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 		macPayload := downMsg.Payload.GetMACPayload()
 
 		var expectedMIC [4]byte
-		if dev.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) < 0 {
+		if dev.LorawanVersion.Compare(ttnpb.MAC_V1_1) < 0 {
 			expectedMIC, err = crypto.ComputeLegacyDownlinkMIC(*dev.Session.SessionKeys.GetFNwkSIntKey().Key, macPayload.DevAddr, macPayload.FCnt, downMsg.RawPayload[:len(downMsg.RawPayload)-4])
 		} else {
 			var confFCnt uint32
@@ -379,7 +410,7 @@ func processDownlink(dev *ttnpb.EndDevice, lastUpMsg *ttnpb.Message, downMsg *tt
 			payloadKey = *dev.Session.SessionKeys.GetNwkSEncKey().Key
 		} else {
 			payloadKey = *dev.Session.SessionKeys.GetAppSKey().Key
-			if len(macPayload.FOpts) > 0 && dev.LoRaWANVersion.EncryptFOpts() {
+			if len(macPayload.FOpts) > 0 && dev.LorawanVersion.EncryptFOpts() {
 				fOpts, err := crypto.DecryptDownlink(*dev.Session.SessionKeys.GetNwkSEncKey().Key, macPayload.DevAddr, dev.Session.LastNFCntDown, macPayload.FOpts, true)
 				if err != nil {
 					return err
@@ -417,18 +448,20 @@ var (
 	simulateCommand = &cobra.Command{
 		Use:     "simulate",
 		Aliases: []string{"sim"},
-		Short:   "Simulation commands (EXPERIMENTAL)",
-		Hidden:  true,
+		Short:   "Simulation commands",
 	}
 	simulateJoinRequestCommand = &cobra.Command{
-		Use:   "join-request",
-		Short: "Simulate a join request (EXPERIMENTAL)",
+		Use:    "gateway-join-request",
+		Short:  "Simulates a join request from an end device, sent through a simulated gateway connection (EXPERIMENTAL)",
+		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var uplinkParams simulateMetadataParams
 			if err := util.SetFields(&uplinkParams, simulateUplinkFlags); err != nil {
 				return err
 			}
-			uplinkParams.setDefaults()
+			if err := uplinkParams.setDefaults(); err != nil {
+				return err
+			}
 			var joinParams simulateJoinRequestParams
 			if err := util.SetFields(&joinParams, simulateJoinRequestFlags); err != nil {
 				return err
@@ -452,8 +485,8 @@ var (
 						},
 						Payload: &ttnpb.Message_JoinRequestPayload{
 							JoinRequestPayload: &ttnpb.JoinRequestPayload{
-								JoinEUI:  joinParams.JoinEUI,
-								DevEUI:   joinParams.DevEUI,
+								JoinEui:  joinParams.JoinEUI,
+								DevEui:   joinParams.DevEUI,
 								DevNonce: joinParams.DevNonce,
 							},
 						},
@@ -479,12 +512,12 @@ var (
 				},
 				func(downMsg *ttnpb.DownlinkMessage) error {
 					if err := processDownlink(&ttnpb.EndDevice{
-						LoRaWANVersion:    uplinkParams.LoRaWANVersion,
-						LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
+						LorawanVersion:    uplinkParams.LoRaWANVersion,
+						LorawanPhyVersion: uplinkParams.LoRaWANPHYVersion,
 						FrequencyPlanID:   uplinkParams.BandID,
 						EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-							JoinEUI: &joinParams.JoinEUI,
-							DevEUI:  &joinParams.DevEUI,
+							JoinEui: &joinParams.JoinEUI,
+							DevEui:  &joinParams.DevEUI,
 						},
 						RootKeys: &ttnpb.RootKeys{
 							NwkKey: &ttnpb.KeyEnvelope{Key: &joinParams.NwkKey},
@@ -502,14 +535,17 @@ var (
 	}
 
 	simulateDataUplinkCommand = &cobra.Command{
-		Use:   "uplink",
-		Short: "Simulate a data uplink (EXPERIMENTAL)",
+		Use:    "gateway-uplink",
+		Short:  "Simulate an uplink message from an end device, sent through a simulated gateway connection (EXPERIMENTAL)",
+		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var uplinkParams simulateMetadataParams
 			if err := util.SetFields(&uplinkParams, simulateUplinkFlags); err != nil {
 				return err
 			}
-			uplinkParams.setDefaults()
+			if err := uplinkParams.setDefaults(); err != nil {
+				return err
+			}
 			var dataUplinkParams simulateDataUplinkParams
 			if err := util.SetFields(&dataUplinkParams, simulateDataUplinkFlags); err != nil {
 				return err
@@ -572,8 +608,8 @@ var (
 								FHDR: ttnpb.FHDR{
 									DevAddr: dataUplinkParams.DevAddr,
 									FCtrl: ttnpb.FCtrl{
-										ADR:       dataUplinkParams.ADR,
-										ADRAckReq: dataUplinkParams.ADRAckReq,
+										Adr:       dataUplinkParams.ADR,
+										AdrAckReq: dataUplinkParams.ADRAckReq,
 										Ack:       dataUplinkParams.Ack,
 									},
 									FCnt:  dataUplinkParams.FCnt,
@@ -609,6 +645,9 @@ var (
 							buf,
 						)
 					}
+					if err != nil {
+						return err
+					}
 					dataUplink.MIC = mic[:]
 					upMsg.RawPayload = append(buf, dataUplink.MIC...)
 					return nil
@@ -616,8 +655,8 @@ var (
 				func(downMsg *ttnpb.DownlinkMessage) error {
 					lastNFCntDown, _ := cmd.Flags().GetUint32("n_f_cnt_down")
 					if err := processDownlink(&ttnpb.EndDevice{
-						LoRaWANVersion:    uplinkParams.LoRaWANVersion,
-						LoRaWANPHYVersion: uplinkParams.LoRaWANPHYVersion,
+						LorawanVersion:    uplinkParams.LoRaWANVersion,
+						LorawanPhyVersion: uplinkParams.LoRaWANPHYVersion,
 						FrequencyPlanID:   uplinkParams.BandID,
 						Session: &ttnpb.Session{
 							LastNFCntDown: lastNFCntDown,
@@ -637,6 +676,38 @@ var (
 			)
 		},
 	}
+	simulateApplicationUplinkCommand = &cobra.Command{
+		Use:   "application-uplink [application-id] [device-id]",
+		Short: "Simulate an application-layer uplink message from an end device, sent directly to the Application Server",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			devID, err := getEndDeviceID(cmd.Flags(), args, true)
+			if err != nil {
+				return err
+			}
+			if !config.ApplicationServerEnabled {
+				return errApplicationServerDisabled.New()
+			}
+			uplinkMessage := &ttnpb.ApplicationUplink{}
+			up := &ttnpb.ApplicationUp{
+				EndDeviceIdentifiers: *devID,
+				Up: &ttnpb.ApplicationUp_UplinkMessage{
+					UplinkMessage: uplinkMessage,
+				},
+			}
+			if err := util.SetFields(uplinkMessage, applicationUplinkFlags); err != nil {
+				return err
+			}
+			cc, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			if uplinkMessage.ReceivedAt.IsZero() {
+				uplinkMessage.ReceivedAt = time.Now()
+			}
+			_, err = ttnpb.NewAppAsClient(cc).SimulateUplink(ctx, up)
+			return err
+		},
+	}
 )
 
 func init() {
@@ -644,6 +715,7 @@ func init() {
 	simulateJoinRequestCommand.Flags().AddFlagSet(simulateUplinkFlags)
 	simulateJoinRequestCommand.Flags().AddFlagSet(simulateDownlinkFlags())
 	simulateJoinRequestCommand.Flags().AddFlagSet(simulateJoinRequestFlags)
+	simulateJoinRequestCommand.Flags().AddFlagSet(simulateFlags())
 
 	simulateCommand.AddCommand(simulateJoinRequestCommand)
 
@@ -652,10 +724,14 @@ func init() {
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDownlinkFlags())
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDataUplinkFlags)
 	simulateDataUplinkCommand.Flags().AddFlagSet(simulateDataDownlinkFlags())
+	simulateDataUplinkCommand.Flags().AddFlagSet(simulateFlags())
 
 	simulateCommand.AddCommand(simulateDataUplinkCommand)
 
-	simulateCommand.PersistentFlags().String("gateway-api-key", "", "API key used for linking the gateway (optional when using user authentication)")
-	simulateCommand.PersistentFlags().Bool("dry-run", false, "print the message instead of sending it")
+	simulateApplicationUplinkCommand.Flags().AddFlagSet(endDeviceIDFlags())
+	simulateApplicationUplinkCommand.Flags().AddFlagSet(applicationUplinkFlags)
+
+	simulateCommand.AddCommand(simulateApplicationUplinkCommand)
+
 	Root.AddCommand(simulateCommand)
 }

@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
@@ -34,9 +34,10 @@ func TestOrganizationStore(t *testing.T) {
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
 		prepareTest(db, &Account{}, &Organization{}, &Attribute{})
 		store := GetOrganizationStore(db)
+		s := newStore(db)
 
 		created, err := store.CreateOrganization(ctx, &ttnpb.Organization{
-			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationID: "foo"},
+			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationId: "foo"},
 			Name:                    "Foo Organization",
 			Description:             "The Amazing Foo Organization",
 			Attributes: map[string]string{
@@ -48,7 +49,7 @@ func TestOrganizationStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(created, should.NotBeNil) {
-			a.So(created.OrganizationID, should.Equal, "foo")
+			a.So(created.OrganizationId, should.Equal, "foo")
 			a.So(created.Name, should.Equal, "Foo Organization")
 			a.So(created.Description, should.Equal, "The Amazing Foo Organization")
 			a.So(created.Attributes, should.HaveLength, 3)
@@ -56,11 +57,11 @@ func TestOrganizationStore(t *testing.T) {
 			a.So(created.UpdatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
 		}
 
-		got, err := store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationID: "foo"}, &types.FieldMask{Paths: []string{"name", "attributes"}})
+		got, err := store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"}, &pbtypes.FieldMask{Paths: []string{"name", "attributes"}})
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.OrganizationID, should.Equal, "foo")
+			a.So(got.OrganizationId, should.Equal, "foo")
 			a.So(got.Name, should.Equal, "Foo Organization")
 			a.So(got.Description, should.BeEmpty)
 			a.So(got.Attributes, should.HaveLength, 3)
@@ -69,7 +70,7 @@ func TestOrganizationStore(t *testing.T) {
 		}
 
 		_, err = store.UpdateOrganization(ctx, &ttnpb.Organization{
-			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationID: "bar"},
+			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationId: "bar"},
 		}, nil)
 
 		if a.So(err, should.NotBeNil) {
@@ -77,7 +78,7 @@ func TestOrganizationStore(t *testing.T) {
 		}
 
 		updated, err := store.UpdateOrganization(ctx, &ttnpb.Organization{
-			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationID: "foo"},
+			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationId: "foo"},
 			Name:                    "Foobar Organization",
 			Description:             "The Amazing Foobar Organization",
 			Attributes: map[string]string{
@@ -85,7 +86,7 @@ func TestOrganizationStore(t *testing.T) {
 				"baz": "baz",
 				"qux": "foo",
 			},
-		}, &types.FieldMask{Paths: []string{"description", "attributes"}})
+		}, &pbtypes.FieldMask{Paths: []string{"description", "attributes"}})
 
 		a.So(err, should.BeNil)
 		if a.So(updated, should.NotBeNil) {
@@ -95,11 +96,11 @@ func TestOrganizationStore(t *testing.T) {
 			a.So(updated.UpdatedAt, should.HappenAfter, created.CreatedAt)
 		}
 
-		got, err = store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationID: "foo"}, nil)
+		got, err = store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"}, nil)
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.OrganizationID, should.Equal, created.OrganizationID)
+			a.So(got.OrganizationId, should.Equal, created.OrganizationId)
 			a.So(got.Name, should.Equal, created.Name)
 			a.So(got.Description, should.Equal, updated.Description)
 			a.So(got.Attributes, should.Resemble, updated.Attributes)
@@ -107,26 +108,71 @@ func TestOrganizationStore(t *testing.T) {
 			a.So(got.UpdatedAt, should.Equal, updated.UpdatedAt)
 		}
 
-		list, err := store.FindOrganizations(ctx, nil, &types.FieldMask{Paths: []string{"name"}})
+		list, err := store.FindOrganizations(ctx, nil, &pbtypes.FieldMask{Paths: []string{"name"}})
 
 		a.So(err, should.BeNil)
 		if a.So(list, should.HaveLength, 1) {
 			a.So(list[0].Name, should.EndWith, got.Name)
 		}
 
-		err = store.DeleteOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationID: "foo"})
+		err = store.DeleteOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"})
 
 		a.So(err, should.BeNil)
 
-		got, err = store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationID: "foo"}, nil)
+		got, err = store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"}, nil)
 
 		if a.So(err, should.NotBeNil) {
 			a.So(errors.IsNotFound(err), should.BeTrue)
 		}
 
+		err = store.RestoreOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		got, err = store.GetOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"}, nil)
+
+		a.So(err, should.BeNil)
+
+		err = store.DeleteOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"})
+
+		a.So(err, should.BeNil)
+
 		list, err = store.FindOrganizations(ctx, nil, nil)
 
 		a.So(err, should.BeNil)
 		a.So(list, should.BeEmpty)
+
+		list, err = store.FindOrganizations(WithSoftDeleted(ctx, false), nil, nil)
+
+		a.So(err, should.BeNil)
+		a.So(list, should.NotBeEmpty)
+
+		entity, _ := s.findDeletedEntity(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"}, "id")
+
+		err = store.PurgeOrganization(ctx, &ttnpb.OrganizationIdentifiers{OrganizationId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		var attribute []Attribute
+		s.query(ctx, Attribute{}).Where(&Attribute{
+			EntityID:   entity.PrimaryKey(),
+			EntityType: "organization",
+		}).Find(&attribute)
+
+		a.So(attribute, should.HaveLength, 0)
+
+		// Check that organization ids are released after purge
+		_, err = store.CreateOrganization(ctx, &ttnpb.Organization{
+			OrganizationIdentifiers: ttnpb.OrganizationIdentifiers{OrganizationId: "foo"},
+			Name:                    "Foo Organization",
+			Description:             "The Amazing Foo Organization",
+			Attributes: map[string]string{
+				"foo": "bar",
+				"bar": "baz",
+				"baz": "qux",
+			},
+		})
+
+		a.So(err, should.BeNil)
 	})
 }

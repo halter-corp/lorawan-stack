@@ -16,14 +16,12 @@
   reset-button()
   padding: $cs.s
   margin-left: -($cs.s)
-  margin-bottom: $ls.xxs
 
 .title
   margin: 0
-  margin-right: $cs.xs
   display: inline-block
-  color: $tc-black
   user-select: auto
+  text-decoration: underline
 
 .icon
   color: $c-icon-fill
@@ -31,8 +29,10 @@
   user-select: none
 
 .content
+  margin-top: $ls.xxs
   display: none
   overflow: hidden
 
   &.expanded
     display: block
+    overflow: initial

@@ -14,16 +14,17 @@
 
 import api from '@console/api'
 
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
+
 import * as organizations from '@console/store/actions/organizations'
 
 import { selectUserId } from '@console/store/selectors/user'
 
-import createRequestLogic from './lib'
 import createEventsConnectLogics from './events'
 
 const getOrganizationLogic = createRequestLogic({
   type: organizations.GET_ORG,
-  async process({ action }, dispatch) {
+  process: async ({ action }, dispatch) => {
     const {
       payload: { id },
       meta: { selector },
@@ -37,7 +38,7 @@ const getOrganizationLogic = createRequestLogic({
 const getOrganizationsLogic = createRequestLogic({
   type: organizations.GET_ORGS_LIST,
   latest: true,
-  async process({ action }) {
+  process: async ({ action }) => {
     const {
       params: { page, limit, order, query },
     } = action.payload
@@ -63,7 +64,7 @@ const getOrganizationsLogic = createRequestLogic({
 
 const createOrganizationLogic = createRequestLogic({
   type: organizations.CREATE_ORG,
-  async process({ action, getState }) {
+  process: async ({ action, getState }) => {
     const userId = selectUserId(getState())
 
     return api.organizations.create(userId, action.payload)
@@ -72,7 +73,7 @@ const createOrganizationLogic = createRequestLogic({
 
 const updateOrganizationLogic = createRequestLogic({
   type: organizations.UPDATE_ORG,
-  async process({ action }) {
+  process: async ({ action }) => {
     const { id, patch } = action.payload
 
     const result = await api.organization.update(id, patch)
@@ -83,10 +84,15 @@ const updateOrganizationLogic = createRequestLogic({
 
 const deleteOrganizationLogic = createRequestLogic({
   type: organizations.DELETE_ORG,
-  async process({ action }) {
+  process: async ({ action }) => {
     const { id } = action.payload
+    const { options } = action.meta
 
-    await api.organization.delete(id)
+    if (options.purge) {
+      await api.organization.purge(id)
+    } else {
+      await api.organization.delete(id)
+    }
 
     return { id }
   },
@@ -94,7 +100,7 @@ const deleteOrganizationLogic = createRequestLogic({
 
 const getOrganizationsRightsLogic = createRequestLogic({
   type: organizations.GET_ORGS_RIGHTS_LIST,
-  async process({ action }) {
+  process: async ({ action }) => {
     const { id } = action.payload
     const result = await api.rights.organizations(id)
     return result.rights.sort()

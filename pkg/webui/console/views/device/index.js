@@ -17,6 +17,8 @@ import { connect } from 'react-redux'
 import { Switch, Route } from 'react-router'
 import { Col, Row, Container } from 'react-grid-system'
 
+import CONNECTION_STATUS from '@console/constants/connection-status'
+
 import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
 import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
 import Tabs from '@ttn-lw/components/tabs'
@@ -39,6 +41,7 @@ import DeviceOverview from '@console/views/device-overview'
 import getHostnameFromUrl from '@ttn-lw/lib/host-from-url'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import { selectJsConfig, selectAsConfig } from '@ttn-lw/lib/selectors/env'
+import { combineDeviceIds } from '@ttn-lw/lib/selectors/id'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import {
@@ -49,21 +52,34 @@ import {
 } from '@console/lib/feature-checks'
 
 import { getDevice, stopDeviceEventsStream } from '@console/store/actions/devices'
+import { getApplicationLink } from '@console/store/actions/link'
 
 import {
   selectSelectedDevice,
   selectDeviceFetching,
   selectDeviceError,
+  selectDeviceEventsStatus,
 } from '@console/store/selectors/devices'
-import { selectSelectedApplicationId } from '@console/store/selectors/applications'
+import {
+  selectApplicationLinkFetching,
+  selectSelectedApplicationId,
+} from '@console/store/selectors/applications'
 
 import style from './device.styl'
 
 @connect(
-  function(state, props) {
+  (state, props) => {
     const devId = props.match.params.devId
     const appId = selectSelectedApplicationId(state)
     const device = selectSelectedDevice(state)
+    const eventsInitialized =
+      selectDeviceEventsStatus(state, combineDeviceIds(appId, devId)) !== CONNECTION_STATUS.UNKNOWN
+
+    const fetching =
+      selectDeviceFetching(state) ||
+      selectApplicationLinkFetching(state) ||
+      !eventsInitialized ||
+      !Boolean(device)
 
     return {
       devId,
@@ -72,57 +88,57 @@ import style from './device.styl'
       mayReadKeys: checkFromState(mayReadApplicationDeviceKeys, state),
       mayScheduleDownlinks: checkFromState(mayScheduleDownlinks, state),
       maySendUplink: checkFromState(maySendUplink, state),
-      fetching: selectDeviceFetching(state),
+      fetching,
       error: selectDeviceError(state),
     }
   },
   dispatch => ({
-    getDevice: (appId, devId, selectors, config) =>
-      dispatch(getDevice(appId, devId, selectors, config)),
+    loadDeviceData: (appId, devId, selectors, config) => {
+      dispatch(getDevice(appId, devId, selectors, config))
+      dispatch(getApplicationLink(appId, ['skip_payload_crypto']))
+    },
     stopStream: id => dispatch(stopDeviceEventsStream(id)),
   }),
 )
-@withRequest(
-  ({ appId, devId, getDevice, mayReadKeys }) => {
-    const selector = [
-      'name',
-      'description',
-      'version_ids',
-      'frequency_plan_id',
-      'mac_settings.resets_f_cnt',
-      'mac_settings.supports_32_bit_f_cnt',
-      'resets_join_nonces',
-      'supports_class_c',
-      'supports_join',
-      'lorawan_version',
-      'lorawan_phy_version',
-      'network_server_address',
-      'application_server_address',
-      'join_server_address',
-      'locations',
-      'formatters',
-      'multicast',
-      'net_id',
-      'application_server_id',
-      'application_server_kek_label',
-      'network_server_kek_label',
-      'claim_authentication_code',
-      'recent_uplinks',
-      'recent_downlinks',
-      'attributes',
-      'skip_payload_crypto',
-    ]
+@withRequest(({ appId, devId, loadDeviceData, mayReadKeys }) => {
+  const selector = [
+    'name',
+    'description',
+    'version_ids',
+    'frequency_plan_id',
+    'mac_settings',
+    'resets_join_nonces',
+    'supports_class_b',
+    'supports_class_c',
+    'supports_join',
+    'lorawan_version',
+    'lorawan_phy_version',
+    'network_server_address',
+    'application_server_address',
+    'join_server_address',
+    'locations',
+    'formatters',
+    'multicast',
+    'net_id',
+    'application_server_id',
+    'application_server_kek_label',
+    'network_server_kek_label',
+    'claim_authentication_code',
+    'mac_state.recent_uplinks',
+    'attributes',
+    'skip_payload_crypto',
+    'skip_payload_crypto_override',
+  ]
 
-    if (mayReadKeys) {
-      selector.push('session')
-      selector.push('root_keys')
-    }
+  if (mayReadKeys) {
+    selector.push('session')
+    selector.push('pending_session')
+    selector.push('root_keys')
+  }
 
-    return getDevice(appId, devId, selector, { ignoreNotFound: true })
-  },
-  ({ fetching, device }) => fetching || !Boolean(device),
-)
-@withBreadcrumb('device.single', function(props) {
+  return loadDeviceData(appId, devId, selector, { ignoreNotFound: true })
+})
+@withBreadcrumb('device.single', props => {
   const {
     devId,
     appId,

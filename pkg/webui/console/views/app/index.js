@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,16 @@ import classnames from 'classnames'
 import bind from 'autobind-decorator'
 
 import { ToastContainer } from '@ttn-lw/components/toast'
-import Footer from '@ttn-lw/components/footer'
 import sidebarStyle from '@ttn-lw/components/navigation/side/side.styl'
+
+import Footer from '@ttn-lw/containers/footer'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
 import { withEnv } from '@ttn-lw/lib/components/env'
 import ErrorView from '@ttn-lw/lib/components/error-view'
 import ScrollToTop from '@ttn-lw/lib/components/scroll-to-top'
 import WithAuth from '@ttn-lw/lib/components/with-auth'
+import FullViewError, { FullViewErrorInner } from '@ttn-lw/lib/components/full-view-error'
 
 import Header from '@console/containers/header'
 
@@ -37,12 +39,11 @@ import Applications from '@console/views/applications'
 import Gateways from '@console/views/gateways'
 import Organizations from '@console/views/organizations'
 import Admin from '@console/views/admin'
-import FullViewError, { FullViewErrorInner } from '@console/views/error'
+import User from '@console/views/user'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 import dev from '@ttn-lw/lib/dev'
-
-import { setConnectionStatus } from '@console/store/actions/status'
+import { setStatusOnline } from '@ttn-lw/lib/store/actions/status'
 
 import {
   selectUser,
@@ -51,7 +52,6 @@ import {
   selectUserRights,
   selectUserIsAdmin,
 } from '@console/store/selectors/user'
-import { selectConnectionStatus } from '@console/store/selectors/status'
 
 import style from './app.styl'
 
@@ -65,10 +65,9 @@ const GenericNotFound = () => <FullViewErrorInner error={{ statusCode: 404 }} />
     error: selectUserError(state),
     rights: selectUserRights(state),
     isAdmin: selectUserIsAdmin(state),
-    isOnline: selectConnectionStatus(state),
   }),
   {
-    setConnectionStatus,
+    setStatusOnline,
   },
 )
 @(Component => (dev ? hot(Component) : Component))
@@ -82,9 +81,8 @@ class ConsoleApp extends React.PureComponent {
       replace: PropTypes.func,
     }).isRequired,
     isAdmin: PropTypes.bool,
-    isOnline: PropTypes.bool.isRequired,
     rights: PropTypes.rights,
-    setConnectionStatus: PropTypes.func.isRequired,
+    setStatusOnline: PropTypes.func.isRequired,
     user: PropTypes.user,
   }
   static defaultProps = {
@@ -96,9 +94,9 @@ class ConsoleApp extends React.PureComponent {
 
   @bind
   handleConnectionStatusChange({ type }) {
-    const { setConnectionStatus } = this.props
+    const { setStatusOnline } = this.props
 
-    setConnectionStatus(type === 'online')
+    setStatusOnline(type === 'online')
   }
 
   componentDidMount() {
@@ -118,20 +116,21 @@ class ConsoleApp extends React.PureComponent {
       error,
       rights,
       isAdmin,
-      isOnline,
       history,
       env: {
         siteTitle,
         pageData,
         siteName,
-        config: { supportLink },
+        config: { supportLink, documentationBaseUrl },
       },
     } = this.props
+
+    const header = <Header className={style.header} />
 
     if (pageData && pageData.error) {
       return (
         <ConnectedRouter history={history}>
-          <FullViewError error={pageData.error} />
+          <FullViewError error={pageData.error} header={header} />
         </ConnectedRouter>
       )
     }
@@ -148,7 +147,7 @@ class ConsoleApp extends React.PureComponent {
                 defaultTitle={siteName}
               />
               <div id="modal-container" />
-              <Header className={style.header} />
+              {header}
               <main className={style.main}>
                 <WithAuth
                   user={user}
@@ -169,13 +168,18 @@ class ConsoleApp extends React.PureComponent {
                         <Route path="/gateways" component={Gateways} />
                         <Route path="/organizations" component={Organizations} />
                         <Route path="/admin" component={Admin} />
+                        <Route path="/user" component={User} />
                         <Route component={GenericNotFound} />
                       </Switch>
                     </div>
                   </div>
                 </WithAuth>
               </main>
-              <Footer className={style.footer} supportLink={supportLink} isOnline={isOnline} />
+              <Footer
+                className={style.footer}
+                supportLink={supportLink}
+                documentationLink={documentationBaseUrl}
+              />
             </div>
           </ErrorView>
         </ConnectedRouter>

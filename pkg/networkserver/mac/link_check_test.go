@@ -48,8 +48,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 13,
 								Bandwidth:       250000,
 							},
@@ -73,8 +73,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 12,
 								Bandwidth:       250000,
 							},
@@ -104,8 +104,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 12,
 								Bandwidth:       250000,
 							},
@@ -115,7 +115,7 @@ func TestHandleLinkCheckReq(t *testing.T) {
 				RxMetadata: []*ttnpb.RxMetadata{
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test",
+							GatewayId: "test",
 						},
 						SNR: 25,
 					},
@@ -156,8 +156,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 12,
 								Bandwidth:       250000,
 							},
@@ -167,7 +167,7 @@ func TestHandleLinkCheckReq(t *testing.T) {
 				RxMetadata: []*ttnpb.RxMetadata{
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test",
+							GatewayId: "test",
 						},
 						SNR: 25,
 					},
@@ -208,8 +208,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 12,
 								Bandwidth:       250000,
 							},
@@ -219,19 +219,19 @@ func TestHandleLinkCheckReq(t *testing.T) {
 				RxMetadata: []*ttnpb.RxMetadata{
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test",
+							GatewayId: "test",
 						},
 						SNR: 24,
 					},
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test2",
+							GatewayId: "test2",
 						},
 						SNR: 25,
 					},
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test3",
+							GatewayId: "test3",
 						},
 						SNR: 2,
 					},
@@ -272,8 +272,8 @@ func TestHandleLinkCheckReq(t *testing.T) {
 			Message: &ttnpb.UplinkMessage{
 				Settings: ttnpb.TxSettings{
 					DataRate: ttnpb.DataRate{
-						Modulation: &ttnpb.DataRate_LoRa{
-							LoRa: &ttnpb.LoRaDataRate{
+						Modulation: &ttnpb.DataRate_Lora{
+							Lora: &ttnpb.LoRaDataRate{
 								SpreadingFactor: 12,
 								Bandwidth:       250000,
 							},
@@ -283,28 +283,28 @@ func TestHandleLinkCheckReq(t *testing.T) {
 				RxMetadata: []*ttnpb.RxMetadata{
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test",
+							GatewayId: "test",
 						},
 						SNR: 24,
 					},
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test2",
+							GatewayId: "test2",
 						},
 						SNR: 25,
 					},
 					{
 						GatewayIdentifiers: cluster.PacketBrokerGatewayID,
 						PacketBroker: &ttnpb.PacketBrokerMetadata{
-							ForwarderNetID:    types.NetID{0x0, 0x0, 0x42},
-							ForwarderTenantID: "test",
-							ForwarderID:       "test",
+							ForwarderNetId:     types.NetID{0x0, 0x0, 0x42},
+							ForwarderTenantId:  "test",
+							ForwarderClusterId: "test",
 						},
 						SNR: 26,
 					},
 					{
 						GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-							GatewayID: "test3",
+							GatewayId: "test3",
 						},
 						SNR: 2,
 					},

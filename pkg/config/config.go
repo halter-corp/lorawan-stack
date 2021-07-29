@@ -585,6 +585,9 @@ func (m *Manager) setDefaults(prefix string, flags *pflag.FlagSet, config interf
 				}
 				flags.StringP(name, shorthand, def, description)
 
+			case []RateLimitingProfile:
+				// Can only be set in the config file. Do not add command-line options
+
 			default:
 				fieldValue = reflect.Indirect(fieldValue)
 				switch fieldValue.Kind() {

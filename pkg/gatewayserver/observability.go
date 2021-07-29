@@ -46,11 +46,6 @@ var (
 		events.WithVisibility(ttnpb.RIGHT_GATEWAY_STATUS_READ),
 		events.WithDataType(&ttnpb.GatewayStatus{}),
 	)
-	evtForwardStatus = events.Define(
-		"gs.status.forward", "forward gateway status",
-		events.WithVisibility(ttnpb.RIGHT_GATEWAY_STATUS_READ),
-		events.WithDataType(&ttnpb.GatewayStatus{}),
-	)
 	evtDropStatus = events.Define(
 		"gs.status.drop", "drop gateway status",
 		events.WithVisibility(ttnpb.RIGHT_GATEWAY_STATUS_READ),
@@ -264,12 +259,12 @@ func (m messageMetrics) Collect(ch chan<- prometheus.Metric) {
 }
 
 func registerGatewayConnect(ctx context.Context, ids ttnpb.GatewayIdentifiers, protocol string) {
-	events.Publish(evtGatewayConnect.NewWithIdentifiersAndData(ctx, ids, nil))
+	events.Publish(evtGatewayConnect.NewWithIdentifiersAndData(ctx, &ids, nil))
 	gsMetrics.gatewaysConnected.WithLabelValues(ctx, protocol).Inc()
 }
 
 func registerGatewayDisconnect(ctx context.Context, ids ttnpb.GatewayIdentifiers, protocol string) {
-	events.Publish(evtGatewayDisconnect.NewWithIdentifiersAndData(ctx, ids, nil))
+	events.Publish(evtGatewayDisconnect.NewWithIdentifiersAndData(ctx, &ids, nil))
 	gsMetrics.gatewaysConnected.WithLabelValues(ctx, protocol).Dec()
 }
 
@@ -287,7 +282,6 @@ func registerReceiveStatus(ctx context.Context, gtw *ttnpb.Gateway, status *ttnp
 }
 
 func registerForwardStatus(ctx context.Context, gtw *ttnpb.Gateway, status *ttnpb.GatewayStatus, host string) {
-	events.Publish(evtForwardStatus.NewWithIdentifiersAndData(ctx, gtw, status))
 	gsMetrics.statusForwarded.WithLabelValues(ctx, host).Inc()
 }
 
@@ -311,7 +305,7 @@ func registerReceiveUplink(ctx context.Context, gtw *ttnpb.Gateway, msg *ttnpb.U
 }
 
 func registerForwardUplink(ctx context.Context, gtw *ttnpb.Gateway, msg *ttnpb.UplinkMessage, host string) {
-	events.Publish(evtForwardUp.NewWithIdentifiersAndData(ctx, gtw, nil))
+	events.Publish(evtForwardUp.NewWithIdentifiersAndData(ctx, gtw, host))
 	gsMetrics.uplinkForwarded.WithLabelValues(ctx, host).Inc()
 }
 
@@ -336,7 +330,7 @@ func registerSendDownlink(ctx context.Context, gtw *ttnpb.Gateway, msg *ttnpb.Do
 
 func registerSuccessDownlink(ctx context.Context, gtw *ttnpb.Gateway, protocol string) {
 	events.Publish(evtTxSuccessDown.NewWithIdentifiersAndData(ctx, gtw, nil))
-	gsMetrics.downlinkSent.WithLabelValues(ctx, protocol).Inc()
+	gsMetrics.downlinkTxSucceeded.WithLabelValues(ctx, protocol).Inc()
 }
 
 func registerFailDownlink(ctx context.Context, gtw *ttnpb.Gateway, ack *ttnpb.TxAcknowledgment, protocol string) {

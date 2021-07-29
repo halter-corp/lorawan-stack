@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ import { defineMessages } from 'react-intl'
 import { connect } from 'react-redux'
 import { replace } from 'connected-react-router'
 import { bindActionCreators } from 'redux'
+import { isEqual } from 'lodash'
+
+import DeleteModalButton from '@ttn-lw/console/components/delete-modal-button'
 
 import PageTitle from '@ttn-lw/components/page-title'
 import { withBreadcrumb } from '@ttn-lw/components/breadcrumbs/context'
@@ -26,12 +29,11 @@ import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
 import Form from '@ttn-lw/components/form'
 import Input from '@ttn-lw/components/input'
 import SubmitButton from '@ttn-lw/components/submit-button'
-import ModalButton from '@ttn-lw/components/button/modal-button'
 import toast from '@ttn-lw/components/toast'
 import SubmitBar from '@ttn-lw/components/submit-bar'
 import KeyValueMap from '@ttn-lw/components/key-value-map'
 
-import Message from '@ttn-lw/lib/components/message'
+import withRequest from '@ttn-lw/lib/components/with-request'
 
 import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
 import Require from '@console/lib/components/require'
@@ -40,13 +42,44 @@ import Yup from '@ttn-lw/lib/yup'
 import diff from '@ttn-lw/lib/diff'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
-import { mayEditBasicApplicationInfo, mayDeleteApplication } from '@console/lib/feature-checks'
+import {
+  checkFromState,
+  mayEditBasicApplicationInfo,
+  mayDeleteApplication,
+  mayViewOrEditApplicationApiKeys,
+  mayViewOrEditApplicationCollaborators,
+  mayPurgeEntities,
+} from '@console/lib/feature-checks'
 import { attributeValidCheck, attributeTooShortCheck } from '@console/lib/attributes'
 
-import { attachPromise } from '@console/store/actions/lib'
 import { updateApplication, deleteApplication } from '@console/store/actions/applications'
+import { getCollaboratorsList } from '@console/store/actions/collaborators'
+import { getApiKeysList } from '@console/store/actions/api-keys'
+import { getPubsubsList } from '@console/store/actions/pubsubs'
+import { getWebhooksList } from '@console/store/actions/webhooks'
 
+import {
+  selectWebhooksTotalCount,
+  selectWebhooksFetching,
+  selectWebhooksError,
+} from '@console/store/selectors/webhooks'
+import {
+  selectPubsubsTotalCount,
+  selectPubsubsFetching,
+  selectPubsubsError,
+} from '@console/store/selectors/pubsubs'
+import {
+  selectCollaboratorsTotalCount,
+  selectCollaboratorsFetching,
+  selectCollaboratorsError,
+} from '@console/store/selectors/collaborators'
+import {
+  selectApiKeysTotalCount,
+  selectApiKeysFetching,
+  selectApiKeysError,
+} from '@console/store/selectors/api-keys'
 import {
   selectSelectedApplication,
   selectSelectedApplicationId,
@@ -68,6 +101,7 @@ const validationSchema = Yup.object().shape({
     .max(50, Yup.passValues(sharedMessages.validateTooLong)),
   description: Yup.string().max(150, Yup.passValues(sharedMessages.validateTooLong)),
   attributes: Yup.array()
+    .max(10, Yup.passValues(sharedMessages.attributesValidateTooMany))
     .test(
       'has no empty string values',
       sharedMessages.attributesValidateRequired,
@@ -81,25 +115,90 @@ const validationSchema = Yup.object().shape({
 })
 
 @connect(
-  state => ({
-    appId: selectSelectedApplicationId(state),
-    application: selectSelectedApplication(state),
-  }),
+  state => {
+    const mayViewApiKeys = checkFromState(mayViewOrEditApplicationApiKeys, state)
+    const mayViewCollaborators = checkFromState(mayViewOrEditApplicationCollaborators, state)
+    const apiKeysCount = selectApiKeysTotalCount(state)
+    const collaboratorsCount = selectCollaboratorsTotalCount(state)
+    const webhooksCount = selectWebhooksTotalCount(state)
+    const pubsubsCount = selectPubsubsTotalCount(state)
+    const mayPurgeApp = checkFromState(mayPurgeEntities, state)
+    const mayDeleteApp = checkFromState(mayDeleteApplication, state)
+
+    const entitiesFetching =
+      selectApiKeysFetching(state) ||
+      selectCollaboratorsFetching(state) ||
+      selectPubsubsFetching(state) ||
+      selectWebhooksFetching(state)
+    const error =
+      selectApiKeysError(state) ||
+      selectCollaboratorsError(state) ||
+      selectPubsubsError(state) ||
+      selectWebhooksError(state)
+
+    const fetching =
+      entitiesFetching ||
+      (mayViewApiKeys && typeof apiKeysCount === undefined) ||
+      (mayViewCollaborators && collaboratorsCount === undefined) ||
+      typeof collaboratorsCount === undefined ||
+      typeof pubsubsCount === undefined
+    const hasIntegrations = webhooksCount > 0 || pubsubsCount > 0
+    const hasApiKeys = apiKeysCount > 0
+    // Note: there is always at least one collaborator.
+    const hasAddedCollaborators = collaboratorsCount > 1
+    const isPristine = !hasApiKeys && !hasAddedCollaborators && !hasIntegrations
+    return {
+      appId: selectSelectedApplicationId(state),
+      application: selectSelectedApplication(state),
+      mayViewApiKeys,
+      mayViewCollaborators,
+      fetching,
+      mayPurge: mayPurgeApp,
+      shouldConfirmDelete:
+        !isPristine || !mayViewCollaborators || !mayViewApiKeys || Boolean(error),
+      mayDeleteApplication: mayDeleteApp,
+    }
+  },
   dispatch => ({
     ...bindActionCreators(
       {
         updateApplication: attachPromise(updateApplication),
         deleteApplication: attachPromise(deleteApplication),
+        getApiKeysList,
+        getCollaboratorsList,
+        getWebhooksList,
+        getPubsubsList,
       },
       dispatch,
     ),
     onDeleteSuccess: () => dispatch(replace(`/applications`)),
   }),
+  (stateProps, dispatchProps, ownProps) => ({
+    ...stateProps,
+    ...dispatchProps,
+    ...ownProps,
+    deleteApplication: (id, purge = false) => dispatchProps.deleteApplication(id, { purge }),
+    loadData: () => {
+      if (stateProps.mayDeleteApplication) {
+        if (stateProps.mayViewApiKeys) {
+          dispatchProps.getApiKeysList('application', stateProps.appId)
+        }
+
+        if (stateProps.mayViewCollaborators) {
+          dispatchProps.getCollaboratorsList('application', stateProps.appId)
+        }
+
+        dispatchProps.getWebhooksList(stateProps.appId)
+        dispatchProps.getPubsubsList(stateProps.appId)
+      }
+    },
+  }),
 )
 @withFeatureRequirement(mayEditBasicApplicationInfo, {
   redirect: ({ appId }) => `/applications/${appId}`,
 })
-@withBreadcrumb('apps.single.general-settings', function(props) {
+@withRequest(({ loadData }) => loadData(), ({ fetching }) => fetching)
+@withBreadcrumb('apps.single.general-settings', props => {
   const { appId } = props
 
   return (
@@ -111,10 +210,13 @@ const validationSchema = Yup.object().shape({
 })
 export default class ApplicationGeneralSettings extends React.Component {
   static propTypes = {
+    appId: PropTypes.string.isRequired,
     application: PropTypes.application.isRequired,
     deleteApplication: PropTypes.func.isRequired,
     match: PropTypes.match.isRequired,
+    mayPurge: PropTypes.bool.isRequired,
     onDeleteSuccess: PropTypes.func.isRequired,
+    shouldConfirmDelete: PropTypes.bool.isRequired,
     updateApplication: PropTypes.func.isRequired,
   }
 
@@ -129,6 +231,9 @@ export default class ApplicationGeneralSettings extends React.Component {
     await this.setState({ error: '' })
 
     const appValues = mapFormValuesToApplication(values)
+    if (isEqual(application.attributes || {}, appValues.attributes)) {
+      delete appValues.attributes
+    }
 
     const changed = diff(application, appValues)
 
@@ -156,14 +261,14 @@ export default class ApplicationGeneralSettings extends React.Component {
   }
 
   @bind
-  async handleDelete() {
+  async handleDelete(shouldPurge) {
     const { deleteApplication, onDeleteSuccess } = this.props
     const { appId } = this.props.match.params
 
     await this.setState({ error: '' })
 
     try {
-      await deleteApplication(appId)
+      await deleteApplication(appId, shouldPurge)
       onDeleteSuccess()
     } catch (error) {
       await this.setState({ error })
@@ -171,7 +276,7 @@ export default class ApplicationGeneralSettings extends React.Component {
   }
 
   render() {
-    const { application } = this.props
+    const { appId, application, shouldConfirmDelete, mayPurge } = this.props
     const { error } = this.state
     const initialValues = mapApplicationToFormValues(application)
 
@@ -182,12 +287,10 @@ export default class ApplicationGeneralSettings extends React.Component {
           <Col lg={8} md={12}>
             <Form
               error={error}
-              horizontal
               onSubmit={this.handleSubmit}
               initialValues={initialValues}
               validationSchema={validationSchema}
             >
-              <Message component="h4" content={m.basics} />
               <Form.Field
                 title={sharedMessages.appId}
                 name="ids.application_id"
@@ -214,23 +317,13 @@ export default class ApplicationGeneralSettings extends React.Component {
               <SubmitBar>
                 <Form.Submit component={SubmitButton} message={sharedMessages.saveChanges} />
                 <Require featureCheck={mayDeleteApplication}>
-                  <ModalButton
-                    type="button"
-                    icon="delete"
-                    danger
-                    naked
+                  <DeleteModalButton
                     message={m.deleteApp}
-                    modalData={{
-                      message: {
-                        values: {
-                          appName: application.name
-                            ? application.name
-                            : application.ids.application_id,
-                        },
-                        ...m.modalWarning,
-                      },
-                    }}
+                    entityId={appId}
+                    entityName={application.name}
                     onApprove={this.handleDelete}
+                    shouldConfirm={shouldConfirmDelete}
+                    mayPurge={mayPurge}
                   />
                 </Require>
               </SubmitBar>

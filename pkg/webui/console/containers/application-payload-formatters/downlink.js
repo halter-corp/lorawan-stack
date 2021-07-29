@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 import { updateApplicationLinkSuccess } from '@console/store/actions/link'
 
 import {
-  selectApplicationIsLinked,
   selectApplicationLinkFormatters,
   selectSelectedApplicationId,
 } from '@console/store/selectors/applications'
@@ -43,22 +42,22 @@ import {
 import style from './application-payload-formatters.styl'
 
 const m = defineMessages({
+  title: 'Default downlink payload formatter',
   infoText:
-    'These payload formatters are executed on downlink messages to all end devices in this application. Note: end device level payload formatters have precedence.',
+    'You can use the "Payload formatter" tab of individual end devices to test downlink payload formatters and to define individual payload formatter settings per end device.',
 })
 @connect(
-  function(state) {
+  state => {
     const formatters = selectApplicationLinkFormatters(state) || {}
 
     return {
       appId: selectSelectedApplicationId(state),
-      linked: selectApplicationIsLinked(state) || false,
       formatters,
     }
   },
   { updateLinkSuccess: updateApplicationLinkSuccess },
 )
-@withBreadcrumb('apps.single.payload-formatters.downlink', function(props) {
+@withBreadcrumb('apps.single.payload-formatters.downlink', props => {
   const { appId } = props
 
   return (
@@ -72,8 +71,17 @@ class ApplicationPayloadFormatters extends React.PureComponent {
   static propTypes = {
     appId: PropTypes.string.isRequired,
     formatters: PropTypes.formatters.isRequired,
-    linked: PropTypes.bool.isRequired,
     updateLinkSuccess: PropTypes.func.isRequired,
+  }
+
+  constructor(props) {
+    super(props)
+
+    const { formatters } = props
+
+    this.state = {
+      type: formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE,
+    }
   }
 
   @bind
@@ -101,25 +109,31 @@ class ApplicationPayloadFormatters extends React.PureComponent {
     updateLinkSuccess(link)
   }
 
-  render() {
-    const { formatters, linked } = this.props
+  @bind
+  onTypeChange(type) {
+    this.setState({ type })
+  }
 
-    const applicationFormatterInfo = (
-      <Notification className={style.notification} small info content={m.infoText} />
-    )
+  render() {
+    const { formatters } = this.props
+    const { type } = this.state
+
+    const isNoneType = type === PAYLOAD_FORMATTER_TYPES.NONE
 
     return (
       <React.Fragment>
-        <PageTitle title={sharedMessages.payloadFormattersDownlink} />
-        {linked && applicationFormatterInfo}
+        <PageTitle title={m.title} />
+        {!isNoneType && (
+          <Notification className={style.notification} small info content={m.infoText} />
+        )}
         <PayloadFormattersForm
           uplink={false}
-          linked={linked}
           onSubmit={this.onSubmit}
           onSubmitSuccess={this.onSubmitSuccess}
           title={sharedMessages.payloadFormattersDownlink}
           initialType={formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE}
           initialParameter={formatters.down_formatter_parameter || ''}
+          onTypeChange={this.onTypeChange}
         />
       </React.Fragment>
     )

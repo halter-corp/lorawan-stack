@@ -16,6 +16,7 @@ package frequencyplans_test
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -34,7 +35,7 @@ func boolPtr(v bool) *bool                       { return &v }
 func durationPtr(v time.Duration) *time.Duration { return &v }
 
 func Example() {
-	fetcher, err := fetch.FromHTTP("https://raw.githubusercontent.com/TheThingsNetwork/lorawan-frequency-plans", true)
+	fetcher, err := fetch.FromHTTP(http.DefaultClient, "https://raw.githubusercontent.com/TheThingsNetwork/lorawan-frequency-plans", true)
 	if err != nil {
 		panic(err)
 	}
@@ -321,7 +322,7 @@ func TestProtoConversion(t *testing.T) {
 					Frequency: 868800000,
 					Radio:     1,
 				},
-				LoRaStandardChannel: &ttnpb.ConcentratorConfig_LoRaStandardChannel{
+				LoraStandardChannel: &ttnpb.ConcentratorConfig_LoRaStandardChannel{
 					Frequency:       868300000,
 					Radio:           1,
 					SpreadingFactor: 7,

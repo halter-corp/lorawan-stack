@@ -28,11 +28,13 @@ import (
 	"github.com/TheThingsIndustries/mystique/pkg/session"
 	"github.com/TheThingsIndustries/mystique/pkg/topic"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	ttsauth "go.thethings.network/lorawan-stack/v3/pkg/auth"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/metadata"
@@ -69,8 +71,19 @@ func (s *srv) accept() error {
 			return err
 		}
 
+		remoteAddr := mqttConn.RemoteAddr().String()
+		ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", remoteAddr))
+
+		resource := ratelimit.ApplicationAcceptMQTTConnectionResource(remoteAddr)
+		if err := ratelimit.Require(s.server.RateLimiter(), resource); err != nil {
+			if err := mqttConn.Close(); err != nil {
+				log.FromContext(ctx).WithError(err).Warn("Close connection failed")
+			}
+			log.FromContext(ctx).WithError(err).Debug("Drop connection")
+			continue
+		}
+
 		go func() {
-			ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", mqttConn.RemoteAddr().String()))
 			conn := &connection{server: s.server, mqtt: mqttConn, format: s.format}
 			if err := conn.setup(ctx); err != nil {
 				switch err {
@@ -91,6 +104,8 @@ type connection struct {
 	mqtt    mqttnet.Conn
 	session session.Session
 	io      *io.Subscription
+
+	resource ratelimit.Resource
 }
 
 func (c *connection) setup(ctx context.Context) error {
@@ -139,25 +154,25 @@ func (c *connection) setup(ctx context.Context) error {
 				var topicParts []string
 				switch up.Up.(type) {
 				case *ttnpb.ApplicationUp_UplinkMessage:
-					topicParts = c.format.UplinkTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.UplinkTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_JoinAccept:
-					topicParts = c.format.JoinAcceptTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.JoinAcceptTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkAck:
-					topicParts = c.format.DownlinkAckTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkAckTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkNack:
-					topicParts = c.format.DownlinkNackTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkNackTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkSent:
-					topicParts = c.format.DownlinkSentTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkSentTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkFailed:
-					topicParts = c.format.DownlinkFailedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkFailedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkQueued:
-					topicParts = c.format.DownlinkQueuedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkQueuedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_DownlinkQueueInvalidated:
-					topicParts = c.format.DownlinkQueueInvalidatedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.DownlinkQueueInvalidatedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_LocationSolved:
-					topicParts = c.format.LocationSolvedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.LocationSolvedTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				case *ttnpb.ApplicationUp_ServiceData:
-					topicParts = c.format.ServiceDataTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceID)
+					topicParts = c.format.ServiceDataTopic(unique.ID(up.Context, c.io.ApplicationIDs()), up.DeviceId)
 				}
 				if topicParts == nil {
 					continue
@@ -223,14 +238,14 @@ type topicAccess struct {
 
 func (c *connection) Connect(ctx context.Context, info *auth.Info) (context.Context, error) {
 	ids := ttnpb.ApplicationIdentifiers{
-		ApplicationID: info.Username,
+		ApplicationId: info.Username,
 	}
 	if err := ids.ValidateContext(ctx); err != nil {
 		return nil, err
 	}
 
 	md := metadata.New(map[string]string{
-		"id":            ids.ApplicationID,
+		"id":            ids.ApplicationId,
 		"authorization": fmt.Sprintf("Bearer %s", info.Password),
 	})
 	if ctxMd, ok := metadata.FromIncomingContext(ctx); ok {
@@ -242,12 +257,23 @@ func (c *connection) Connect(ctx context.Context, info *auth.Info) (context.Cont
 	uid := unique.ID(ctx, ids)
 	ctx = log.NewContextWithField(ctx, "application_uid", uid)
 
+	if err := rights.RequireApplication(ctx, ids); err != nil {
+		return nil, err
+	}
+
 	var err error
-	c.io, err = c.server.Subscribe(ctx, "mqtt", ids)
+	c.io, err = c.server.Subscribe(ctx, "mqtt", &ids, true)
 	if err != nil {
 		return nil, err
 	}
 	ctx = c.io.Context()
+
+	authTokenID := ""
+	if _, v, _, err := ttsauth.SplitToken(string(info.Password)); err == nil && v != "" {
+		authTokenID = v
+	}
+	c.resource = ratelimit.ApplicationMQTTDownResource(ctx, ids, authTokenID)
+
 	access := topicAccess{
 		appUID: uid,
 	}
@@ -311,6 +337,13 @@ func (c *connection) CanWrite(info *auth.Info, topicParts ...string) bool {
 
 func (c *connection) deliver(pkt *packet.PublishPacket) {
 	logger := log.FromContext(c.io.Context()).WithField("topic", pkt.TopicName)
+
+	if err := ratelimit.Require(c.server.RateLimiter(), c.resource); err != nil {
+		logger.WithError(err).Warn("Terminate connection")
+		c.io.Disconnect(err)
+		return
+	}
+
 	var deviceID string
 	var op func(io.Server, context.Context, ttnpb.EndDeviceIdentifiers, []*ttnpb.ApplicationDownlink) error
 	switch {
@@ -331,7 +364,7 @@ func (c *connection) deliver(pkt *packet.PublishPacket) {
 	}
 	ids := ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: *c.io.ApplicationIDs(),
-		DeviceID:               deviceID,
+		DeviceId:               deviceID,
 	}
 	if err := ids.ValidateContext(c.io.Context()); err != nil {
 		logger.WithError(err).Warn("Failed to validate message identifiers")

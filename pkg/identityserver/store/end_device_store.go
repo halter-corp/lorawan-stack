@@ -21,7 +21,7 @@ import (
 	"runtime/trace"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
@@ -38,13 +38,13 @@ type deviceStore struct {
 }
 
 // selectEndDeviceFields selects relevant fields (based on fieldMask) and preloads details if needed.
-func selectEndDeviceFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func selectEndDeviceFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	if len(fieldMask.GetPaths()) == 0 {
 		return query.Preload("Attributes").Preload("Locations")
 	}
 	var deviceColumns []string
 	var notFoundPaths []string
-	for _, path := range ttnpb.TopLevelFields(fieldMask.Paths) {
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
 		switch path {
 		case "ids", "created_at", "updated_at":
 			// always selected
@@ -72,8 +72,8 @@ func selectEndDeviceFields(ctx context.Context, query *gorm.DB, fieldMask *types
 func (s *deviceStore) CreateEndDevice(ctx context.Context, dev *ttnpb.EndDevice) (*ttnpb.EndDevice, error) {
 	defer trace.StartRegion(ctx, "create end device").End()
 	devModel := EndDevice{
-		ApplicationID: dev.ApplicationID, // The ApplicationID is not mutated by fromPB.
-		DeviceID:      dev.DeviceID,      // The DeviceID is not mutated by fromPB.
+		ApplicationID: dev.ApplicationId, // The ApplicationID is not mutated by fromPB.
+		DeviceID:      dev.DeviceId,      // The DeviceID is not mutated by fromPB.
 	}
 	devModel.fromPB(dev, nil)
 	if err := s.createEntity(ctx, &devModel); err != nil {
@@ -84,7 +84,7 @@ func (s *deviceStore) CreateEndDevice(ctx context.Context, dev *ttnpb.EndDevice)
 	return &devProto, nil
 }
 
-func (s *deviceStore) findEndDevices(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error) {
+func (s *deviceStore) findEndDevices(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) ([]*ttnpb.EndDevice, error) {
 	defer trace.StartRegion(ctx, "find end devices").End()
 	query = selectEndDeviceFields(ctx, query, fieldMask)
 	query = query.Order(orderFromContext(ctx, "end_devices", "device_id", "ASC"))
@@ -109,41 +109,41 @@ func (s *deviceStore) findEndDevices(ctx context.Context, query *gorm.DB, fieldM
 
 func (s *deviceStore) CountEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (total uint64, err error) {
 	defer trace.StartRegion(ctx, "count end devices").End()
-	err = s.query(ctx, EndDevice{}, withApplicationID(ids.GetApplicationID())).Count(&total).Error
+	err = s.query(ctx, EndDevice{}, withApplicationID(ids.GetApplicationId())).Count(&total).Error
 	return
 }
 
-func (s *deviceStore) ListEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error) {
+func (s *deviceStore) ListEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.EndDevice, error) {
 	// NOTE: tracing done in s.findEndDevices.
-	query := s.query(ctx, EndDevice{}, withApplicationID(ids.GetApplicationID()))
+	query := s.query(ctx, EndDevice{}, withApplicationID(ids.GetApplicationId()))
 	return s.findEndDevices(ctx, query, fieldMask)
 }
 
 var errMultipleApplicationIDs = errors.DefineInvalidArgument("multiple_application_ids", "can not list devices for multiple application IDs")
 
-func (s *deviceStore) FindEndDevices(ctx context.Context, ids []*ttnpb.EndDeviceIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error) {
+func (s *deviceStore) FindEndDevices(ctx context.Context, ids []*ttnpb.EndDeviceIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.EndDevice, error) {
 	// NOTE: tracing done in s.findEndDevices.
 	idStrings := make([]string, len(ids))
 	var applicationID string
 	for i, id := range ids {
-		if applicationID != "" && applicationID != id.GetApplicationID() {
+		if applicationID != "" && applicationID != id.GetApplicationId() {
 			return nil, errMultipleApplicationIDs.New()
 		}
-		applicationID = id.GetApplicationID()
-		idStrings[i] = id.GetDeviceID()
+		applicationID = id.GetApplicationId()
+		idStrings[i] = id.GetDeviceId()
 	}
 	query := s.query(ctx, EndDevice{}, withApplicationID(applicationID), withDeviceID(idStrings...))
 	return s.findEndDevices(ctx, query, fieldMask)
 }
 
-func (s *deviceStore) GetEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdentifiers, fieldMask *types.FieldMask) (*ttnpb.EndDevice, error) {
+func (s *deviceStore) GetEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.EndDevice, error) {
 	defer trace.StartRegion(ctx, "get end device").End()
-	query := s.query(ctx, EndDevice{}, withApplicationID(id.GetApplicationID()), withDeviceID(id.GetDeviceID()))
-	if id.JoinEUI != nil {
-		query = query.Scopes(withJoinEUI(EUI64(*id.JoinEUI)))
+	query := s.query(ctx, EndDevice{}, withApplicationID(id.GetApplicationId()), withDeviceID(id.GetDeviceId()))
+	if id.JoinEui != nil {
+		query = query.Scopes(withJoinEUI(EUI64(*id.JoinEui)))
 	}
-	if id.DevEUI != nil {
-		query = query.Scopes(withDevEUI(EUI64(*id.DevEUI)))
+	if id.DevEui != nil {
+		query = query.Scopes(withDevEUI(EUI64(*id.DevEui)))
 	}
 	query = selectEndDeviceFields(ctx, query, fieldMask)
 	var devModel EndDevice
@@ -158,9 +158,9 @@ func (s *deviceStore) GetEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdent
 	return devProto, nil
 }
 
-func (s *deviceStore) UpdateEndDevice(ctx context.Context, dev *ttnpb.EndDevice, fieldMask *types.FieldMask) (updated *ttnpb.EndDevice, err error) {
+func (s *deviceStore) UpdateEndDevice(ctx context.Context, dev *ttnpb.EndDevice, fieldMask *pbtypes.FieldMask) (updated *ttnpb.EndDevice, err error) {
 	defer trace.StartRegion(ctx, "update end device").End()
-	query := s.query(ctx, EndDevice{}, withApplicationID(dev.GetApplicationID()), withDeviceID(dev.GetDeviceID()))
+	query := s.query(ctx, EndDevice{}, withApplicationID(dev.GetApplicationId()), withDeviceID(dev.GetDeviceId()))
 	query = selectEndDeviceFields(ctx, query, fieldMask)
 	var devModel EndDevice
 	if err = query.First(&devModel).Error; err != nil {

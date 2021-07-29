@@ -60,9 +60,9 @@ func (m *SessionKeyRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "dev_eui":
-			// no validation rules for DevEUI
+			// no validation rules for DevEui
 		case "join_eui":
-			// no validation rules for JoinEUI
+			// no validation rules for JoinEui
 		default:
 			return SessionKeyRequestValidationError{
 				field:  name,
@@ -364,7 +364,7 @@ func (m *CryptoServicePayloadRequest) ValidateFields(paths ...string) error {
 
 		case "lorawan_version":
 
-			if _, ok := MACVersion_name[int32(m.GetLoRaWANVersion())]; !ok {
+			if _, ok := MACVersion_name[int32(m.GetLorawanVersion())]; !ok {
 				return CryptoServicePayloadRequestValidationError{
 					field:  "lorawan_version",
 					reason: "value must be one of the defined enum values",
@@ -372,7 +372,14 @@ func (m *CryptoServicePayloadRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "payload":
-			// no validation rules for Payload
+
+			if len(m.GetPayload()) > 256 {
+				return CryptoServicePayloadRequestValidationError{
+					field:  "payload",
+					reason: "value length must be at most 256 bytes",
+				}
+			}
+
 		case "provisioner_id":
 
 			if utf8.RuneCountInString(m.GetProvisionerID()) > 36 {
@@ -583,7 +590,7 @@ func (m *JoinAcceptMICRequest) ValidateFields(paths ...string) error {
 
 		case "join_request_type":
 
-			if _, ok := RejoinType_name[int32(m.GetJoinRequestType())]; !ok {
+			if _, ok := JoinRequestType_name[int32(m.GetJoinRequestType())]; !ok {
 				return JoinAcceptMICRequestValidationError{
 					field:  "join_request_type",
 					reason: "value must be one of the defined enum values",
@@ -687,7 +694,7 @@ func (m *DeriveSessionKeysRequest) ValidateFields(paths ...string) error {
 
 		case "lorawan_version":
 
-			if _, ok := MACVersion_name[int32(m.GetLoRaWANVersion())]; !ok {
+			if _, ok := MACVersion_name[int32(m.GetLorawanVersion())]; !ok {
 				return DeriveSessionKeysRequestValidationError{
 					field:  "lorawan_version",
 					reason: "value must be one of the defined enum values",
@@ -699,7 +706,7 @@ func (m *DeriveSessionKeysRequest) ValidateFields(paths ...string) error {
 		case "dev_nonce":
 			// no validation rules for DevNonce
 		case "net_id":
-			// no validation rules for NetID
+			// no validation rules for NetId
 		case "provisioner_id":
 
 			if utf8.RuneCountInString(m.GetProvisionerID()) > 36 {
@@ -1130,7 +1137,7 @@ func (m *ApplicationActivationSettings) ValidateFields(paths ...string) error {
 			}
 
 		case "home_net_id":
-			// no validation rules for HomeNetID
+			// no validation rules for HomeNetId
 		case "application_server_id":
 
 			if utf8.RuneCountInString(m.GetApplicationServerID()) > 100 {
@@ -1236,7 +1243,7 @@ func (m *GetApplicationActivationSettingsRequest) ValidateFields(paths ...string
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetApplicationActivationSettingsRequestValidationError{
 						field:  "field_mask",
@@ -1354,7 +1361,7 @@ func (m *SetApplicationActivationSettingsRequest) ValidateFields(paths ...string
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return SetApplicationActivationSettingsRequestValidationError{
 						field:  "field_mask",
@@ -1541,7 +1548,7 @@ func (m *JoinEUIPrefix) ValidateFields(paths ...string) error {
 		_ = subs
 		switch name {
 		case "join_eui":
-			// no validation rules for JoinEUI
+			// no validation rules for JoinEui
 		case "length":
 			// no validation rules for Length
 		default:
@@ -1720,10 +1727,10 @@ func (m *ProvisionEndDevicesRequest_IdentifiersList) ValidateFields(paths ...str
 		_ = subs
 		switch name {
 		case "join_eui":
-			// no validation rules for JoinEUI
+			// no validation rules for JoinEui
 		case "end_device_ids":
 
-			for idx, item := range m.EndDeviceIDs {
+			for idx, item := range m.EndDeviceIds {
 				_, _ = idx, item
 
 				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
@@ -1821,9 +1828,9 @@ func (m *ProvisionEndDevicesRequest_IdentifiersRange) ValidateFields(paths ...st
 		_ = subs
 		switch name {
 		case "join_eui":
-			// no validation rules for JoinEUI
+			// no validation rules for JoinEui
 		case "start_dev_eui":
-			// no validation rules for StartDevEUI
+			// no validation rules for StartDevEui
 		default:
 			return ProvisionEndDevicesRequest_IdentifiersRangeValidationError{
 				field:  name,
@@ -1909,7 +1916,7 @@ func (m *ProvisionEndDevicesRequest_IdentifiersFromData) ValidateFields(paths ..
 		_ = subs
 		switch name {
 		case "join_eui":
-			// no validation rules for JoinEUI
+			// no validation rules for JoinEui
 		default:
 			return ProvisionEndDevicesRequest_IdentifiersFromDataValidationError{
 				field:  name,

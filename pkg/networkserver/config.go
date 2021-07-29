@@ -15,11 +15,10 @@
 package networkserver
 
 import (
-	"time"
-
 	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/mac"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
@@ -52,7 +51,7 @@ func (c MACSettingConfig) Parse() ttnpb.MACSettings {
 		StatusTimePeriodicity: c.StatusTimePeriodicity,
 	}
 	if c.ADRMargin != nil {
-		p.ADRMargin = &pbtypes.FloatValue{Value: *c.ADRMargin}
+		p.AdrMargin = &pbtypes.FloatValue{Value: *c.ADRMargin}
 	}
 	if c.DesiredRx1Delay != nil {
 		p.DesiredRx1Delay = &ttnpb.RxDelayValue{Value: *c.DesiredRx1Delay}
@@ -61,10 +60,10 @@ func (c MACSettingConfig) Parse() ttnpb.MACSettings {
 		p.DesiredMaxDutyCycle = &ttnpb.AggregatedDutyCycleValue{Value: *c.DesiredMaxDutyCycle}
 	}
 	if c.DesiredADRAckLimitExponent != nil {
-		p.DesiredADRAckLimitExponent = &ttnpb.ADRAckLimitExponentValue{Value: *c.DesiredADRAckLimitExponent}
+		p.DesiredAdrAckLimitExponent = &ttnpb.ADRAckLimitExponentValue{Value: *c.DesiredADRAckLimitExponent}
 	}
 	if c.DesiredADRAckDelayExponent != nil {
-		p.DesiredADRAckDelayExponent = &ttnpb.ADRAckDelayExponentValue{Value: *c.DesiredADRAckDelayExponent}
+		p.DesiredAdrAckDelayExponent = &ttnpb.ADRAckDelayExponentValue{Value: *c.DesiredADRAckDelayExponent}
 	}
 	if c.StatusCountPeriodicity != nil {
 		p.StatusCountPeriodicity = &pbtypes.UInt32Value{Value: *c.StatusCountPeriodicity}
@@ -115,19 +114,21 @@ func (c DownlinkPriorityConfig) Parse() (DownlinkPriorities, error) {
 
 // Config represents the NetworkServer configuration.
 type Config struct {
-	ApplicationUplinkQueue ApplicationUplinkQueueConfig `name:"application-uplink-queue"`
-	Devices                DeviceRegistry               `name:"-"`
-	DownlinkTasks          DownlinkTaskQueue            `name:"-"`
-	UplinkDeduplicator     UplinkDeduplicator           `name:"-"`
-	NetID                  types.NetID                  `name:"net-id" description:"NetID of this Network Server"`
-	DevAddrPrefixes        []types.DevAddrPrefix        `name:"dev-addr-prefixes" description:"Device address prefixes of this Network Server"`
-	DeduplicationWindow    time.Duration                `name:"deduplication-window" description:"Time window during which, duplicate messages are collected for metadata"`
-	CooldownWindow         time.Duration                `name:"cooldown-window" description:"Time window starting right after deduplication window, during which, duplicate messages are discarded"`
-	DownlinkPriorities     DownlinkPriorityConfig       `name:"downlink-priorities" description:"Downlink message priorities"`
-	DefaultMACSettings     MACSettingConfig             `name:"default-mac-settings" description:"Default MAC settings to fallback to if not specified by device, band or frequency plan"`
-	Interop                config.InteropClient         `name:"interop" description:"Interop client configuration"`
-	DeviceKEKLabel         string                       `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`
-	DownlinkQueueCapacity  int                          `name:"downlink-queue-capacity" description:"Maximum downlink queue size per-session"`
+	ApplicationUplinkQueue   ApplicationUplinkQueueConfig `name:"application-uplink-queue"`
+	Devices                  DeviceRegistry               `name:"-"`
+	DownlinkTasks            DownlinkTaskQueue            `name:"-"`
+	UplinkDeduplicator       UplinkDeduplicator           `name:"-"`
+	ScheduledDownlinkMatcher ScheduledDownlinkMatcher     `name:"-"`
+	NetID                    types.NetID                  `name:"net-id" description:"NetID of this Network Server"`
+	ClusterID                string                       `name:"cluster-id" description:"Cluster ID of this Network Server"`
+	DevAddrPrefixes          []types.DevAddrPrefix        `name:"dev-addr-prefixes" description:"Device address prefixes of this Network Server"`
+	DeduplicationWindow      time.Duration                `name:"deduplication-window" description:"Time window during which, duplicate messages are collected for metadata"`
+	CooldownWindow           time.Duration                `name:"cooldown-window" description:"Time window starting right after deduplication window, during which, duplicate messages are discarded"`
+	DownlinkPriorities       DownlinkPriorityConfig       `name:"downlink-priorities" description:"Downlink message priorities"`
+	DefaultMACSettings       MACSettingConfig             `name:"default-mac-settings" description:"Default MAC settings to fallback to if not specified by device, band or frequency plan"`
+	Interop                  config.InteropClient         `name:"interop" description:"Interop client configuration"`
+	DeviceKEKLabel           string                       `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`
+	DownlinkQueueCapacity    int                          `name:"downlink-queue-capacity" description:"Maximum downlink queue size per-session"`
 }
 
 // DefaultConfig is the default Network Server configuration.

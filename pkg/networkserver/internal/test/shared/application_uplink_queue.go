@@ -17,6 +17,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/smartystreets/assertions"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver"
@@ -27,81 +28,8 @@ import (
 
 // handleApplicationUplinkQueueTest runs a test suite on q.
 func handleApplicationUplinkQueueTest(ctx context.Context, q ApplicationUplinkQueue) {
-	t, a := test.MustNewTFromContext(ctx)
-
-	appID1 := ttnpb.ApplicationIdentifiers{
-		ApplicationID: "application-uplink-queue-app-1",
-	}
-
-	appID2 := ttnpb.ApplicationIdentifiers{
-		ApplicationID: "application-uplink-queue-app-2",
-	}
-
-	pbs := [...]*ttnpb.ApplicationUp{
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID1,
-				DeviceID:               "test-dev",
-			},
-			CorrelationIDs: []string{"correlation-id-1", "correlation-id-2"},
-			Up: &ttnpb.ApplicationUp_DownlinkFailed{
-				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{},
-			},
-		},
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID1,
-				DeviceID:               "test-dev2",
-			},
-			CorrelationIDs: []string{"correlation-id-3", "correlation-id-4"},
-			Up: &ttnpb.ApplicationUp_LocationSolved{
-				LocationSolved: &ttnpb.ApplicationLocation{},
-			},
-		},
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID2,
-				DeviceID:               "test-dev",
-			},
-			CorrelationIDs: []string{"correlation-id-5", "correlation-id-6"},
-			Up: &ttnpb.ApplicationUp_LocationSolved{
-				LocationSolved: &ttnpb.ApplicationLocation{},
-			},
-		},
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID1,
-				DeviceID:               "test-dev2",
-			},
-			CorrelationIDs: []string{"correlation-id-7", "correlation-id-8"},
-			Up: &ttnpb.ApplicationUp_DownlinkFailed{
-				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{},
-			},
-		},
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID2,
-				DeviceID:               "test-dev",
-			},
-			CorrelationIDs: []string{"correlation-id-9", "correlation-id-10"},
-			Up: &ttnpb.ApplicationUp_DownlinkAck{
-				DownlinkAck: &ttnpb.ApplicationDownlink{},
-			},
-		},
-		{
-			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				ApplicationIdentifiers: appID1,
-				DeviceID:               "test-dev",
-			},
-			CorrelationIDs: []string{"correlation-id-11", "correlation-id-12"},
-			Up: &ttnpb.ApplicationUp_ServiceData{
-				ServiceData: &ttnpb.ApplicationServiceData{},
-			},
-		},
-	}
-
-	assertAdd := func(ctx context.Context, ups ...*ttnpb.ApplicationUp) (error, bool) {
-		t := test.MustTFromContext(ctx)
+	assertAdd := func(ctx context.Context, ups ...*ttnpb.ApplicationUp) bool {
+		t, a := test.MustNewTFromContext(ctx)
 		t.Helper()
 
 		errCh := make(chan error, 1)
@@ -111,126 +39,263 @@ func handleApplicationUplinkQueueTest(ctx context.Context, q ApplicationUplinkQu
 		select {
 		case <-ctx.Done():
 			t.Error("Timed out while waiting for Add to return")
-			return nil, false
+			return false
 
 		case err := <-errCh:
-			return err, true
+			return a.So(err, should.BeNil)
 		}
 	}
 
-	type subscribeFuncReq struct {
-		Context  context.Context
-		Uplink   *ttnpb.ApplicationUp
-		Response chan<- error
-	}
-	subscribe := func(ctx context.Context, appID ttnpb.ApplicationIdentifiers) (<-chan subscribeFuncReq, <-chan error, func()) {
-		ctx, cancel := context.WithCancel(ctx)
-		subscribeFuncCh := make(chan subscribeFuncReq)
+	assertDrainApplication := func(ctx context.Context, withError bool, expected ...*ttnpb.ApplicationUp) bool {
+		t, a := test.MustNewTFromContext(ctx)
+		t.Helper()
+
+		type popFuncReq struct {
+			Context                context.Context
+			ApplicationIdentifiers ttnpb.ApplicationIdentifiers
+			Func                   ApplicationUplinkQueueDrainFunc
+			Response               chan<- TaskPopFuncResponse
+		}
+		reqCh := make(chan popFuncReq, 1)
 		errCh := make(chan error, 1)
 		go func() {
-			errCh <- q.Subscribe(ctx, appID, func(ctx context.Context, up *ttnpb.ApplicationUp) error {
-				respCh := make(chan error, 1)
-				subscribeFuncCh <- subscribeFuncReq{
-					Context:  ctx,
-					Uplink:   up,
-					Response: respCh,
+			errCh <- q.Pop(ctx, func(ctx context.Context, appID ttnpb.ApplicationIdentifiers, f ApplicationUplinkQueueDrainFunc) (time.Time, error) {
+				respCh := make(chan TaskPopFuncResponse, 1)
+				reqCh <- popFuncReq{
+					Context:                ctx,
+					ApplicationIdentifiers: appID,
+					Func:                   f,
+					Response:               respCh,
 				}
-				return <-respCh
+				resp := <-respCh
+				return resp.Time, resp.Error
 			})
-			close(errCh)
 		}()
-		return subscribeFuncCh, errCh, func() {
-			cancel()
-			close(subscribeFuncCh)
+
+		select {
+		case <-ctx.Done():
+			t.Error("Timed out while waiting for Pop callback to be called")
+			return false
+
+		case err := <-errCh:
+			t.Errorf("Received unexpected Pop error: %v", err)
+			return false
+
+		case req := <-reqCh:
+			if !test.AllTrue(
+				a.So(req.Context, should.HaveParentContextOrEqual, ctx),
+				a.So(req.ApplicationIdentifiers, should.Resemble, expected[0].ApplicationIdentifiers),
+			) {
+				t.Error("Pop callback assertion failed")
+				return false
+			}
+
+			if withError {
+				if !a.So(req.Func(2, func(ups ...*ttnpb.ApplicationUp) error {
+					a.So(ups, should.NotBeEmpty)
+					return test.ErrInternal
+				}), should.HaveSameErrorDefinitionAs, test.ErrInternal) {
+					return false
+				}
+			}
+
+			var collected []*ttnpb.ApplicationUp
+			if !a.So(req.Func(2, func(ups ...*ttnpb.ApplicationUp) error {
+				a.So(ups, should.NotBeEmpty)
+				collected = append(collected, ups...)
+				return nil
+			}), should.BeNil) {
+				return false
+			}
+			if a.So(len(collected), should.Equal, len(expected)) {
+				for i := range collected {
+					a.So(collected[i], should.Resemble, expected[i])
+				}
+			}
+			close(req.Response)
+
+			select {
+			case <-ctx.Done():
+				t.Error("Timed out while waiting for Pop to return")
+				return false
+
+			case err := <-errCh:
+				return a.So(err, should.BeNil)
+			}
 		}
 	}
 
-	_, app1SubErrCh, app1SubStop := subscribe(ctx, appID1)
-	app1SubStop()
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe to return")
-
-	case err := <-app1SubErrCh:
-		if !a.So(err, should.Resemble, context.Canceled) {
-			t.Fatalf("Received unexpected Subscribe error: %v", err)
-		}
+	appID1 := ttnpb.ApplicationIdentifiers{
+		ApplicationId: "application-uplink-queue-app-1",
 	}
 
-	err, ok := assertAdd(ctx, pbs[0:1]...)
-	if !a.So(ok, should.BeTrue) || !a.So(err, should.BeNil) {
-		t.FailNow()
+	appID2 := ttnpb.ApplicationIdentifiers{
+		ApplicationId: "application-uplink-queue-app-2",
 	}
 
-	app1SubFuncCh, app1SubErrCh, app1SubStop := subscribe(ctx, appID1)
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe callback to be called")
-
-	case err := <-app1SubErrCh:
-		t.Fatalf("Received unexpected Subscribe error: %v", err)
-
-	case req := <-app1SubFuncCh:
-		if !a.So(req.Context, should.HaveParentContext, ctx) || !a.So(req.Uplink, should.Resemble, pbs[0]) {
-			t.FailNow()
-		}
-		close(req.Response)
+	invalidations := [...]*ttnpb.ApplicationUp{
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"invalidations[0]"},
+			Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+				DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"invalidations[1]"},
+			Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+				DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{},
+			},
+		},
+	}
+	joinAccepts := [...]*ttnpb.ApplicationUp{
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev",
+			},
+			CorrelationIDs: []string{"joinAccepts[0]"},
+			Up: &ttnpb.ApplicationUp_JoinAccept{
+				JoinAccept: &ttnpb.ApplicationJoinAccept{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"joinAccepts[1]"},
+			Up: &ttnpb.ApplicationUp_JoinAccept{
+				JoinAccept: &ttnpb.ApplicationJoinAccept{},
+			},
+		},
+	}
+	genericApp1Ups := [...]*ttnpb.ApplicationUp{
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev",
+			},
+			CorrelationIDs: []string{"genericApp1Ups[0]"},
+			Up: &ttnpb.ApplicationUp_DownlinkFailed{
+				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev",
+			},
+			CorrelationIDs: []string{"genericApp1Ups[1]"},
+			Up: &ttnpb.ApplicationUp_LocationSolved{
+				LocationSolved: &ttnpb.ApplicationLocation{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"genericApp1Ups[2]"},
+			Up: &ttnpb.ApplicationUp_DownlinkFailed{
+				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev",
+			},
+			CorrelationIDs: []string{"genericApp1Ups[3]"},
+			Up: &ttnpb.ApplicationUp_DownlinkAck{
+				DownlinkAck: &ttnpb.ApplicationDownlink{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID1,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"genericApp1Ups[4]"},
+			Up: &ttnpb.ApplicationUp_DownlinkAck{
+				DownlinkAck: &ttnpb.ApplicationDownlink{},
+			},
+		},
 	}
 
-	err, ok = assertAdd(ctx, pbs[1:3]...)
-	if !a.So(ok, should.BeTrue) {
-		t.FailNow()
+	genericApp2Ups := [...]*ttnpb.ApplicationUp{
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID2,
+				DeviceId:               "test-dev2",
+			},
+			CorrelationIDs: []string{"genericApp2Ups[0]"},
+			Up: &ttnpb.ApplicationUp_LocationSolved{
+				LocationSolved: &ttnpb.ApplicationLocation{},
+			},
+		},
+		{
+			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: appID2,
+				DeviceId:               "test-dev",
+			},
+			CorrelationIDs: []string{"genericApp2Ups[1]"},
+			Up: &ttnpb.ApplicationUp_DownlinkFailed{
+				DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{},
+			},
+		},
 	}
-	a.So(err, should.BeNil)
 
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe callback to be called")
+	_, a := test.MustNewTFromContext(ctx)
+	switch {
+	case
+		!a.So(assertAdd(ctx,
+			genericApp1Ups[0],
+		), should.BeTrue),
+		!a.So(assertDrainApplication(ctx, false,
+			genericApp1Ups[0],
+		), should.BeTrue),
 
-	case err := <-app1SubErrCh:
-		t.Fatalf("Received unexpected Subscribe error: %v", err)
+		!a.So(assertAdd(ctx,
+			genericApp2Ups[0],
+		), should.BeTrue),
+		!a.So(assertAdd(ctx,
+			genericApp1Ups[1],
+			genericApp2Ups[1],
+		), should.BeTrue),
+		!a.So(assertDrainApplication(ctx, true,
+			genericApp2Ups[0],
+			genericApp2Ups[1],
+		), should.BeTrue),
 
-	case req := <-app1SubFuncCh:
-		if !a.So(req.Context, should.HaveParentContext, ctx) || !a.So(req.Uplink, should.Resemble, pbs[1]) {
-			t.FailNow()
-		}
-		close(req.Response)
-	}
-
-	app2SubFuncCh, app2SubErrCh, app2SubStop := subscribe(ctx, appID2)
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe callback to be called")
-
-	case err := <-app2SubErrCh:
-		t.Fatalf("Received unexpected Subscribe error: %v", err)
-
-	case req := <-app2SubFuncCh:
-		if !a.So(req.Context, should.HaveParentContext, ctx) || !a.So(req.Uplink, should.Resemble, pbs[2]) {
-			t.FailNow()
-		}
-		close(req.Response)
-	}
-	app1SubStop()
-	app2SubStop()
-
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe to return")
-
-	case err := <-app1SubErrCh:
-		if !a.So(err, should.Resemble, context.Canceled) {
-			t.Fatalf("Received unexpected Subscribe error: %v", err)
-		}
-	}
-	select {
-	case <-ctx.Done():
-		t.Fatal("Timed out while waiting for Subscribe to return")
-
-	case err := <-app2SubErrCh:
-		if !a.So(err, should.Resemble, context.Canceled) {
-			t.Fatalf("Received unexpected Subscribe error: %v", err)
-		}
+		!a.So(assertAdd(ctx,
+			genericApp1Ups[2],
+			invalidations[0],
+			genericApp1Ups[3],
+			invalidations[1],
+			joinAccepts[0],
+		), should.BeTrue),
+		!a.So(assertAdd(ctx,
+			genericApp1Ups[4],
+			joinAccepts[1],
+		), should.BeTrue),
+		!a.So(assertDrainApplication(ctx, false,
+			joinAccepts[0],
+			joinAccepts[1],
+			invalidations[0],
+			invalidations[1],
+			genericApp1Ups[1],
+			genericApp1Ups[2],
+			genericApp1Ups[3],
+			genericApp1Ups[4],
+		), should.BeTrue):
 	}
 }
 
@@ -251,7 +316,7 @@ func HandleApplicationUplinkQueueTest(t *testing.T, q ApplicationUplinkQueue) {
 				t.Skip("Skipping 2nd run")
 			}
 			test.RunSubtestFromContext(ctx, test.SubtestConfig{
-				Name: "2st run",
+				Name: "2nd run",
 				Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 					handleApplicationUplinkQueueTest(ctx, q)
 				},

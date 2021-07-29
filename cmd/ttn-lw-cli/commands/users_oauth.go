@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
@@ -42,11 +42,11 @@ func getUserAndClientID(flagSet *pflag.FlagSet, args []string) (*ttnpb.UserIdent
 	}
 	switch {
 	case userID != "" && clientID != "":
-		return &ttnpb.UserIdentifiers{UserID: userID}, &ttnpb.ClientIdentifiers{ClientID: clientID}
+		return &ttnpb.UserIdentifiers{UserId: userID}, &ttnpb.ClientIdentifiers{ClientId: clientID}
 	case userID != "":
-		return &ttnpb.UserIdentifiers{UserID: userID}, nil
+		return &ttnpb.UserIdentifiers{UserId: userID}, nil
 	case clientID != "":
-		return nil, &ttnpb.ClientIdentifiers{ClientID: clientID}
+		return nil, &ttnpb.ClientIdentifiers{ClientId: clientID}
 	}
 	return nil, nil
 }
@@ -107,13 +107,17 @@ var (
 			}
 
 			res, err := ttnpb.NewOAuthAuthorizationRegistryClient(is).ListTokens(ctx, &ttnpb.ListOAuthAccessTokensRequest{
-				UserIDs:   *usrID,
-				ClientIDs: *cliID,
+				UserIds:   *usrID,
+				ClientIds: *cliID,
 			})
+			if err != nil {
+				return err
+			}
+
 			for _, token := range res.Tokens {
 				_, err = ttnpb.NewOAuthAuthorizationRegistryClient(is).DeleteToken(ctx, &ttnpb.OAuthAccessTokenIdentifiers{
-					UserIDs:   *usrID,
-					ClientIDs: *cliID,
+					UserIds:   *usrID,
+					ClientIds: *cliID,
 					ID:        token.ID,
 				})
 				if err != nil {
@@ -122,8 +126,8 @@ var (
 			}
 
 			_, err = ttnpb.NewOAuthAuthorizationRegistryClient(is).Delete(ctx, &ttnpb.OAuthClientAuthorizationIdentifiers{
-				UserIDs:   *usrID,
-				ClientIDs: *cliID,
+				UserIds:   *usrID,
+				ClientIds: *cliID,
 			})
 
 			return err
@@ -153,8 +157,8 @@ var (
 			}
 			limit, page, opt, getTotal := withPagination(cmd.Flags())
 			res, err := ttnpb.NewOAuthAuthorizationRegistryClient(is).ListTokens(ctx, &ttnpb.ListOAuthAccessTokensRequest{
-				UserIDs:   *usrID,
-				ClientIDs: *cliID,
+				UserIds:   *usrID,
+				ClientIds: *cliID,
 				Limit:     limit,
 				Page:      page,
 				Order:     getOrder(cmd.Flags()),
@@ -190,8 +194,8 @@ var (
 			}
 
 			_, err = ttnpb.NewOAuthAuthorizationRegistryClient(is).DeleteToken(ctx, &ttnpb.OAuthAccessTokenIdentifiers{
-				UserIDs:   *usrID,
-				ClientIDs: *cliID,
+				UserIds:   *usrID,
+				ClientIds: *cliID,
 				ID:        tokenID,
 			})
 
@@ -202,6 +206,7 @@ var (
 
 func init() {
 	oauthAuthorizationsListCommand.Flags().AddFlagSet(userIDFlags())
+	oauthAuthorizationsListCommand.Flags().AddFlagSet(paginationFlags())
 	oauthAuthorizationsCommand.AddCommand(oauthAuthorizationsListCommand)
 	oauthAuthorizationsDeleteCommand.Flags().AddFlagSet(userIDFlags())
 	oauthAuthorizationsDeleteCommand.Flags().AddFlagSet(clientIDFlags())
@@ -209,6 +214,7 @@ func init() {
 	oauthCommand.AddCommand(oauthAuthorizationsCommand)
 	oauthAccessTokensListCommand.Flags().AddFlagSet(userIDFlags())
 	oauthAccessTokensListCommand.Flags().AddFlagSet(clientIDFlags())
+	oauthAccessTokensListCommand.Flags().AddFlagSet(paginationFlags())
 	oauthAccessTokensCommand.AddCommand(oauthAccessTokensListCommand)
 	oauthAccessTokensDeleteCommand.Flags().AddFlagSet(userIDFlags())
 	oauthAccessTokensDeleteCommand.Flags().AddFlagSet(clientIDFlags())

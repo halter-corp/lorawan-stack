@@ -41,10 +41,10 @@ func GetInt32AsByteSlice(value int32) ([]byte, error) {
 
 func GetFCtrlAsUint(fCtrl ttnpb.FCtrl) uint {
 	var ret uint
-	if fCtrl.GetADR() {
+	if fCtrl.GetAdr() {
 		ret = ret | 0x80
 	}
-	if fCtrl.GetADRAckReq() {
+	if fCtrl.GetAdrAckReq() {
 		ret = ret | 0x40
 	}
 	if fCtrl.GetAck() {
@@ -70,16 +70,13 @@ func GetDataRateFromIndex(bandID string, index int) (ttnpb.DataRate, bool, error
 		return ttnpb.DataRate{}, false, errDataRateIndex.New()
 	}
 
-	if dr.Rate.GetLoRa() != nil {
+	if dr.Rate.GetLora() != nil {
 		return dr.Rate, true, nil
 	}
 	return dr.Rate, false, nil
 }
 
 func GetDataRateIndexFromDataRate(bandID string, dr ttnpb.DataRate) (int, error) {
-	if (dr == ttnpb.DataRate{}) {
-		return 0, errDataRate.New()
-	}
 	phy, err := band.GetByID(bandID)
 	if err != nil {
 		return 0, err

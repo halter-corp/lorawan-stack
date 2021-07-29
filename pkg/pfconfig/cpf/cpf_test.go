@@ -73,7 +73,7 @@ func TestBuildLorad(t *testing.T) {
 				Antennas: []ttnpb.GatewayAntenna{
 					{
 						Gain: 4,
-						Location: ttnpb.Location{
+						Location: &ttnpb.Location{
 							Latitude:  0.42,
 							Longitude: 42.42,
 						},
@@ -107,21 +107,21 @@ func TestBuildLorad(t *testing.T) {
 				Antennas: []ttnpb.GatewayAntenna{
 					{
 						Gain: 4,
-						Location: ttnpb.Location{
+						Location: &ttnpb.Location{
 							Latitude:  0.42,
 							Longitude: 42.42,
 						},
 					},
 					{
 						Gain: 5,
-						Location: ttnpb.Location{
+						Location: &ttnpb.Location{
 							Latitude:  0.43,
 							Longitude: 42.43,
 						},
 					},
 					{
 						Gain: 2,
-						Location: ttnpb.Location{
+						Location: &ttnpb.Location{
 							Latitude:  -42,
 							Longitude: 42,
 						},
@@ -198,7 +198,7 @@ func TestBuildLorafwd(t *testing.T) {
 			Name: "EUI set/address:host",
 			Gateway: &ttnpb.Gateway{
 				GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-					EUI: &eui,
+					Eui: &eui,
 				},
 				GatewayServerAddress: host,
 			},
@@ -220,7 +220,7 @@ func TestBuildLorafwd(t *testing.T) {
 			Name: "EUI set/address:'host:port'",
 			Gateway: &ttnpb.Gateway{
 				GatewayIdentifiers: ttnpb.GatewayIdentifiers{
-					EUI: &eui,
+					Eui: &eui,
 				},
 				GatewayServerAddress: fmt.Sprintf("%s:%d", host, 42),
 			},

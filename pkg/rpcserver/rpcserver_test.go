@@ -25,6 +25,7 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/log/handler/memory"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -36,9 +37,9 @@ import (
 var (
 	deviceID = ttnpb.EndDeviceIdentifiers{
 		ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-			ApplicationID: "bar",
+			ApplicationId: "bar",
 		},
-		DeviceID: "foo",
+		DeviceId: "foo",
 	}
 	downlinkQueueReq = &ttnpb.DownlinkQueueRequest{
 		EndDeviceIdentifiers: deviceID,
@@ -61,8 +62,8 @@ func TestNewRPCServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(test.Context())
 	defer cancel()
 
-	logHandler := &mockHandler{}
-	logger := log.NewLogger(log.WithHandler(logHandler))
+	logHandler := memory.New()
+	logger := log.NewLogger(logHandler)
 	ctx = log.NewContext(ctx, logger)
 
 	server := rpcserver.New(ctx,
@@ -105,14 +106,14 @@ func TestNewRPCServer(t *testing.T) {
 		runtime.Gosched()
 		time.Sleep(test.Delay)
 
-		a.So(logHandler.entries, should.HaveLength, 1)
+		a.So(logHandler.Entries, should.HaveLength, 1)
 	})
 
 	t.Run("Stream", func(t *testing.T) {
 		a := assertions.New(t)
 
 		sub, err := cli.Subscribe(ctx, &ttnpb.ApplicationIdentifiers{
-			ApplicationID: "bar",
+			ApplicationId: "bar",
 		})
 		a.So(sub, should.NotBeNil)
 		a.So(err, should.BeNil)
@@ -132,12 +133,14 @@ func TestNewRPCServer(t *testing.T) {
 		runtime.Gosched()
 		time.Sleep(test.Delay)
 
-		a.So(logHandler.entries, should.HaveLength, 2)
+		a.So(logHandler.Entries, should.HaveLength, 2)
 	})
 }
 
-type mockKey struct{}
-type mockKey2 struct{}
+type (
+	mockKey  struct{}
+	mockKey2 struct{}
+)
 
 type mockServer struct {
 	ttnpb.AppAsServer
@@ -147,15 +150,6 @@ type mockServer struct {
 
 	subCtx context.Context
 	subIDs *ttnpb.ApplicationIdentifiers
-}
-
-type mockHandler struct {
-	entries []log.Entry
-}
-
-func (h *mockHandler) HandleLog(entry log.Entry) error {
-	h.entries = append(h.entries, entry)
-	return nil
 }
 
 func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {

@@ -56,10 +56,10 @@ func TestConvertEndDeviceTemplate(t *testing.T) {
 				ch <- &ttnpb.EndDeviceTemplate{
 					EndDevice: ttnpb.EndDevice{
 						EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-							DeviceID: fmt.Sprintf("sn-%d", b),
+							DeviceId: fmt.Sprintf("sn-%d", b),
 						},
 					},
-					FieldMask: pbtypes.FieldMask{
+					FieldMask: &pbtypes.FieldMask{
 						Paths: []string{"ids.device_id"},
 					},
 				}
@@ -105,20 +105,20 @@ func TestConvertEndDeviceTemplate(t *testing.T) {
 		{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID: "sn-1",
+					DeviceId: "sn-1",
 				},
 			},
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"ids.device_id"},
 			},
 		},
 		{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID: "sn-2",
+					DeviceId: "sn-2",
 				},
 			},
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"ids.device_id"},
 			},
 		},

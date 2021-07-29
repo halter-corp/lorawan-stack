@@ -17,10 +17,12 @@ import UplinkMessage from '../previews/uplink-message'
 import ApplicationDownlink from '../previews/application-downlink'
 import ApplicationUplink from '../previews/application-uplink'
 import ApplicationUp from '../previews/application-up'
+import ApplicationLocation from '../previews/application-location'
 import JoinRequest from '../previews/join-request'
 import JoinResponse from '../previews/join-response'
 import GatewayStatus from '../previews/gateway-status'
 import ErrorDetails from '../previews/error-details'
+import Value from '../previews/value'
 
 export const eventIconMap = [
   {
@@ -53,7 +55,7 @@ export const eventIconMap = [
   },
   {
     test: /^gs\.down(\.[a-z0-9](?:[-_]?[a-z0-9]){2,})+$/,
-    icon: 'event_uplink',
+    icon: 'event_downlink',
   },
   {
     test: /^gs.gateway.connect$/,
@@ -97,12 +99,14 @@ export const dataTypeMap = {
   ApplicationDownlink,
   ApplicationUplink,
   ApplicationUp,
+  ApplicationLocation,
   DownlinkMessage,
   UplinkMessage,
   JoinRequest,
   JoinResponse,
   ErrorDetails,
   GatewayStatus,
+  Value,
 }
 
 export const applicationUpMessages = [

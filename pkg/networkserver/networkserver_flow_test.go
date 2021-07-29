@@ -25,7 +25,6 @@ import (
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/band"
-	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver"
@@ -43,7 +42,7 @@ func frequencyPlanMACCommands(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYV
 	case test.EUFrequencyPlanID:
 		linkADRReq := &ttnpb.MACCommand_LinkADRReq{
 			ChannelMask:   []bool{true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false},
-			DataRateIndex: ttnpb.DATA_RATE_4,
+			DataRateIndex: ttnpb.DATA_RATE_5,
 			TxPowerIndex:  1,
 			NbTrans:       1,
 		}
@@ -56,17 +55,28 @@ func frequencyPlanMACCommands(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYV
 		linkADRReqs := []MACCommander{
 			&ttnpb.MACCommand_LinkADRReq{
 				ChannelMask:   []bool{false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true},
-				DataRateIndex: ttnpb.DATA_RATE_2,
+				DataRateIndex: ttnpb.DATA_RATE_3,
 				TxPowerIndex:  1,
 				NbTrans:       1,
 			},
 		}
-		if !otaa || phyVersion.Compare(ttnpb.PHY_V1_0_3_REV_A) < 0 {
+		beforeRP001_V1_0_3_REV_A := func(v ttnpb.PHYVersion) bool {
+			switch v {
+			case ttnpb.TS001_V1_0,
+				ttnpb.TS001_V1_0_1,
+				ttnpb.RP001_V1_0_2,
+				ttnpb.RP001_V1_0_2_REV_B:
+				return true
+			default:
+				return false
+			}
+		}
+		if !otaa || beforeRP001_V1_0_3_REV_A(phyVersion) {
 			linkADRReqs = append([]MACCommander{
 				&ttnpb.MACCommand_LinkADRReq{
 					ChannelMask:        []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
 					ChannelMaskControl: 7,
-					DataRateIndex:      ttnpb.DATA_RATE_2,
+					DataRateIndex:      ttnpb.DATA_RATE_3,
 					TxPowerIndex:       1,
 					NbTrans:            1,
 				},
@@ -86,7 +96,7 @@ func frequencyPlanMACCommands(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYV
 		}
 		linkADRReq := &ttnpb.MACCommand_LinkADRReq{
 			ChannelMask:   []bool{true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false},
-			DataRateIndex: ttnpb.DATA_RATE_4,
+			DataRateIndex: ttnpb.DATA_RATE_5,
 			TxPowerIndex:  1,
 			NbTrans:       1,
 		}
@@ -104,7 +114,7 @@ func frequencyPlanMACCommands(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYV
 
 type OTAAFlowTestConfig struct {
 	CreateDevice *ttnpb.SetEndDeviceRequest
-	Func         func(context.Context, TestEnvironment, *ttnpb.EndDevice, ttnpb.AsNs_LinkApplicationClient)
+	Func         func(context.Context, TestEnvironment, *ttnpb.EndDevice)
 
 	UplinkMACCommanders   []MACCommander
 	UplinkEventBuilders   []events.Builder
@@ -118,31 +128,10 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 
 		start := time.Now()
 
-		linkCtx, closeLink := context.WithCancel(ctx)
-		link, linkCIDs, ok := env.AssertLinkApplication(linkCtx, AppID)
-		if !a.So(ok, should.BeTrue) || !a.So(link, should.NotBeNil) {
-			t.Error("AS link assertion failed")
-			closeLink()
-			return
-		}
-		defer func() {
-			closeLink()
-			if !a.So(test.AssertEventPubSubPublishRequest(ctx, env.Events, func(ev events.Event) bool {
-				return a.So(ev.Data(), should.BeError) && test.AllTrue(
-					a.So(errors.IsCanceled(ev.Data().(error)), should.BeTrue),
-					a.So(ev, should.ResembleEvent, EvtEndApplicationLink.New(
-						events.ContextWithCorrelationID(ctx, linkCIDs...),
-						events.WithIdentifiers(AppID),
-						events.WithData(ev.Data().(error)),
-					)),
-				)
-			}), should.BeTrue) {
-				t.Error("AS link end event assertion failed")
-			}
-		}()
-
-		dev, ok := env.AssertSetDevice(ctx, true, conf.CreateDevice)
-		if !a.So(ok, should.BeTrue) {
+		dev, err, ok := env.AssertSetDevice(ctx, true, conf.CreateDevice,
+			ttnpb.RIGHT_APPLICATION_DEVICES_WRITE,
+		)
+		if !a.So(err, should.BeNil) || !a.So(ok, should.BeTrue) {
 			t.Error("Failed to create device")
 			return
 		}
@@ -150,17 +139,16 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 		a.So(dev.CreatedAt, should.HappenAfter, start)
 		a.So(dev.UpdatedAt, should.Equal, dev.CreatedAt)
 		a.So([]time.Time{start, dev.CreatedAt, time.Now()}, should.BeChronological)
-		a.So(dev, should.ResembleFields, &conf.CreateDevice.EndDevice, conf.CreateDevice.FieldMask.Paths)
+		a.So(dev, should.ResembleFields, &conf.CreateDevice.EndDevice, conf.CreateDevice.FieldMask.GetPaths())
 
 		dev, ok = env.AssertJoin(ctx, JoinAssertionConfig{
-			Link:          link,
 			Device:        dev,
 			ChannelIndex:  1,
 			DataRateIndex: ttnpb.DATA_RATE_2,
 			RxMetadatas: [][]*ttnpb.RxMetadata{
 				nil,
-				RxMetadata[3:],
-				RxMetadata[:3],
+				DefaultRxMetadata[3:],
+				DefaultRxMetadata[:3],
 			},
 			CorrelationIDs: []string{
 				"GsNs-join-1",
@@ -169,8 +157,10 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 
 			ClusterResponse: &NsJsHandleJoinResponse{
 				Response: &ttnpb.JoinResponse{
-					RawPayload:     bytes.Repeat([]byte{0x42}, 33),
-					SessionKeys:    *MakeSessionKeys(dev.LoRaWANVersion, true),
+					RawPayload: bytes.Repeat([]byte{0x42}, 33),
+					SessionKeys: *test.MakeSessionKeys(
+						test.SessionKeysOptions.WithDefaultNwkKeys(dev.LorawanVersion),
+					),
 					Lifetime:       time.Hour,
 					CorrelationIDs: []string{"NsJs-1", "NsJs-2"},
 				},
@@ -185,7 +175,7 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 		var upCmders []MACCommander
 		var upEvBuilders []events.Builder
 		var downCmders []MACCommander
-		if dev.PendingMACState.LoRaWANVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
+		if dev.PendingMACState.LorawanVersion.Compare(ttnpb.MAC_V1_1) >= 0 {
 			rekeyInd := &ttnpb.MACCommand_RekeyInd{
 				MinorVersion: ttnpb.MINOR_1,
 			}
@@ -205,8 +195,8 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 			}
 		}
 
-		fp := FrequencyPlan(dev.FrequencyPlanID)
-		phy := LoRaWANBands[fp.BandID][dev.LoRaWANPHYVersion]
+		fp := test.FrequencyPlan(dev.FrequencyPlanID)
+		phy := LoRaWANBands[fp.BandID][dev.LorawanPhyVersion]
 
 		deviceChannels, ok := ApplyCFList(dev.PendingMACState.PendingJoinRequest.CFList, phy, dev.PendingMACState.CurrentParameters.Channels...)
 		if !a.So(ok, should.BeTrue) {
@@ -216,13 +206,12 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 		dev.PendingMACState.CurrentParameters.Channels = deviceChannels
 		dev.EndDeviceIdentifiers.DevAddr = &dev.PendingSession.DevAddr
 		dev, ok = env.AssertHandleDataUplink(ctx, DataUplinkAssertionConfig{
-			Link:          link,
 			Device:        dev,
 			ChannelIndex:  2,
 			DataRateIndex: ttnpb.DATA_RATE_1,
 			RxMetadatas: [][]*ttnpb.RxMetadata{
-				RxMetadata[:2],
-				RxMetadata[2:],
+				DefaultRxMetadata[:2],
+				DefaultRxMetadata[2:],
 			},
 			CorrelationIDs: []string{"GsNs-data-0"},
 
@@ -230,7 +219,7 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 			Pending:       true,
 			FRMPayload:    []byte("test"),
 			FOpts:         MakeUplinkMACBuffer(phy, append(upCmders, conf.UplinkMACCommanders...)...),
-			FCtrl:         ttnpb.FCtrl{ADR: true},
+			FCtrl:         ttnpb.FCtrl{Adr: true},
 			FPort:         0x42,
 			EventBuilders: append(upEvBuilders, conf.UplinkEventBuilders...),
 		})
@@ -239,7 +228,7 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 			return
 		}
 
-		fpCmders, fpEvBuilders := frequencyPlanMACCommands(dev.MACState.LoRaWANVersion, dev.LoRaWANPHYVersion, dev.FrequencyPlanID, true)
+		fpCmders, fpEvBuilders := frequencyPlanMACCommands(dev.MACState.LorawanVersion, dev.LorawanPhyVersion, dev.FrequencyPlanID, true)
 		downEvBuilders := append(conf.DownlinkEventBuilders, fpEvBuilders...)
 		downCmders = append(downCmders, conf.DownlinkMACCommanders...)
 		downCmders = append(downCmders, fpCmders...)
@@ -253,10 +242,10 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 		down := MakeDataDownlink(DataDownlinkConfig{
 			DecodePayload: true,
 
-			MACVersion: dev.MACState.LoRaWANVersion,
+			MACVersion: dev.MACState.LorawanVersion,
 			DevAddr:    dev.Session.DevAddr,
 			FCtrl: ttnpb.FCtrl{
-				ADR: true,
+				Adr: true,
 				Ack: true,
 			},
 			FRMPayload:  frmPayload,
@@ -283,28 +272,51 @@ func makeOTAAFlowTest(conf OTAAFlowTestConfig) func(context.Context, TestEnviron
 			return
 		}
 		if !a.So(env.Events, should.ReceiveEventsResembling, events.Builders(downEvBuilders).New(
-			events.ContextWithCorrelationID(ctx, LastDownlink(dev.RecentDownlinks...).CorrelationIDs...),
-			events.WithIdentifiers(dev.EndDeviceIdentifiers)),
+			events.ContextWithCorrelationID(ctx, LastDownlink(dev.MACState.RecentDownlinks...).CorrelationIDs...),
+			events.WithIdentifiers(&dev.EndDeviceIdentifiers)),
 		) {
 			t.Error("Data downlink event assertion failed")
 			return
 		}
 
-		conf.Func(ctx, env, dev, link)
+		if dev.MACState.LorawanVersion.Compare(ttnpb.MAC_V1_1) < 0 {
+			if !a.So(env.AssertNsAsHandleUplink(ctx, dev.ApplicationIdentifiers, func(ctx context.Context, ups ...*ttnpb.ApplicationUp) bool {
+				_, a := test.MustNewTFromContext(ctx)
+				if !a.So(ups, should.HaveLength, 1) {
+					return false
+				}
+				up := ups[0]
+				return test.AllTrue(
+					// TODO: Enable this assertion once https://github.com/TheThingsNetwork/lorawan-stack/issues/3416 is done.
+					// a.So(up.CorrelationIDs, should.HaveSameElementsDeep, LastDownlink(dev.RecentDownlinks...).CorrelationIDs),
+					a.So(up, should.Resemble, &ttnpb.ApplicationUp{
+						EndDeviceIdentifiers: dev.EndDeviceIdentifiers,
+						CorrelationIDs:       up.CorrelationIDs,
+						Up: &ttnpb.ApplicationUp_DownlinkQueueInvalidated{
+							DownlinkQueueInvalidated: &ttnpb.ApplicationInvalidatedDownlinks{
+								SessionKeyID: dev.Session.SessionKeyID,
+							},
+						},
+					}),
+				)
+			}, nil), should.BeTrue) {
+				t.Error("Failed to send queue invalidation to Application Server")
+				return
+			}
+		}
+		conf.Func(ctx, env, dev)
 	}
 }
 
 func makeClassAOTAAFlowTest(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVersion, fpID string) func(context.Context, TestEnvironment) {
 	return makeOTAAFlowTest(OTAAFlowTestConfig{
 		CreateDevice: &ttnpb.SetEndDeviceRequest{
-			EndDevice: ttnpb.EndDevice{
-				EndDeviceIdentifiers: *MakeOTAAIdentifiers(nil),
-				FrequencyPlanID:      fpID,
-				LoRaWANVersion:       macVersion,
-				LoRaWANPHYVersion:    phyVersion,
-				SupportsJoin:         true,
-			},
-			FieldMask: pbtypes.FieldMask{
+			EndDevice: *MakeOTAAEndDevice(
+				EndDeviceOptions.WithFrequencyPlanID(fpID),
+				EndDeviceOptions.WithLoRaWANVersion(macVersion),
+				EndDeviceOptions.WithLoRaWANPHYVersion(phyVersion),
+			),
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{
 					"frequency_plan_id",
 					"lorawan_phy_version",
@@ -315,7 +327,7 @@ func makeClassAOTAAFlowTest(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVer
 		},
 		DownlinkMACCommanders: []MACCommander{ttnpb.CID_DEV_STATUS},
 		DownlinkEventBuilders: []events.Builder{mac.EvtEnqueueDevStatusRequest},
-		Func: func(ctx context.Context, env TestEnvironment, dev *ttnpb.EndDevice, link ttnpb.AsNs_LinkApplicationClient) {
+		Func: func(ctx context.Context, env TestEnvironment, dev *ttnpb.EndDevice) {
 		},
 	})
 }
@@ -346,15 +358,13 @@ func makeClassCOTAAFlowTest(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVer
 	}
 	return makeOTAAFlowTest(OTAAFlowTestConfig{
 		CreateDevice: &ttnpb.SetEndDeviceRequest{
-			EndDevice: ttnpb.EndDevice{
-				EndDeviceIdentifiers: *MakeOTAAIdentifiers(nil),
-				FrequencyPlanID:      fpID,
-				LoRaWANVersion:       macVersion,
-				LoRaWANPHYVersion:    phyVersion,
-				SupportsClassC:       true,
-				SupportsJoin:         true,
-			},
-			FieldMask: pbtypes.FieldMask{
+			EndDevice: *MakeOTAAEndDevice(
+				EndDeviceOptions.WithFrequencyPlanID(fpID),
+				EndDeviceOptions.WithLoRaWANVersion(macVersion),
+				EndDeviceOptions.WithLoRaWANPHYVersion(phyVersion),
+				EndDeviceOptions.WithSupportsClassC(true),
+			),
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{
 					"frequency_plan_id",
 					"lorawan_phy_version",
@@ -368,7 +378,7 @@ func makeClassCOTAAFlowTest(macVersion ttnpb.MACVersion, phyVersion ttnpb.PHYVer
 		UplinkEventBuilders:   upEvBuilders,
 		DownlinkMACCommanders: append(downCmders, ttnpb.CID_DEV_STATUS),
 		DownlinkEventBuilders: []events.Builder{mac.EvtEnqueueDevStatusRequest},
-		Func: func(ctx context.Context, env TestEnvironment, dev *ttnpb.EndDevice, link ttnpb.AsNs_LinkApplicationClient) {
+		Func: func(ctx context.Context, env TestEnvironment, dev *ttnpb.EndDevice) {
 		},
 	})
 }
@@ -402,8 +412,7 @@ func TestFlow(t *testing.T) {
 					nsConf.DeduplicationWindow = (1 << 8) * test.Delay
 					nsConf.CooldownWindow = (1 << 11) * test.Delay
 
-					_, ctx, env, stop := StartTest(t, TestConfig{
-						Context:       ctx,
+					_, ctx, env, stop := StartTest(ctx, TestConfig{
 						NetworkServer: nsConf,
 					})
 					defer stop()

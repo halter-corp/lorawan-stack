@@ -40,14 +40,14 @@ type store struct {
 }
 
 func (s *store) query(ctx context.Context, model interface{}, funcs ...func(*gorm.DB) *gorm.DB) *gorm.DB {
-	query := s.DB.Model(model).Scopes(withContext(ctx))
+	query := s.DB.Model(model).Scopes(withContext(ctx), withSoftDeletedIfRequested(ctx))
 	if len(funcs) > 0 {
 		query = query.Scopes(funcs...)
 	}
 	return query
 }
 
-func (s *store) findEntity(ctx context.Context, entityID ttnpb.Identifiers, fields ...string) (modelInterface, error) {
+func (s *store) findEntity(ctx context.Context, entityID ttnpb.IDStringer, fields ...string) (modelInterface, error) {
 	model := modelForID(entityID)
 	query := s.query(ctx, model, withID(entityID))
 	if len(fields) == 1 && fields[0] == "id" {
@@ -65,6 +65,10 @@ func (s *store) findEntity(ctx context.Context, entityID ttnpb.Identifiers, fiel
 	return model, nil
 }
 
+func (s *store) findDeletedEntity(ctx context.Context, entityID ttnpb.IDStringer, fields ...string) (modelInterface, error) {
+	return s.findEntity(WithSoftDeleted(ctx, false), entityID, fields...)
+}
+
 func (s *store) createEntity(ctx context.Context, model interface{}) error {
 	if model, ok := model.(modelInterface); ok {
 		model.SetContext(ctx)
@@ -78,12 +82,51 @@ func (s *store) updateEntity(ctx context.Context, model interface{}, columns ...
 	return query.Save(model).Error
 }
 
-func (s *store) deleteEntity(ctx context.Context, entityID ttnpb.Identifiers) error {
+func (s *store) deleteEntity(ctx context.Context, entityID ttnpb.IDStringer) error {
 	model, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
 		return err
 	}
-	return s.DB.Delete(model).Error
+	if err = s.DB.Delete(model).Error; err != nil {
+		return err
+	}
+	switch entityType := entityID.EntityType(); entityType {
+	case "user", "organization":
+		err = s.DB.Where(Account{
+			AccountType: entityType,
+			AccountID:   model.PrimaryKey(),
+		}).Delete(Account{}).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *store) restoreEntity(ctx context.Context, entityID ttnpb.IDStringer) error {
+	model, err := s.findDeletedEntity(ctx, entityID, "id")
+	if err != nil {
+		return err
+	}
+	switch entityType := entityID.EntityType(); entityType {
+	case "user", "organization":
+		err := s.DB.Unscoped().Model(Account{}).Where(Account{
+			AccountType: entityType,
+			AccountID:   model.PrimaryKey(),
+		}).UpdateColumn("deleted_at", gorm.Expr("NULL")).Error
+		if err != nil {
+			return err
+		}
+	}
+	return s.DB.Unscoped().Model(model).UpdateColumn("deleted_at", gorm.Expr("NULL")).Error
+}
+
+func (s *store) purgeEntity(ctx context.Context, entityID ttnpb.IDStringer) error {
+	model, err := s.findDeletedEntity(ctx, entityID, "id")
+	if err != nil {
+		return err
+	}
+	return s.DB.Unscoped().Delete(model).Error
 }
 
 var (
@@ -210,7 +253,7 @@ func Transact(ctx context.Context, db *gorm.DB, f func(db *gorm.DB) error) (err 
 	return f(tx)
 }
 
-func entityTypeForID(id ttnpb.Identifiers) string {
+func entityTypeForID(id ttnpb.IDStringer) string {
 	return strings.Replace(id.EntityType(), " ", "_", -1)
 }
 
@@ -233,7 +276,7 @@ func modelForEntityType(entityType string) modelInterface {
 	}
 }
 
-func modelForID(id ttnpb.Identifiers) modelInterface {
+func modelForID(id ttnpb.IDStringer) modelInterface {
 	return modelForEntityType(entityTypeForID(id))
 }
 
@@ -248,14 +291,14 @@ var (
 
 	errAuthorizationNotFound     = errors.DefineNotFound("authorization_not_found", "authorization of `{user_id}` for `{client_id}` not found")
 	errAuthorizationCodeNotFound = errors.DefineNotFound("authorization_code_not_found", "authorization code not found")
-	errAccessTokenNotFound       = errors.DefineNotFound("access_token_not_found", "access token not found")
+	errAccessTokenNotFound       = errors.DefineNotFound("access_token_not_found", "access token `{access_token_id}` not found")
 
 	errAPIKeyNotFound = errors.DefineNotFound("api_key_not_found", "API key not found")
 
 	errMigrationNotFound = errors.DefineNotFound("migration_not_found", "migration not found")
 )
 
-func errNotFoundForID(id ttnpb.Identifiers) error {
+func errNotFoundForID(id ttnpb.IDStringer) error {
 	switch t := entityTypeForID(id); t {
 	case "application":
 		return errApplicationNotFound.WithAttributes("application_id", id.IDString())

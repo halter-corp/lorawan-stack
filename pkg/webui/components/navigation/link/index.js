@@ -22,7 +22,7 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './link.styl'
 
-const NavigationLink = function({
+const NavigationLink = ({
   className,
   children,
   path,
@@ -30,30 +30,22 @@ const NavigationLink = function({
   activeClassName,
   onClick,
   ...rest
-}) {
-  return (
-    <NavLink
-      to={path}
-      exact={exact}
-      className={classnames(className, style.link)}
-      activeClassName={activeClassName}
-      onClick={onClick}
-      {...rest}
-    >
-      {children}
-    </NavLink>
-  )
-}
+}) => (
+  <NavLink
+    to={path}
+    exact={exact}
+    className={classnames(className, style.link)}
+    activeClassName={activeClassName}
+    onClick={onClick}
+    {...rest}
+  >
+    {children}
+  </NavLink>
+)
 
-const NavigationAnchorLink = function({ className, children, path, ...rest }) {
-  return (
-    <Link.BaseAnchor
-      href={path}
-      className={classnames(className, style.link)}
-      children={children}
-    />
-  )
-}
+const NavigationAnchorLink = ({ className, children, path, ...rest }) => (
+  <Link.BaseAnchor href={path} className={classnames(className, style.link)} children={children} />
+)
 
 NavigationLink.propTypes = {
   activeClassName: PropTypes.string,

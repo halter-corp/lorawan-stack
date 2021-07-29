@@ -1,4 +1,4 @@
-// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,11 +38,24 @@ const validationSchema = Yup.object().shape({
     addressRegexp,
     Yup.passValues(sharedMessages.validateAddressFormat),
   ),
+  require_authenticated_connection: Yup.boolean().default(false),
+  // The API allows 2048 bytes. But since we convert to Base64 we need an additional 33% (at max) capacity. So 66% of 2048 = 1351,68 and hence this is set to 1350.
+  lbs_lns_secret: Yup.lazy(secret => {
+    if (!secret || !secret.value) {
+      return Yup.object().strip()
+    }
+
+    return Yup.object({
+      value: Yup.string().max(1350, Yup.passValues(sharedMessages.validateTooLong)),
+    })
+  }),
   location_public: Yup.boolean().default(false),
   status_public: Yup.boolean().default(false),
   update_location_from_status: Yup.boolean().default(false),
   auto_update: Yup.boolean().default(false),
+  disable_packet_broker_forwarding: Yup.boolean().default(false),
   attributes: Yup.array()
+    .max(10, Yup.passValues(sharedMessages.attributesValidateTooMany))
     .test(
       'has no empty string values',
       sharedMessages.attributesValidateRequired,

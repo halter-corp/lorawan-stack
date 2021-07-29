@@ -1,4 +1,4 @@
-// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 import React from 'react'
 
 import delay from '@console/constants/delays'
+import frequencyPlans from '@console/constants/frequency-plans'
 
 import SubmitButton from '@ttn-lw/components/submit-button'
 import SubmitBar from '@ttn-lw/components/submit-bar'
@@ -24,6 +25,7 @@ import UnitInput from '@ttn-lw/components/unit-input'
 
 import { GsFrequencyPlansSelect } from '@console/containers/freq-plans-select'
 
+import tooltipIds from '@ttn-lw/lib/constants/tooltip-ids'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
@@ -45,6 +47,8 @@ const decodeDelayValue = value => {
     unit,
   }
 }
+
+const isEmptyFrequencyPlan = value => value === frequencyPlans.EMPTY_FREQ_PLAN
 
 const isNotValidDuration = value => {
   const { duration, unit } = decodeDelayValue(value)
@@ -74,13 +78,29 @@ const LorawanSettingsForm = React.memo(props => {
     setShouldDisplayWarning(isNotValidDuration(value))
   }, [])
 
-  const initialValues = React.useMemo(() => {
-    return validationSchema.cast(gateway)
-  }, [gateway])
+  const [showFrequencyPlanWarning, setShowFrequencyPlanWarning] = React.useState(
+    isEmptyFrequencyPlan(gateway.frequency_plan_id) || !gateway.frequency_plan_id,
+  )
+
+  const onFrequencyPlanChange = React.useCallback(freqPlan => {
+    setShowFrequencyPlanWarning(isEmptyFrequencyPlan(freqPlan.value))
+  }, [])
+
+  const initialValues = React.useMemo(
+    () => ({
+      ...validationSchema.cast(gateway),
+      frequency_plan_id: gateway.frequency_plan_id || frequencyPlans.EMPTY_FREQ_PLAN,
+    }),
+    [gateway],
+  )
 
   const onFormSubmit = React.useCallback(
     async (values, { resetForm, setSubmitting }) => {
-      const castedValues = validationSchema.cast(values)
+      const castedValues = validationSchema.cast(
+        isEmptyFrequencyPlan(values.frequency_plan_id)
+          ? { ...values, frequency_plan_id: '' }
+          : values,
+      )
 
       setError(undefined)
       try {
@@ -103,23 +123,31 @@ const LorawanSettingsForm = React.memo(props => {
       error={error}
       enableReinitialize
     >
-      <GsFrequencyPlansSelect name="frequency_plan_id" menuPlacement="top" />
+      <GsFrequencyPlansSelect
+        name="frequency_plan_id"
+        menuPlacement="top"
+        onChange={onFrequencyPlanChange}
+        warning={showFrequencyPlanWarning ? sharedMessages.frequencyPlanWarning : undefined}
+        tooltipId={tooltipIds.FREQUENCY_PLAN}
+      />
       <Form.Field
         title={sharedMessages.gatewayScheduleDownlinkLate}
         name="schedule_downlink_late"
         component={Checkbox}
         description={sharedMessages.scheduleDownlinkLateDescription}
+        tooltipId={tooltipIds.SCHEDULE_DOWNLINK_LATE}
       />
       <Form.Field
-        title={sharedMessages.dutyCycle}
         name="enforce_duty_cycle"
         component={Checkbox}
-        label={sharedMessages.enforced}
+        label={sharedMessages.enforceDutyCycle}
         description={sharedMessages.enforceDutyCycleDescription}
+        tooltipId={tooltipIds.ENFORCE_DUTY_CYCLE}
       />
       <Form.Field
         title={sharedMessages.scheduleAnyTimeDelay}
         name="schedule_anytime_delay"
+        inputWidth="s"
         component={UnitInput}
         description={{
           ...sharedMessages.scheduleAnyTimeDescription,
@@ -144,6 +172,7 @@ const LorawanSettingsForm = React.memo(props => {
             : undefined
         }
         required
+        tooltipId={tooltipIds.SCHEDULE_ANYTIME_DELAY}
       />
       <SubmitBar>
         <Form.Submit component={SubmitButton} message={sharedMessages.saveChanges} />

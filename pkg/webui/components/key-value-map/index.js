@@ -33,11 +33,21 @@ class KeyValueMap extends React.PureComponent {
   static propTypes = {
     addMessage: PropTypes.message,
     className: PropTypes.string,
-    keyPlaceholder: PropTypes.message.isRequired,
+    disabled: PropTypes.bool,
+    indexAsKey: PropTypes.bool,
+    keyPlaceholder: PropTypes.message,
     name: PropTypes.string.isRequired,
     onBlur: PropTypes.func,
     onChange: PropTypes.func,
-    value: PropTypes.arrayOf(PropTypes.shape({ key: PropTypes.string, value: PropTypes.string })),
+    value: PropTypes.arrayOf(
+      PropTypes.oneOfType([
+        PropTypes.shape({
+          key: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+          value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        }),
+        PropTypes.string,
+      ]),
+    ),
     valuePlaceholder: PropTypes.message.isRequired,
   }
 
@@ -47,24 +57,39 @@ class KeyValueMap extends React.PureComponent {
     onChange: () => null,
     value: [],
     addMessage: m.addEntry,
+    indexAsKey: false,
+    keyPlaceholder: '',
+    disabled: false,
   }
 
   @bind
   handleEntryChange(index, newValues) {
-    const { onChange, value } = this.props
-    onChange(value.map((kv, i) => (index !== i ? kv : { ...kv, ...newValues })))
+    const { onChange, value, indexAsKey } = this.props
+
+    onChange(
+      value.map((val, idx) => {
+        if (index !== idx) {
+          return val
+        }
+
+        return indexAsKey ? newValues.value : { ...val, ...newValues }
+      }),
+    )
   }
 
   @bind
   removeEntry(index) {
     const { onChange, value } = this.props
+
     onChange(value.filter((_, i) => i !== index) || [], true)
   }
 
   @bind
   addEmptyEntry() {
-    const { onChange, value } = this.props
-    onChange([...value, { key: '', value: '' }])
+    const { onChange, value, indexAsKey } = this.props
+    const entry = indexAsKey ? undefined : { key: '', value: undefined }
+
+    onChange([...value, entry])
   }
 
   render() {
@@ -76,6 +101,8 @@ class KeyValueMap extends React.PureComponent {
       valuePlaceholder,
       addMessage,
       onBlur,
+      indexAsKey,
+      disabled,
     } = this.props
 
     return (
@@ -93,6 +120,7 @@ class KeyValueMap extends React.PureComponent {
                 onRemoveButtonClick={this.removeEntry}
                 onChange={this.handleEntryChange}
                 onBlur={onBlur}
+                indexAsKey={indexAsKey}
               />
             ))}
         </div>
@@ -102,7 +130,9 @@ class KeyValueMap extends React.PureComponent {
             type="button"
             message={addMessage}
             onClick={this.addEmptyEntry}
+            disabled={disabled}
             icon="add"
+            secondary
           />
         </div>
       </div>

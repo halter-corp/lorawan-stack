@@ -4,9 +4,8 @@ package ttnpb
 
 import (
 	fmt "fmt"
+	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
 	time "time"
-
-	types "github.com/gogo/protobuf/types"
 )
 
 func (dst *Application) SetFields(src *Application, paths ...string) error {
@@ -50,6 +49,15 @@ func (dst *Application) SetFields(src *Application, paths ...string) error {
 				var zero time.Time
 				dst.UpdatedAt = zero
 			}
+		case "deleted_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DeletedAt = src.DeletedAt
+			} else {
+				dst.DeletedAt = nil
+			}
 		case "name":
 			if len(subs) > 0 {
 				return fmt.Errorf("'name' has no subfields, but %s were specified", subs)
@@ -88,6 +96,16 @@ func (dst *Application) SetFields(src *Application, paths ...string) error {
 			} else {
 				dst.ContactInfo = nil
 			}
+		case "dev_eui_counter":
+			if len(subs) > 0 {
+				return fmt.Errorf("'dev_eui_counter' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DevEuiCounter = src.DevEuiCounter
+			} else {
+				var zero uint32
+				dst.DevEuiCounter = zero
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -107,6 +125,27 @@ func (dst *Applications) SetFields(src *Applications, paths ...string) error {
 				dst.Applications = src.Applications
 			} else {
 				dst.Applications = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *IssueDevEUIResponse) SetFields(src *IssueDevEUIResponse, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "dev_eui":
+			if len(subs) > 0 {
+				return fmt.Errorf("'dev_eui' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DevEui = src.DevEui
+			} else {
+				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
+				dst.DevEui = zero
 			}
 
 		default:
@@ -144,8 +183,7 @@ func (dst *GetApplicationRequest) SetFields(src *GetApplicationRequest, paths ..
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -190,8 +228,7 @@ func (dst *ListApplicationsRequest) SetFields(src *ListApplicationsRequest, path
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 		case "order":
 			if len(subs) > 0 {
@@ -222,6 +259,16 @@ func (dst *ListApplicationsRequest) SetFields(src *ListApplicationsRequest, path
 			} else {
 				var zero uint32
 				dst.Page = zero
+			}
+		case "deleted":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Deleted = src.Deleted
+			} else {
+				var zero bool
+				dst.Deleted = zero
 			}
 
 		default:
@@ -306,8 +353,7 @@ func (dst *UpdateApplicationRequest) SetFields(src *UpdateApplicationRequest, pa
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -392,10 +438,10 @@ func (dst *GetApplicationAPIKeyRequest) SetFields(src *GetApplicationAPIKeyReque
 				return fmt.Errorf("'key_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.KeyID = src.KeyID
+				dst.KeyId = src.KeyId
 			} else {
 				var zero string
-				dst.KeyID = zero
+				dst.KeyId = zero
 			}
 
 		default:
@@ -445,6 +491,15 @@ func (dst *CreateApplicationAPIKeyRequest) SetFields(src *CreateApplicationAPIKe
 			} else {
 				dst.Rights = nil
 			}
+		case "expires_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'expires_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ExpiresAt = src.ExpiresAt
+			} else {
+				dst.ExpiresAt = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -491,6 +546,15 @@ func (dst *UpdateApplicationAPIKeyRequest) SetFields(src *UpdateApplicationAPIKe
 					var zero APIKey
 					dst.APIKey = zero
 				}
+			}
+		case "field_mask":
+			if len(subs) > 0 {
+				return fmt.Errorf("'field_mask' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FieldMask = src.FieldMask
+			} else {
+				dst.FieldMask = nil
 			}
 
 		default:

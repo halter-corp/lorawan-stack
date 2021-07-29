@@ -30,6 +30,11 @@ export const selectApplicationSiteSubTitle = () => configSelector().SITE_SUB_TIT
 
 export const selectSentryDsnConfig = () => configSelector().SENTRY_DSN
 
+export const selectDevEUIConfig = () => ({
+  devEUIIssuingEnabled: selectApplicationConfig().dev_eui_issuing_enabled,
+  applicationLimit: selectApplicationConfig().dev_eui_application_limit,
+})
+
 export const selectCSRFToken = () => configSelector().CSRF_TOKEN
 
 export const selectStackConfig = () => selectApplicationConfig().stack_config
@@ -51,5 +56,7 @@ export const selectLanguageConfig = () => selectApplicationConfig().language
 export const selectSupportLinkConfig = () => selectApplicationConfig().support_link
 
 export const selectDocumentationUrlConfig = () => selectApplicationConfig().documentation_base_url
+
+export const selectEnableUserRegistration = () => selectApplicationConfig().enable_user_registration
 
 export const selectPageData = () => configSelector().PAGE_DATA

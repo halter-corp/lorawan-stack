@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -75,6 +75,35 @@ var (
 			getTotal()
 
 			return io.Write(os.Stdout, config.OutputFormat, res.Collaborators)
+		},
+	}
+	clientCollaboratorsGet = &cobra.Command{
+		Use:     "get",
+		Aliases: []string{"info"},
+		Short:   "Get an client collaborator",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliID := getClientID(cmd.Flags(), nil)
+			if cliID == nil {
+				return errNoClientID
+			}
+			collaborator := getCollaborator(cmd.Flags())
+			if collaborator == nil {
+				return errNoCollaborator
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			res, err := ttnpb.NewClientAccessClient(is).GetCollaborator(ctx, &ttnpb.GetClientCollaboratorRequest{
+				ClientIdentifiers:             *cliID,
+				OrganizationOrUserIdentifiers: *collaborator,
+			})
+			if err != nil {
+				return err
+			}
+
+			return io.Write(os.Stdout, config.OutputFormat, res)
 		},
 	}
 	clientCollaboratorsSet = &cobra.Command{
@@ -157,6 +186,8 @@ func init() {
 
 	clientCollaboratorsList.Flags().AddFlagSet(paginationFlags())
 	clientCollaborators.AddCommand(clientCollaboratorsList)
+	clientCollaboratorsGet.Flags().AddFlagSet(collaboratorFlags())
+	clientCollaborators.AddCommand(clientCollaboratorsGet)
 	clientCollaboratorsSet.Flags().AddFlagSet(collaboratorFlags())
 	clientCollaboratorsSet.Flags().AddFlagSet(clientRightsFlags)
 	clientCollaborators.AddCommand(clientCollaboratorsSet)

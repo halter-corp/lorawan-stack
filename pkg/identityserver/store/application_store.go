@@ -21,7 +21,7 @@ import (
 	"runtime/trace"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -37,15 +37,15 @@ type applicationStore struct {
 }
 
 // selectApplicationFields selects relevant fields (based on fieldMask) and preloads details if needed.
-func selectApplicationFields(ctx context.Context, query *gorm.DB, fieldMask *types.FieldMask) *gorm.DB {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func selectApplicationFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	if len(fieldMask.GetPaths()) == 0 {
 		return query.Preload("Attributes")
 	}
 	var applicationColumns []string
 	var notFoundPaths []string
-	for _, path := range ttnpb.TopLevelFields(fieldMask.Paths) {
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
 		switch path {
-		case "ids", "created_at", "updated_at":
+		case "ids", "created_at", "updated_at", "deleted_at":
 			// always selected
 		case attributesField:
 			query = query.Preload("Attributes")
@@ -60,13 +60,13 @@ func selectApplicationFields(ctx context.Context, query *gorm.DB, fieldMask *typ
 	if len(notFoundPaths) > 0 {
 		warning.Add(ctx, fmt.Sprintf("unsupported field mask paths: %s", strings.Join(notFoundPaths, ", ")))
 	}
-	return query.Select(cleanFields(append(append(modelColumns, "application_id"), applicationColumns...)...))
+	return query.Select(cleanFields(append(append(modelColumns, "deleted_at", "application_id"), applicationColumns...)...))
 }
 
 func (s *applicationStore) CreateApplication(ctx context.Context, app *ttnpb.Application) (*ttnpb.Application, error) {
 	defer trace.StartRegion(ctx, "create application").End()
 	appModel := Application{
-		ApplicationID: app.ApplicationID, // The ID is not mutated by fromPB.
+		ApplicationID: app.ApplicationId, // The ID is not mutated by fromPB.
 	}
 	appModel.fromPB(app, nil)
 	if err := s.createEntity(ctx, &appModel); err != nil {
@@ -77,11 +77,11 @@ func (s *applicationStore) CreateApplication(ctx context.Context, app *ttnpb.App
 	return &appProto, nil
 }
 
-func (s *applicationStore) FindApplications(ctx context.Context, ids []*ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Application, error) {
+func (s *applicationStore) FindApplications(ctx context.Context, ids []*ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Application, error) {
 	defer trace.StartRegion(ctx, "find applications").End()
 	idStrings := make([]string, len(ids))
 	for i, id := range ids {
-		idStrings[i] = id.GetApplicationID()
+		idStrings[i] = id.GetApplicationId()
 	}
 	query := s.query(ctx, Application{}, withApplicationID(idStrings...))
 	query = selectApplicationFields(ctx, query, fieldMask)
@@ -105,9 +105,9 @@ func (s *applicationStore) FindApplications(ctx context.Context, ids []*ttnpb.Ap
 	return appProtos, nil
 }
 
-func (s *applicationStore) GetApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Application, error) {
+func (s *applicationStore) GetApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Application, error) {
 	defer trace.StartRegion(ctx, "get application").End()
-	query := s.query(ctx, Application{}, withApplicationID(id.GetApplicationID()))
+	query := s.query(ctx, Application{}, withApplicationID(id.GetApplicationId()))
 	query = selectApplicationFields(ctx, query, fieldMask)
 	var appModel Application
 	if err := query.First(&appModel).Error; err != nil {
@@ -121,9 +121,9 @@ func (s *applicationStore) GetApplication(ctx context.Context, id *ttnpb.Applica
 	return appProto, nil
 }
 
-func (s *applicationStore) UpdateApplication(ctx context.Context, app *ttnpb.Application, fieldMask *types.FieldMask) (updated *ttnpb.Application, err error) {
+func (s *applicationStore) UpdateApplication(ctx context.Context, app *ttnpb.Application, fieldMask *pbtypes.FieldMask) (updated *ttnpb.Application, err error) {
 	defer trace.StartRegion(ctx, "update application").End()
-	query := s.query(ctx, Application{}, withApplicationID(app.GetApplicationID()))
+	query := s.query(ctx, Application{}, withApplicationID(app.GetApplicationId()))
 	query = selectApplicationFields(ctx, query, fieldMask)
 	var appModel Application
 	if err = query.First(&appModel).Error; err != nil {
@@ -153,4 +153,29 @@ func (s *applicationStore) UpdateApplication(ctx context.Context, app *ttnpb.App
 func (s *applicationStore) DeleteApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error {
 	defer trace.StartRegion(ctx, "delete application").End()
 	return s.deleteEntity(ctx, id)
+}
+
+func (s *applicationStore) RestoreApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error {
+	defer trace.StartRegion(ctx, "restore application").End()
+	return s.restoreEntity(ctx, id)
+}
+
+func (s *applicationStore) PurgeApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error {
+	defer trace.StartRegion(ctx, "purge application").End()
+	query := s.query(ctx, Application{}, withSoftDeleted(), withApplicationID(id.GetApplicationId()))
+	query = selectApplicationFields(ctx, query, nil)
+	var appModel Application
+	if err := query.First(&appModel).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errNotFoundForID(id)
+		}
+		return err
+	}
+	// delete application attributes before purging
+	if len(appModel.Attributes) > 0 {
+		if err := s.replaceAttributes(ctx, "gateway", appModel.ID, appModel.Attributes, nil); err != nil {
+			return err
+		}
+	}
+	return s.purgeEntity(ctx, id)
 }

@@ -34,15 +34,15 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
-	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
 func TestWebhooks(t *testing.T) {
-	ctx := log.NewContext(test.Context(), test.GetLogger(t))
-	redisClient, flush := test.NewRedis(t, "web_test")
+	_, ctx := test.New(t)
+
+	redisClient, flush := test.NewRedis(ctx, "web_test")
 	defer flush()
 	defer redisClient.Close()
 	downlinks := web.DownlinksConfig{
@@ -53,7 +53,7 @@ func TestWebhooks(t *testing.T) {
 	}
 	ids := ttnpb.ApplicationWebhookIdentifiers{
 		ApplicationIdentifiers: registeredApplicationID,
-		WebhookID:              registeredWebhookID,
+		WebhookId:              registeredWebhookID,
 	}
 	for _, tc := range []struct {
 		prefix string
@@ -77,20 +77,21 @@ func TestWebhooks(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprintf("Prefix%q/Suffix%q", tc.prefix, tc.suffix), func(t *testing.T) {
+			_, ctx := test.New(t)
 			_, err := registry.Set(ctx, ids, nil, func(_ *ttnpb.ApplicationWebhook) (*ttnpb.ApplicationWebhook, []string, error) {
 				return &ttnpb.ApplicationWebhook{
 						ApplicationWebhookIdentifiers: ids,
-						BaseURL:                       "https://myapp.com/api/ttn/v3{/appID,devID}" + tc.suffix,
+						BaseUrl:                       "https://myapp.com/api/ttn/v3{/appID,devID}" + tc.suffix,
 						Headers: map[string]string{
 							"Authorization": "key secret",
 						},
-						DownlinkAPIKey: "foo.secret",
+						DownlinkApiKey: "foo.secret",
 						Format:         "json",
 						UplinkMessage: &ttnpb.ApplicationWebhook_Message{
-							Path: tc.prefix + "up",
+							Path: tc.prefix + "up{?devEUI}",
 						},
 						JoinAccept: &ttnpb.ApplicationWebhook_Message{
-							Path: tc.prefix + "join",
+							Path: tc.prefix + "join{?joinEUI}",
 						},
 						DownlinkAck: &ttnpb.ApplicationWebhook_Message{
 							Path: tc.prefix + "down/ack",
@@ -140,7 +141,7 @@ func TestWebhooks(t *testing.T) {
 			}
 
 			t.Run("Upstream", func(t *testing.T) {
-				baseURL := fmt.Sprintf("https://myapp.com/api/ttn/v3/%s/%s", registeredApplicationID.ApplicationID, registeredDeviceID.DeviceID)
+				baseURL := fmt.Sprintf("https://myapp.com/api/ttn/v3/%s/%s", registeredApplicationID.ApplicationId, registeredDeviceID.DeviceId)
 				testSink := &mockSink{
 					ch: make(chan *http.Request, 1),
 				}
@@ -167,8 +168,12 @@ func TestWebhooks(t *testing.T) {
 						if controllable, ok := sink.(web.ControllableSink); ok {
 							go controllable.Run(ctx)
 						}
-						w := web.NewWebhooks(ctx, nil, registry, sink, downlinks)
-						sub := w.NewSubscription()
+						c := componenttest.NewComponent(t, &component.Config{})
+						as := mock.NewServer(c)
+						_, err := web.NewWebhooks(ctx, as, registry, sink, downlinks)
+						if err != nil {
+							t.Fatalf("Unexpected error %v", err)
+						}
 						for _, tc := range []struct {
 							Name    string
 							Message *ttnpb.ApplicationUp
@@ -189,7 +194,7 @@ func TestWebhooks(t *testing.T) {
 									},
 								},
 								OK:  true,
-								URL: fmt.Sprintf("%s/up", baseURL),
+								URL: fmt.Sprintf("%s/up?devEUI=%s", baseURL, registeredDeviceID.DevEui),
 							},
 							{
 								Name: "UplinkMessage/UnregisteredDevice",
@@ -217,7 +222,7 @@ func TestWebhooks(t *testing.T) {
 									},
 								},
 								OK:  true,
-								URL: fmt.Sprintf("%s/join", baseURL),
+								URL: fmt.Sprintf("%s/join?joinEUI=%s", baseURL, registeredDeviceID.JoinEui),
 							},
 							{
 								Name: "DownlinkMessage/Ack",
@@ -298,6 +303,7 @@ func TestWebhooks(t *testing.T) {
 												},
 											},
 											LastFCntDown: 42,
+											SessionKeyID: []byte{0x22},
 										},
 									},
 								},
@@ -368,7 +374,7 @@ func TestWebhooks(t *testing.T) {
 						} {
 							t.Run(tc.Name, func(t *testing.T) {
 								a := assertions.New(t)
-								err := sub.SendUp(ctx, tc.Message)
+								err := as.Publish(ctx, tc.Message)
 								if !a.So(err, should.BeNil) {
 									t.FailNow()
 								}
@@ -393,6 +399,7 @@ func TestWebhooks(t *testing.T) {
 									"https://example.com/api/v3/as/applications/foo-app/webhooks/foo-hook/devices/foo-device/down/push")
 								a.So(req.Header.Get("X-Downlink-Replace"), should.Equal,
 									"https://example.com/api/v3/as/applications/foo-app/webhooks/foo-hook/devices/foo-device/down/replace")
+								a.So(req.Header.Get("X-Tts-Domain"), should.Equal, "example.com")
 								actualBody, err := ioutil.ReadAll(req.Body)
 								if !a.So(err, should.BeNil) {
 									t.FailNow()
@@ -434,7 +441,10 @@ func TestWebhooks(t *testing.T) {
 			Component: c,
 			Server:    io,
 		}
-		w := web.NewWebhooks(ctx, testSink.Server, registry, testSink, downlinks)
+		w, err := web.NewWebhooks(ctx, testSink.Server, registry, testSink, downlinks)
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
 		c.RegisterWeb(w)
 		componenttest.StartComponent(t, c)
 		defer c.Close()
@@ -462,7 +472,7 @@ func TestWebhooks(t *testing.T) {
 				},
 				{
 					Name:       "InvalidIDAndKey",
-					ID:         ttnpb.ApplicationIdentifiers{ApplicationID: "--invalid-id"},
+					ID:         ttnpb.ApplicationIdentifiers{ApplicationId: "--invalid-id"},
 					Key:        "invalid key",
 					ExpectCode: http.StatusBadRequest,
 				},
@@ -470,7 +480,7 @@ func TestWebhooks(t *testing.T) {
 				t.Run(tc.Name, func(t *testing.T) {
 					a := assertions.New(t)
 					url := fmt.Sprintf("http://%s/api/v3/as/applications/%s/webhooks/%s/devices/%s/down/replace",
-						httpAddress, tc.ID.ApplicationID, registeredWebhookID, registeredDeviceID.DeviceID,
+						httpAddress, tc.ID.ApplicationId, registeredWebhookID, registeredDeviceID.DeviceId,
 					)
 					body := bytes.NewReader([]byte(`{"downlinks":[]}`))
 					req, err := http.NewRequest(http.MethodPost, url, body)

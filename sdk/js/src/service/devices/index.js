@@ -23,6 +23,7 @@ import deviceEntityMap from '../../../generated/device-entity-map.json'
 import DownlinkQueue from '../downlink-queue'
 import { STACK_COMPONENTS_MAP } from '../../util/constants'
 
+import Repository from './repository'
 import { splitSetPaths, splitGetPaths, makeRequests } from './split'
 import mergeDevice from './merge'
 
@@ -42,6 +43,7 @@ class Devices {
     this._stackConfig = stackConfig
 
     this.DownlinkQueue = new DownlinkQueue(api.AppAs, { stackConfig })
+    this.Repository = new Repository(api.DeviceRepository)
   }
 
   _emitDefaults(paths, device) {
@@ -74,10 +76,46 @@ class Devices {
       device.formatters = null
     }
 
+    if (paths.includes('formatters.up_formatter')) {
+      if (!Boolean(device.formatters)) {
+        device.formatters = { up_formatter: 'FORMATTER_NONE' }
+      }
+      if (!Boolean(device.formatters.up_formatter)) {
+        device.formatters.up_formatter = 'FORMATTER_NONE'
+      }
+    }
+
+    if (paths.includes('formatters.down_formatter')) {
+      if (!Boolean(device.formatters)) {
+        device.formatters = { down_formatter: 'FORMATTER_NONE' }
+      }
+      if (!Boolean(device.formatters.down_formatter)) {
+        device.formatters.down_formatter = 'FORMATTER_NONE'
+      }
+    }
+
+    if (paths.includes('mac_settings')) {
+      const { mac_settings = {} } = device
+
+      if (
+        Boolean(mac_settings.ping_slot_periodicity) &&
+        typeof mac_settings.ping_slot_periodicity === 'undefined'
+      ) {
+        mac_settings.ping_slot_periodicity = 'PING_EVERY_1S'
+      }
+
+      if (
+        Boolean(mac_settings.rx2_data_rate_index) &&
+        typeof mac_settings.rx2_data_rate_index === 'undefined'
+      ) {
+        mac_settings.rx2_data_rate_index = 0
+      }
+    }
+
     return device
   }
 
-  async _getDevice(applicationId, deviceId, paths, ignoreNotFound, mergeResult = true) {
+  async _getDevice(applicationId, deviceId, paths, ignoreNotFound, mergeResult = true, components) {
     if (!applicationId) {
       throw new Error('Missing application_id for device.')
     }
@@ -86,7 +124,7 @@ class Devices {
       throw new Error('Missing device_id for device.')
     }
 
-    const requestTree = splitGetPaths(paths)
+    const requestTree = splitGetPaths(paths, undefined, components)
 
     const params = {
       routeParams: {
@@ -208,15 +246,18 @@ class Devices {
    * @param {string} applicationId - The Application ID.
    * @param {string} deviceId - The Device ID.
    * @param {Array} selector - The list of end device fields to fetch.
+   * @param {Array} components - A whitelist of components to source the
+   * data from. Selects all by default.
    * @returns {object} - End device on successful requests, an error otherwise.
    */
-  async getById(applicationId, deviceId, selector = [['ids']]) {
+  async getById(applicationId, deviceId, selector = [['ids']], components) {
     const deviceParts = await this._getDevice(
       applicationId,
       deviceId,
       Marshaler.selectorToPaths(selector),
       false,
       false,
+      components,
     )
 
     const errors = deviceParts.filter(part => {
@@ -260,7 +301,7 @@ class Devices {
     }
 
     const deviceMap = traverse(deviceEntityMap)
-    const paths = traverse(patch).reduce(function(acc) {
+    const paths = traverse(patch).reduce(function (acc) {
       // Only add the top level path for arrays, otherwise paths are generated
       // for each item in the array.
       if (Array.isArray(this.node)) {
@@ -487,7 +528,7 @@ class Devices {
     let finishedCount = 0
     let stopRequested = false
 
-    const runTasks = async function() {
+    const runTasks = async function () {
       for (const device of devices) {
         if (stopRequested) {
           notify(listeners[EVENTS.CLOSE])
@@ -531,7 +572,7 @@ class Devices {
 
         return this
       },
-      abort() {
+      abort: () => {
         stopRequested = true
       },
     }

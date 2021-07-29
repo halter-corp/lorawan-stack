@@ -23,14 +23,23 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/udp"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io/ws"
+	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream/packetbroker"
 )
 
 // DefaultGatewayServerConfig is the default configuration for the GatewayServer.
 var DefaultGatewayServerConfig = gatewayserver.Config{
 	RequireRegisteredGateways:         false,
+	FetchGatewayInterval:              10 * time.Minute,
+	FetchGatewayJitter:                0.2,
 	UpdateGatewayLocationDebounceTime: time.Hour,
+	UpdateConnectionStatsDebounceTime: 3 * time.Second,
 	Forward: map[string][]string{
 		"": {"00000000/0"},
+	},
+	PacketBroker: gatewayserver.PacketBrokerConfig{
+		UpdateGatewayInterval: packetbroker.DefaultUpdateGatewayInterval,
+		UpdateGatewayJitter:   packetbroker.DefaultUpdateGatewayJitter,
+		OnlineTTLMargin:       packetbroker.DefaultOnlineTTLMargin,
 	},
 	UDP: gatewayserver.UDPConfig{
 		Config: udp.DefaultConfig,
@@ -50,10 +59,10 @@ var DefaultGatewayServerConfig = gatewayserver.Config{
 		PublicAddress:    fmt.Sprintf("%s:1882", shared.DefaultPublicHost),
 		PublicTLSAddress: fmt.Sprintf("%s:8882", shared.DefaultPublicHost),
 	},
-	UpdateConnectionStatsDebounceTime: 3 * time.Second,
 	BasicStation: gatewayserver.BasicStationConfig{
-		Config:    ws.DefaultConfig,
-		Listen:    ":1887",
-		ListenTLS: ":8887",
+		Config:                 ws.DefaultConfig,
+		MaxValidRoundTripDelay: 10 * time.Second,
+		Listen:                 ":1887",
+		ListenTLS:              ":8887",
 	},
 }

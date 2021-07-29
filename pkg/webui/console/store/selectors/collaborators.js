@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+import {
+  createPaginationIdsSelectorByEntity,
+  createPaginationTotalCountSelectorByEntity,
+} from '@ttn-lw/lib/store/selectors/pagination'
+
 import {
   GET_COLLABORATOR_BASE,
   GET_COLLABORATORS_LIST_BASE,
 } from '@console/store/actions/collaborators'
-
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
-import {
-  createPaginationIdsSelectorByEntity,
-  createPaginationTotalCountSelectorByEntity,
-} from './pagination'
 
 const ENTITY = 'collaborators'
 
@@ -36,14 +36,14 @@ export const selectSelectedCollaborator = state =>
   selectCollaboratorById(state, selectSelectedCollaboratorId(state))
 export const selectCollaboratorFetching = createFetchingSelector(GET_COLLABORATOR_BASE)
 export const selectCollaboratorError = createErrorSelector(GET_COLLABORATOR_BASE)
-export const selectUserCollaborator = function(state) {
+export const selectUserCollaborator = state => {
   const collaborator = selectSelectedCollaborator(state)
 
   if (collaborator && 'user_ids' in collaborator.ids) {
     return collaborator
   }
 }
-export const selectOrganizationCollaborator = function(state) {
+export const selectOrganizationCollaborator = state => {
   const collaborator = selectSelectedCollaborator(state)
 
   if (collaborator && 'organization_ids' in collaborator.ids) {

@@ -16,13 +16,18 @@ package redis
 
 import (
 	"context"
+	"io"
+	"math/rand"
 	"runtime/trace"
 	"strconv"
+	"sync"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 	"github.com/gogo/protobuf/proto"
+	ulid "github.com/oklog/ulid/v2"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
@@ -60,7 +65,21 @@ func applyDefaultAssociationFieldMask(dst, src *ttnpb.ApplicationPackageDefaultA
 
 // ApplicationPackagesRegistry is a Redis application packages registry.
 type ApplicationPackagesRegistry struct {
-	Redis *ttnredis.Client
+	Redis   *ttnredis.Client
+	LockTTL time.Duration
+
+	entropyMu *sync.Mutex
+	entropy   io.Reader
+}
+
+// Init initializes the ApplicationPackagesRegistry.
+func (r *ApplicationPackagesRegistry) Init(ctx context.Context) error {
+	if err := ttnredis.InitMutex(ctx, r.Redis); err != nil {
+		return err
+	}
+	r.entropyMu = &sync.Mutex{}
+	r.entropy = ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 1000)
+	return nil
 }
 
 func (r *ApplicationPackagesRegistry) uidKey(uid string) string {
@@ -84,11 +103,15 @@ func (r *ApplicationPackagesRegistry) makeAssociationKeyFunc(uid string) func(po
 	}
 }
 
+func (r *ApplicationPackagesRegistry) transactionKey(uid string, fPort string, packageName string) string {
+	return r.Redis.Key("transaction", uid, fPort, packageName)
+}
+
 // GetAssociation implements applicationpackages.AssociationRegistry.
 func (r ApplicationPackagesRegistry) GetAssociation(ctx context.Context, ids ttnpb.ApplicationPackageAssociationIdentifiers, paths []string) (*ttnpb.ApplicationPackageAssociation, error) {
 	pb := &ttnpb.ApplicationPackageAssociation{}
 	defer trace.StartRegion(ctx, "get application package association by id").End()
-	if err := ttnredis.GetProto(r.Redis, r.associationKey(unique.ID(ctx, ids.EndDeviceIdentifiers), r.fPortStr(ids.FPort))).ScanProto(pb); err != nil {
+	if err := ttnredis.GetProto(ctx, r.Redis, r.associationKey(unique.ID(ctx, ids.EndDeviceIdentifiers), r.fPortStr(ids.FPort))).ScanProto(pb); err != nil {
 		return nil, err
 	}
 	return applyAssociationFieldMask(nil, pb, appendImplicitAssociationGetPaths(paths...)...)
@@ -102,12 +125,12 @@ func (r ApplicationPackagesRegistry) ListAssociations(ctx context.Context, ids t
 
 	defer trace.StartRegion(ctx, "list application package associations by device id").End()
 
-	err := r.Redis.Watch(func(tx *redis.Tx) (err error) {
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) (err error) {
 		opts := []ttnredis.FindProtosOption{ttnredis.FindProtosSorted(false)}
 
 		limit, offset := ttnredis.PaginationLimitAndOffsetFromContext(ctx)
 		if limit != 0 {
-			total, err := tx.SCard(uidKey).Result()
+			total, err := tx.SCard(ctx, uidKey).Result()
 			if err != nil {
 				return err
 			}
@@ -115,7 +138,7 @@ func (r ApplicationPackagesRegistry) ListAssociations(ctx context.Context, ids t
 			opts = append(opts, ttnredis.FindProtosWithOffsetAndCount(offset, limit))
 		}
 
-		return ttnredis.FindProtos(tx, uidKey, r.makeAssociationKeyFunc(devUID), opts...).Range(func() (proto.Message, func() (bool, error)) {
+		return ttnredis.FindProtos(ctx, tx, uidKey, r.makeAssociationKeyFunc(devUID), opts...).Range(func() (proto.Message, func() (bool, error)) {
 			pb := &ttnpb.ApplicationPackageAssociation{}
 			return pb, func() (bool, error) {
 				pb, err := applyAssociationFieldMask(nil, pb, appendImplicitAssociationGetPaths(paths...)...)
@@ -143,8 +166,8 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 	defer trace.StartRegion(ctx, "set application package association by id").End()
 
 	var pb *ttnpb.ApplicationPackageAssociation
-	err := r.Redis.Watch(func(tx *redis.Tx) error {
-		cmd := ttnredis.GetProto(tx, associationkey)
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) error {
+		cmd := ttnredis.GetProto(ctx, tx, associationkey)
 		stored := &ttnpb.ApplicationPackageAssociation{}
 		if err := cmd.ScanProto(stored); errors.IsNotFound(err) {
 			stored = nil
@@ -188,8 +211,8 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 		var pipelined func(redis.Pipeliner) error
 		if pb == nil && len(sets) == 0 {
 			pipelined = func(p redis.Pipeliner) error {
-				p.Del(associationkey)
-				p.SRem(uidKey, ids.FPort)
+				p.Del(ctx, associationkey)
+				p.SRem(ctx, uidKey, ids.FPort)
 				return nil
 			}
 		} else {
@@ -219,14 +242,14 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 				if err != nil {
 					return err
 				}
-				if updated.ApplicationID != ids.ApplicationID || updated.DeviceID != ids.DeviceID || updated.FPort != ids.FPort {
+				if updated.ApplicationId != ids.ApplicationId || updated.DeviceId != ids.DeviceId || updated.FPort != ids.FPort {
 					return errInvalidIdentifiers.New()
 				}
 			} else {
-				if ttnpb.HasAnyField(sets, "ids.end_device_ids.application_ids.application_id") && pb.ApplicationID != stored.ApplicationID {
+				if ttnpb.HasAnyField(sets, "ids.end_device_ids.application_ids.application_id") && pb.ApplicationId != stored.ApplicationId {
 					return errReadOnlyField.WithAttributes("field", "ids.end_device_ids.application_ids.application_id")
 				}
-				if ttnpb.HasAnyField(sets, "ids.end_device_ids.device_id") && pb.DeviceID != stored.DeviceID {
+				if ttnpb.HasAnyField(sets, "ids.end_device_ids.device_id") && pb.DeviceId != stored.DeviceId {
 					return errReadOnlyField.WithAttributes("field", "ids.end_device_ids.device_id")
 				}
 				if ttnpb.HasAnyField(sets, "ids.f_port") && pb.FPort != stored.FPort {
@@ -245,10 +268,10 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 			}
 
 			pipelined = func(p redis.Pipeliner) error {
-				if _, err := ttnredis.SetProto(p, associationkey, updated, 0); err != nil {
+				if _, err := ttnredis.SetProto(ctx, p, associationkey, updated, 0); err != nil {
 					return err
 				}
-				p.SAdd(uidKey, ids.FPort)
+				p.SAdd(ctx, uidKey, ids.FPort)
 				return nil
 			}
 
@@ -257,7 +280,7 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 				return err
 			}
 		}
-		_, err = tx.TxPipelined(pipelined)
+		_, err = tx.TxPipelined(ctx, pipelined)
 		if err != nil {
 			return err
 		}
@@ -273,7 +296,7 @@ func (r ApplicationPackagesRegistry) SetAssociation(ctx context.Context, ids ttn
 func (r ApplicationPackagesRegistry) GetDefaultAssociation(ctx context.Context, ids ttnpb.ApplicationPackageDefaultAssociationIdentifiers, paths []string) (*ttnpb.ApplicationPackageDefaultAssociation, error) {
 	pb := &ttnpb.ApplicationPackageDefaultAssociation{}
 	defer trace.StartRegion(ctx, "get application package default association by id").End()
-	if err := ttnredis.GetProto(r.Redis, r.associationKey(unique.ID(ctx, ids.ApplicationIdentifiers), r.fPortStr(ids.FPort))).ScanProto(pb); err != nil {
+	if err := ttnredis.GetProto(ctx, r.Redis, r.associationKey(unique.ID(ctx, ids.ApplicationIdentifiers), r.fPortStr(ids.FPort))).ScanProto(pb); err != nil {
 		return nil, err
 	}
 	return applyDefaultAssociationFieldMask(nil, pb, appendImplicitAssociationGetPaths(paths...)...)
@@ -287,12 +310,12 @@ func (r ApplicationPackagesRegistry) ListDefaultAssociations(ctx context.Context
 
 	defer trace.StartRegion(ctx, "list application package default associations by application id").End()
 
-	err := r.Redis.Watch(func(tx *redis.Tx) (err error) {
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) (err error) {
 		opts := []ttnredis.FindProtosOption{ttnredis.FindProtosSorted(false)}
 
 		limit, offset := ttnredis.PaginationLimitAndOffsetFromContext(ctx)
 		if limit != 0 {
-			total, err := tx.SCard(uidKey).Result()
+			total, err := tx.SCard(ctx, uidKey).Result()
 			if err != nil {
 				return err
 			}
@@ -300,7 +323,7 @@ func (r ApplicationPackagesRegistry) ListDefaultAssociations(ctx context.Context
 			opts = append(opts, ttnredis.FindProtosWithOffsetAndCount(offset, limit))
 		}
 
-		return ttnredis.FindProtos(tx, uidKey, r.makeAssociationKeyFunc(appUID), opts...).Range(func() (proto.Message, func() (bool, error)) {
+		return ttnredis.FindProtos(ctx, tx, uidKey, r.makeAssociationKeyFunc(appUID), opts...).Range(func() (proto.Message, func() (bool, error)) {
 			pb := &ttnpb.ApplicationPackageDefaultAssociation{}
 			return pb, func() (bool, error) {
 				pb, err := applyDefaultAssociationFieldMask(nil, pb, appendImplicitAssociationGetPaths(paths...)...)
@@ -328,8 +351,8 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 	defer trace.StartRegion(ctx, "set application package default association by id").End()
 
 	var pb *ttnpb.ApplicationPackageDefaultAssociation
-	err := r.Redis.Watch(func(tx *redis.Tx) error {
-		cmd := ttnredis.GetProto(tx, associationkey)
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) error {
+		cmd := ttnredis.GetProto(ctx, tx, associationkey)
 		stored := &ttnpb.ApplicationPackageDefaultAssociation{}
 		if err := cmd.ScanProto(stored); errors.IsNotFound(err) {
 			stored = nil
@@ -373,8 +396,8 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 		var pipelined func(redis.Pipeliner) error
 		if pb == nil && len(sets) == 0 {
 			pipelined = func(p redis.Pipeliner) error {
-				p.Del(associationkey)
-				p.SRem(uidKey, ids.FPort)
+				p.Del(ctx, associationkey)
+				p.SRem(ctx, uidKey, ids.FPort)
 				return nil
 			}
 		} else {
@@ -403,11 +426,11 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 				if err != nil {
 					return err
 				}
-				if updated.ApplicationID != ids.ApplicationID || updated.FPort != ids.FPort {
+				if updated.ApplicationId != ids.ApplicationId || updated.FPort != ids.FPort {
 					return errInvalidIdentifiers.New()
 				}
 			} else {
-				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationID != stored.ApplicationID {
+				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationId != stored.ApplicationId {
 					return errReadOnlyField.WithAttributes("field", "ids.application_ids.application_id")
 				}
 				if ttnpb.HasAnyField(sets, "ids.f_port") && pb.FPort != stored.FPort {
@@ -426,10 +449,10 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 			}
 
 			pipelined = func(p redis.Pipeliner) error {
-				if _, err := ttnredis.SetProto(p, associationkey, updated, 0); err != nil {
+				if _, err := ttnredis.SetProto(ctx, p, associationkey, updated, 0); err != nil {
 					return err
 				}
-				p.SAdd(uidKey, ids.FPort)
+				p.SAdd(ctx, uidKey, ids.FPort)
 				return nil
 			}
 
@@ -438,7 +461,7 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 				return err
 			}
 		}
-		_, err = tx.Pipelined(pipelined)
+		_, err = tx.Pipelined(ctx, pipelined)
 		if err != nil {
 			return err
 		}
@@ -453,4 +476,29 @@ func (r ApplicationPackagesRegistry) SetDefaultAssociation(ctx context.Context, 
 // WithPagination implements applicationpackages.AssociationRegistry.
 func (r ApplicationPackagesRegistry) WithPagination(ctx context.Context, limit, page uint32, total *int64) context.Context {
 	return ttnredis.NewContextWithPagination(ctx, int64(limit), int64(page), total)
+}
+
+// EndDeviceTransaction implements applicationpackages.TransactionRegistry.
+func (r *ApplicationPackagesRegistry) EndDeviceTransaction(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, fPort uint32, packageName string, fn func(ctx context.Context) error) error {
+	k := r.transactionKey(unique.ID(ctx, ids), r.fPortStr(fPort), packageName)
+
+	r.entropyMu.Lock()
+	lockID, err := ulid.New(ulid.Timestamp(time.Now()), r.entropy)
+	r.entropyMu.Unlock()
+	if err != nil {
+		return err
+	}
+	lockIDStr := lockID.String()
+
+	defer trace.StartRegion(ctx, "run end device transaction").End()
+
+	if err := ttnredis.LockMutex(ctx, r.Redis, k, lockIDStr, r.LockTTL); err != nil {
+		return err
+	}
+	defer func() {
+		if err := ttnredis.UnlockMutex(ctx, r.Redis, k, lockIDStr, r.LockTTL); err != nil {
+			log.FromContext(ctx).WithError(err).Warn("Failed to unlock mutex")
+		}
+	}()
+	return fn(ctx)
 }

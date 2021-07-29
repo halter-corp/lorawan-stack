@@ -27,9 +27,9 @@ import ModalButton from '@ttn-lw/components/button/modal-button'
 import Yup from '@ttn-lw/lib/yup'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
-import { hasSpecial, hasUpper, hasDigit, hasMinLength, hasMaxLength } from '@ttn-lw/lib/password'
+import createPasswordValidationSchema from '@ttn-lw/lib/create-password-validation-schema'
 
-import { id as userIdRegexp } from '@console/lib/regexp'
+import { userId as userIdRegexp } from '@console/lib/regexp'
 
 const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1)
 
@@ -42,7 +42,8 @@ const approvalStates = [
 ]
 
 const m = defineMessages({
-  adminLabel: 'Administrator',
+  adminRights: 'Admin rights',
+  adminLabel: 'Grant this user admin status',
   userDescPlaceholder: 'Description for my new user',
   userDescDescription: 'Optional user description; can also be used to save notes about the user',
   userIdPlaceholder: 'jane-doe',
@@ -50,21 +51,19 @@ const m = defineMessages({
   emailPlaceholder: 'mail@example.com',
   emailAddressDescription:
     'Primary email address used for logging in; this address is not publicly visible',
+  emailAddressValidation: 'Treat email address as validated',
+  emailAddressValidationDescription:
+    'Enable this option if you do not need this user to validate the email address',
   modalWarning:
     'Are you sure you want to delete the user "{userId}". This action cannot be undone and it will not be possible to reuse the user ID.',
-  validateSpecial:
-    '{field} must have at least {special} special {special, plural, one {character} other {characters}}',
-  validateUppercase:
-    '{field} must have at least {upper} uppercase {upper, plural, one {character} other {characters}}',
-  validateDigit: '{field} must have at least {digit} {digit, plural, one {digit} other {digits}}',
 })
 
-const validationSchema = Yup.object().shape({
+const baseValidationSchema = Yup.object().shape({
   ids: Yup.object().shape({
     user_id: Yup.string()
-      .matches(userIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
       .min(2, Yup.passValues(sharedMessages.validateTooShort))
-      .max(25, Yup.passValues(sharedMessages.validateTooLong))
+      .max(36, Yup.passValues(sharedMessages.validateTooLong))
+      .matches(userIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
       .required(sharedMessages.validateRequired),
   }),
   name: Yup.string()
@@ -79,45 +78,6 @@ const validationSchema = Yup.object().shape({
   description: Yup.string().max(2000, Yup.passValues(sharedMessages.validateTooLong)),
 })
 
-const createPasswordValidationSchema = requirements => {
-  const passwordValidation = Yup.string()
-    .required(sharedMessages.validateRequired)
-    .test(
-      'min-length',
-      { message: sharedMessages.validateTooShort, values: { min: requirements.min_length } },
-      password => hasMinLength(password, requirements.min_length),
-    )
-    .test(
-      'max-length',
-      { message: sharedMessages.validateTooLong, values: { max: requirements.max_length } },
-      password => hasMaxLength(password, requirements.max_length),
-    )
-    .test(
-      'min-special',
-      { message: m.validateSpecial, values: { special: requirements.min_special } },
-      password => hasSpecial(password, requirements.min_special),
-    )
-    .test(
-      'min-upper',
-      { message: m.validateUppercase, values: { upper: requirements.min_uppercase } },
-      password => hasUpper(password, requirements.min_uppercase),
-    )
-    .test(
-      'min-digit',
-      { message: m.validateDigit, values: { digit: requirements.min_digits } },
-      password => hasDigit(password, requirements.min_digits),
-    )
-
-  return validationSchema.concat(
-    Yup.object().shape({
-      password: passwordValidation,
-      confirmPassword: Yup.string()
-        .required(sharedMessages.validateRequired)
-        .oneOf([Yup.ref('password'), null], sharedMessages.validatePasswordMatch),
-    }),
-  )
-}
-
 @injectIntl
 class UserForm extends React.Component {
   constructor(props) {
@@ -125,8 +85,8 @@ class UserForm extends React.Component {
 
     const { update, passwordRequirements } = props
     this.validationSchema = update
-      ? validationSchema
-      : createPasswordValidationSchema(passwordRequirements)
+      ? baseValidationSchema
+      : baseValidationSchema.concat(createPasswordValidationSchema(passwordRequirements))
     this.state = {
       error: '',
     }
@@ -175,13 +135,18 @@ class UserForm extends React.Component {
   }
 
   @bind
-  async handleSubmit(values, { resetForm, setSubmitting }) {
+  async handleSubmit(vals, { resetForm, setSubmitting }) {
     const { onSubmit, onSubmitSuccess, onSubmitFailure } = this.props
-    const castedValues = validationSchema.cast(values)
+    const { _validate_email, ...values } = this.validationSchema.cast(vals)
+
+    if (_validate_email) {
+      values.primary_email_address_validated_at = new Date().toISOString()
+    }
+
     await this.setState({ error: '' })
     try {
-      const result = await onSubmit(castedValues)
-      resetForm({ values })
+      const result = await onSubmit(values)
+      resetForm({ values: vals })
       onSubmitSuccess(result)
     } catch (error) {
       setSubmitting(false)
@@ -262,18 +227,19 @@ class UserForm extends React.Component {
           required
         />
         <Form.Field
+          name="_validate_email"
+          component={Checkbox}
+          label={m.emailAddressValidation}
+          description={m.emailAddressValidationDescription}
+        />
+        <Form.Field
           title={sharedMessages.state}
           name="state"
           component={Select}
           options={approvalStateOptions}
           required
         />
-        <Form.Field
-          title={sharedMessages.admin}
-          name="admin"
-          component={Checkbox}
-          label={m.adminLabel}
-        />
+        <Form.Field title={m.adminRights} name="admin" component={Checkbox} label={m.adminLabel} />
         {!update && (
           <Form.Field
             title={sharedMessages.password}

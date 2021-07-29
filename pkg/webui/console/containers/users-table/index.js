@@ -18,9 +18,9 @@ import { connect } from 'react-redux'
 import Status from '@ttn-lw/components/status'
 import Icon from '@ttn-lw/components/icon'
 
-import Message from '@ttn-lw/lib/components/message'
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
-import FetchTable from '@console/containers/fetch-table'
+import Message from '@ttn-lw/lib/components/message'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -58,7 +58,7 @@ export default class UsersTable extends Component {
         width: 28,
         sortable: true,
         sortKey: 'user_id',
-        render(ids) {
+        render: ids => {
           const userId = getUserId({ ids })
           if (userId === props.currentUserId) {
             return (
@@ -88,7 +88,7 @@ export default class UsersTable extends Component {
         displayName: sharedMessages.state,
         width: 15,
         sortable: true,
-        render(state) {
+        render: state => {
           let indicator = 'unknown'
           let label = sharedMessages.notSet
           switch (state) {
@@ -121,7 +121,7 @@ export default class UsersTable extends Component {
         name: 'admin',
         displayName: sharedMessages.admin,
         width: 7,
-        render(isAdmin) {
+        render: isAdmin => {
           if (isAdmin) {
             return <Icon className={style.icon} icon="check" />
           }

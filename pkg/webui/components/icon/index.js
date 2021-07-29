@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from 'react'
+import React, { forwardRef } from 'react'
 import classnames from 'classnames'
 import PropTypes from 'prop-types'
 
@@ -31,21 +31,21 @@ const hardcoded = {
   devices: 'device_hub',
   downlink: 'arrow_downward',
   event: 'info',
-  event_create: 'add_circle',
-  event_connection: 'settings_ethernet',
   event_clear_all: 'clear_all',
+  event_connection: 'settings_ethernet',
+  event_create: 'add_circle',
   event_delete: 'delete',
   event_downlink: 'arrow_downward',
   event_error: 'error',
   event_gateway_connect: 'flash_on',
   event_gateway_disconnect: 'flash_off',
   event_join: 'link',
+  event_mode: 'tune',
   event_rekey: 'vpn_key',
   event_status: 'network_check',
   event_switch: 'tune',
   event_update: 'edit',
   event_uplink: 'arrow_upward',
-  event_mode: 'tune',
   expand_down: 'keyboard_arrow_down',
   expand_up: 'keyboard_arrow_up',
   gateway: 'router',
@@ -58,16 +58,20 @@ const hardcoded = {
   logout: 'power_settings_new',
   organization: 'people',
   overview: 'dashboard',
+  packet_broker: 'camera',
   payload_formats: 'code',
   settings: 'tune',
   sort_order_asc: 'arrow_drop_down',
   sort_order_desc: 'arrow_drop_up',
   uplink: 'arrow_upward',
-  user: 'person',
   user_management: 'how_to_reg',
+  user: 'person',
+  valid: 'check_circle',
 }
 
-const Icon = function({ icon, className, nudgeUp, nudgeDown, small, large, ...rest }) {
+const Icon = forwardRef((props, ref) => {
+  const { icon, className, nudgeUp, nudgeDown, small, large, ...rest } = props
+
   const classname = classnames(style.icon, className, {
     [style.nudgeUp]: nudgeUp,
     [style.nudgeDown]: nudgeDown,
@@ -76,11 +80,11 @@ const Icon = function({ icon, className, nudgeUp, nudgeDown, small, large, ...re
   })
 
   return (
-    <span className={classname} {...rest}>
+    <span className={classname} ref={ref} {...rest}>
       {hardcoded[icon] || icon}
     </span>
   )
-}
+})
 
 Icon.propTypes = {
   className: PropTypes.string,

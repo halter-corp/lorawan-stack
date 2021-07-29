@@ -70,7 +70,7 @@ archives:
     files:
       - LICENSE
       - README.md
-      - public/**/*
+      - public/**
       - config/completion/*/*
     wrap_in_directory: true
     format_overrides:
@@ -106,11 +106,15 @@ nfpms:
     recommends:
       - redis
       - cockroach
-    files:
-      "public/**/*": "/srv/ttn-lorawan/public"
-      "config/completion/bash/*": "/usr/share/bash-completion/completions"
-      "config/completion/fish/*": "/usr/share/fish/vendor_completions.d"
-      "config/completion/zsh/*": "/usr/share/zsh/vendor-completions"
+    contents:
+      - src: "public/**"
+        dst: "/srv/ttn-lorawan/public"
+      - src: "config/completion/bash/*"
+        dst: "/usr/share/bash-completion/completions"
+      - src: "config/completion/fish/*"
+        dst: "/usr/share/fish/vendor_completions.d"
+      - src: "config/completion/zsh/*"
+        dst: "/usr/share/zsh/vendor-completions"
 
 snapcrafts:
   - id: stack
@@ -144,7 +148,7 @@ brews:
   - name: ttn-lw-stack
     ids:
       - stack
-    github:
+    tap:
       owner: TheThingsNetwork
       name: homebrew-lorawan-stack
     commit_author:
@@ -172,7 +176,7 @@ brews:
   - name: ttn-lw-cli
     ids:
       - cli
-    github:
+    tap:
       owner: TheThingsNetwork
       name: homebrew-lorawan-stack
     commit_author:
@@ -197,6 +201,8 @@ blobs:
     - stack
     - cli
     folder: "{{ .Version }}"
+    extra_files:
+    - glob: ./CHANGELOG.md
 
 dockers:
   - goos: linux
@@ -205,11 +211,96 @@ dockers:
     binaries:
       - ttn-lw-cli
       - ttn-lw-stack
+    use_buildx: true
+    build_flag_templates:
+      - --platform=linux/amd64
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.vendor=The Things Network Foundation"
+      - "--label=org.opencontainers.image.title=The Things Stack"
+      - "--label=org.opencontainers.image.url=https://www.thethingsindustries.com/docs"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     image_templates:
-      - 'thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}'
-      - 'thethingsnetwork/lorawan-stack:{{ .Version }}'
-      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}'
-      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}'
-    skip_push: auto
+      - 'thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-amd64'
+      - 'thethingsnetwork/lorawan-stack:{{ .Version }}-amd64'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-amd64'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-amd64'
+    skip_push: false
     extra_files:
+      - data
       - public
+  - goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    binaries:
+      - ttn-lw-cli
+      - ttn-lw-stack
+    use_buildx: true
+    build_flag_templates:
+      - --platform=linux/arm64/v8
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.vendor=The Things Network Foundation"
+      - "--label=org.opencontainers.image.title=The Things Stack"
+      - "--label=org.opencontainers.image.url=https://www.thethingsindustries.com/docs"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    image_templates:
+      - 'thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-arm64'
+      - 'thethingsnetwork/lorawan-stack:{{ .Version }}-arm64'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-arm64'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-arm64'
+    skip_push: false
+    extra_files:
+      - data
+      - public
+  - goos: linux
+    goarch: arm
+    goarm: 7
+    dockerfile: Dockerfile
+    binaries:
+      - ttn-lw-cli
+      - ttn-lw-stack
+    use_buildx: true
+    build_flag_templates:
+      - --platform=linux/arm/v7
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.vendor=The Things Network Foundation"
+      - "--label=org.opencontainers.image.title=The Things Stack"
+      - "--label=org.opencontainers.image.url=https://www.thethingsindustries.com/docs"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    image_templates:
+      - 'thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-armv7'
+      - 'thethingsnetwork/lorawan-stack:{{ .Version }}-armv7'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-armv7'
+      - 'ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-armv7'
+    skip_push: false
+    extra_files:
+      - data
+      - public
+docker_manifests:
+  - name_template: thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-amd64
+      - thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-arm64
+      - thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-armv7
+  - name_template: thethingsnetwork/lorawan-stack:{{ .Version }}
+    image_templates:
+      - thethingsnetwork/lorawan-stack:{{ .Version }}-amd64
+      - thethingsnetwork/lorawan-stack:{{ .Version }}-arm64
+      - thethingsnetwork/lorawan-stack:{{ .Version }}-armv7
+  - name_template: ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-arm64
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Major }}.{{ .Minor }}-armv7
+  - name_template: ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}
+    image_templates:
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-amd64
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-arm64
+      - ghcr.io/thethingsnetwork/lorawan-stack:{{ .Version }}-armv7
+
+signs:
+  - artifacts: checksum
+    args: ["--pinentry-mode=loopback", "--no-tty", "--passphrase-fd", "0", "--batch", "--output", "${signature}", "--detach-sign", "-u", "{{ .Env.SIGN_KEY_NAME }}", "${artifact}"]
+    stdin_file: /tmp/gpg_passphrase

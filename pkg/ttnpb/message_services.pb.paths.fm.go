@@ -4,6 +4,7 @@ package ttnpb
 
 var EncodeDownlinkMessageRequestFieldPathsNested = []string{
 	"end_device_version_ids",
+	"end_device_version_ids.band_id",
 	"end_device_version_ids.brand_id",
 	"end_device_version_ids.firmware_version",
 	"end_device_version_ids.hardware_version",
@@ -41,6 +42,7 @@ var EncodeDownlinkMessageRequestFieldPathsTopLevel = []string{
 }
 var DecodeUplinkMessageRequestFieldPathsNested = []string{
 	"end_device_version_ids",
+	"end_device_version_ids.band_id",
 	"end_device_version_ids.brand_id",
 	"end_device_version_ids.firmware_version",
 	"end_device_version_ids.hardware_version",
@@ -67,6 +69,10 @@ var DecodeUplinkMessageRequestFieldPathsNested = []string{
 	"message.frm_payload",
 	"message.last_a_f_cnt_down",
 	"message.locations",
+	"message.network_ids",
+	"message.network_ids.cluster_id",
+	"message.network_ids.net_id",
+	"message.network_ids.tenant_id",
 	"message.received_at",
 	"message.rx_metadata",
 	"message.session_key_id",
@@ -79,6 +85,9 @@ var DecodeUplinkMessageRequestFieldPathsNested = []string{
 	"message.settings.data_rate.modulation.lora",
 	"message.settings.data_rate.modulation.lora.bandwidth",
 	"message.settings.data_rate.modulation.lora.spreading_factor",
+	"message.settings.data_rate.modulation.lrfhss",
+	"message.settings.data_rate.modulation.lrfhss.modulation_type",
+	"message.settings.data_rate.modulation.lrfhss.operating_channel_width",
 	"message.settings.data_rate_index",
 	"message.settings.downlink",
 	"message.settings.downlink.antenna_index",
@@ -88,6 +97,12 @@ var DecodeUplinkMessageRequestFieldPathsNested = []string{
 	"message.settings.frequency",
 	"message.settings.time",
 	"message.settings.timestamp",
+	"message.version_ids",
+	"message.version_ids.band_id",
+	"message.version_ids.brand_id",
+	"message.version_ids.firmware_version",
+	"message.version_ids.hardware_version",
+	"message.version_ids.model_id",
 	"parameter",
 }
 
@@ -100,6 +115,7 @@ var DecodeUplinkMessageRequestFieldPathsTopLevel = []string{
 }
 var DecodeDownlinkMessageRequestFieldPathsNested = []string{
 	"end_device_version_ids",
+	"end_device_version_ids.band_id",
 	"end_device_version_ids.brand_id",
 	"end_device_version_ids.firmware_version",
 	"end_device_version_ids.hardware_version",

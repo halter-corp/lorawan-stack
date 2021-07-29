@@ -43,7 +43,7 @@ import (
 )
 
 var (
-	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"}
+	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"}
 	registeredGatewayUID = unique.ID(test.Context(), registeredGatewayID)
 	registeredGatewayKey = "test-key"
 
@@ -98,24 +98,24 @@ func TestAuthentication(t *testing.T) {
 			OK:  false,
 		},
 		{
-			ID:  ttnpb.GatewayIdentifiers{GatewayID: "invalid-gateway"},
+			ID:  ttnpb.GatewayIdentifiers{GatewayId: "invalid-gateway"},
 			Key: "invalid-key",
 			OK:  false,
 		},
 		{
-			ID:  ttnpb.GatewayIdentifiers{EUI: &eui},
+			ID:  ttnpb.GatewayIdentifiers{Eui: &eui},
 			Key: "invalid-key",
 			OK:  false,
 		},
 	} {
-		t.Run(fmt.Sprintf("%v:%v", tc.ID.GatewayID, tc.Key), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v:%v", tc.ID.GatewayId, tc.Key), func(t *testing.T) {
 			a := assertions.New(t)
 
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 
 			ctx = rpcmetadata.MD{
-				ID: tc.ID.GatewayID,
+				ID: tc.ID.GatewayId,
 			}.ToOutgoingContext(ctx)
 			creds := grpc.PerRPCCredentials(rpcmetadata.MD{
 				AuthType:      "Bearer",
@@ -125,18 +125,20 @@ func TestAuthentication(t *testing.T) {
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
+			var err error
 			go func() {
 				defer wg.Done()
-				_, err := client.LinkGateway(ctx, creds)
-				if tc.OK && err != nil && !a.So(errors.IsCanceled(err), should.BeTrue) {
-					t.Fatalf("Unexpected link error: %v", err)
-				}
-				if !tc.OK && !a.So(errors.IsCanceled(err), should.BeFalse) {
-					t.FailNow()
-				}
+				_, err = client.LinkGateway(ctx, creds)
 			}()
 
 			wg.Wait()
+
+			if tc.OK && err != nil && !a.So(errors.IsCanceled(err), should.BeTrue) {
+				t.Fatalf("Unexpected link error: %v", err)
+			}
+			if !tc.OK && !a.So(errors.IsCanceled(err), should.BeFalse) {
+				t.FailNow()
+			}
 		})
 	}
 }
@@ -177,7 +179,7 @@ func TestTraffic(t *testing.T) {
 	client := ttnpb.NewGtwGsClient(c.LoopbackConn())
 
 	ctx = rpcmetadata.MD{
-		ID: registeredGatewayID.GatewayID,
+		ID: registeredGatewayID.GatewayId,
 	}.ToOutgoingContext(ctx)
 	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
 		AuthType:      "Bearer",
@@ -195,7 +197,7 @@ func TestTraffic(t *testing.T) {
 	go func() {
 		for up := range upCh {
 			if err := stream.Send(up); err != nil {
-				t.Fatalf("Send failed: %v", err)
+				panic(err)
 			}
 		}
 	}()
@@ -232,7 +234,7 @@ func TestTraffic(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 									Bandwidth:       125000,
 									SpreadingFactor: 11,
 								}},
@@ -255,7 +257,7 @@ func TestTraffic(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 									Bandwidth:       125000,
 									SpreadingFactor: 11,
 								}},
@@ -281,7 +283,7 @@ func TestTraffic(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 									Bandwidth:       125000,
 									SpreadingFactor: 11,
 								}},
@@ -300,7 +302,7 @@ func TestTraffic(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 									Bandwidth:       125000,
 									SpreadingFactor: 11,
 								}},
@@ -319,7 +321,7 @@ func TestTraffic(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
 									Bandwidth:       125000,
 									SpreadingFactor: 11,
 								}},
@@ -370,13 +372,65 @@ func TestTraffic(t *testing.T) {
 				}
 			})
 		}
+		t.Run("DeduplicateByRSSI", func(t *testing.T) {
+			a := assertions.New(t)
+			upCh <- &ttnpb.GatewayUp{
+				UplinkMessages: []*ttnpb.UplinkMessage{
+					{
+						RawPayload: []byte{0x06},
+						RxMetadata: []*ttnpb.RxMetadata{{GatewayIdentifiers: registeredGatewayID, RSSI: -100}},
+						Settings: ttnpb.TxSettings{
+							DataRate: ttnpb.DataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
+									Bandwidth:       125000,
+									SpreadingFactor: 11,
+								}},
+							},
+							EnableCRC: true,
+							Frequency: 868500000,
+							Timestamp: 42,
+						},
+					},
+					{
+						RawPayload: []byte{0x06},
+						RxMetadata: []*ttnpb.RxMetadata{{GatewayIdentifiers: registeredGatewayID, RSSI: -10}},
+						Settings: ttnpb.TxSettings{
+							DataRate: ttnpb.DataRate{
+								Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{
+									Bandwidth:       125000,
+									SpreadingFactor: 11,
+								}},
+							},
+							EnableCRC: true,
+							Frequency: 868700000,
+							Timestamp: 42,
+						},
+					},
+				},
+			}
+			select {
+			case up := <-conn.Up():
+				a.So(up.RxMetadata[0].RSSI, should.Equal, -10)
+				a.So(up.RawPayload, should.Resemble, []byte{0x06})
+				a.So(up.Settings.Frequency, should.Equal, 868700000)
+			case <-time.After(timeout):
+				t.Fatalf("Receive unexpected upstream timeout")
+			}
+			select {
+			case <-conn.Up():
+				t.Fatalf("Received unexpected upstream message")
+			case <-time.After(timeout):
+			}
+		})
 	})
 
 	t.Run("Downstream", func(t *testing.T) {
 		for i, tc := range []struct {
-			Path           *ttnpb.DownlinkPath
-			Message        *ttnpb.DownlinkMessage
-			ErrorAssertion func(error) bool
+			Path                *ttnpb.DownlinkPath
+			Message             *ttnpb.DownlinkMessage
+			ErrorAssertion      func(error) bool
+			SendTxAck           bool
+			TxAckErrorAssertion func(error) bool
 		}{
 			{
 				Path: &ttnpb.DownlinkPath{
@@ -404,6 +458,7 @@ func TestTraffic(t *testing.T) {
 						},
 					},
 				},
+				SendTxAck: true,
 			},
 			{
 				Path: &ttnpb.DownlinkPath{
@@ -421,8 +476,8 @@ func TestTraffic(t *testing.T) {
 					Settings: &ttnpb.DownlinkMessage_Scheduled{
 						Scheduled: &ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{
-									LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{
+									Lora: &ttnpb.LoRaDataRate{
 										Bandwidth:       125000,
 										SpreadingFactor: 7,
 									},
@@ -455,13 +510,15 @@ func TestTraffic(t *testing.T) {
 			t.Run(strconv.Itoa(i), func(t *testing.T) {
 				a := assertions.New(t)
 
-				_, err := conn.ScheduleDown(tc.Path, tc.Message)
+				_, _, _, err := conn.ScheduleDown(tc.Path, tc.Message)
 				if err != nil && (tc.ErrorAssertion == nil || !a.So(tc.ErrorAssertion(err), should.BeTrue)) {
 					t.Fatalf("Unexpected error: %v", err)
 				}
+				var cids []string
 				select {
 				case down := <-downCh:
 					if tc.ErrorAssertion == nil {
+						cids = down.DownlinkMessage.CorrelationIDs
 						a.So(down.DownlinkMessage, should.Resemble, tc.Message)
 					} else {
 						t.Fatalf("Unexpected message: %v", down.DownlinkMessage)
@@ -469,6 +526,32 @@ func TestTraffic(t *testing.T) {
 				case <-time.After(timeout):
 					if tc.ErrorAssertion == nil {
 						t.Fatal("Receive expected downlink timeout")
+					}
+				}
+
+				if tc.ErrorAssertion != nil || !tc.SendTxAck {
+					return
+				}
+				select {
+				case upCh <- &ttnpb.GatewayUp{
+					TxAcknowledgment: &ttnpb.TxAcknowledgment{
+						CorrelationIDs: cids,
+						Result:         ttnpb.TxAcknowledgment_SUCCESS,
+					},
+				}:
+				case <-time.After(timeout):
+					if tc.TxAckErrorAssertion == nil {
+						t.Fatal("Receive unexpected timeout while sending Tx acknowledgment")
+					}
+				}
+
+				select {
+				case ack := <-conn.TxAck():
+					a.So(ack.DownlinkMessage, should.Resemble, tc.Message)
+					a.So(ack.Result, should.Equal, ttnpb.TxAcknowledgment_SUCCESS)
+				case <-time.After(timeout):
+					if tc.TxAckErrorAssertion == nil {
+						t.Fatal("Timeout waiting for Tx acknowledgment")
 					}
 				}
 			})
@@ -511,7 +594,7 @@ func TestConcentratorConfig(t *testing.T) {
 	client := ttnpb.NewGtwGsClient(c.LoopbackConn())
 
 	ctx = rpcmetadata.MD{
-		ID: registeredGatewayID.GatewayID,
+		ID: registeredGatewayID.GatewayId,
 	}.ToOutgoingContext(ctx)
 	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
 		AuthType:      "Bearer",
@@ -577,7 +660,7 @@ func TestMQTTConfig(t *testing.T) {
 	client := ttnpb.NewGtwGsClient(c.LoopbackConn())
 
 	ctx = rpcmetadata.MD{
-		ID: registeredGatewayID.GatewayID,
+		ID: registeredGatewayID.GatewayId,
 	}.ToOutgoingContext(ctx)
 	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
 		AuthType:      "Bearer",

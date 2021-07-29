@@ -67,9 +67,30 @@ hr
   border: 0
   height: 1px
 
+code
+  font-family: $font-family-mono
+  font-size: $fs.s
+  background-color: $c-text-backdrop
+  padding: 0.1rem $cs.xxs
+  color: $tc-black
+
 // Remove focus from elements when targeted by a mouse.
 // The `focus-visible` class is added on focusable elements
 // automatically when in focus.
 // See https://github.com/WICG/focus-visible
 :global(.js-focus-visible) :focus:not(:global(.focus-visible))
   outline: 0
+
+// Global one-off styles.
+:global
+  .c-error
+    color: $c-error
+
+  .c-success
+    color: $c-success
+
+  .c-warning
+    color: $c-success
+
+  .c-active
+    color: $c-active-blue

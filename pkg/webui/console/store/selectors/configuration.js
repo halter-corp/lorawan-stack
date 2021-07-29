@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+
 import {
   GET_NS_FREQUENCY_PLANS_BASE,
   GET_GS_FREQUENCY_PLANS_BASE,
 } from '@console/store/actions/configuration'
 
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
-
 const selectConfigurationStore = state => state.configuration
 
-export const selectGsFrequencyPlans = function(state) {
+export const selectGsFrequencyPlans = state => {
   const store = selectConfigurationStore(state)
 
   return store.gsFrequencyPlans || []
 }
 
-export const selectNsFrequencyPlans = function(state) {
+export const selectNsFrequencyPlans = state => {
   const store = selectConfigurationStore(state)
 
   return store.nsFrequencyPlans || []

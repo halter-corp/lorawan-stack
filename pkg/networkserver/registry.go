@@ -16,32 +16,31 @@ package networkserver
 
 import (
 	"context"
-	"time"
 
-	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/internal/registry"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
-type UplinkMatch interface {
-	ApplicationIdentifiers() ttnpb.ApplicationIdentifiers
-	DeviceID() string
-	LoRaWANVersion() ttnpb.MACVersion
-	FNwkSIntKey() *ttnpb.KeyEnvelope
-	FCnt() uint32
-	LastFCnt() uint32
-	IsPending() bool
-	ResetsFCnt() *pbtypes.BoolValue
+type UplinkMatch struct {
+	ApplicationIdentifiers ttnpb.ApplicationIdentifiers
+	DeviceID               string
+	LoRaWANVersion         ttnpb.MACVersion
+	FNwkSIntKey            *ttnpb.KeyEnvelope
+	LastFCnt               uint32
+	ResetsFCnt             *ttnpb.BoolValue
+	Supports32BitFCnt      *ttnpb.BoolValue
+	IsPending              bool
 }
 
 // DeviceRegistry is a registry, containing devices.
 type DeviceRegistry interface {
 	GetByEUI(ctx context.Context, joinEUI, devEUI types.EUI64, paths []string) (*ttnpb.EndDevice, context.Context, error)
 	GetByID(ctx context.Context, appID ttnpb.ApplicationIdentifiers, devID string, paths []string) (*ttnpb.EndDevice, context.Context, error)
-	RangeByUplinkMatches(ctx context.Context, up *ttnpb.UplinkMessage, cacheTTL time.Duration, f func(context.Context, UplinkMatch) (bool, error)) error
+	RangeByUplinkMatches(ctx context.Context, up *ttnpb.UplinkMessage, cacheTTL time.Duration, f func(context.Context, *UplinkMatch) (bool, error)) error
 	SetByID(ctx context.Context, appID ttnpb.ApplicationIdentifiers, devID string, paths []string, f func(context.Context, *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error)) (*ttnpb.EndDevice, context.Context, error)
 }
 
@@ -49,7 +48,7 @@ var errDeviceExists = errors.DefineAlreadyExists("device_exists", "device alread
 
 // CreateDevice creates device dev in r.
 func CreateDevice(ctx context.Context, r DeviceRegistry, dev *ttnpb.EndDevice, paths ...string) (*ttnpb.EndDevice, context.Context, error) {
-	return r.SetByID(ctx, dev.ApplicationIdentifiers, dev.DeviceID, ttnpb.EndDeviceFieldPathsTopLevel, func(_ context.Context, stored *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
+	return r.SetByID(ctx, dev.ApplicationIdentifiers, dev.DeviceId, ttnpb.EndDeviceFieldPathsTopLevel, func(_ context.Context, stored *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
 		if stored != nil {
 			return nil, nil, errDeviceExists
 		}
@@ -65,7 +64,7 @@ func DeleteDevice(ctx context.Context, r DeviceRegistry, appID ttnpb.Application
 
 func logRegistryRPCError(ctx context.Context, err error, msg string) {
 	logger := log.FromContext(ctx).WithError(err)
-	var printLog func(string)
+	var printLog func(args ...interface{})
 	switch {
 	case errors.IsNotFound(err), errors.IsInvalidArgument(err):
 		printLog = logger.Debug
@@ -144,50 +143,35 @@ func wrapEndDeviceRegistryWithReplacedFields(r DeviceRegistry, fields ...registr
 
 var replacedEndDeviceFields = []registry.ReplacedEndDeviceField{
 	{
-		Old: "mac_state.current_parameters.adr_ack_delay",
-		New: "mac_state.current_parameters.adr_ack_delay_exponent",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.CurrentParameters.ADRAckDelay = uint32(dev.MACState.CurrentParameters.ADRAckDelayExponent.GetValue())
-		},
+		Old:          "mac_state.current_parameters.adr_ack_delay",
+		New:          "mac_state.current_parameters.adr_ack_delay_exponent",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
 			}
 			// Replicate old behavior for backwards-compatibility.
-			dev.MACState.CurrentParameters.ADRAckDelay = 0
+			dev.MACState.CurrentParameters.AdrAckDelay = 0
 			return nil
 		},
 	},
 	{
-		Old: "mac_state.current_parameters.adr_ack_limit",
-		New: "mac_state.current_parameters.adr_ack_limit_exponent",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.CurrentParameters.ADRAckLimit = uint32(dev.MACState.CurrentParameters.ADRAckLimitExponent.GetValue())
-		},
+		Old:          "mac_state.current_parameters.adr_ack_limit",
+		New:          "mac_state.current_parameters.adr_ack_limit_exponent",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
 			}
 			// Replicate old behavior for backwards-compatibility.
-			dev.MACState.CurrentParameters.ADRAckLimit = 0
+			dev.MACState.CurrentParameters.AdrAckLimit = 0
 			return nil
 		},
 	},
 	{
-		Old: "mac_state.current_parameters.ping_slot_data_rate_index",
-		New: "mac_state.current_parameters.ping_slot_data_rate_index_value",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.CurrentParameters.PingSlotDataRateIndex = dev.MACState.CurrentParameters.PingSlotDataRateIndexValue.GetValue()
-		},
+		Old:          "mac_state.current_parameters.ping_slot_data_rate_index",
+		New:          "mac_state.current_parameters.ping_slot_data_rate_index_value",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
@@ -198,50 +182,35 @@ var replacedEndDeviceFields = []registry.ReplacedEndDeviceField{
 		},
 	},
 	{
-		Old: "mac_state.desired_parameters.adr_ack_delay",
-		New: "mac_state.desired_parameters.adr_ack_delay_exponent",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.DesiredParameters.ADRAckDelay = uint32(dev.MACState.DesiredParameters.ADRAckDelayExponent.GetValue())
-		},
+		Old:          "mac_state.desired_parameters.adr_ack_delay",
+		New:          "mac_state.desired_parameters.adr_ack_delay_exponent",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
 			}
 			// Replicate old behavior for backwards-compatibility.
-			dev.MACState.DesiredParameters.ADRAckDelay = 0
+			dev.MACState.DesiredParameters.AdrAckDelay = 0
 			return nil
 		},
 	},
 	{
-		Old: "mac_state.desired_parameters.adr_ack_limit",
-		New: "mac_state.desired_parameters.adr_ack_limit_exponent",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.DesiredParameters.ADRAckLimit = uint32(dev.MACState.DesiredParameters.ADRAckLimitExponent.GetValue())
-		},
+		Old:          "mac_state.desired_parameters.adr_ack_limit",
+		New:          "mac_state.desired_parameters.adr_ack_limit_exponent",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
 			}
 			// Replicate old behavior for backwards-compatibility.
-			dev.MACState.DesiredParameters.ADRAckLimit = 0
+			dev.MACState.DesiredParameters.AdrAckLimit = 0
 			return nil
 		},
 	},
 	{
-		Old: "mac_state.desired_parameters.ping_slot_data_rate_index",
-		New: "mac_state.desired_parameters.ping_slot_data_rate_index_value",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			if dev.MACState == nil {
-				return
-			}
-			dev.MACState.DesiredParameters.PingSlotDataRateIndex = dev.MACState.DesiredParameters.PingSlotDataRateIndexValue.GetValue()
-		},
+		Old:          "mac_state.desired_parameters.ping_slot_data_rate_index",
+		New:          "mac_state.desired_parameters.ping_slot_data_rate_index_value",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, _, _ bool) error {
 			if dev.MACState == nil {
 				return nil
@@ -252,23 +221,9 @@ var replacedEndDeviceFields = []registry.ReplacedEndDeviceField{
 		},
 	},
 	{
-		Old: "queued_application_downlinks",
-		New: "session.queued_application_downlinks",
-		GetTransform: func(dev *ttnpb.EndDevice) {
-			switch {
-			case dev.QueuedApplicationDownlinks == nil && dev.GetSession().GetQueuedApplicationDownlinks() == nil:
-				return
-
-			case dev.QueuedApplicationDownlinks != nil:
-				if dev.Session == nil {
-					dev.Session = &ttnpb.Session{}
-				}
-				dev.Session.QueuedApplicationDownlinks = dev.QueuedApplicationDownlinks
-
-			default:
-				dev.QueuedApplicationDownlinks = dev.Session.QueuedApplicationDownlinks
-			}
-		},
+		Old:          "queued_application_downlinks",
+		New:          "session.queued_application_downlinks",
+		GetTransform: func(dev *ttnpb.EndDevice) {},
 		SetTransform: func(dev *ttnpb.EndDevice, useOld, useNew bool) error {
 			switch {
 			case useOld && useNew:
@@ -302,4 +257,16 @@ var replacedEndDeviceFields = []registry.ReplacedEndDeviceField{
 			return nil
 		},
 	},
+}
+
+// ScheduledDownlinkMatcher matches scheduled downlinks with the TxAcknowledgement received by a gateway.
+type ScheduledDownlinkMatcher interface {
+	// Add stores metadata for a scheduled downlink message. Implementations may use the downlink
+	// message correlation IDs to uniquely identify the scheduled downlink message.
+	Add(ctx context.Context, down *ttnpb.DownlinkMessage) error
+	// Match matches metadata of a scheduled downlink message from a TxAcknowledgement that was received by a gateway.
+	// In case of a successful match, the scheduled downlink message is returned. If no downlink is matched, then an
+	// error is returned instead. Implementations are free to return an error even when a match should have been
+	// successful, for example if a long time has passed since the downlink was scheduled.
+	Match(ctx context.Context, ack *ttnpb.TxAcknowledgment) (*ttnpb.DownlinkMessage, error)
 }

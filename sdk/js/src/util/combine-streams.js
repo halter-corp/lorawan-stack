@@ -19,7 +19,7 @@
  * @returns {object} The stream subscription object with the `on` function for
  * attaching listeners and the `close` function to close the stream.
  */
-const combinedStream = async function(streams) {
+const combinedStream = async streams => {
   if (!(streams instanceof Array) || streams.length === 0) {
     throw new Error('Cannot combine streams with invalid stream array.')
   } else if (streams.length === 1) {
@@ -29,12 +29,12 @@ const combinedStream = async function(streams) {
   const subscribers = await Promise.all(streams)
 
   return {
-    on(eventName, callback) {
+    on: (eventName, callback) => {
       for (const subscriber of subscribers) {
         subscriber.on(eventName, callback)
       }
     },
-    close() {
+    close: () => {
       for (const subscriber of subscribers) {
         subscriber.close()
       }

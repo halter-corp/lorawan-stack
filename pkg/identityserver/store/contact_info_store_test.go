@@ -21,6 +21,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
+	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 )
@@ -32,12 +33,12 @@ func TestContactInfoStore(t *testing.T) {
 	now := cleanTime(time.Now())
 
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
-		prepareTest(db, &ContactInfo{}, &Application{})
+		prepareTest(db, &ContactInfo{}, &Application{}, &ContactInfoValidation{})
 
 		appStore := GetApplicationStore(db)
 
 		app, err := appStore.CreateApplication(ctx, &ttnpb.Application{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "foo"},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "foo"},
 		})
 
 		a.So(err, should.BeNil)
@@ -81,6 +82,14 @@ func TestContactInfoStore(t *testing.T) {
 				}
 			}
 		}
+
+		err = s.DeleteEntityContactInfo(ctx, app.ApplicationIdentifiers)
+
+		a.So(err, should.BeNil)
+
+		contactInfo, err = s.GetContactInfo(ctx, app.ApplicationIdentifiers)
+
+		a.So(contactInfo, should.HaveLength, 0)
 	})
 }
 
@@ -94,7 +103,7 @@ func TestContactInfoValidation(t *testing.T) {
 		usrStore := GetUserStore(db)
 
 		usr, err := usrStore.CreateUser(ctx, &ttnpb.User{
-			UserIdentifiers: ttnpb.UserIdentifiers{UserID: "foo"},
+			UserIdentifiers: ttnpb.UserIdentifiers{UserId: "foo"},
 		})
 
 		a.So(err, should.BeNil)
@@ -112,12 +121,24 @@ func TestContactInfoValidation(t *testing.T) {
 		_, err = s.CreateValidation(ctx, &ttnpb.ContactInfoValidation{
 			ID:          "validation-id",
 			Token:       "validation-token",
-			Entity:      usr.EntityIdentifiers(),
+			Entity:      usr.GetEntityIdentifiers(),
 			ContactInfo: info,
 			ExpiresAt:   &expiresAt,
 		})
 
 		a.So(err, should.BeNil)
+
+		_, err = s.CreateValidation(ctx, &ttnpb.ContactInfoValidation{
+			ID:          "validation-id",
+			Token:       "other-token",
+			Entity:      usr.GetEntityIdentifiers(),
+			ContactInfo: info,
+			ExpiresAt:   &expiresAt,
+		})
+
+		if a.So(err, should.NotBeNil) {
+			a.So(errors.IsAlreadyExists(err), should.BeTrue)
+		}
 
 		err = s.Validate(ctx, &ttnpb.ContactInfoValidation{
 			ID:    "validation-id",
@@ -131,6 +152,15 @@ func TestContactInfoValidation(t *testing.T) {
 		a.So(err, should.BeNil)
 		if a.So(info, should.HaveLength, 1) {
 			a.So(info[0].ValidatedAt, should.NotBeNil)
+		}
+
+		err = s.Validate(ctx, &ttnpb.ContactInfoValidation{
+			ID:    "validation-id",
+			Token: "validation-token",
+		})
+
+		if a.So(err, should.NotBeNil) {
+			a.So(errors.IsAlreadyExists(err), should.BeTrue)
 		}
 	})
 }

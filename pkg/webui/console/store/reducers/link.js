@@ -20,53 +20,38 @@ import {
 } from '@console/store/actions/link'
 
 const defaultProps = {
-  linked: undefined,
   link: undefined,
-  stats: undefined,
 }
 
-const getLinkSuccess = function(state, { payload }) {
-  const { linked, stats, link = {} } = payload
+const getLinkSuccess = (state, { payload }) => {
+  const { link = {} } = payload
 
   return {
     ...state,
-    linked,
     link,
-    stats,
   }
 }
 
-const getLinkFailure = function(state, { payload }) {
-  return {
-    ...state,
-    link: payload.link || {},
-    stats: payload.stats || undefined,
-    linked: payload.linked || false,
-  }
-}
+const getLinkFailure = (state, { payload }) => ({
+  ...state,
+  link: payload.link || {},
+})
 
-const updateLinkSuccess = function(state, { link, stats }) {
+const updateLinkSuccess = (state, { link }) => {
   const newLink = { ...state.link, ...link }
-  const newStats = { ...state.stats, ...stats }
 
   return {
     ...state,
-    linked: true,
     link: newLink,
-    stats: newStats,
   }
 }
 
-const deleteLinkSuccess = function(state) {
-  return {
-    ...state,
-    linked: false,
-    link: {},
-    stats: undefined,
-  }
-}
+const deleteLinkSuccess = state => ({
+  ...state,
+  link: {},
+})
 
-const link = function(state = defaultProps, action) {
+const link = (state = defaultProps, action) => {
   switch (action.type) {
     case GET_APP_LINK_SUCCESS:
       return getLinkSuccess(state, action)

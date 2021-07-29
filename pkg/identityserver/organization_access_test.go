@@ -17,6 +17,7 @@ package identityserver
 import (
 	"testing"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -62,7 +63,7 @@ func TestOrganizationAccessNotFound(t *testing.T) {
 
 		got, err := reg.GetAPIKey(ctx, &ttnpb.GetOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
-			KeyID:                   apiKey.ID,
+			KeyId:                   apiKey.ID,
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -73,6 +74,7 @@ func TestOrganizationAccessNotFound(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
 			APIKey:                  apiKey,
+			FieldMask:               &pbtypes.FieldMask{Paths: []string{"name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -116,6 +118,7 @@ func TestOrganizationAccessRightsPermissionDenied(t *testing.T) {
 				Name:   APIKey.Name,
 				Rights: []ttnpb.Right{right},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		}, creds)
 
 		if a.So(err, should.NotBeNil) {
@@ -158,7 +161,7 @@ func TestOrganizationAccessPermissionDenied(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
-			KeyID:                   APIKeyID,
+			KeyId:                   APIKeyID,
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -180,7 +183,7 @@ func TestOrganizationAccessPermissionDenied(t *testing.T) {
 		})
 
 		if a.So(err, should.NotBeNil) {
-			a.So(errors.IsPermissionDenied(err), should.BeTrue)
+			a.So(errors.IsUnauthenticated(err), should.BeTrue)
 		}
 		a.So(collaborators, should.BeNil)
 
@@ -201,6 +204,7 @@ func TestOrganizationAccessPermissionDenied(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
 			APIKey:                  *APIKey,
+			FieldMask:               &pbtypes.FieldMask{Paths: []string{"rights", "name"}},
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -260,7 +264,7 @@ func TestOrganizationAccessCRUD(t *testing.T) {
 		}
 
 		modifiedOrganizationID := organizationID
-		modifiedOrganizationID.OrganizationID = reverse(modifiedOrganizationID.OrganizationID)
+		modifiedOrganizationID.OrganizationId = reverse(modifiedOrganizationID.OrganizationId)
 
 		rights, err = reg.ListRights(ctx, &modifiedOrganizationID, creds)
 
@@ -274,7 +278,7 @@ func TestOrganizationAccessCRUD(t *testing.T) {
 
 		APIKey, err := reg.GetAPIKey(ctx, &ttnpb.GetOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
-			KeyID:                   organizationKey.ID,
+			KeyId:                   organizationKey.ID,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -322,6 +326,7 @@ func TestOrganizationAccessCRUD(t *testing.T) {
 		updated, err := reg.UpdateAPIKey(ctx, &ttnpb.UpdateOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
 			APIKey:                  *APIKey,
+			FieldMask:               &pbtypes.FieldMask{Paths: []string{"name"}},
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -350,6 +355,7 @@ func TestOrganizationAccessCRUD(t *testing.T) {
 		}
 	})
 }
+
 func TestOrganizationAccessRights(t *testing.T) {
 	a := assertions.New(t)
 	ctx := test.Context()
@@ -427,6 +433,7 @@ func TestOrganizationAccessRights(t *testing.T) {
 					ttnpb.RIGHT_ORGANIZATION_SETTINGS_MEMBERS,
 				},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -452,6 +459,7 @@ func TestOrganizationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, usrCreds)
 
 		a.So(err, should.BeNil)
@@ -466,6 +474,7 @@ func TestOrganizationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
@@ -503,6 +512,7 @@ func TestOrganizationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: newRights.Sub(ttnpb.RightsFrom(ttnpb.RIGHT_ORGANIZATION_DELETE)).Rights,
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {
@@ -545,13 +555,14 @@ func TestOrganizationAccessRights(t *testing.T) {
 				ID:     APIKey.ID,
 				Rights: []ttnpb.Right{},
 			},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"rights"}},
 		}, collaboratorCreds)
 
 		a.So(err, should.BeNil)
 
 		_, err = reg.GetAPIKey(ctx, &ttnpb.GetOrganizationAPIKeyRequest{
 			OrganizationIdentifiers: organizationID,
-			KeyID:                   APIKey.ID,
+			KeyId:                   APIKey.ID,
 		}, collaboratorCreds)
 
 		if a.So(err, should.NotBeNil) {

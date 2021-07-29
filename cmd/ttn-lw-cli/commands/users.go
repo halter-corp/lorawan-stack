@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@ package commands
 
 import (
 	"os"
+	"reflect"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/howeyc/gopass"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -57,7 +59,7 @@ func getUserID(flagSet *pflag.FlagSet, args []string) *ttnpb.UserIdentifiers {
 	if userID == "" {
 		return nil
 	}
-	return &ttnpb.UserIdentifiers{UserID: userID}
+	return &ttnpb.UserIdentifiers{UserId: userID}
 }
 
 func printPasswordRequirements(msg *ttnpb.IsConfiguration_UserRegistration_PasswordRequirements) {
@@ -84,6 +86,14 @@ func printPasswordRequirements(msg *ttnpb.IsConfiguration_UserRegistration_Passw
 
 var errPasswordMismatch = errors.DefineInvalidArgument("password_mismatch", "password did not match")
 
+var searchUsersFlags = func() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.AddFlagSet(searchFlags)
+	// NOTE: These flags need to be named with underscores, not dashes!
+	util.AddField(flagSet, "state", reflect.TypeOf([]ttnpb.State{}), false)
+	return flagSet
+}()
+
 var (
 	usersCommand = &cobra.Command{
 		Use:     "users",
@@ -96,7 +106,7 @@ var (
 		Short:   "List users",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.UserRegistry/List"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.UserRegistry/List"].Allowed)
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -104,10 +114,11 @@ var (
 			}
 			limit, page, opt, getTotal := withPagination(cmd.Flags())
 			res, err := ttnpb.NewUserRegistryClient(is).List(ctx, &ttnpb.ListUsersRequest{
-				FieldMask: types.FieldMask{Paths: paths},
+				FieldMask: &pbtypes.FieldMask{Paths: paths},
 				Limit:     limit,
 				Page:      page,
 				Order:     getOrder(cmd.Flags()),
+				Deleted:   getDeleted(cmd.Flags()),
 			}, opt)
 			if err != nil {
 				return err
@@ -122,10 +133,19 @@ var (
 		Short: "Search for users",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.EntityRegistrySearch/SearchUsers"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.EntityRegistrySearch/SearchUsers"].Allowed)
 
-			req, opt, getTotal := getSearchEntitiesRequest(cmd.Flags())
-			req.FieldMask.Paths = paths
+			req := &ttnpb.SearchUsersRequest{}
+			if err := util.SetFields(req, searchUsersFlags); err != nil {
+				return err
+			}
+			var (
+				opt      grpc.CallOption
+				getTotal func() uint64
+			)
+			req.Limit, req.Page, opt, getTotal = withPagination(cmd.Flags())
+			req.FieldMask = &pbtypes.FieldMask{Paths: paths}
+			req.Deleted = getDeleted(cmd.Flags())
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -150,7 +170,7 @@ var (
 				return errNoUserID
 			}
 			paths := util.SelectFieldMask(cmd.Flags(), selectUserFlags)
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.UserRegistry/Get"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.UserRegistry/Get"].Allowed)
 
 			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
 			if err != nil {
@@ -158,7 +178,7 @@ var (
 			}
 			res, err := ttnpb.NewUserRegistryClient(is).Get(ctx, &ttnpb.GetUserRequest{
 				UserIdentifiers: *usrID,
-				FieldMask:       types.FieldMask{Paths: paths},
+				FieldMask:       &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -186,10 +206,10 @@ var (
 				return err
 			}
 			user.Attributes = mergeAttributes(user.Attributes, cmd.Flags())
-			if usrID != nil && usrID.UserID != "" {
-				user.UserID = usrID.UserID
+			if usrID != nil && usrID.UserId != "" {
+				user.UserId = usrID.UserId
 			}
-			if user.UserID == "" {
+			if user.UserId == "" {
 				return errNoUserID
 			}
 
@@ -298,7 +318,7 @@ var (
 			}
 			res, err := ttnpb.NewUserRegistryClient(is).Update(ctx, &ttnpb.UpdateUserRequest{
 				User:      user,
-				FieldMask: types.FieldMask{Paths: paths},
+				FieldMask: &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -415,26 +435,78 @@ var (
 			return nil
 		},
 	}
+	usersRestoreCommand = &cobra.Command{
+		Use:   "restore [user-id]",
+		Short: "Restore a user",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			usrID := getUserID(cmd.Flags(), args)
+			if usrID == nil {
+				return errNoUserID
+			}
+
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			_, err = ttnpb.NewUserRegistryClient(is).Restore(ctx, usrID)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
 	usersContactInfoCommand = contactInfoCommands("user", func(cmd *cobra.Command, args []string) (*ttnpb.EntityIdentifiers, error) {
 		usrID := getUserID(cmd.Flags(), args)
 		if usrID == nil {
 			return nil, errNoUserID
 		}
-		return usrID.EntityIdentifiers(), nil
+		return usrID.GetEntityIdentifiers(), nil
 	})
+
+	usersPurgeCommand = &cobra.Command{
+		Use:     "purge [user-id]",
+		Aliases: []string{"permanent-delete", "hard-delete"},
+		Short:   "Purge a user",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			usrID := getUserID(cmd.Flags(), args)
+			if usrID == nil {
+				return errNoUserID
+			}
+			force, err := cmd.Flags().GetBool("force")
+			if err != nil {
+				return err
+			}
+			if !confirmChoice(userPurgeWarning, force) {
+				return errNoConfirmation
+			}
+			is, err := api.Dial(ctx, config.IdentityServerGRPCAddress)
+			if err != nil {
+				return err
+			}
+			_, err = ttnpb.NewUserRegistryClient(is).Purge(ctx, usrID)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
 )
 
 func init() {
 	profilePictureFlags.String("profile_picture", "", "upload the profile picture from this file")
 
+	usersListCommand.Flags().AddFlagSet(deletedFlags)
 	usersListCommand.Flags().AddFlagSet(selectUserFlags)
 	usersListCommand.Flags().AddFlagSet(selectAllUserFlags)
 	usersListCommand.Flags().AddFlagSet(paginationFlags())
 	usersListCommand.Flags().AddFlagSet(orderFlags())
 	usersCommand.AddCommand(usersListCommand)
-	usersSearchCommand.Flags().AddFlagSet(searchFlags())
-	usersSearchCommand.Flags().AddFlagSet(selectAllUserFlags)
+	usersSearchCommand.Flags().AddFlagSet(searchUsersFlags)
+	usersSearchCommand.Flags().AddFlagSet(deletedFlags)
 	usersSearchCommand.Flags().AddFlagSet(selectUserFlags)
+	usersSearchCommand.Flags().AddFlagSet(selectAllUserFlags)
 	usersCommand.AddCommand(usersSearchCommand)
 	usersGetCommand.Flags().AddFlagSet(userIDFlags())
 	usersGetCommand.Flags().AddFlagSet(selectUserFlags)
@@ -462,7 +534,12 @@ func init() {
 	usersCommand.AddCommand(usersUpdatePasswordCommand)
 	usersDeleteCommand.Flags().AddFlagSet(userIDFlags())
 	usersCommand.AddCommand(usersDeleteCommand)
+	usersRestoreCommand.Flags().AddFlagSet(userIDFlags())
+	usersCommand.AddCommand(usersRestoreCommand)
 	usersContactInfoCommand.PersistentFlags().AddFlagSet(userIDFlags())
 	usersCommand.AddCommand(usersContactInfoCommand)
+	usersPurgeCommand.Flags().AddFlagSet(userIDFlags())
+	usersPurgeCommand.Flags().AddFlagSet(forceFlags())
+	usersCommand.AddCommand(usersPurgeCommand)
 	Root.AddCommand(usersCommand)
 }

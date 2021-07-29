@@ -35,7 +35,11 @@ func logWarnings(ctx context.Context, md metadata.MD) {
 	if warnings := md.Get(warning); len(warnings) > 0 {
 		logger := log.FromContext(ctx)
 		if logger == log.Noop {
-			logger = log.Default
+			logHandler, err := log.NewZap("console")
+			if err != nil {
+				panic(err)
+			}
+			logger = log.NewLogger(logHandler)
 		}
 		for _, warning := range warnings {
 			logger.Warn(warning)

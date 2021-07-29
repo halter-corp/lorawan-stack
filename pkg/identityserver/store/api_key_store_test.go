@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
@@ -41,40 +43,42 @@ func TestAPIKeyStore(t *testing.T) {
 		store := GetAPIKeyStore(db)
 
 		s.createEntity(ctx, &User{Account: Account{UID: "test-user"}})
-		userIDs := &ttnpb.UserIdentifiers{UserID: "test-user"}
+		userIDs := &ttnpb.UserIdentifiers{UserId: "test-user"}
 
 		s.createEntity(ctx, &Organization{Account: Account{UID: "test-org"}})
-		orgIDs := &ttnpb.OrganizationIdentifiers{OrganizationID: "test-org"}
+		orgIDs := &ttnpb.OrganizationIdentifiers{OrganizationId: "test-org"}
 
 		s.createEntity(ctx, &Application{ApplicationID: "test-app"})
-		appIDs := &ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}
+		appIDs := &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}
 
 		s.createEntity(ctx, &Gateway{GatewayID: "test-gtw"})
-		gtwIDs := &ttnpb.GatewayIdentifiers{GatewayID: "test-gtw"}
+		gtwIDs := &ttnpb.GatewayIdentifiers{GatewayId: "test-gtw"}
+
+		expiryTime := time.Now().Add(24 * time.Hour)
 
 		for _, tt := range []struct {
 			Name        string
-			Identifiers ttnpb.Identifiers
+			Identifiers *ttnpb.EntityIdentifiers
 			Rights      []ttnpb.Right
 		}{
 			{
 				Name:        "Application",
-				Identifiers: appIDs,
+				Identifiers: appIDs.GetEntityIdentifiers(),
 				Rights:      []ttnpb.Right{ttnpb.RIGHT_APPLICATION_ALL},
 			},
 			{
 				Name:        "Gateway",
-				Identifiers: gtwIDs,
+				Identifiers: gtwIDs.GetEntityIdentifiers(),
 				Rights:      []ttnpb.Right{ttnpb.RIGHT_GATEWAY_ALL},
 			},
 			{
 				Name:        "Organization",
-				Identifiers: orgIDs,
+				Identifiers: orgIDs.GetEntityIdentifiers(),
 				Rights:      []ttnpb.Right{ttnpb.RIGHT_APPLICATION_ALL, ttnpb.RIGHT_GATEWAY_ALL},
 			},
 			{
 				Name:        "User",
-				Identifiers: userIDs,
+				Identifiers: userIDs.GetEntityIdentifiers(),
 				Rights:      []ttnpb.Right{ttnpb.RIGHT_APPLICATION_ALL, ttnpb.RIGHT_GATEWAY_ALL},
 			},
 		} {
@@ -82,34 +86,43 @@ func TestAPIKeyStore(t *testing.T) {
 				a := assertions.New(t)
 
 				key := &ttnpb.APIKey{
-					ID:     strings.ToUpper(fmt.Sprintf("%sKEYID", tt.Name)),
-					Key:    strings.ToUpper(fmt.Sprintf("%sKEY", tt.Name)),
-					Name:   fmt.Sprintf("%s API key", tt.Name),
-					Rights: tt.Rights,
+					ID:        strings.ToUpper(fmt.Sprintf("%sKEYID", tt.Name)),
+					Key:       strings.ToUpper(fmt.Sprintf("%sKEY", tt.Name)),
+					Name:      fmt.Sprintf("%s API key", tt.Name),
+					Rights:    tt.Rights,
+					ExpiresAt: &expiryTime,
 				}
-
-				err := store.CreateAPIKey(ctx, tt.Identifiers, key)
+				created, err := store.CreateAPIKey(ctx, tt.Identifiers, key)
 
 				a.So(err, should.BeNil)
+				if a.So(created, should.NotBeNil) {
+					a.So(created.ID, should.Equal, key.ID)
+					a.So(created.Key, should.Equal, key.Key)
+					a.So(created.Name, should.Equal, key.Name)
+					a.So(created.Rights, should.Resemble, key.Rights)
+					a.So(created.CreatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
+					a.So(created.UpdatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
+				}
 
 				keys, err := store.FindAPIKeys(ctx, tt.Identifiers)
 
 				a.So(err, should.BeNil)
 				if a.So(keys, should.HaveLength, 1) {
-					a.So(keys[0], should.Resemble, key)
+					a.So(keys[0], should.Resemble, created)
 				}
 
 				ids, got, err := store.GetAPIKey(ctx, key.ID)
 
 				a.So(err, should.BeNil)
 				a.So(ids, should.Resemble, tt.Identifiers)
-				a.So(got, should.Resemble, key)
+				a.So(got, should.Resemble, created)
 
 				updated, err := store.UpdateAPIKey(ctx, tt.Identifiers, &ttnpb.APIKey{
 					ID:     strings.ToUpper(fmt.Sprintf("%sKEYID", tt.Name)),
 					Name:   fmt.Sprintf("Updated %s API key", tt.Name),
 					Rights: tt.Rights,
-				})
+				},
+					&pbtypes.FieldMask{Paths: []string{"rights", "name"}})
 
 				a.So(err, should.BeNil)
 
@@ -125,8 +138,9 @@ func TestAPIKeyStore(t *testing.T) {
 
 				updated, err = store.UpdateAPIKey(ctx, tt.Identifiers, &ttnpb.APIKey{
 					ID: strings.ToUpper(fmt.Sprintf("%sKEYID", tt.Name)),
-					// Empty rights
-				})
+					// Empty rights,
+				},
+					&pbtypes.FieldMask{Paths: []string{"rights"}})
 
 				a.So(err, should.BeNil)
 				a.So(updated, should.BeNil)
@@ -143,5 +157,30 @@ func TestAPIKeyStore(t *testing.T) {
 				a.So(keys, should.HaveLength, 0)
 			})
 		}
+
+		t.Run("Delete entity API keys", func(t *testing.T) {
+			a := assertions.New(t)
+
+			// Create three API keys for entity
+			for i := 0; i < 3; i++ {
+				key := &ttnpb.APIKey{
+					ID:     strings.ToUpper(fmt.Sprintf("KEYID%d", i)),
+					Key:    strings.ToUpper(fmt.Sprintf("KEY%d", i)),
+					Name:   fmt.Sprintf("API key %d", i),
+					Rights: []ttnpb.Right{ttnpb.RIGHT_APPLICATION_ALL},
+				}
+
+				store.CreateAPIKey(ctx, userIDs.GetEntityIdentifiers(), key)
+			}
+			err := store.DeleteEntityAPIKeys(ctx, userIDs.GetEntityIdentifiers())
+
+			a.So(err, should.BeNil)
+
+			keys, err := store.FindAPIKeys(ctx, userIDs.GetEntityIdentifiers())
+
+			// Check if all API keys are deleted
+			a.So(err, should.BeNil)
+			a.So(keys, should.HaveLength, 0)
+		})
 	})
 }

@@ -27,9 +27,9 @@ import (
 )
 
 type interopHandler interface {
-	HandleJoin(context.Context, *ttnpb.JoinRequest) (*ttnpb.JoinResponse, error)
-	GetHomeNetID(context.Context, types.EUI64, types.EUI64) (*types.NetID, error)
-	GetAppSKey(context.Context, *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error)
+	HandleJoin(context.Context, *ttnpb.JoinRequest, Authorizer) (*ttnpb.JoinResponse, error)
+	GetHomeNetID(context.Context, types.EUI64, types.EUI64, Authorizer) (*types.NetID, error)
+	GetAppSKey(context.Context, *ttnpb.SessionKeyRequest, Authorizer) (*ttnpb.AppSKeyResponse, error)
 }
 
 type interopServer struct {
@@ -55,7 +55,7 @@ func (srv interopServer) JoinRequest(ctx context.Context, in *interop.JoinReq) (
 		RawPayload:         in.PHYPayload,
 		DevAddr:            types.DevAddr(in.DevAddr),
 		SelectedMACVersion: ttnpb.MACVersion(in.MACVersion),
-		NetID:              types.NetID(in.SenderID),
+		NetId:              types.NetID(in.SenderID),
 		DownlinkSettings:   dlSettings,
 		RxDelay:            in.RxDelay,
 		CFList:             cfList,
@@ -72,7 +72,7 @@ func (srv interopServer) JoinRequest(ctx context.Context, in *interop.JoinReq) (
 		return nil, interop.ErrMalformedMessage.WithCause(err)
 	}
 
-	res, err := srv.JS.HandleJoin(ctx, req)
+	res, err := srv.JS.HandleJoin(ctx, req, X509DNAuthorizer)
 	if err != nil {
 		switch {
 		case errors.Resemble(err, errDecodePayload),
@@ -119,7 +119,7 @@ func (srv interopServer) JoinRequest(ctx context.Context, in *interop.JoinReq) (
 func (srv interopServer) HomeNSRequest(ctx context.Context, in *interop.HomeNSReq) (*interop.HomeNSAns, error) {
 	ctx = log.NewContextWithField(ctx, "namespace", "joinserver/interop")
 
-	netID, err := srv.JS.GetHomeNetID(ctx, types.EUI64(in.ReceiverID), types.EUI64(in.DevEUI))
+	netID, err := srv.JS.GetHomeNetID(ctx, types.EUI64(in.ReceiverID), types.EUI64(in.DevEUI), X509DNAuthorizer)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +145,8 @@ func (srv interopServer) AppSKeyRequest(ctx context.Context, in *interop.AppSKey
 	ctx = log.NewContextWithField(ctx, "namespace", "joinserver/interop")
 
 	req := &ttnpb.SessionKeyRequest{
-		JoinEUI:      types.EUI64(in.ReceiverID),
-		DevEUI:       types.EUI64(in.DevEUI),
+		JoinEui:      types.EUI64(in.ReceiverID),
+		DevEui:       types.EUI64(in.DevEUI),
 		SessionKeyID: in.SessionKeyID,
 	}
 	if err := req.ValidateFields(
@@ -157,7 +157,7 @@ func (srv interopServer) AppSKeyRequest(ctx context.Context, in *interop.AppSKey
 		return nil, interop.ErrMalformedMessage.WithCause(err)
 	}
 
-	res, err := srv.JS.GetAppSKey(ctx, req)
+	res, err := srv.JS.GetAppSKey(ctx, req, X509DNAuthorizer)
 	if err != nil {
 		switch {
 		case errors.Resemble(err, errCallerNotAuthorized):

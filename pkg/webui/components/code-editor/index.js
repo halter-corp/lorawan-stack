@@ -18,6 +18,7 @@ import classnames from 'classnames'
 import bind from 'autobind-decorator'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
+import combineRefs from '@ttn-lw/lib/combine-refs'
 
 import 'brace/mode/javascript'
 import 'brace/mode/json'
@@ -32,6 +33,7 @@ class CodeEditor extends React.Component {
     commands: PropTypes.arrayOf(PropTypes.shape({})),
     /** See `https://github.com/ajaxorg/ace/wiki/Configuring-Ace`. */
     editorOptions: PropTypes.shape({}),
+    editorRef: PropTypes.shape({ current: PropTypes.shape({}) }),
     /** The height of the editor. */
     height: PropTypes.string,
     /** The language to highlight. */
@@ -66,14 +68,15 @@ class CodeEditor extends React.Component {
     language: 'javascript',
     maxLines: Infinity,
     minLines: 1,
-    onBlur: undefined,
-    onChange: undefined,
-    onFocus: undefined,
+    onBlur: () => null,
+    onChange: () => null,
+    onFocus: () => null,
     placeholder: '',
     readOnly: false,
     scrollToBottom: false,
     showGutter: true,
     value: '',
+    editorRef: null,
   }
 
   constructor(props) {
@@ -87,10 +90,8 @@ class CodeEditor extends React.Component {
   onFocus(evt) {
     const { onFocus } = this.props
 
-    this.setState({ focus: true }, function() {
-      if (onFocus) {
-        onFocus(evt)
-      }
+    this.setState({ focus: true }, () => {
+      onFocus(evt)
     })
   }
 
@@ -98,11 +99,16 @@ class CodeEditor extends React.Component {
   onBlur(evt) {
     const { onBlur } = this.props
 
-    this.setState({ focus: false }, function() {
-      if (onBlur) {
-        onBlur(evt)
-      }
+    this.setState({ focus: false }, () => {
+      onBlur(evt)
     })
+  }
+
+  @bind
+  onChange(evt) {
+    const { onChange } = this.props
+
+    onChange(evt)
   }
 
   componentDidUpdate({ value }) {
@@ -119,7 +125,6 @@ class CodeEditor extends React.Component {
       className,
       language,
       name,
-      onChange,
       value,
       placeholder,
       readOnly,
@@ -129,6 +134,7 @@ class CodeEditor extends React.Component {
       minLines,
       maxLines,
       commands,
+      editorRef,
     } = this.props
 
     const { focus } = this.state
@@ -154,7 +160,7 @@ class CodeEditor extends React.Component {
     }
 
     return (
-      <div className={editorCls}>
+      <div className={editorCls} data-test-id={`code-editor-${name}`}>
         <ReactAce
           // Rendered options.
           theme="ttn"
@@ -168,7 +174,7 @@ class CodeEditor extends React.Component {
           showGutter={showGutter}
           // Other props.
           name={name}
-          onChange={onChange}
+          onChange={this.onChange}
           value={currentValue}
           defaultValue={placeholder}
           setOptions={options}
@@ -178,7 +184,7 @@ class CodeEditor extends React.Component {
           onBlur={this.onBlur}
           editorProps={{ $blockScrolling: Infinity }}
           commands={commands}
-          ref={this.aceRef}
+          ref={editorRef ? combineRefs([this.aceRef, editorRef]) : this.aceRef}
         />
       </div>
     )

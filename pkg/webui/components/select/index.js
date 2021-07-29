@@ -44,6 +44,7 @@ class Select extends React.PureComponent {
     disabled: PropTypes.bool,
     error: PropTypes.bool,
     id: PropTypes.string,
+    inputWidth: PropTypes.inputWidth,
     intl: PropTypes.shape({
       formatMessage: PropTypes.func,
     }).isRequired,
@@ -53,10 +54,11 @@ class Select extends React.PureComponent {
     onFocus: PropTypes.func,
     options: PropTypes.arrayOf(
       PropTypes.shape({
-        value: PropTypes.string,
+        value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         label: PropTypes.message,
       }),
     ),
+    placeholder: PropTypes.message,
     value: PropTypes.string,
     warning: PropTypes.bool,
   }
@@ -72,6 +74,8 @@ class Select extends React.PureComponent {
     warning: false,
     value: undefined,
     id: undefined,
+    inputWidth: 'm',
+    placeholder: undefined,
   }
 
   constructor(props) {
@@ -105,7 +109,7 @@ class Select extends React.PureComponent {
       await this.setState({ value })
     }
 
-    onChange(value)
+    onChange(value, true)
   }
 
   @bind
@@ -129,6 +133,7 @@ class Select extends React.PureComponent {
     const {
       className,
       options,
+      inputWidth,
       intl,
       value,
       onChange,
@@ -139,15 +144,16 @@ class Select extends React.PureComponent {
       warning,
       name,
       id,
+      placeholder,
       ...rest
     } = this.props
 
     const formatMessage = (label, values) => (intl ? intl.formatMessage(label, values) : label)
-    const cls = classnames(className, style.container, {
+    const cls = classnames(className, style.container, style[`input-width-${inputWidth}`], {
       [style.error]: error,
       [style.warning]: warning,
     })
-    const translatedOptions = options.map(function(option) {
+    const translatedOptions = options.map(option => {
       const { label, labelValues = {} } = option
       if (typeof label === 'object' && label.id && label.defaultMessage) {
         return { ...option, label: formatMessage(label, labelValues) }
@@ -161,7 +167,7 @@ class Select extends React.PureComponent {
         className={cls}
         inputId={id}
         classNamePrefix="select"
-        value={getValue(translatedOptions, value)}
+        value={getValue(translatedOptions, value) || null}
         options={translatedOptions}
         onChange={this.onChange}
         onBlur={this.onBlur}
@@ -170,6 +176,7 @@ class Select extends React.PureComponent {
         name={name}
         components={{ Input }}
         aria-describedby={rest['aria-describedby']}
+        placeholder={Boolean(placeholder) ? formatMessage(placeholder) : undefined}
         {...rest}
       />
     )

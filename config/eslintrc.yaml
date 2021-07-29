@@ -5,7 +5,6 @@ extends:
   - plugin:import/recommended
   - plugin:cypress/recommended
   - prettier
-  - prettier/react
 
 parser: babel-eslint
 
@@ -54,10 +53,10 @@ rules:
       - index
       newlines-between: always
       pathGroups:
-      - pattern: "\\@{ttn-lw,console,oauth}/constants"
+      - pattern: "\\@{ttn-lw,console,account}/constants"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/api"
+      - pattern: "\\@{console,account}/api"
         group: internal
         position: after
       - pattern: "\\@ttn-lw/components/**"
@@ -69,34 +68,34 @@ rules:
       - pattern: "\\@ttn-lw/lib/components/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/components/**"
+      - pattern: "\\@{console,account}/components/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/containers/**"
+      - pattern: "\\@{console,account}/containers/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/lib/components/**"
+      - pattern: "\\@{console,account}/lib/components/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/views/**"
+      - pattern: "\\@{console,account}/views/**"
         group: internal
         position: after
       - pattern: "\\@ttn-lw/lib/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/lib/**"
+      - pattern: "\\@{console,account}/lib/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/store/actions/**"
+      - pattern: "\\@{console,account}/store/actions/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/store/reducers/**"
+      - pattern: "\\@{console,account}/store/reducers/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/store/selectors/**"
+      - pattern: "\\@{console,account}/store/selectors/**"
         group: internal
         position: after
-      - pattern: "\\@{console,oauth}/store/middleware/**"
+      - pattern: "\\@{console,account}/store/middleware/**"
         group: internal
         position: after
       - pattern: "(\\@assets/**|\\@ttn-lw/styles/**)"
@@ -119,6 +118,11 @@ rules:
   jest/no-large-snapshots:
     - warn
     - maxSize: 400
+
+  jest/no-conditional-expect: off
+  jest/no-try-expect: off
+  jest/no-done-callback: off
+  jest/expect-expect: off
 
   # Change to `error` after https://github.com/TheThingsNetwork/lorawan-stack/issues/1086
   # is resolved.
@@ -169,12 +173,17 @@ rules:
       classPropertiesAllowed: false
       allowStandaloneDeclarations: false
 
+  arrow-body-style:
+    - warn
+    - as-needed
+
 # Overwrite jest's expect rules for cypress test files, which uses a different
 # assertion syntax.
 overrides:
   - files: '*.spec.js'
     rules:
       jest/valid-expect: off
+      no-invalid-this: off
   - files: 'cypress/plugins/**/*.js'
     rules:
       import/no-commonjs: off

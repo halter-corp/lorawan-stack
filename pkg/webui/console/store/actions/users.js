@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createPaginationRequestActions, createPaginationBaseActionType } from './pagination'
-import { createRequestActions } from './lib'
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
+import {
+  createPaginationRequestActions,
+  createPaginationBaseActionType,
+} from '@ttn-lw/lib/store/actions/pagination'
+
+import createGetRightsListRequestActions, { createGetRightsListActionType } from './rights'
 
 export const SHARED_NAME = 'USER'
 
@@ -21,7 +26,11 @@ export const GET_USER_BASE = 'GET_USER'
 export const [
   { request: GET_USER, success: GET_USER_SUCCESS, failure: GET_USER_FAILURE },
   { request: getUser, success: getUserSuccess, failure: getUserFailure },
-] = createRequestActions(GET_USER_BASE, id => ({ id }), (id, selector) => ({ selector }))
+] = createRequestActions(
+  GET_USER_BASE,
+  id => ({ id }),
+  (id, selector) => ({ selector }),
+)
 
 export const GET_USERS_LIST_BASE = createPaginationBaseActionType(SHARED_NAME)
 export const [
@@ -46,3 +55,17 @@ export const [
   { request: DELETE_USER, success: DELETE_USER_SUCCESS, failure: DELETE_USER_FAILURE },
   { request: deleteUser, success: deleteUserSuccess, failure: deleteUserFailure },
 ] = createRequestActions(DELETE_USER_BASE, id => ({ id }))
+
+export const GET_USER_RIGHTS_LIST_BASE = createGetRightsListActionType(SHARED_NAME)
+export const [
+  {
+    request: GET_USER_RIGHTS_LIST,
+    success: GET_USER_RIGHTS_LIST_SUCCESS,
+    failure: GET_USER_RIGHTS_LIST_FAILURE,
+  },
+  {
+    request: getUsersRightsList,
+    success: getUsersRightsListSuccess,
+    failure: getUsersRightsListFailure,
+  },
+] = createGetRightsListRequestActions(SHARED_NAME)

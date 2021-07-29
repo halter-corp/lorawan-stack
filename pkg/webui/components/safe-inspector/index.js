@@ -26,13 +26,12 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './safe-inspector.styl'
 
-function chunkArray(array, chunkSize) {
-  return Array.from({ length: Math.ceil(array.length / chunkSize) }, (_, index) =>
+const chunkArray = (array, chunkSize) =>
+  Array.from({ length: Math.ceil(array.length / chunkSize) }, (_, index) =>
     array.slice(index * chunkSize, (index + 1) * chunkSize),
   )
-}
 
-function selectText(node) {
+const selectText = node => {
   if (document.body.createTextRange) {
     const range = document.body.createTextRange()
     range.moveToElementText(node)
@@ -54,6 +53,15 @@ const m = defineMessages({
   byteOrder: 'Switch byte order',
 })
 
+const MSB = 'msb'
+const LSB = 'lsb'
+const UINT32_T = 'uint32_t'
+const representationRotateMap = {
+  [MSB]: LSB,
+  [LSB]: UINT32_T,
+  [UINT32_T]: MSB,
+}
+
 @injectIntl
 export class SafeInspector extends Component {
   static propTypes = {
@@ -63,6 +71,8 @@ export class SafeInspector extends Component {
     data: PropTypes.string.isRequired,
     /** Whether the component should resize when its data is truncated. */
     disableResize: PropTypes.bool,
+    /** Whether uint32_t notation should be enabled for byte representation. */
+    enableUint32: PropTypes.bool,
     /** Whether the data can be hidden (like passwords). */
     hideable: PropTypes.bool,
     /** Whether the data is initially visible. */
@@ -84,6 +94,10 @@ export class SafeInspector extends Component {
      * tables).
      */
     small: PropTypes.bool,
+    /** The input count (byte or characters, based on type) after which the
+     * display is truncated.
+     */
+    truncateAfter: PropTypes.number,
   }
 
   static defaultProps = {
@@ -96,6 +110,15 @@ export class SafeInspector extends Component {
     small: false,
     noTransform: false,
     noCopy: false,
+    enableUint32: false,
+    truncateAfter: Infinity,
+  }
+
+  _getNextRepresentation(current) {
+    const { enableUint32 } = this.props
+    const next = representationRotateMap[current]
+
+    return next === UINT32_T && !enableUint32 ? representationRotateMap[next] : next
   }
 
   constructor(props) {
@@ -108,7 +131,7 @@ export class SafeInspector extends Component {
       byteStyle: true,
       copied: false,
       copyIcon: 'file_copy',
-      msb: true,
+      representation: MSB,
       truncated: false,
     }
 
@@ -124,6 +147,7 @@ export class SafeInspector extends Component {
       byteStyle: !prev.hidden ? true : prev.byteStyle,
       hidden: !prev.hidden,
     }))
+    this.checkTruncateState()
   }
 
   @bind
@@ -134,7 +158,9 @@ export class SafeInspector extends Component {
 
   @bind
   handleSwapToggle() {
-    this.setState(prev => ({ msb: !prev.msb }))
+    this.setState(({ representation }) => ({
+      representation: this._getNextRepresentation(representation),
+    }))
   }
 
   @bind
@@ -212,7 +238,7 @@ export class SafeInspector extends Component {
   }
 
   render() {
-    const { hidden, byteStyle, msb, copied, copyIcon } = this.state
+    const { hidden, byteStyle, representation, copied, copyIcon } = this.state
 
     const {
       className,
@@ -224,23 +250,37 @@ export class SafeInspector extends Component {
       noCopyPopup,
       noCopy,
       noTransform,
+      truncateAfter,
     } = this.props
 
     let formattedData = isBytes ? data.toUpperCase() : data
     let display = formattedData
+    let truncated = false
 
     if (isBytes) {
-      const chunks = chunkArray(data.toUpperCase().split(''), 2)
+      let chunks = chunkArray(data.toUpperCase().split(''), 2)
+      if (chunks.length > truncateAfter) {
+        truncated = true
+        chunks = chunks.slice(0, truncateAfter)
+      }
       if (!byteStyle) {
-        const orderedChunks = msb ? chunks : chunks.reverse()
-        formattedData = display = orderedChunks.map(chunk => `0x${chunk.join('')}`).join(', ')
+        if (representation === UINT32_T) {
+          formattedData = display = `0x${data}`
+        } else {
+          const orderedChunks = representation === MSB ? chunks : chunks.reverse()
+          formattedData = display = orderedChunks.map(chunk => `0x${chunk.join('')}`).join(', ')
+        }
       } else {
         display = chunks.map((chunk, index) => (
           <span key={`${data}_chunk_${index}`}>{hidden ? '••' : chunk}</span>
         ))
       }
     } else if (hidden) {
-      display = '•'.repeat(formattedData.length)
+      display = '•'.repeat(Math.min(formattedData.length, truncateAfter))
+    }
+
+    if (truncated) {
+      display = [...display, '…']
     }
 
     const containerStyle = classnames(className, style.container, {
@@ -257,71 +297,80 @@ export class SafeInspector extends Component {
       [style.buttonIconCopied]: copied,
     })
 
+    const renderButtonContainer = hideable || !noCopy || !noTransform
+
     return (
       <div ref={this.containerElem} className={containerStyle}>
-        <div ref={this.displayElem} onClick={this.handleDataClick} className={dataStyle}>
+        <div
+          ref={this.displayElem}
+          onClick={this.handleDataClick}
+          className={dataStyle}
+          title={truncated ? formattedData : undefined}
+        >
           {display}
         </div>
-        <div ref={this.buttonsElem} className={style.buttons}>
-          {!hidden && !byteStyle && isBytes && (
-            <React.Fragment>
-              <span>{msb ? 'msb' : 'lsb'}</span>
+        {renderButtonContainer && (
+          <div ref={this.buttonsElem} className={style.buttons}>
+            {!hidden && !byteStyle && isBytes && (
+              <React.Fragment>
+                <span>{representation}</span>
+                <button
+                  title={intl.formatMessage(m.byteOrder)}
+                  className={style.buttonSwap}
+                  onClick={this.handleSwapToggle}
+                >
+                  <Icon className={style.buttonIcon} small icon="swap_horiz" />
+                </button>
+              </React.Fragment>
+            )}
+            {!noTransform && !hidden && isBytes && (
               <button
-                title={intl.formatMessage(m.byteOrder)}
-                className={style.buttonSwap}
-                onClick={this.handleSwapToggle}
+                title={intl.formatMessage(m.arrayFormatting)}
+                className={style.buttonTransform}
+                onClick={this.handleTransformToggle}
               >
-                <Icon className={style.buttonIcon} small icon="swap_horiz" />
+                <Icon className={style.buttonIcon} small icon="code" />
               </button>
-            </React.Fragment>
-          )}
-          {!noTransform && !hidden && isBytes && (
-            <button
-              title={intl.formatMessage(m.arrayFormatting)}
-              className={style.buttonTransform}
-              onClick={this.handleTransformToggle}
-            >
-              <Icon className={style.buttonIcon} small icon="code" />
-            </button>
-          )}
-          {!noCopy && (
-            <button
-              title={intl.formatMessage(m.copyClipboard)}
-              className={style.buttonCopy}
-              onClick={this.handleCopyClick}
-              data-clipboard-text={formattedData}
-              ref={this.copyElem}
-              disabled={copied}
-            >
-              <Icon
-                className={copyButtonStyle}
+            )}
+            {!noCopy && (
+              <button
+                title={intl.formatMessage(m.copyClipboard)}
+                className={style.buttonCopy}
                 onClick={this.handleCopyClick}
-                small
-                icon={copyIcon}
-              />
-              {copied && !noCopyPopup && (
-                <Message
-                  content={m.copied}
-                  onAnimationEnd={this.handleCopyAnimationEnd}
-                  className={style.copyConfirm}
+                data-clipboard-text={formattedData}
+                ref={this.copyElem}
+                disabled={copied}
+              >
+                <Icon
+                  className={copyButtonStyle}
+                  onClick={this.handleCopyClick}
+                  small
+                  icon={copyIcon}
                 />
-              )}
-            </button>
-          )}
-          {hideable && (
-            <button
-              title={intl.formatMessage(m.toggleVisibility)}
-              className={style.buttonVisibility}
-              onClick={this.handleVisibiltyToggle}
-            >
-              <Icon
-                className={style.buttonIcon}
-                small
-                icon={hidden ? 'visibility' : 'visibility_off'}
-              />
-            </button>
-          )}
-        </div>
+                {copied && !noCopyPopup && (
+                  <Message
+                    content={m.copied}
+                    onAnimationEnd={this.handleCopyAnimationEnd}
+                    className={style.copyConfirm}
+                  />
+                )}
+              </button>
+            )}
+            {hideable && (
+              <button
+                title={intl.formatMessage(m.toggleVisibility)}
+                className={style.buttonVisibility}
+                onClick={this.handleVisibiltyToggle}
+              >
+                <Icon
+                  className={style.buttonIcon}
+                  small
+                  icon={hidden ? 'visibility' : 'visibility_off'}
+                />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }

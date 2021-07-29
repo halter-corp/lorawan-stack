@@ -88,8 +88,8 @@ func (oc *OAuthClient) HandleLogout(c echo.Context) error {
 		if res, err := ttnpb.NewEntityAccessClient(cc).AuthInfo(ctx, ttnpb.Empty, creds); err == nil {
 			if tokenInfo := res.GetOAuthAccessToken(); tokenInfo != nil {
 				_, err := ttnpb.NewOAuthAuthorizationRegistryClient(cc).DeleteToken(ctx, &ttnpb.OAuthAccessTokenIdentifiers{
-					UserIDs:   tokenInfo.UserIDs,
-					ClientIDs: tokenInfo.ClientIDs,
+					UserIds:   tokenInfo.UserIds,
+					ClientIds: tokenInfo.ClientIds,
 					ID:        tokenInfo.ID,
 				}, creds)
 				if err != nil {

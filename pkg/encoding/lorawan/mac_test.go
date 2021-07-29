@@ -30,7 +30,7 @@ import (
 )
 
 func TestLoRaWANEncodingMAC(t *testing.T) {
-	phy := test.Must(test.Must(band.GetByID(band.EU_863_870)).(band.Band).Version(ttnpb.PHY_V1_1_REV_B)).(band.Band)
+	phy := test.Must(test.Must(band.GetByID(band.EU_863_870)).(band.Band).Version(ttnpb.RP001_V1_1_REV_B)).(band.Band)
 
 	for _, tc := range []struct {
 		Name    string
@@ -238,8 +238,8 @@ func TestLoRaWANEncodingMAC(t *testing.T) {
 		{
 			"ADRParamSetupReq",
 			&ttnpb.MACCommand_ADRParamSetupReq{
-				ADRAckDelayExponent: ttnpb.ADR_ACK_DELAY_4,
-				ADRAckLimitExponent: ttnpb.ADR_ACK_LIMIT_16,
+				AdrAckDelayExponent: ttnpb.ADR_ACK_DELAY_4,
+				AdrAckLimitExponent: ttnpb.ADR_ACK_LIMIT_16,
 			},
 			[]byte{0x0C, 0x42},
 			false,

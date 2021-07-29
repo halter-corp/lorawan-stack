@@ -17,7 +17,7 @@ package identityserver
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/email"
@@ -85,21 +85,22 @@ func (is *IdentityServer) createOrganizationAPIKey(ctx context.Context, req *ttn
 	if err = rights.RequireOrganization(ctx, req.OrganizationIdentifiers, req.Rights...); err != nil {
 		return nil, err
 	}
-	key, token, err := generateAPIKey(ctx, req.Name, req.Rights...)
+	key, token, err := GenerateAPIKey(ctx, req.Name, req.ExpiresAt, req.Rights...)
 	if err != nil {
 		return nil, err
 	}
-	err = is.withDatabase(ctx, func(db *gorm.DB) error {
-		return store.GetAPIKeyStore(db).CreateAPIKey(ctx, req.OrganizationIdentifiers, key)
+	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
+		key, err = store.GetAPIKeyStore(db).CreateAPIKey(ctx, req.OrganizationIdentifiers.GetEntityIdentifiers(), key)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 	key.Key = token
-	events.Publish(evtCreateOrganizationAPIKey.NewWithIdentifiersAndData(ctx, req.OrganizationIdentifiers, nil))
-	err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
-		data.SetEntity(req.EntityIdentifiers())
-		return &emails.APIKeyCreated{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
+	events.Publish(evtCreateOrganizationAPIKey.NewWithIdentifiersAndData(ctx, &req.OrganizationIdentifiers, nil))
+	err = is.SendContactsEmail(ctx, req, func(data emails.Data) email.MessageData {
+		data.SetEntity(req)
+		return &emails.APIKeyCreated{Data: data, Key: key, Rights: key.Rights}
 	})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("Could not send API key creation notification email")
@@ -120,7 +121,7 @@ func (is *IdentityServer) listOrganizationAPIKeys(ctx context.Context, req *ttnp
 	}()
 	keys = &ttnpb.APIKeys{}
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		keys.APIKeys, err = store.GetAPIKeyStore(db).FindAPIKeys(ctx, req.OrganizationIdentifiers)
+		keys.APIKeys, err = store.GetAPIKeyStore(db).FindAPIKeys(ctx, req.OrganizationIdentifiers.GetEntityIdentifiers())
 		return err
 	})
 	if err != nil {
@@ -138,7 +139,7 @@ func (is *IdentityServer) getOrganizationAPIKey(ctx context.Context, req *ttnpb.
 	}
 
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		_, key, err = store.GetAPIKeyStore(db).GetAPIKey(ctx, req.KeyID)
+		_, key, err = store.GetAPIKeyStore(db).GetAPIKey(ctx, req.KeyId)
 		if err != nil {
 			return err
 		}
@@ -178,21 +179,21 @@ func (is *IdentityServer) updateOrganizationAPIKey(ctx context.Context, req *ttn
 			}
 		}
 
-		key, err = store.GetAPIKeyStore(db).UpdateAPIKey(ctx, req.OrganizationIdentifiers, &req.APIKey)
+		key, err = store.GetAPIKeyStore(db).UpdateAPIKey(ctx, req.OrganizationIdentifiers.GetEntityIdentifiers(), &req.APIKey, req.FieldMask)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 	if key == nil { // API key was deleted.
-		events.Publish(evtDeleteOrganizationAPIKey.NewWithIdentifiersAndData(ctx, req.OrganizationIdentifiers, nil))
+		events.Publish(evtDeleteOrganizationAPIKey.NewWithIdentifiersAndData(ctx, &req.OrganizationIdentifiers, nil))
 		return &ttnpb.APIKey{}, nil
 	}
 	key.Key = ""
-	events.Publish(evtUpdateOrganizationAPIKey.NewWithIdentifiersAndData(ctx, req.OrganizationIdentifiers, nil))
-	err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
-		data.SetEntity(req.EntityIdentifiers())
-		return &emails.APIKeyChanged{Data: data, Identifier: key.PrettyName(), Rights: key.Rights}
+	events.Publish(evtUpdateOrganizationAPIKey.NewWithIdentifiersAndData(ctx, &req.OrganizationIdentifiers, nil))
+	err = is.SendContactsEmail(ctx, req, func(data emails.Data) email.MessageData {
+		data.SetEntity(req)
+		return &emails.APIKeyChanged{Data: data, Key: key, Rights: key.Rights}
 	})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("Could not send API key update notification email")
@@ -212,7 +213,7 @@ func (is *IdentityServer) getOrganizationCollaborator(ctx context.Context, req *
 		rights, err := is.getMembershipStore(ctx, db).GetMember(
 			ctx,
 			&req.OrganizationOrUserIdentifiers,
-			req.OrganizationIdentifiers,
+			req.OrganizationIdentifiers.GetEntityIdentifiers(),
 		)
 		if err != nil {
 			return err
@@ -226,7 +227,7 @@ func (is *IdentityServer) getOrganizationCollaborator(ctx context.Context, req *
 	return res, nil
 }
 
-func (is *IdentityServer) setOrganizationCollaborator(ctx context.Context, req *ttnpb.SetOrganizationCollaboratorRequest) (*types.Empty, error) {
+func (is *IdentityServer) setOrganizationCollaborator(ctx context.Context, req *ttnpb.SetOrganizationCollaboratorRequest) (*pbtypes.Empty, error) {
 	// Require that caller has rights to manage collaborators.
 	if err := rights.RequireOrganization(ctx, req.OrganizationIdentifiers, ttnpb.RIGHT_ORGANIZATION_SETTINGS_MEMBERS); err != nil {
 		return nil, err
@@ -240,7 +241,7 @@ func (is *IdentityServer) setOrganizationCollaborator(ctx context.Context, req *
 			existingRights, err := store.GetMember(
 				ctx,
 				&req.Collaborator.OrganizationOrUserIdentifiers,
-				req.OrganizationIdentifiers,
+				req.OrganizationIdentifiers.GetEntityIdentifiers(),
 			)
 
 			if err != nil && !errors.IsNotFound(err) {
@@ -259,7 +260,7 @@ func (is *IdentityServer) setOrganizationCollaborator(ctx context.Context, req *
 		return store.SetMember(
 			ctx,
 			&req.Collaborator.OrganizationOrUserIdentifiers,
-			req.OrganizationIdentifiers,
+			req.OrganizationIdentifiers.GetEntityIdentifiers(),
 			ttnpb.RightsFrom(req.Collaborator.Rights...),
 		)
 	})
@@ -267,23 +268,26 @@ func (is *IdentityServer) setOrganizationCollaborator(ctx context.Context, req *
 		return nil, err
 	}
 	if len(req.Collaborator.Rights) > 0 {
-		events.Publish(evtUpdateOrganizationCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.OrganizationIdentifiers, req.Collaborator), nil))
-		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
-			data.SetEntity(req.EntityIdentifiers())
+		events.Publish(evtUpdateOrganizationCollaborator.New(ctx, events.WithIdentifiers(&req.OrganizationIdentifiers, &req.Collaborator.OrganizationOrUserIdentifiers)))
+		err = is.SendContactsEmail(ctx, req, func(data emails.Data) email.MessageData {
+			data.SetEntity(req)
 			return &emails.CollaboratorChanged{Data: data, Collaborator: req.Collaborator}
 		})
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("Could not send collaborator updated notification email")
 		}
 	} else {
-		events.Publish(evtDeleteOrganizationCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.OrganizationIdentifiers, req.Collaborator), nil))
+		events.Publish(evtDeleteOrganizationCollaborator.New(ctx, events.WithIdentifiers(&req.OrganizationIdentifiers, &req.Collaborator.OrganizationOrUserIdentifiers)))
 	}
 	return ttnpb.Empty, nil
 }
 
 func (is *IdentityServer) listOrganizationCollaborators(ctx context.Context, req *ttnpb.ListOrganizationCollaboratorsRequest) (collaborators *ttnpb.Collaborators, err error) {
-	if err = rights.RequireOrganization(ctx, req.OrganizationIdentifiers, ttnpb.RIGHT_ORGANIZATION_SETTINGS_MEMBERS); err != nil {
+	if err = is.RequireAuthenticated(ctx); err != nil {
 		return nil, err
+	}
+	if err = rights.RequireOrganization(ctx, req.OrganizationIdentifiers, ttnpb.RIGHT_ORGANIZATION_SETTINGS_MEMBERS); err != nil {
+		defer func() { collaborators = collaborators.PublicSafe() }()
 	}
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
@@ -293,7 +297,7 @@ func (is *IdentityServer) listOrganizationCollaborators(ctx context.Context, req
 		}
 	}()
 	err = is.withDatabase(ctx, func(db *gorm.DB) (err error) {
-		memberRights, err := is.getMembershipStore(ctx, db).FindMembers(ctx, req.OrganizationIdentifiers)
+		memberRights, err := is.getMembershipStore(ctx, db).FindMembers(ctx, req.OrganizationIdentifiers.GetEntityIdentifiers())
 		if err != nil {
 			return err
 		}
@@ -340,7 +344,7 @@ func (oa *organizationAccess) GetCollaborator(ctx context.Context, req *ttnpb.Ge
 	return oa.getOrganizationCollaborator(ctx, req)
 }
 
-func (oa *organizationAccess) SetCollaborator(ctx context.Context, req *ttnpb.SetOrganizationCollaboratorRequest) (*types.Empty, error) {
+func (oa *organizationAccess) SetCollaborator(ctx context.Context, req *ttnpb.SetOrganizationCollaboratorRequest) (*pbtypes.Empty, error) {
 	return oa.setOrganizationCollaborator(ctx, req)
 }
 

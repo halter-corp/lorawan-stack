@@ -14,16 +14,16 @@
 
 import api from '@console/api'
 
-import { clear as clearAccessToken } from '@console/lib/access-token'
+import { clear as clearAccessToken } from '@ttn-lw/lib/access-token'
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 
 import * as user from '@console/store/actions/user'
 import * as init from '@console/store/actions/init'
 
-import createRequestLogic from './lib'
-
 const consoleAppLogic = createRequestLogic({
   type: init.INITIALIZE,
-  async process(_, dispatch) {
+  noCancelOnRouteChange: true,
+  process: async (_, dispatch) => {
     dispatch(user.getUserRights())
 
     let info, rights
@@ -53,6 +53,7 @@ const consoleAppLogic = createRequestLogic({
           'state',
           'name',
           'primary_email_address_validated_at',
+          'profile_picture',
         ])
         userResult.isAdmin = info.is_admin || false
         dispatch(user.getUserMeSuccess(userResult))

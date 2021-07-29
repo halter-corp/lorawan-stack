@@ -12,58 +12,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const selectEventsStore = (state, entityId) => state[entityId]
+import CONNECTION_STATUS from '@console/constants/connection-status'
 
-export const createEventsSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+const selectEventsStore = (state, entityId) => state[entityId] || {}
 
-    return store ? store.events : []
-  }
+export const createEventsSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createEventsStatusSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+  return store.events || []
+}
 
-    return store ? store.status : 'unknown'
-  }
+export const createEventsStatusSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createEventsPausedSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+  return store.status || CONNECTION_STATUS.UNKNOWN
+}
 
-    return Boolean(store.paused)
-  }
+export const createEventsPausedSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createEventsInterruptedSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+  return Boolean(store.paused)
+}
 
-    return Boolean(store.interrupted)
-  }
+export const createEventsInterruptedSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createEventsErrorSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+  return Boolean(store.interrupted)
+}
 
-    return store ? store.error : undefined
-  }
+export const createEventsErrorSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createEventsTruncatedSelector = entity =>
-  function(state, entityId) {
-    const store = selectEventsStore(state.events[entity], entityId)
+  return store.error
+}
 
-    return Boolean(store.truncated)
-  }
+export const createEventsTruncatedSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
 
-export const createLatestEventSelector = function(entity) {
+  return Boolean(store.truncated)
+}
+
+export const createLatestEventSelector = entity => {
   const eventsSelector = createEventsSelector(entity)
 
-  return function selectLatestEvent(state, entityId) {
+  const selectLatestEvent = (state, entityId, includeSynthetic = false) => {
     const events = eventsSelector(state, entityId)
 
-    return events[0]
+    return includeSynthetic ? events[0] : events.find(e => !e.isSynthetic)
   }
+
+  return selectLatestEvent
 }
 
 export const createInterruptedStreamsSelector = entity => state => {
@@ -76,4 +74,10 @@ export const createInterruptedStreamsSelector = entity => state => {
 
     return acc
   }, {})
+}
+
+export const createEventsFilterSelector = entity => (state, entityId) => {
+  const store = selectEventsStore(state.events[entity], entityId)
+
+  return store.filter
 }

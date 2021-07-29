@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import bind from 'autobind-decorator'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 
-const { Provider, Consumer } = React.createContext()
+const BreadcrumbsContext = React.createContext()
+const { Provider, Consumer } = BreadcrumbsContext
 
 class BreadcrumbsProvider extends React.Component {
   static propTypes = {
@@ -66,55 +67,72 @@ class BreadcrumbsProvider extends React.Component {
   }
 }
 
-const withBreadcrumb = (id, element) =>
-  function(Component) {
-    class BreadcrumbsConsumer extends React.Component {
-      static propTypes = {
-        add: PropTypes.func.isRequired,
-        breadcrumb: PropTypes.oneOfType([PropTypes.func, PropTypes.element]).isRequired,
-        remove: PropTypes.func.isRequired,
-      }
-
-      constructor(props) {
-        super(props)
-
-        this.add()
-      }
-
-      add() {
-        const { add, breadcrumb } = this.props
-
-        add(id, breadcrumb)
-      }
-
-      remove() {
-        const { remove } = this.props
-
-        remove(id)
-      }
-
-      componentWillUnmount() {
-        this.remove()
-      }
-
-      render() {
-        const { add, remove, breadcrumb, ...rest } = this.props
-
-        return <Component {...rest} />
-      }
+const withBreadcrumb = (id, element) => Component => {
+  class BreadcrumbsConsumer extends React.Component {
+    static propTypes = {
+      add: PropTypes.func.isRequired,
+      breadcrumb: PropTypes.oneOfType([PropTypes.func, PropTypes.element]).isRequired,
+      remove: PropTypes.func.isRequired,
     }
 
-    const BreadcrumbsConsumerContainer = props => (
-      <Consumer>
-        {({ add, remove }) => (
-          <BreadcrumbsConsumer {...props} add={add} remove={remove} breadcrumb={element(props)} />
-        )}
-      </Consumer>
-    )
+    constructor(props) {
+      super(props)
 
-    return BreadcrumbsConsumerContainer
+      this.add()
+    }
+
+    add() {
+      const { add, breadcrumb } = this.props
+
+      add(id, breadcrumb)
+    }
+
+    remove() {
+      const { remove } = this.props
+
+      remove(id)
+    }
+
+    componentWillUnmount() {
+      this.remove()
+    }
+
+    render() {
+      const { add, remove, breadcrumb, ...rest } = this.props
+
+      return <Component {...rest} />
+    }
   }
+
+  const BreadcrumbsConsumerContainer = props => (
+    <Consumer>
+      {({ add, remove }) => (
+        <BreadcrumbsConsumer {...props} add={add} remove={remove} breadcrumb={element(props)} />
+      )}
+    </Consumer>
+  )
+
+  return BreadcrumbsConsumerContainer
+}
 
 withBreadcrumb.displayName = 'withBreadcrumb'
 
-export { Consumer as BreadcrumbsConsumer, BreadcrumbsProvider, withBreadcrumb }
+const useBreadcrumbs = (id, element) => {
+  const context = useContext(BreadcrumbsContext)
+
+  useEffect(() => {
+    context.add(id, element)
+    return () => {
+      context.remove(id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+}
+
+export {
+  Consumer as BreadcrumbsConsumer,
+  BreadcrumbsProvider,
+  withBreadcrumb,
+  BreadcrumbsContext,
+  useBreadcrumbs,
+}

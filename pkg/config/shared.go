@@ -18,6 +18,8 @@ import (
 	"context"
 	"crypto/tls"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -42,12 +44,14 @@ type Base struct {
 
 // Log represents configuration for the logger.
 type Log struct {
-	Level log.Level `name:"level" description:"The minimum level log messages must have to be shown"`
+	Format string    `name:"format" description:"Log format to write (console, json)"`
+	Level  log.Level `name:"level" description:"The minimum level log messages must have to be shown"`
 }
 
 // Sentry represents configuration for error tracking using Sentry.
 type Sentry struct {
-	DSN string `name:"dsn" description:"Sentry Data Source Name"`
+	DSN         string `name:"dsn" description:"Sentry Data Source Name"`
+	Environment string `name:"environment" description:"Environment to report to Sentry"`
 }
 
 // GRPC represents gRPC listener configuration.
@@ -122,11 +126,24 @@ type Cache struct {
 	Redis   redis.Config `name:"redis"`
 }
 
+// RedisEvents represents configuration for the Redis events backend.
+type RedisEvents struct {
+	redis.Config `name:",squash"`
+	Store        struct {
+		Enable             bool          `name:"enable" description:"Enable events store"`
+		TTL                time.Duration `name:"ttl" description:"How long event payloads are retained"`
+		EntityCount        int           `name:"entity-count" description:"How many events are indexed for a entity ID"`
+		EntityTTL          time.Duration `name:"entity-ttl" description:"How long events are indexed for a entity ID"`
+		CorrelationIDCount int           `name:"correlation-id-count" description:"How many events are indexed for a correlation ID"`
+	} `name:"store"`
+	Workers int `name:"workers"`
+}
+
 // Events represents configuration for the events system.
 type Events struct {
-	Backend string       `name:"backend" description:"Backend to use for events (internal, redis, cloud)"`
-	Redis   redis.Config `name:"redis"`
-	Cloud   CloudEvents  `name:"cloud"`
+	Backend string      `name:"backend" description:"Backend to use for events (internal, redis, cloud)"`
+	Redis   RedisEvents `name:"redis"`
+	Cloud   CloudEvents `name:"cloud"`
 }
 
 // Rights represents the configuration to apply when fetching entity rights.
@@ -147,6 +164,8 @@ type KeyVault struct {
 	Provider string            `name:"provider" description:"Provider (static)"`
 	Cache    KeyVaultCache     `name:"cache"`
 	Static   map[string][]byte `name:"static"`
+
+	HTTPClient *http.Client `name:"-"`
 }
 
 // KeyVault returns an initialized crypto.KeyVault based on the configuration.
@@ -196,6 +215,16 @@ type BlobConfig struct {
 	Local    BlobConfigLocal `name:"local"`
 	AWS      BlobConfigAWS   `name:"aws"`
 	GCP      BlobConfigGCP   `name:"gcp"`
+
+	HTTPClient *http.Client `name:"-"`
+}
+
+// IsZero returns whether conf is empty.
+func (c BlobConfig) IsZero() bool {
+	return c.Provider == "" &&
+		c.Local == BlobConfigLocal{} &&
+		c.AWS == BlobConfigAWS{} &&
+		c.GCP == BlobConfigGCP{}
 }
 
 // Bucket returns the requested blob bucket using the config.
@@ -204,7 +233,7 @@ func (c BlobConfig) Bucket(ctx context.Context, bucket string) (*blob.Bucket, er
 	case "local":
 		return ttnblob.Local(ctx, bucket, c.Local.Directory)
 	case "aws":
-		conf := aws.NewConfig()
+		conf := aws.NewConfig().WithHTTPClient(c.HTTPClient)
 		if c.AWS.Endpoint != "" {
 			conf = conf.WithEndpoint(c.AWS.Endpoint)
 		}
@@ -252,6 +281,8 @@ type FrequencyPlansConfig struct {
 	Directory    string            `name:"directory" description:"OS filesystem directory, which contains frequency plans"`
 	URL          string            `name:"url" description:"URL, which contains frequency plans"`
 	Blob         BlobPathConfig    `name:"blob"`
+
+	HTTPClient *http.Client `name:"-"`
 }
 
 // Fetcher returns a fetch.Interface based on the configuration.
@@ -263,7 +294,11 @@ func (c FrequencyPlansConfig) Fetcher(ctx context.Context, blobConf BlobConfig) 
 		case c.Static != nil:
 			c.ConfigSource = "static"
 		case c.Directory != "":
-			c.ConfigSource = "directory"
+			if stat, err := os.Stat(c.Directory); err == nil && stat.IsDir() {
+				c.ConfigSource = "directory"
+				break
+			}
+			fallthrough
 		case c.URL != "":
 			c.ConfigSource = "url"
 		case !c.Blob.IsZero():
@@ -276,50 +311,7 @@ func (c FrequencyPlansConfig) Fetcher(ctx context.Context, blobConf BlobConfig) 
 	case "directory":
 		return fetch.FromFilesystem(c.Directory), nil
 	case "url":
-		return fetch.FromHTTP(c.URL, true)
-	case "blob":
-		b, err := blobConf.Bucket(ctx, c.Blob.Bucket)
-		if err != nil {
-			return nil, err
-		}
-		return fetch.FromBucket(ctx, b, c.Blob.Path), nil
-	default:
-		return nil, nil
-	}
-}
-
-// DeviceRepositoryConfig defines the source of the device repository.
-type DeviceRepositoryConfig struct {
-	ConfigSource string            `name:"config-source" description:"Source of the device repository (static, directory, url, blob)"`
-	Static       map[string][]byte `name:"-"`
-	Directory    string            `name:"directory" description:"OS filesystem directory, which contains device repository"`
-	URL          string            `name:"url" description:"URL, which contains device repository"`
-	Blob         BlobPathConfig    `name:"blob"`
-}
-
-// Fetcher returns a fetch.Interface based on the configuration.
-// If no configuration source is set, this method returns nil, nil.
-func (c DeviceRepositoryConfig) Fetcher(ctx context.Context, blobConf BlobConfig) (fetch.Interface, error) {
-	// TODO: Remove detection mechanism (https://github.com/TheThingsNetwork/lorawan-stack/issues/1450)
-	if c.ConfigSource == "" {
-		switch {
-		case c.Static != nil:
-			c.ConfigSource = "static"
-		case c.Directory != "":
-			c.ConfigSource = "directory"
-		case c.URL != "":
-			c.ConfigSource = "url"
-		case !c.Blob.IsZero():
-			c.ConfigSource = "blob"
-		}
-	}
-	switch c.ConfigSource {
-	case "static":
-		return fetch.NewMemFetcher(c.Static), nil
-	case "directory":
-		return fetch.FromFilesystem(c.Directory), nil
-	case "url":
-		return fetch.FromHTTP(c.URL, true)
+		return fetch.FromHTTP(c.HTTPClient, c.URL, true)
 	case "blob":
 		b, err := blobConf.Bucket(ctx, c.Blob.Bucket)
 		if err != nil {
@@ -340,6 +332,8 @@ type InteropClient struct {
 
 	GetFallbackTLSConfig func(ctx context.Context) (*tls.Config, error) `name:"-"`
 	BlobConfig           BlobConfig                                     `name:"-"`
+
+	HTTPClient *http.Client `name:"-"`
 }
 
 // IsZero returns whether conf is empty.
@@ -349,7 +343,7 @@ func (c InteropClient) IsZero() bool {
 		c.URL == "" &&
 		c.Blob.IsZero() &&
 		c.GetFallbackTLSConfig == nil &&
-		c.BlobConfig == BlobConfig{}
+		c.BlobConfig.IsZero()
 }
 
 // Fetcher returns fetch.Interface defined by conf.
@@ -359,7 +353,11 @@ func (c InteropClient) Fetcher(ctx context.Context) (fetch.Interface, error) {
 	if c.ConfigSource == "" {
 		switch {
 		case c.Directory != "":
-			c.ConfigSource = "directory"
+			if stat, err := os.Stat(c.Directory); err == nil && stat.IsDir() {
+				c.ConfigSource = "directory"
+				break
+			}
+			fallthrough
 		case c.URL != "":
 			c.ConfigSource = "url"
 		case !c.Blob.IsZero():
@@ -370,7 +368,7 @@ func (c InteropClient) Fetcher(ctx context.Context) (fetch.Interface, error) {
 	case "directory":
 		return fetch.FromFilesystem(c.Directory), nil
 	case "url":
-		return fetch.FromHTTP(c.URL, true)
+		return fetch.FromHTTP(c.HTTPClient, c.URL, true)
 	case "blob":
 		b, err := c.BlobConfig.Bucket(ctx, c.Blob.Bucket)
 		if err != nil {
@@ -390,6 +388,8 @@ type SenderClientCA struct {
 	Blob      BlobPathConfig    `name:"blob"`
 
 	BlobConfig BlobConfig `name:"-"`
+
+	HTTPClient *http.Client `name:"-"`
 }
 
 // Fetcher returns fetch.Interface defined by conf.
@@ -399,7 +399,7 @@ func (c SenderClientCA) Fetcher(ctx context.Context) (fetch.Interface, error) {
 	case "directory":
 		return fetch.FromFilesystem(c.Directory), nil
 	case "url":
-		return fetch.FromHTTP(c.URL, true)
+		return fetch.FromHTTP(c.HTTPClient, c.URL, true)
 	case "blob":
 		b, err := c.BlobConfig.Bucket(ctx, c.Blob.Bucket)
 		if err != nil {
@@ -421,32 +421,27 @@ type InteropServer struct {
 // ServiceBase represents base service configuration.
 type ServiceBase struct {
 	Base             `name:",squash"`
-	Cluster          cluster.Config         `name:"cluster"`
-	Cache            Cache                  `name:"cache"`
-	Redis            redis.Config           `name:"redis"`
-	Events           Events                 `name:"events"`
-	GRPC             GRPC                   `name:"grpc"`
-	HTTP             HTTP                   `name:"http"`
-	Interop          InteropServer          `name:"interop"`
-	TLS              tlsconfig.Config       `name:"tls"`
-	Sentry           Sentry                 `name:"sentry"`
-	Blob             BlobConfig             `name:"blob"`
-	FrequencyPlans   FrequencyPlansConfig   `name:"frequency-plans" description:"Source of the frequency plans"`
-	DeviceRepository DeviceRepositoryConfig `name:"device-repository" description:"Source of the device repository"`
-	Rights           Rights                 `name:"rights"`
-	KeyVault         KeyVault               `name:"key-vault"`
+	Cluster          cluster.Config       `name:"cluster"`
+	Cache            Cache                `name:"cache"`
+	Redis            redis.Config         `name:"redis"`
+	Events           Events               `name:"events"`
+	GRPC             GRPC                 `name:"grpc"`
+	HTTP             HTTP                 `name:"http"`
+	Interop          InteropServer        `name:"interop"`
+	TLS              tlsconfig.Config     `name:"tls"`
+	Sentry           Sentry               `name:"sentry"`
+	Blob             BlobConfig           `name:"blob"`
+	FrequencyPlans   FrequencyPlansConfig `name:"frequency-plans" description:"Source of the frequency plans"`
+	Rights           Rights               `name:"rights"`
+	KeyVault         KeyVault             `name:"key-vault"`
+	RateLimiting     RateLimiting         `name:"rate-limiting" description:"Rate limiting configuration"`
+	SkipVersionCheck bool                 `name:"skip-version-check" yaml:"skip-version-check" description:"Skip version checks"`
 }
 
 // FrequencyPlansFetcher returns a fetch.Interface based on the frequency plans configuration.
 // If no configuration source is set, this method returns nil, nil.
 func (c ServiceBase) FrequencyPlansFetcher(ctx context.Context) (fetch.Interface, error) {
 	return c.FrequencyPlans.Fetcher(ctx, c.Blob)
-}
-
-// DeviceRepositoryFetcher returns a fetch.Interface based on the device repository configuration.
-// If no configuration source is set, this method returns nil, nil.
-func (c ServiceBase) DeviceRepositoryFetcher(ctx context.Context) (fetch.Interface, error) {
-	return c.DeviceRepository.Fetcher(ctx, c.Blob)
 }
 
 // MQTT contains the listen and public addresses of an MQTT frontend.
@@ -468,4 +463,49 @@ type MQTTConfigProviderFunc func(context.Context) (*MQTT, error)
 // GetMQTTConfig implements MQTTConfigProvider.
 func (f MQTTConfigProviderFunc) GetMQTTConfig(ctx context.Context) (*MQTT, error) {
 	return f(ctx)
+}
+
+// RateLimitingProfile represents configuration for a rate limiting class.
+type RateLimitingProfile struct {
+	Name         string   `name:"name" description:"Rate limiting class name"`
+	MaxPerMin    uint     `name:"max-per-min" yaml:"max-per-min" description:"Maximum allowed rate (per minute)"`
+	MaxBurst     uint     `name:"max-burst" yaml:"max-burst" description:"Maximum rate allowed for short bursts"`
+	Associations []string `name:"associations" description:"List of classes to apply this profile on"`
+}
+
+// RateLimitingMemory represents configuration for the in-memory rate limiting store.
+type RateLimitingMemory struct {
+	MaxSize uint `name:"max-size" description:"Maximum store size for the rate limiter"`
+}
+
+// RateLimiting represents configuration for rate limiting.
+type RateLimiting struct {
+	ConfigSource string         `name:"config-source" description:"Source of rate-limiting.yml (directory, url, blob)"`
+	Directory    string         `name:"directory" description:"OS filesystem directory, which contains rate limiting configuration"`
+	URL          string         `name:"url" description:"URL, which contains rate limiting configuration"`
+	Blob         BlobPathConfig `name:"blob"`
+
+	HTTPClient *http.Client `name:"-"`
+
+	Memory   RateLimitingMemory    `name:"memory" description:"In-memory rate limiting store configuration"`
+	Profiles []RateLimitingProfile `name:"profiles" description:"Rate limiting profiles"`
+}
+
+// Fetcher returns fetch.Interface defined by conf.
+// If no configuration source is set, this method returns nil, nil.
+func (c RateLimiting) Fetcher(ctx context.Context, blobConf BlobConfig) (fetch.Interface, error) {
+	switch c.ConfigSource {
+	case "directory":
+		return fetch.FromFilesystem(c.Directory), nil
+	case "url":
+		return fetch.FromHTTP(c.HTTPClient, c.URL, true)
+	case "blob":
+		b, err := blobConf.Bucket(ctx, c.Blob.Bucket)
+		if err != nil {
+			return nil, err
+		}
+		return fetch.FromBucket(ctx, b, c.Blob.Path), nil
+	default:
+		return nil, nil
+	}
 }

@@ -41,9 +41,9 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		_, err := reg.Create(ctx, &ttnpb.CreateEndDeviceRequest{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID: "test-device-id",
+					DeviceId: "test-device-id",
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "test-app-id",
+						ApplicationId: "test-app-id",
 					},
 				},
 			},
@@ -54,11 +54,11 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		}
 
 		_, err = reg.Get(ctx, &ttnpb.GetEndDeviceRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				DeviceID: "test-device-id",
+				DeviceId: "test-device-id",
 				ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-					ApplicationID: "test-app-id",
+					ApplicationId: "test-app-id",
 				},
 			},
 		})
@@ -68,8 +68,8 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		}
 
 		_, err = reg.GetIdentifiersForEUIs(ctx, &ttnpb.GetEndDeviceIdentifiersForEUIsRequest{
-			JoinEUI: joinEUI,
-			DevEUI:  devEUI,
+			JoinEui: joinEUI,
+			DevEui:  devEUI,
 		})
 
 		if a.So(err, should.NotBeNil) {
@@ -77,9 +77,9 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		}
 
 		_, err = reg.List(ctx, &ttnpb.ListEndDevicesRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-				ApplicationID: "test-app-id",
+				ApplicationId: "test-app-id",
 			},
 		})
 
@@ -88,12 +88,12 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		}
 
 		_, err = reg.Update(ctx, &ttnpb.UpdateEndDeviceRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID: "test-device-id",
+					DeviceId: "test-device-id",
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "test-app-id",
+						ApplicationId: "test-app-id",
 					},
 				},
 			},
@@ -104,9 +104,9 @@ func TestEndDevicesPermissionDenied(t *testing.T) {
 		}
 
 		_, err = reg.Delete(ctx, &ttnpb.EndDeviceIdentifiers{
-			DeviceID: "test-device-id",
+			DeviceId: "test-device-id",
 			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-				ApplicationID: "test-app-id",
+				ApplicationId: "test-app-id",
 			},
 		})
 
@@ -135,10 +135,10 @@ func TestEndDevicesCRUD(t *testing.T) {
 		created, err := reg.Create(ctx, &ttnpb.CreateEndDeviceRequest{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID:               "test-device-id",
+					DeviceId:               "test-device-id",
 					ApplicationIdentifiers: app.ApplicationIdentifiers,
-					JoinEUI:                &joinEUI,
-					DevEUI:                 &devEUI,
+					JoinEui:                &joinEUI,
+					DevEui:                 &devEUI,
 				},
 				Name: "test-device-name",
 			},
@@ -152,9 +152,9 @@ func TestEndDevicesCRUD(t *testing.T) {
 		}
 
 		got, err := reg.Get(ctx, &ttnpb.GetEndDeviceRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				DeviceID:               "test-device-id",
+				DeviceId:               "test-device-id",
 				ApplicationIdentifiers: app.ApplicationIdentifiers,
 			},
 		}, creds)
@@ -165,8 +165,8 @@ func TestEndDevicesCRUD(t *testing.T) {
 		}
 
 		ids, err := reg.GetIdentifiersForEUIs(ctx, &ttnpb.GetEndDeviceIdentifiersForEUIsRequest{
-			JoinEUI: joinEUI,
-			DevEUI:  devEUI,
+			JoinEui: joinEUI,
+			DevEui:  devEUI,
 		}, creds)
 
 		a.So(err, should.BeNil)
@@ -177,10 +177,10 @@ func TestEndDevicesCRUD(t *testing.T) {
 		_, err = reg.Create(ctx, &ttnpb.CreateEndDeviceRequest{
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID:               "other-test-device-id",
+					DeviceId:               "other-test-device-id",
 					ApplicationIdentifiers: app.ApplicationIdentifiers,
-					JoinEUI:                &joinEUI,
-					DevEUI:                 &devEUI,
+					JoinEui:                &joinEUI,
+					DevEui:                 &devEUI,
 				},
 				Name: "test-device-name",
 			},
@@ -191,7 +191,7 @@ func TestEndDevicesCRUD(t *testing.T) {
 		}
 
 		list, err := reg.List(ctx, &ttnpb.ListEndDevicesRequest{
-			FieldMask:              pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask:              &pbtypes.FieldMask{Paths: []string{"name"}},
 			ApplicationIdentifiers: app.ApplicationIdentifiers,
 		}, creds)
 
@@ -205,10 +205,10 @@ func TestEndDevicesCRUD(t *testing.T) {
 		start = time.Now()
 
 		updated, err := reg.Update(ctx, &ttnpb.UpdateEndDeviceRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			EndDevice: ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DeviceID:               "test-device-id",
+					DeviceId:               "test-device-id",
 					ApplicationIdentifiers: app.ApplicationIdentifiers,
 				},
 				Name: "test-device-name-new",
@@ -222,16 +222,16 @@ func TestEndDevicesCRUD(t *testing.T) {
 		}
 
 		_, err = reg.Delete(ctx, &ttnpb.EndDeviceIdentifiers{
-			DeviceID:               "test-device-id",
+			DeviceId:               "test-device-id",
 			ApplicationIdentifiers: app.ApplicationIdentifiers,
 		}, creds)
 
 		a.So(err, should.BeNil)
 
 		_, err = reg.Get(ctx, &ttnpb.GetEndDeviceRequest{
-			FieldMask: pbtypes.FieldMask{Paths: []string{"name"}},
+			FieldMask: &pbtypes.FieldMask{Paths: []string{"name"}},
 			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-				DeviceID:               "test-device-id",
+				DeviceId:               "test-device-id",
 				ApplicationIdentifiers: app.ApplicationIdentifiers,
 			},
 		}, creds)

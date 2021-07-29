@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { GET_DEV_BASE, GET_DEVICES_LIST_BASE } from '@console/store/actions/devices'
+import { combineDeviceIds, extractDeviceIdFromCombinedId } from '@ttn-lw/lib/selectors/id'
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+import {
+  createPaginationIdsSelectorByEntity,
+  createPaginationTotalCountSelectorByEntity,
+} from '@ttn-lw/lib/store/selectors/pagination'
 
-import { combineDeviceIds, extractDeviceIdFromCombinedId } from '../../../lib/selectors/id'
+import { GET_DEV_BASE, GET_DEVICES_LIST_BASE } from '@console/store/actions/devices'
 
 import {
   createEventsSelector,
@@ -23,13 +29,8 @@ import {
   createEventsInterruptedSelector,
   createEventsPausedSelector,
   createEventsTruncatedSelector,
+  createEventsFilterSelector,
 } from './events'
-import {
-  createPaginationIdsSelectorByEntity,
-  createPaginationTotalCountSelectorByEntity,
-} from './pagination'
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
 
 const ENTITY = 'devices'
 
@@ -51,19 +52,19 @@ export const selectDeviceFetching = createFetchingSelector(GET_DEV_BASE)
 export const selectDeviceError = createErrorSelector(GET_DEV_BASE)
 
 // Derived.
-export const selectDeviceUplinkFrameCount = function(state, appId, devId) {
+export const selectDeviceDerivedUplinkFrameCount = (state, appId, devId) => {
   const derived = selectDeviceDerivedById(state, combineDeviceIds(appId, devId))
   if (!Boolean(derived)) return undefined
 
   return derived.uplinkFrameCount
 }
-export const selectDeviceDownlinkFrameCount = function(state, appId, devId) {
+export const selectDeviceDerivedDownlinkFrameCount = (state, appId, devId) => {
   const derived = selectDeviceDerivedById(state, combineDeviceIds(appId, devId))
   if (!Boolean(derived)) return undefined
 
   return derived.downlinkFrameCount
 }
-export const selectDeviceLastSeen = function(state, appId, devId) {
+export const selectDeviceDerivedLastSeen = (state, appId, devId) => {
   const derived = selectDeviceDerivedById(state, combineDeviceIds(appId, devId))
   if (!Boolean(derived)) return undefined
 
@@ -88,3 +89,4 @@ export const selectDeviceEventsStatus = createEventsStatusSelector(ENTITY)
 export const selectDeviceEventsInterruptted = createEventsInterruptedSelector(ENTITY)
 export const selectDeviceEventsPaused = createEventsPausedSelector(ENTITY)
 export const selectDeviceEventsTruncated = createEventsTruncatedSelector(ENTITY)
+export const selectDeviceEventsFilter = createEventsFilterSelector(ENTITY)

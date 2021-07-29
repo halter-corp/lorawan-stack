@@ -14,8 +14,9 @@
 
 import { connect } from 'react-redux'
 
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
+
 import { updateGateway } from '@console/store/actions/gateways'
-import { attachPromise } from '@console/store/actions/lib'
 
 import { selectSelectedGateway, selectSelectedGatewayId } from '@console/store/selectors/gateways'
 
@@ -28,8 +29,4 @@ const mapDispatchToProps = {
   updateGateway: attachPromise(updateGateway),
 }
 
-export default Component =>
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Component)
+export default Component => connect(mapStateToProps, mapDispatchToProps)(Component)

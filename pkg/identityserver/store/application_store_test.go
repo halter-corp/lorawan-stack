@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
@@ -34,9 +34,10 @@ func TestApplicationStore(t *testing.T) {
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
 		prepareTest(db, &Application{}, &Attribute{})
 		store := GetApplicationStore(db)
+		s := newStore(db)
 
 		created, err := store.CreateApplication(ctx, &ttnpb.Application{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "foo"},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "foo"},
 			Name:                   "Foo Application",
 			Description:            "The Amazing Foo Application",
 			Attributes: map[string]string{
@@ -48,7 +49,7 @@ func TestApplicationStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(created, should.NotBeNil) {
-			a.So(created.ApplicationID, should.Equal, "foo")
+			a.So(created.ApplicationId, should.Equal, "foo")
 			a.So(created.Name, should.Equal, "Foo Application")
 			a.So(created.Description, should.Equal, "The Amazing Foo Application")
 			a.So(created.Attributes, should.HaveLength, 3)
@@ -56,11 +57,11 @@ func TestApplicationStore(t *testing.T) {
 			a.So(created.UpdatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
 		}
 
-		got, err := store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationID: "foo"}, &types.FieldMask{Paths: []string{"name", "attributes"}})
+		got, err := store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"}, &pbtypes.FieldMask{Paths: []string{"name", "attributes"}})
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.ApplicationID, should.Equal, "foo")
+			a.So(got.ApplicationId, should.Equal, "foo")
 			a.So(got.Name, should.Equal, "Foo Application")
 			a.So(got.Description, should.BeEmpty)
 			a.So(got.Attributes, should.HaveLength, 3)
@@ -69,7 +70,7 @@ func TestApplicationStore(t *testing.T) {
 		}
 
 		_, err = store.UpdateApplication(ctx, &ttnpb.Application{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "bar"},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "bar"},
 		}, nil)
 
 		if a.So(err, should.NotBeNil) {
@@ -77,7 +78,7 @@ func TestApplicationStore(t *testing.T) {
 		}
 
 		updated, err := store.UpdateApplication(ctx, &ttnpb.Application{
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "foo"},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "foo"},
 			Name:                   "Foobar Application",
 			Description:            "The Amazing Foobar Application",
 			Attributes: map[string]string{
@@ -85,7 +86,7 @@ func TestApplicationStore(t *testing.T) {
 				"baz": "baz",
 				"qux": "foo",
 			},
-		}, &types.FieldMask{Paths: []string{"description", "attributes"}})
+		}, &pbtypes.FieldMask{Paths: []string{"description", "attributes"}})
 
 		a.So(err, should.BeNil)
 		if a.So(updated, should.NotBeNil) {
@@ -95,11 +96,11 @@ func TestApplicationStore(t *testing.T) {
 			a.So(updated.UpdatedAt, should.HappenAfter, created.CreatedAt)
 		}
 
-		got, err = store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationID: "foo"}, nil)
+		got, err = store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"}, nil)
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.ApplicationID, should.Equal, created.ApplicationID)
+			a.So(got.ApplicationId, should.Equal, created.ApplicationId)
 			a.So(got.Name, should.Equal, created.Name)
 			a.So(got.Description, should.Equal, updated.Description)
 			a.So(got.Attributes, should.Resemble, updated.Attributes)
@@ -107,26 +108,64 @@ func TestApplicationStore(t *testing.T) {
 			a.So(got.UpdatedAt, should.Equal, updated.UpdatedAt)
 		}
 
-		list, err := store.FindApplications(ctx, nil, &types.FieldMask{Paths: []string{"name"}})
+		list, err := store.FindApplications(ctx, nil, &pbtypes.FieldMask{Paths: []string{"name"}})
 
 		a.So(err, should.BeNil)
 		if a.So(list, should.HaveLength, 1) {
 			a.So(list[0].Name, should.EndWith, got.Name)
 		}
 
-		err = store.DeleteApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationID: "foo"})
+		err = store.DeleteApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"})
 
 		a.So(err, should.BeNil)
 
-		got, err = store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationID: "foo"}, nil)
+		got, err = store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"}, nil)
 
 		if a.So(err, should.NotBeNil) {
 			a.So(errors.IsNotFound(err), should.BeTrue)
 		}
 
+		err = store.RestoreApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		got, err = store.GetApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"}, nil)
+
+		a.So(err, should.BeNil)
+
+		err = store.DeleteApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"})
+
+		a.So(err, should.BeNil)
+
 		list, err = store.FindApplications(ctx, nil, nil)
 
 		a.So(err, should.BeNil)
 		a.So(list, should.BeEmpty)
+
+		list, err = store.FindApplications(WithSoftDeleted(ctx, false), nil, nil)
+
+		a.So(err, should.BeNil)
+		a.So(list, should.NotBeEmpty)
+
+		entity, _ := s.findDeletedEntity(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"}, "id")
+
+		err = store.PurgeApplication(ctx, &ttnpb.ApplicationIdentifiers{ApplicationId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		var attribute []Attribute
+		s.query(ctx, Attribute{}).Where(&Attribute{
+			EntityID:   entity.PrimaryKey(),
+			EntityType: "application",
+		}).Find(&attribute)
+
+		a.So(attribute, should.HaveLength, 0)
+
+		// Check that application ids are released after purge
+		_, err = store.CreateApplication(ctx, &ttnpb.Application{
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "foo"},
+		})
+
+		a.So(err, should.BeNil)
 	})
 }

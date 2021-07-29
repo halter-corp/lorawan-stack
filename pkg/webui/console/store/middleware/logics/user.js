@@ -16,14 +16,12 @@ import axios from 'axios'
 
 import api from '@console/api'
 
+import * as accessToken from '@ttn-lw/lib/access-token'
+import createRequestLogic from '@ttn-lw/lib/store/logics/create-request-logic'
 import { isUnauthenticatedError } from '@ttn-lw/lib/errors/utils'
 import { selectApplicationRootPath } from '@ttn-lw/lib/selectors/env'
 
-import * as accessToken from '@console/lib/access-token'
-
 import * as user from '@console/store/actions/user'
-
-import createRequestLogic from './lib'
 
 const logoutSequence = async () => {
   const response = await api.console.logout()
@@ -34,7 +32,7 @@ const logoutSequence = async () => {
 export default [
   createRequestLogic({
     type: user.LOGOUT,
-    async process() {
+    process: async () => {
       try {
         await logoutSequence()
       } catch (err) {

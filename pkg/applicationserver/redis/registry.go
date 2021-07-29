@@ -19,7 +19,7 @@ import (
 	"runtime/trace"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
@@ -56,7 +56,7 @@ func (r *DeviceRegistry) Get(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 	defer trace.StartRegion(ctx, "get end device").End()
 
 	pb := &ttnpb.EndDevice{}
-	if err := ttnredis.GetProto(r.Redis, r.uidKey(unique.ID(ctx, ids))).ScanProto(pb); err != nil {
+	if err := ttnredis.GetProto(ctx, r.Redis, r.uidKey(unique.ID(ctx, ids))).ScanProto(pb); err != nil {
 		return nil, err
 	}
 	return ttnpb.FilterGetEndDevice(pb, paths...)
@@ -80,8 +80,8 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 	defer trace.StartRegion(ctx, "set end device").End()
 
 	var pb *ttnpb.EndDevice
-	err := r.Redis.Watch(func(tx *redis.Tx) error {
-		cmd := ttnredis.GetProto(tx, uk)
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) error {
+		cmd := ttnredis.GetProto(ctx, tx, uk)
 		stored := &ttnpb.EndDevice{}
 		if err := cmd.ScanProto(stored); errors.IsNotFound(err) {
 			stored = nil
@@ -124,9 +124,9 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 		var pipelined func(redis.Pipeliner) error
 		if pb == nil && len(sets) == 0 {
 			pipelined = func(p redis.Pipeliner) error {
-				p.Del(uk)
-				if stored.JoinEUI != nil && stored.DevEUI != nil {
-					p.Del(r.euiKey(*stored.JoinEUI, *stored.DevEUI))
+				p.Del(ctx, uk)
+				if stored.JoinEui != nil && stored.DevEui != nil {
+					p.Del(ctx, r.euiKey(*stored.JoinEui, *stored.DevEui))
 				}
 				return nil
 			}
@@ -135,7 +135,7 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 				pb = &ttnpb.EndDevice{}
 			}
 
-			if pb.ApplicationIdentifiers != ids.ApplicationIdentifiers || pb.DeviceID != ids.DeviceID {
+			if pb.ApplicationId != ids.ApplicationId || pb.DeviceId != ids.DeviceId {
 				return errInvalidIdentifiers.New()
 			}
 
@@ -160,20 +160,20 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 				if err != nil {
 					return err
 				}
-				if updated.ApplicationIdentifiers != ids.ApplicationIdentifiers || updated.DeviceID != ids.DeviceID {
+				if updated.ApplicationId != ids.ApplicationId || updated.DeviceId != ids.DeviceId {
 					return errInvalidIdentifiers.New()
 				}
 			} else {
-				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationID != stored.ApplicationID {
+				if ttnpb.HasAnyField(sets, "ids.application_ids.application_id") && pb.ApplicationId != stored.ApplicationId {
 					return errReadOnlyField.WithAttributes("field", "ids.application_ids.application_id")
 				}
-				if ttnpb.HasAnyField(sets, "ids.device_id") && pb.DeviceID != stored.DeviceID {
+				if ttnpb.HasAnyField(sets, "ids.device_id") && pb.DeviceId != stored.DeviceId {
 					return errReadOnlyField.WithAttributes("field", "ids.device_id")
 				}
-				if ttnpb.HasAnyField(sets, "ids.join_eui") && !equalEUI64(pb.JoinEUI, stored.JoinEUI) {
+				if ttnpb.HasAnyField(sets, "ids.join_eui") && !equalEUI64(pb.JoinEui, stored.JoinEui) {
 					return errReadOnlyField.WithAttributes("field", "ids.join_eui")
 				}
-				if ttnpb.HasAnyField(sets, "ids.dev_eui") && !equalEUI64(pb.DevEUI, stored.DevEUI) {
+				if ttnpb.HasAnyField(sets, "ids.dev_eui") && !equalEUI64(pb.DevEui, stored.DevEui) {
 					return errReadOnlyField.WithAttributes("field", "ids.dev_eui")
 				}
 				if err := cmd.ScanProto(updated); err != nil {
@@ -189,22 +189,22 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 			}
 
 			pipelined = func(p redis.Pipeliner) error {
-				if stored == nil && updated.JoinEUI != nil && updated.DevEUI != nil {
-					ek := r.euiKey(*updated.JoinEUI, *updated.DevEUI)
-					if err := tx.Watch(ek).Err(); err != nil {
+				if stored == nil && updated.JoinEui != nil && updated.DevEui != nil {
+					ek := r.euiKey(*updated.JoinEui, *updated.DevEui)
+					if err := tx.Watch(ctx, ek).Err(); err != nil {
 						return err
 					}
-					i, err := tx.Exists(ek).Result()
+					i, err := tx.Exists(ctx, ek).Result()
 					if err != nil {
 						return err
 					}
 					if i != 0 {
 						return errDuplicateIdentifiers.New()
 					}
-					p.SetNX(ek, uid, 0)
+					p.SetNX(ctx, ek, uid, 0)
 				}
 
-				if _, err := ttnredis.SetProto(p, uk, updated, 0); err != nil {
+				if _, err := ttnredis.SetProto(ctx, p, uk, updated, 0); err != nil {
 					return err
 				}
 				return nil
@@ -214,7 +214,7 @@ func (r *DeviceRegistry) Set(ctx context.Context, ids ttnpb.EndDeviceIdentifiers
 				return err
 			}
 		}
-		_, err = tx.TxPipelined(pipelined)
+		_, err = tx.TxPipelined(ctx, pipelined)
 		if err != nil {
 			return err
 		}
@@ -251,7 +251,7 @@ func (r *LinkRegistry) Get(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 	defer trace.StartRegion(ctx, "get link").End()
 
 	pb := &ttnpb.ApplicationLink{}
-	if err := ttnredis.GetProto(r.Redis, r.appKey(unique.ID(ctx, ids))).ScanProto(pb); err != nil {
+	if err := ttnredis.GetProto(ctx, r.Redis, r.appKey(unique.ID(ctx, ids))).ScanProto(pb); err != nil {
 		return nil, err
 	}
 	return applyLinkFieldMask(nil, pb, paths...)
@@ -263,7 +263,7 @@ var errApplicationUID = errors.DefineCorruption("application_uid", "invalid appl
 func (r *LinkRegistry) Range(ctx context.Context, paths []string, f func(context.Context, ttnpb.ApplicationIdentifiers, *ttnpb.ApplicationLink) bool) error {
 	defer trace.StartRegion(ctx, "range links").End()
 
-	uids, err := r.Redis.SMembers(r.allKey(ctx)).Result()
+	uids, err := r.Redis.SMembers(ctx, r.allKey(ctx)).Result()
 	if err != nil {
 		return ttnredis.ConvertError(err)
 	}
@@ -277,7 +277,7 @@ func (r *LinkRegistry) Range(ctx context.Context, paths []string, f func(context
 			return errApplicationUID.WithCause(err).WithAttributes("application_uid", uid)
 		}
 		pb := &ttnpb.ApplicationLink{}
-		if err := ttnredis.GetProto(r.Redis, r.appKey(uid)).ScanProto(pb); err != nil {
+		if err := ttnredis.GetProto(ctx, r.Redis, r.appKey(uid)).ScanProto(pb); err != nil {
 			return err
 		}
 		pb, err = applyLinkFieldMask(nil, pb, paths...)
@@ -299,8 +299,8 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 	uk := r.appKey(uid)
 
 	var pb *ttnpb.ApplicationLink
-	err := r.Redis.Watch(func(tx *redis.Tx) error {
-		cmd := ttnredis.GetProto(tx, uk)
+	err := r.Redis.Watch(ctx, func(tx *redis.Tx) error {
+		cmd := ttnredis.GetProto(ctx, tx, uk)
 		stored := &ttnpb.ApplicationLink{}
 		if err := cmd.ScanProto(stored); errors.IsNotFound(err) {
 			stored = nil
@@ -336,8 +336,8 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 		var pipelined func(redis.Pipeliner) error
 		if pb == nil && len(sets) == 0 {
 			pipelined = func(p redis.Pipeliner) error {
-				p.Del(uk)
-				p.SRem(r.allKey(ctx), uid)
+				p.Del(ctx, uk)
+				p.SRem(ctx, r.allKey(ctx), uid)
 				return nil
 			}
 		} else {
@@ -361,11 +361,11 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 			}
 
 			pipelined = func(p redis.Pipeliner) error {
-				_, err := ttnredis.SetProto(p, uk, updated, 0)
+				_, err := ttnredis.SetProto(ctx, p, uk, updated, 0)
 				if err != nil {
 					return err
 				}
-				p.SAdd(r.allKey(ctx), uid)
+				p.SAdd(ctx, r.allKey(ctx), uid)
 				return nil
 			}
 			pb, err = applyLinkFieldMask(nil, updated, gets...)
@@ -373,7 +373,7 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 				return err
 			}
 		}
-		_, err = tx.TxPipelined(pipelined)
+		_, err = tx.TxPipelined(ctx, pipelined)
 		if err != nil {
 			return err
 		}
@@ -383,4 +383,75 @@ func (r *LinkRegistry) Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers
 		return nil, ttnredis.ConvertError(err)
 	}
 	return pb, nil
+}
+
+// ApplicationUplinkRegistry is a store for uplink messages.
+type ApplicationUplinkRegistry struct {
+	Redis *ttnredis.Client
+	Limit int64
+}
+
+func (r *ApplicationUplinkRegistry) uidKey(uid string) string {
+	return r.Redis.Key("uid", uid)
+}
+
+// Range ranges the uplink messagess and calls the callback function, until false is returned.
+func (r *ApplicationUplinkRegistry) Range(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, paths []string, f func(context.Context, *ttnpb.ApplicationUplink) bool) error {
+	defer trace.StartRegion(ctx, "range application uplinks").End()
+
+	uidKey := r.uidKey(unique.ID(ctx, ids))
+	ups, err := r.Redis.LRange(ctx, uidKey, 0, r.Limit-1).Result()
+	if err != nil {
+		return ttnredis.ConvertError(err)
+	}
+	for _, up := range ups {
+		pb := &ttnpb.ApplicationUplink{}
+		if err := ttnredis.UnmarshalProto(up, pb); err != nil {
+			return err
+		}
+		up := &ttnpb.ApplicationUplink{}
+		if err := up.SetFields(pb, paths...); err != nil {
+			return err
+		}
+		if !f(ctx, up) {
+			break
+		}
+	}
+
+	return nil
+}
+
+// Push pushes the provided uplink message to the storage.
+func (r *ApplicationUplinkRegistry) Push(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, up *ttnpb.ApplicationUplink) error {
+	defer trace.StartRegion(ctx, "push application uplink").End()
+
+	s, err := ttnredis.MarshalProto(up)
+	if err != nil {
+		return err
+	}
+
+	uidKey := r.uidKey(unique.ID(ctx, ids))
+	_, err = r.Redis.Pipelined(ctx, func(p redis.Pipeliner) error {
+		p.LPush(ctx, uidKey, s)
+		p.LTrim(ctx, uidKey, 0, r.Limit-1)
+		return nil
+	})
+	if err != nil {
+		return ttnredis.ConvertError(err)
+	}
+
+	return nil
+}
+
+// Clear empties the application uplink storage by the end device identifiers.
+func (r *ApplicationUplinkRegistry) Clear(ctx context.Context, ids ttnpb.EndDeviceIdentifiers) error {
+	defer trace.StartRegion(ctx, "clear application uplinks").End()
+
+	uidKey := r.uidKey(unique.ID(ctx, ids))
+	_, err := r.Redis.Del(ctx, uidKey).Result()
+	if err != nil {
+		return ttnredis.ConvertError(err)
+	}
+
+	return nil
 }

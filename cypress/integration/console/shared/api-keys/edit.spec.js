@@ -13,15 +13,10 @@
 // limitations under the License.
 
 describe('API keys', () => {
-  const apiKeyName = 'api-test-key'
-  const apiKey = {
-    name: apiKeyName,
-    rights: ['RIGHT_APPLICATION_ALL'],
-  }
   const userId = 'main-api-key-test-user'
   const user = {
     ids: { user_id: userId },
-    primary_email_address: 'create-api-key-test-user@example.com',
+    primary_email_address: 'edit-api-key-test-user@example.com',
     password: 'ABCDefg123!',
     password_confirm: 'ABCDefg123!',
   }
@@ -34,16 +29,18 @@ describe('API keys', () => {
   describe('Application', () => {
     const applicationId = 'api-keys-test-app'
     const application = { ids: { application_id: applicationId } }
+    const apiKeyName = 'api-test-key'
+    const apiKey = {
+      name: apiKeyName,
+      rights: ['RIGHT_APPLICATION_ALL'],
+    }
     const entity = 'applications'
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createApplication(application, userId)
       cy.createApiKey(entity, applicationId, apiKey, key => {
         Cypress.config('apiKeyId', key.id)
       })
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
@@ -100,21 +97,22 @@ describe('API keys', () => {
   describe('Gateway', () => {
     const gatewayId = 'api-keys-test-gateway'
     const gateway = { ids: { gateway_id: gatewayId } }
+    const apiKeyName = 'api-test-key'
+    const apiKey = {
+      name: apiKeyName,
+      rights: ['RIGHT_GATEWAY_ALL'],
+    }
     const entity = 'gateways'
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createGateway(gateway, userId)
       cy.createApiKey(entity, gatewayId, apiKey, key => {
         Cypress.config('apiKeyId', key.id)
       })
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
       cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
-      cy.createApiKey(entity, gatewayId, apiKey)
     })
 
     it('succeeds editing api key', () => {
@@ -169,21 +167,22 @@ describe('API keys', () => {
     const organization = {
       ids: { organization_id: organizationId },
     }
+    const apiKeyName = 'api-test-key'
+    const apiKey = {
+      name: apiKeyName,
+      rights: ['RIGHT_ORGANIZATION_ALL'],
+    }
     const entity = 'organizations'
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createOrganization(organization, userId)
       cy.createApiKey(entity, organizationId, apiKey, key => {
         Cypress.config('apiKeyId', key.id)
       })
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
       cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
-      cy.createApiKey(entity, organizationId, apiKey)
     })
 
     it('succeeds editing api key', () => {
@@ -228,6 +227,60 @@ describe('API keys', () => {
         'eq',
         `${Cypress.config('consoleRootPath')}/organizations/${organizationId}/api-keys`,
       )
+
+      cy.findByRole('cell', { name: apiKeyName }).should('not.exist')
+    })
+  })
+
+  describe('User', () => {
+    const apiKeyName = 'api-test-key'
+    const apiKey = {
+      name: apiKeyName,
+      rights: ['RIGHT_USER_ALL'],
+    }
+    const entity = 'users'
+
+    before(() => {
+      cy.createApiKey(entity, userId, apiKey, key => {
+        Cypress.config('apiKeyId', key.id)
+      })
+    })
+
+    beforeEach(() => {
+      cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
+    })
+
+    it('succeeds editing api key', () => {
+      cy.visit(`${Cypress.config('consoleRootPath')}/user/api-keys/${Cypress.config('apiKeyId')}`)
+
+      cy.findByLabelText('Name').type('_updated')
+      cy.findByLabelText('Grant individual rights').check()
+      cy.findByLabelText('Select all').check()
+
+      cy.findByRole('button', { name: 'Save changes' }).click()
+
+      cy.findByTestId('error-notification').should('not.exist')
+      cy.findByTestId('toast-notification')
+        .should('be.visible')
+        .findByText(`API key updated`)
+        .should('be.visible')
+    })
+
+    it('succeeds deleting api key', () => {
+      cy.visit(`${Cypress.config('consoleRootPath')}/user/api-keys/${Cypress.config('apiKeyId')}`)
+
+      cy.findByRole('button', { name: /Delete key/ }).click()
+
+      cy.findByTestId('modal-window')
+        .should('be.visible')
+        .within(() => {
+          cy.findByText('Delete key', { selector: 'h1' }).should('be.visible')
+          cy.findByRole('button', { name: /Delete key/ }).click()
+        })
+
+      cy.findByTestId('error-notification').should('not.exist')
+
+      cy.location('pathname').should('eq', `${Cypress.config('consoleRootPath')}/user/api-keys`)
 
       cy.findByRole('cell', { name: apiKeyName }).should('not.exist')
     })

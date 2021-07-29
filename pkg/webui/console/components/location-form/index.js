@@ -26,8 +26,6 @@ import toast from '@ttn-lw/components/toast'
 import LocationMap from '@ttn-lw/components/map'
 import Overlay from '@ttn-lw/components/overlay'
 
-import Message from '@ttn-lw/lib/components/message'
-
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -48,12 +46,12 @@ const m = defineMessages({
 
 const validationSchema = Yup.object().shape({
   latitude: Yup.number()
-    .test('is-valid-latitude', sharedMessages.validateLat, value =>
+    .test('is-valid-latitude', sharedMessages.validateLatitude, value =>
       latitudeRegexp.test(String(value)),
     )
     .required(sharedMessages.validateRequired),
   longitude: Yup.number()
-    .test('is-valid-longitude', sharedMessages.validateLong, value =>
+    .test('is-valid-longitude', sharedMessages.validateLongitude, value =>
       longitudeRegexp.test(String(value)),
     )
     .required(sharedMessages.validateRequired),
@@ -65,9 +63,11 @@ const validationSchema = Yup.object().shape({
 // We consider location of an entity set iff at least one coordinate is set,
 // i.e. longitude, altitude, latitude.
 const hasLocationSet = location =>
-  typeof location.altitude !== 'undefined' ||
-  typeof location.latitude !== 'undefined' ||
-  typeof location.longitude !== 'undefined'
+  location !== null &&
+  typeof location === 'object' &&
+  (typeof location.altitude !== 'undefined' ||
+    typeof location.latitude !== 'undefined' ||
+    typeof location.longitude !== 'undefined')
 
 const defaultLocation = [0, 0]
 
@@ -244,18 +244,17 @@ class LocationForm extends Component {
 
     return (
       <React.Fragment>
-        {!entryExists && <Notification content={m.noLocationSet} info small />}
         <Form
           enableReinitialize
           error={error}
-          horizontal
           validateOnChange
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={this.onSubmit}
           formikRef={this.form}
         >
-          <Message component="h4" content={formTitle} />
+          <Form.SubTitle title={formTitle} />
+          {!entryExists && <Notification content={m.noLocationSet} info small />}
           {children}
           <Overlay
             loading={loading}
@@ -271,7 +270,6 @@ class LocationForm extends Component {
               markers={marker}
               onClick={this.handleClick}
               clickable
-              mapRef="map"
             />
           </Overlay>
           <Form.Field

@@ -28,20 +28,23 @@ import (
 var DefaultIdentityServerConfig = identityserver.Config{
 	DatabaseURI: "postgresql://root@localhost:26257/ttn_lorawan_dev?sslmode=disable",
 	OAuth: oauth.Config{
+		Mount: "/oauth",
 		UI: oauth.UIConfig{
 			TemplateData: webui.TemplateData{
 				SiteName:      "The Things Stack for LoRaWAN",
+				Title:         "Account",
 				Language:      "en",
 				CanonicalURL:  shared.DefaultOAuthPublicURL,
 				AssetsBaseURL: shared.DefaultAssetsBaseURL,
 				IconPrefix:    "oauth-",
-				CSSFiles:      []string{"oauth.css"},
-				JSFiles:       []string{"oauth.js"},
+				CSSFiles:      []string{"account.css"},
+				JSFiles:       []string{"account.js"},
 			},
 			FrontendConfig: oauth.FrontendConfig{
 				StackConfig: oauth.StackConfig{
 					IS: webui.APIConfig{Enabled: true, BaseURL: shared.DefaultPublicURL + "/api/v3"},
 				},
+				ConsoleURL: "/console",
 			},
 		},
 	},
@@ -49,11 +52,14 @@ var DefaultIdentityServerConfig = identityserver.Config{
 
 func init() {
 	DefaultIdentityServerConfig.AuthCache.MembershipTTL = 10 * time.Minute
+	DefaultIdentityServerConfig.UserRegistration.Enabled = true
 	DefaultIdentityServerConfig.UserRegistration.Invitation.TokenTTL = 7 * 24 * time.Hour
+	DefaultIdentityServerConfig.UserRegistration.ContactInfoValidation.TokenTTL = 2 * 24 * time.Hour
 	DefaultIdentityServerConfig.UserRegistration.PasswordRequirements.MinLength = 8
 	DefaultIdentityServerConfig.UserRegistration.PasswordRequirements.MaxLength = 1000
 	DefaultIdentityServerConfig.UserRegistration.PasswordRequirements.MinUppercase = 1
 	DefaultIdentityServerConfig.UserRegistration.PasswordRequirements.MinDigits = 1
+	DefaultIdentityServerConfig.UserRegistration.PasswordRequirements.RejectUserID = true
 	DefaultIdentityServerConfig.Email.Network.Name = DefaultIdentityServerConfig.OAuth.UI.SiteName
 	DefaultIdentityServerConfig.Email.Network.IdentityServerURL = shared.DefaultOAuthPublicURL
 	DefaultIdentityServerConfig.Email.Network.ConsoleURL = shared.DefaultConsolePublicURL
@@ -66,4 +72,6 @@ func init() {
 	DefaultIdentityServerConfig.UserRights.CreateClients = true
 	DefaultIdentityServerConfig.UserRights.CreateGateways = true
 	DefaultIdentityServerConfig.UserRights.CreateOrganizations = true
+	DefaultIdentityServerConfig.LoginTokens.TokenTTL = time.Hour
+	DefaultIdentityServerConfig.Delete.Restore = 24 * time.Hour
 }

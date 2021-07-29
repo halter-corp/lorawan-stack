@@ -25,15 +25,12 @@ import SubmitBar from '@ttn-lw/components/submit-bar'
 import SubmitButton from '@ttn-lw/components/submit-button'
 import PortalledModal from '@ttn-lw/components/modal/portalled'
 
-import Message from '@ttn-lw/lib/components/message'
-
 import WebhookTemplateInfo from '@console/components/webhook-template-info'
 
 import Yup from '@ttn-lw/lib/yup'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
-
-import { id as webhookIdRegexp } from '@console/lib/regexp'
+import { id as webhookIdRegexp } from '@ttn-lw/lib/regexp'
 
 const m = defineMessages({
   createTemplate: 'Create {template} webhook',
@@ -70,7 +67,10 @@ export default class WebhookTemplateForm extends Component {
 
     const headers = Object.keys(template.headers || {}).reduce((acc, key) => {
       const val = template.headers[key]
-      acc[key] = val.replace(/{([a-z0-9_-]+)}/i, (_, field) => values[field])
+      const headerValue = val.replace(/{([a-z0-9_-]+)}/i, (_, field) => values[field])
+      if (headerValue !== '') {
+        acc[key] = headerValue
+      }
       return acc
     }, {})
 
@@ -152,21 +152,26 @@ export default class WebhookTemplateForm extends Component {
       ...fields.reduce(
         (acc, field) => ({
           ...acc,
-          [field.id]: Yup.string().required(sharedMessages.validateRequired),
+          [field.id]: field.optional
+            ? Yup.string()
+            : Yup.string().required(sharedMessages.validateRequired),
         }),
         {
           webhook_id: Yup.string()
+            .min(3, Yup.passValues(sharedMessages.validateTooShort))
+            .max(36, Yup.passValues(sharedMessages.validateTooLong))
             .matches(webhookIdRegexp, Yup.passValues(sharedMessages.validateIdFormat))
-            .min(2, Yup.passValues(sharedMessages.validateTooShort))
-            .max(25, Yup.passValues(sharedMessages.validateTooLong))
             .required(sharedMessages.validateRequired),
         },
       ),
     })
 
-    const initialValues = fields.reduce((acc, field) => ({ ...acc, [field.id]: '' }), {
-      webhook_id: '',
-    })
+    const initialValues = fields.reduce(
+      (acc, field) => ({ ...acc, [field.id]: field.default_value || '' }),
+      {
+        webhook_id: '',
+      },
+    )
     return (
       <div>
         <PortalledModal
@@ -188,7 +193,7 @@ export default class WebhookTemplateForm extends Component {
           error={error}
           formikRef={this.form}
         >
-          <Message component="h4" content={m.templateSettings} />
+          <Form.SubTitle title={m.templateSettings} />
           <Form.Field
             name="webhook_id"
             title={sharedMessages.webhookId}
@@ -204,7 +209,7 @@ export default class WebhookTemplateForm extends Component {
               title={field.name}
               description={field.description}
               key={field.id}
-              required
+              required={!field.optional}
             />
           ))}
           <SubmitBar>

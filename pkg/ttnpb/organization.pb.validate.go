@@ -86,6 +86,18 @@ func (m *Organization) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "deleted_at":
+
+			if v, ok := interface{}(m.GetDeletedAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return OrganizationValidationError{
+						field:  "deleted_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		case "name":
 
 			if utf8.RuneCountInString(m.GetName()) > 50 {
@@ -106,6 +118,13 @@ func (m *Organization) ValidateFields(paths ...string) error {
 
 		case "attributes":
 
+			if len(m.GetAttributes()) > 10 {
+				return OrganizationValidationError{
+					field:  "attributes",
+					reason: "value must contain no more than 10 pair(s)",
+				}
+			}
+
 			for key, val := range m.GetAttributes() {
 				_ = val
 
@@ -123,10 +142,23 @@ func (m *Organization) ValidateFields(paths ...string) error {
 					}
 				}
 
-				// no validation rules for Attributes[key]
+				if utf8.RuneCountInString(val) > 200 {
+					return OrganizationValidationError{
+						field:  fmt.Sprintf("attributes[%v]", key),
+						reason: "value length must be at most 200 runes",
+					}
+				}
+
 			}
 
 		case "contact_info":
+
+			if len(m.GetContactInfo()) > 10 {
+				return OrganizationValidationError{
+					field:  "contact_info",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
 
 			for idx, item := range m.GetContactInfo() {
 				_, _ = idx, item
@@ -334,7 +366,7 @@ func (m *GetOrganizationRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetOrganizationRequestValidationError{
 						field:  "field_mask",
@@ -439,7 +471,7 @@ func (m *ListOrganizationsRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListOrganizationsRequestValidationError{
 						field:  "field_mask",
@@ -469,6 +501,8 @@ func (m *ListOrganizationsRequest) ValidateFields(paths ...string) error {
 
 		case "page":
 			// no validation rules for Page
+		case "deleted":
+			// no validation rules for Deleted
 		default:
 			return ListOrganizationsRequestValidationError{
 				field:  name,
@@ -681,7 +715,7 @@ func (m *UpdateOrganizationRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateOrganizationRequestValidationError{
 						field:  "field_mask",
@@ -891,7 +925,7 @@ func (m *GetOrganizationAPIKeyRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "key_id":
-			// no validation rules for KeyID
+			// no validation rules for KeyId
 		default:
 			return GetOrganizationAPIKeyRequestValidationError{
 				field:  name,
@@ -997,13 +1031,46 @@ func (m *CreateOrganizationAPIKeyRequest) ValidateFields(paths ...string) error 
 
 		case "rights":
 
+			if len(m.GetRights()) < 1 {
+				return CreateOrganizationAPIKeyRequestValidationError{
+					field:  "rights",
+					reason: "value must contain at least 1 item(s)",
+				}
+			}
+
+			_CreateOrganizationAPIKeyRequest_Rights_Unique := make(map[Right]struct{}, len(m.GetRights()))
+
 			for idx, item := range m.GetRights() {
 				_, _ = idx, item
+
+				if _, exists := _CreateOrganizationAPIKeyRequest_Rights_Unique[item]; exists {
+					return CreateOrganizationAPIKeyRequestValidationError{
+						field:  fmt.Sprintf("rights[%v]", idx),
+						reason: "repeated value must contain unique items",
+					}
+				} else {
+					_CreateOrganizationAPIKeyRequest_Rights_Unique[item] = struct{}{}
+				}
 
 				if _, ok := Right_name[int32(item)]; !ok {
 					return CreateOrganizationAPIKeyRequestValidationError{
 						field:  fmt.Sprintf("rights[%v]", idx),
 						reason: "value must be one of the defined enum values",
+					}
+				}
+
+			}
+
+		case "expires_at":
+
+			if ts := m.GetExpiresAt(); ts != nil {
+
+				now := time.Now()
+
+				if ts.Sub(now) <= 0 {
+					return CreateOrganizationAPIKeyRequestValidationError{
+						field:  "expires_at",
+						reason: "value must be greater than now",
 					}
 				}
 
@@ -1109,6 +1176,18 @@ func (m *UpdateOrganizationAPIKeyRequest) ValidateFields(paths ...string) error 
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateOrganizationAPIKeyRequestValidationError{
 						field:  "api_key",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "field_mask":
+
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UpdateOrganizationAPIKeyRequestValidationError{
+						field:  "field_mask",
 						reason: "embedded message failed validation",
 						cause:  err,
 					}

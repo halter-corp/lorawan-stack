@@ -85,6 +85,18 @@ func (m *User) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "deleted_at":
+
+			if v, ok := interface{}(m.GetDeletedAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UserValidationError{
+						field:  "deleted_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		case "name":
 
 			if utf8.RuneCountInString(m.GetName()) > 50 {
@@ -105,6 +117,13 @@ func (m *User) ValidateFields(paths ...string) error {
 
 		case "attributes":
 
+			if len(m.GetAttributes()) > 10 {
+				return UserValidationError{
+					field:  "attributes",
+					reason: "value must contain no more than 10 pair(s)",
+				}
+			}
+
 			for key, val := range m.GetAttributes() {
 				_ = val
 
@@ -122,10 +141,23 @@ func (m *User) ValidateFields(paths ...string) error {
 					}
 				}
 
-				// no validation rules for Attributes[key]
+				if utf8.RuneCountInString(val) > 200 {
+					return UserValidationError{
+						field:  fmt.Sprintf("attributes[%v]", key),
+						reason: "value length must be at most 200 runes",
+					}
+				}
+
 			}
 
 		case "contact_info":
+
+			if len(m.GetContactInfo()) > 10 {
+				return UserValidationError{
+					field:  "contact_info",
+					reason: "value must contain no more than 10 item(s)",
+				}
+			}
 
 			for idx, item := range m.GetContactInfo() {
 				_, _ = idx, item
@@ -165,7 +197,14 @@ func (m *User) ValidateFields(paths ...string) error {
 			}
 
 		case "password":
-			// no validation rules for Password
+
+			if utf8.RuneCountInString(m.GetPassword()) > 1000 {
+				return UserValidationError{
+					field:  "password",
+					reason: "value length must be at most 1000 runes",
+				}
+			}
+
 		case "password_updated_at":
 
 			if v, ok := interface{}(m.GetPasswordUpdatedAt()).(interface{ ValidateFields(...string) error }); ok {
@@ -189,10 +228,26 @@ func (m *User) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "state_description":
+
+			if utf8.RuneCountInString(m.GetStateDescription()) > 128 {
+				return UserValidationError{
+					field:  "state_description",
+					reason: "value length must be at most 128 runes",
+				}
+			}
+
 		case "admin":
 			// no validation rules for Admin
 		case "temporary_password":
-			// no validation rules for TemporaryPassword
+
+			if utf8.RuneCountInString(m.GetTemporaryPassword()) > 1000 {
+				return UserValidationError{
+					field:  "temporary_password",
+					reason: "value length must be at most 1000 runes",
+				}
+			}
+
 		case "temporary_password_created_at":
 
 			if v, ok := interface{}(m.GetTemporaryPasswordCreatedAt()).(interface{ ValidateFields(...string) error }); ok {
@@ -470,7 +525,7 @@ func (m *GetUserRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return GetUserRequestValidationError{
 						field:  "field_mask",
@@ -561,7 +616,7 @@ func (m *ListUsersRequest) ValidateFields(paths ...string) error {
 		switch name {
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ListUsersRequestValidationError{
 						field:  "field_mask",
@@ -591,6 +646,8 @@ func (m *ListUsersRequest) ValidateFields(paths ...string) error {
 
 		case "page":
 			// no validation rules for Page
+		case "deleted":
+			// no validation rules for Deleted
 		default:
 			return ListUsersRequestValidationError{
 				field:  name,
@@ -795,7 +852,7 @@ func (m *UpdateUserRequest) ValidateFields(paths ...string) error {
 
 		case "field_mask":
 
-			if v, ok := interface{}(&m.FieldMask).(interface{ ValidateFields(...string) error }); ok {
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateUserRequestValidationError{
 						field:  "field_mask",
@@ -993,9 +1050,23 @@ func (m *UpdateUserPasswordRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "new":
-			// no validation rules for New
+
+			if utf8.RuneCountInString(m.GetNew()) > 1000 {
+				return UpdateUserPasswordRequestValidationError{
+					field:  "new",
+					reason: "value length must be at most 1000 runes",
+				}
+			}
+
 		case "old":
-			// no validation rules for Old
+
+			if utf8.RuneCountInString(m.GetOld()) > 1000 {
+				return UpdateUserPasswordRequestValidationError{
+					field:  "old",
+					reason: "value length must be at most 1000 runes",
+				}
+			}
+
 		case "revoke_all_access":
 			// no validation rules for RevokeAllAccess
 		default:
@@ -1197,7 +1268,7 @@ func (m *GetUserAPIKeyRequest) ValidateFields(paths ...string) error {
 			}
 
 		case "key_id":
-			// no validation rules for KeyID
+			// no validation rules for KeyId
 		default:
 			return GetUserAPIKeyRequestValidationError{
 				field:  name,
@@ -1302,13 +1373,46 @@ func (m *CreateUserAPIKeyRequest) ValidateFields(paths ...string) error {
 
 		case "rights":
 
+			if len(m.GetRights()) < 1 {
+				return CreateUserAPIKeyRequestValidationError{
+					field:  "rights",
+					reason: "value must contain at least 1 item(s)",
+				}
+			}
+
+			_CreateUserAPIKeyRequest_Rights_Unique := make(map[Right]struct{}, len(m.GetRights()))
+
 			for idx, item := range m.GetRights() {
 				_, _ = idx, item
+
+				if _, exists := _CreateUserAPIKeyRequest_Rights_Unique[item]; exists {
+					return CreateUserAPIKeyRequestValidationError{
+						field:  fmt.Sprintf("rights[%v]", idx),
+						reason: "repeated value must contain unique items",
+					}
+				} else {
+					_CreateUserAPIKeyRequest_Rights_Unique[item] = struct{}{}
+				}
 
 				if _, ok := Right_name[int32(item)]; !ok {
 					return CreateUserAPIKeyRequestValidationError{
 						field:  fmt.Sprintf("rights[%v]", idx),
 						reason: "value must be one of the defined enum values",
+					}
+				}
+
+			}
+
+		case "expires_at":
+
+			if ts := m.GetExpiresAt(); ts != nil {
+
+				now := time.Now()
+
+				if ts.Sub(now) <= 0 {
+					return CreateUserAPIKeyRequestValidationError{
+						field:  "expires_at",
+						reason: "value must be greater than now",
 					}
 				}
 
@@ -1413,6 +1517,18 @@ func (m *UpdateUserAPIKeyRequest) ValidateFields(paths ...string) error {
 				if err := v.ValidateFields(subs...); err != nil {
 					return UpdateUserAPIKeyRequestValidationError{
 						field:  "api_key",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "field_mask":
+
+			if v, ok := interface{}(m.GetFieldMask()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return UpdateUserAPIKeyRequestValidationError{
+						field:  "field_mask",
 						reason: "embedded message failed validation",
 						cause:  err,
 					}
@@ -2610,3 +2726,313 @@ var _ListUserSessionsRequest_Order_InLookup = map[string]struct{}{
 	"created_at":  {},
 	"-created_at": {},
 }
+
+// ValidateFields checks the field values on LoginToken with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *LoginToken) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = LoginTokenFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "user_ids":
+
+			if v, ok := interface{}(&m.UserIdentifiers).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return LoginTokenValidationError{
+						field:  "user_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "created_at":
+
+			if v, ok := interface{}(&m.CreatedAt).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return LoginTokenValidationError{
+						field:  "created_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "updated_at":
+
+			if v, ok := interface{}(&m.UpdatedAt).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return LoginTokenValidationError{
+						field:  "updated_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "expires_at":
+
+			if v, ok := interface{}(&m.ExpiresAt).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return LoginTokenValidationError{
+						field:  "expires_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "token":
+			// no validation rules for Token
+		case "used":
+			// no validation rules for Used
+		default:
+			return LoginTokenValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// LoginTokenValidationError is the validation error returned by
+// LoginToken.ValidateFields if the designated constraints aren't met.
+type LoginTokenValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LoginTokenValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LoginTokenValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LoginTokenValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LoginTokenValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LoginTokenValidationError) ErrorName() string { return "LoginTokenValidationError" }
+
+// Error satisfies the builtin error interface
+func (e LoginTokenValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLoginToken.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LoginTokenValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LoginTokenValidationError{}
+
+// ValidateFields checks the field values on CreateLoginTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *CreateLoginTokenRequest) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = CreateLoginTokenRequestFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "user_ids":
+
+			if v, ok := interface{}(&m.UserIdentifiers).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return CreateLoginTokenRequestValidationError{
+						field:  "user_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "skip_email":
+			// no validation rules for SkipEmail
+		default:
+			return CreateLoginTokenRequestValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// CreateLoginTokenRequestValidationError is the validation error returned by
+// CreateLoginTokenRequest.ValidateFields if the designated constraints aren't met.
+type CreateLoginTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateLoginTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateLoginTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateLoginTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateLoginTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateLoginTokenRequestValidationError) ErrorName() string {
+	return "CreateLoginTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateLoginTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateLoginTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateLoginTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateLoginTokenRequestValidationError{}
+
+// ValidateFields checks the field values on CreateLoginTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *CreateLoginTokenResponse) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = CreateLoginTokenResponseFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "token":
+			// no validation rules for Token
+		default:
+			return CreateLoginTokenResponseValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// CreateLoginTokenResponseValidationError is the validation error returned by
+// CreateLoginTokenResponse.ValidateFields if the designated constraints
+// aren't met.
+type CreateLoginTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateLoginTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateLoginTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateLoginTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateLoginTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateLoginTokenResponseValidationError) ErrorName() string {
+	return "CreateLoginTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateLoginTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateLoginTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateLoginTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateLoginTokenResponseValidationError{}

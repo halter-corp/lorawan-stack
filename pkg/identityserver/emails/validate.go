@@ -24,6 +24,11 @@ type Validate struct {
 	TTL   time.Duration
 }
 
+// FormatTTL formats the TTL.
+func (v Validate) FormatTTL() string {
+	return formatTTL(v.TTL)
+}
+
 // TemplateName returns the name of the template to use for this email.
 func (Validate) TemplateName() string { return "validate" }
 
@@ -33,16 +38,18 @@ const validateText = `Please confirm your email address for {{.Network.Name}}.
 
 Your email address will be used as contact for {{.Entity.Type}} "{{.Entity.ID}}".
 
-Confirm via web interface:
-{{ .Network.IdentityServerURL }}/validate?reference={{ .ID }}&token={{ .Token }}
+You can go to {{ .Network.IdentityServerURL }}/validate?reference={{ .ID }}&token={{ .Token }} to confirm your email address.
 
-Confirm via command-line interface:
+If you prefer to use the command-line interface, you can run the following command:
+
 ttn-lw-cli {{.Entity.Type}}s contact-info validate {{.ID}} {{.Token}}
 
-{{- with .TTL }}
+For more information on how to use the command-line interface, please refer to the documentation: {{ documentation_url "/getting-started/cli/" }}.
 
-These confirmation links will expire in {{ .Hours }} hour{{ if gt .Hours 1.0 }}s{{ end }}.
-{{ end -}}
+{{- if .TTL }}
+
+The confirmation token expires {{ .FormatTTL }}, so confirm your email address before then.
+{{- end }}
 `
 
 // DefaultTemplates returns the default templates for this email.

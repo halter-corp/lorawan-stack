@@ -17,6 +17,7 @@ import { defineMessages } from 'react-intl'
 
 import Field from '@ttn-lw/components/form/field'
 
+import tooltipIds from '@ttn-lw/lib/constants/tooltip-ids'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import DevAddrInput from './dev-addr-input'
@@ -36,7 +37,6 @@ const DevAddrField = props => {
     disabled,
     required,
     autoFocus,
-    horizontal,
     onGenerate,
     generatedValue,
     generatedError,
@@ -53,13 +53,13 @@ const DevAddrField = props => {
       disabled={disabled}
       required={required}
       autoFocus={autoFocus}
-      horizontal={horizontal}
       warning={generatedError ? m.devAddrFetchingFailure : undefined}
       component={DevAddrInput}
       onGenerate={onGenerate}
       generatedError={generatedError}
       generatedLoading={generatedLoading}
       generatedValue={generatedValue}
+      tooltipId={tooltipIds.DEVICE_ADDRESS}
     />
   )
 }
@@ -72,7 +72,6 @@ DevAddrField.propTypes = {
   generatedError: PropTypes.bool,
   generatedLoading: PropTypes.bool,
   generatedValue: PropTypes.string,
-  horizontal: PropTypes.bool,
   name: PropTypes.string.isRequired,
   onGenerate: PropTypes.func.isRequired,
   placeholder: PropTypes.message,
@@ -87,7 +86,6 @@ DevAddrField.defaultProps = {
   disabled: false,
   required: false,
   autoFocus: false,
-  horizontal: false,
   generatedValue: '',
   generatedError: false,
   generatedLoading: false,

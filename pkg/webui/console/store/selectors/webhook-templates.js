@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
+
 import {
   LIST_WEBHOOK_TEMPLATES_BASE,
   GET_WEBHOOK_TEMPLATE_BASE,
 } from '@console/store/actions/webhook-templates'
 
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
-
 const selectWebhookTemplatesStore = state => state.webhookTemplates
 const selectWebhookTemplatesEntitiesStore = state => selectWebhookTemplatesStore(state).entities
 
-export const selectWebhookTemplateById = function(state, id) {
+export const selectWebhookTemplateById = (state, id) => {
   const entities = selectWebhookTemplatesEntitiesStore(state)
   if (!Boolean(entities)) return undefined
 
@@ -32,7 +32,7 @@ export const selectWebhookTemplateById = function(state, id) {
 export const selectWebhookTemplateError = createErrorSelector(GET_WEBHOOK_TEMPLATE_BASE)
 export const selectWebhookTemplateFetching = createFetchingSelector(GET_WEBHOOK_TEMPLATE_BASE)
 
-export const selectWebhookTemplates = function(state) {
+export const selectWebhookTemplates = state => {
   const { entities } = selectWebhookTemplatesStore(state)
 
   if (!Boolean(entities)) return undefined

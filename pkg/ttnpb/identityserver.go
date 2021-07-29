@@ -23,7 +23,9 @@ func (m *AuthInfoResponse) GetEntityIdentifiers() *EntityIdentifiers {
 	case *AuthInfoResponse_APIKey:
 		return &accessMethod.APIKey.EntityIDs
 	case *AuthInfoResponse_OAuthAccessToken:
-		return accessMethod.OAuthAccessToken.UserIDs.EntityIdentifiers()
+		return accessMethod.OAuthAccessToken.UserIds.GetEntityIdentifiers()
+	case *AuthInfoResponse_UserSession:
+		return accessMethod.UserSession.UserIdentifiers.GetEntityIdentifiers()
 	}
 	return nil
 }
@@ -38,6 +40,8 @@ func (m *AuthInfoResponse) GetRights() []Right {
 		return accessMethod.APIKey.Rights
 	case *AuthInfoResponse_OAuthAccessToken:
 		return accessMethod.OAuthAccessToken.Rights
+	case *AuthInfoResponse_UserSession:
+		return RightsFrom(RIGHT_ALL).Implied().GetRights()
 	}
 	return nil
 }
@@ -48,10 +52,10 @@ func (m *AuthInfoResponse) GetOrganizationOrUserIdentifiers() *OrganizationOrUse
 	if ids == nil {
 		return nil
 	}
-	if ids := ids.GetOrganizationIDs(); ids != nil {
+	if ids := ids.GetOrganizationIds(); ids != nil {
 		return ids.OrganizationOrUserIdentifiers()
 	}
-	if ids := ids.GetUserIDs(); ids != nil {
+	if ids := ids.GetUserIds(); ids != nil {
 		return ids.OrganizationOrUserIdentifiers()
 	}
 	return nil

@@ -19,19 +19,23 @@ import { defineMessages, useIntl } from 'react-intl'
 
 import Icon from '@ttn-lw/components/icon'
 
-import { withEnv } from '@ttn-lw/lib/components/env'
 import Message from '@ttn-lw/lib/components/message'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 import { url as urlPattern } from '@ttn-lw/lib/regexp'
+import { selectDocumentationUrlConfig, selectApplicationRootPath } from '@ttn-lw/lib/selectors/env'
 
 import style from './link.styl'
 
 const m = defineMessages({
   glossaryTitle: 'See "{term}" in the glossary',
+  defaultGlossaryTitle: 'See in the glossary',
 })
 
-const formatTitle = function(content, values, formatter) {
+const appRoot = selectApplicationRootPath()
+const docBaseUrl = selectDocumentationUrlConfig()
+
+const formatTitle = (content, values, formatter) => {
   if (typeof content === 'object' && content.id && content.defaultMessage) {
     return formatter(content, values)
   }
@@ -39,7 +43,7 @@ const formatTitle = function(content, values, formatter) {
   return content
 }
 
-const Link = function(props) {
+const Link = props => {
   const {
     className,
     disabled,
@@ -54,6 +58,7 @@ const Link = function(props) {
     onClick,
     secondary,
     primary,
+    tabIndex,
   } = props
 
   const { formatMessage } = useIntl()
@@ -77,6 +82,7 @@ const Link = function(props) {
       to={to}
       target={target}
       onClick={onClick}
+      tabIndex={tabIndex}
     >
       {children}
     </RouterLink>
@@ -93,6 +99,7 @@ Link.propTypes = {
   replace: PropTypes.bool,
   secondary: PropTypes.bool,
   showVisited: PropTypes.bool,
+  tabIndex: PropTypes.string,
   target: PropTypes.string,
   title: PropTypes.message,
   titleValues: PropTypes.shape({}),
@@ -102,7 +109,7 @@ Link.propTypes = {
       pathname: PropTypes.string,
       search: PropTypes.string,
       hash: PropTypes.string,
-      state: PropTypes.object,
+      state: PropTypes.shape({}),
     }),
   ]).isRequired,
 }
@@ -117,12 +124,13 @@ Link.defaultProps = {
   showVisited: false,
   replace: false,
   secondary: false,
+  tabIndex: undefined,
   target: undefined,
   title: undefined,
   titleValues: undefined,
 }
 
-const DocLink = function(props) {
+const DocLink = props => {
   const {
     className,
     name,
@@ -135,12 +143,10 @@ const DocLink = function(props) {
     secondary,
     primary,
     disabled,
+    tabIndex,
     to,
     raw,
     onClick,
-    env: {
-      config: { documentationBaseUrl },
-    },
   } = props
 
   const { formatMessage } = useIntl()
@@ -152,7 +158,7 @@ const DocLink = function(props) {
   if (disabled) {
     return <span className={classnames(classNames, style.disabled)}>{children}</span>
   }
-  const link = documentationBaseUrl.concat(path)
+  const link = docBaseUrl.concat(path)
   const formattedTitle = formatTitle(title, titleValues, formatMessage)
 
   return (
@@ -165,6 +171,7 @@ const DocLink = function(props) {
       target="blank"
       name={name}
       onClick={onClick}
+      tabIndex={tabIndex}
     >
       {!raw && <Icon className={style.docIcon} icon="book" />}
       {children}
@@ -175,7 +182,6 @@ const DocLink = function(props) {
 
 DocLink.propTypes = {
   ...Link.propTypes,
-  env: PropTypes.env.isRequired,
   name: PropTypes.string,
   path: PropTypes.string.isRequired,
   raw: PropTypes.bool,
@@ -186,7 +192,7 @@ DocLink.propTypes = {
       pathname: PropTypes.string,
       search: PropTypes.string,
       hash: PropTypes.string,
-      state: PropTypes.object,
+      state: PropTypes.shape({}),
     }),
   ]),
 }
@@ -200,22 +206,24 @@ DocLink.defaultProps = {
   raw: false,
 }
 
-Link.DocLink = withEnv(DocLink)
+Link.DocLink = DocLink
 
-const GlossaryLink = ({ glossaryId, term, hideTerm, primary, secondary, className }) => {
+const GlossaryLink = ({ title, glossaryId, term, primary, secondary, className }) => {
   const { formatMessage } = useIntl()
+  const hasTerm = Boolean(term)
+
   return (
     <Link.DocLink
       primary={primary}
       secondary={secondary}
       className={className}
       path={`/reference/glossary#${glossaryId}`}
-      title={m.glossaryTitle}
-      titleValues={{ term: formatTitle(term, undefined, formatMessage) }}
-      raw
+      title={hasTerm ? m.glossaryTitle : m.defaultGlossaryTitle}
+      titleValues={hasTerm ? { term: formatTitle(term, undefined, formatMessage) } : undefined}
+      tabIndex="-1"
+      external
     >
-      {!hideTerm && <Message content={term} />}{' '}
-      <Icon className={style.glossaryIcon} icon="help_outline" />
+      <Message content={title} />
     </Link.DocLink>
   )
 }
@@ -223,22 +231,22 @@ const GlossaryLink = ({ glossaryId, term, hideTerm, primary, secondary, classNam
 GlossaryLink.propTypes = {
   className: PropTypes.string,
   glossaryId: PropTypes.string.isRequired,
-  hideTerm: PropTypes.bool,
   primary: PropTypes.bool,
   secondary: PropTypes.bool,
-  term: PropTypes.message.isRequired,
+  term: PropTypes.message,
+  title: PropTypes.message.isRequired,
 }
 
 GlossaryLink.defaultProps = {
   className: '',
-  hideTerm: false,
   primary: false,
   secondary: false,
+  term: undefined,
 }
 
 Link.GlossaryLink = GlossaryLink
 
-const AnchorLink = function(props) {
+const AnchorLink = props => {
   const {
     className,
     name,
@@ -297,9 +305,7 @@ AnchorLink.defaultProps = {
 
 Link.Anchor = AnchorLink
 
-const BaseAnchorLink = function({ env, href, ...rest }) {
-  const { appRoot } = env
-
+const BaseAnchorLink = ({ href, ...rest }) => {
   // Prevent prefixing proper URLs.
   const path = href.match(urlPattern) ? href : appRoot + href
 
@@ -309,6 +315,6 @@ const BaseAnchorLink = function({ env, href, ...rest }) {
 BaseAnchorLink.propTypes = AnchorLink.propTypes
 BaseAnchorLink.defaultProps = AnchorLink.defaultProps
 
-Link.BaseAnchor = withEnv(BaseAnchorLink)
+Link.BaseAnchor = BaseAnchorLink
 
 export default Link

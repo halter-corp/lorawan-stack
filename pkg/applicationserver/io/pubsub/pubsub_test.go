@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/formatters"
 	mock_server "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/mock"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub"
@@ -30,7 +29,6 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
-	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
@@ -43,9 +41,9 @@ type messageWithError struct {
 }
 
 func TestPubSub(t *testing.T) {
-	a := assertions.New(t)
-	ctx := log.NewContext(test.Context(), test.GetLogger(t))
-	redisClient, flush := test.NewRedis(t, "pubsub_test")
+	a, ctx := test.New(t)
+
+	redisClient, flush := test.NewRedis(ctx, "pubsub_test")
 	defer flush()
 	defer redisClient.Close()
 	registry := &redis.PubSubRegistry{
@@ -53,17 +51,17 @@ func TestPubSub(t *testing.T) {
 	}
 	ids := ttnpb.ApplicationPubSubIdentifiers{
 		ApplicationIdentifiers: registeredApplicationID,
-		PubSubID:               registeredPubSubID,
+		PubSubId:               registeredPubSubID,
 	}
 
 	ps := &ttnpb.ApplicationPubSub{
 		ApplicationPubSubIdentifiers: ttnpb.ApplicationPubSubIdentifiers{
 			ApplicationIdentifiers: registeredApplicationID,
-			PubSubID:               registeredPubSubID,
+			PubSubId:               registeredPubSubID,
 		},
-		Provider: &ttnpb.ApplicationPubSub_NATS{
-			NATS: &ttnpb.ApplicationPubSub_NATSProvider{
-				ServerURL: "nats://localhost",
+		Provider: &ttnpb.ApplicationPubSub_Nats{
+			Nats: &ttnpb.ApplicationPubSub_NATSProvider{
+				ServerUrl: "nats://localhost",
 			},
 		},
 		Format:    "json",
@@ -138,7 +136,7 @@ func TestPubSub(t *testing.T) {
 	}
 
 	mockProvider, err := provider.GetProvider(&ttnpb.ApplicationPubSub{
-		Provider: &ttnpb.ApplicationPubSub_NATS{},
+		Provider: &ttnpb.ApplicationPubSub_Nats{},
 	})
 	a.So(mockProvider, should.NotBeNil)
 	a.So(err, should.BeNil)
@@ -146,7 +144,7 @@ func TestPubSub(t *testing.T) {
 
 	c := componenttest.NewComponent(t, &component.Config{})
 	io := mock_server.NewServer(c)
-	_, err = pubsub.New(c, io, registry)
+	_, err = pubsub.New(c, io, registry, make(pubsub.ProviderStatuses))
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
@@ -267,6 +265,7 @@ func TestPubSub(t *testing.T) {
 								},
 							},
 							LastFCntDown: 42,
+							SessionKeyID: []byte{0x22},
 						},
 					},
 				},
@@ -335,7 +334,7 @@ func TestPubSub(t *testing.T) {
 				ctx, cancel := context.WithCancel(ctx)
 				defer cancel()
 
-				err := sub.SendUp(ctx, tc.Message)
+				err := sub.Publish(ctx, tc.Message)
 				if !a.So(err, should.BeNil) {
 					t.FailNow()
 				}

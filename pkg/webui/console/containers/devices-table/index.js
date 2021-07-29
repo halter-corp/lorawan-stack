@@ -18,15 +18,18 @@ import bind from 'autobind-decorator'
 
 import Button from '@ttn-lw/components/button'
 import SafeInspector from '@ttn-lw/components/safe-inspector'
+import Status from '@ttn-lw/components/status'
+
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
 import Message from '@ttn-lw/lib/components/message'
-import DateTime from '@ttn-lw/lib/components/date-time'
 import withRequest from '@ttn-lw/lib/components/with-request'
 
-import FetchTable from '@console/containers/fetch-table'
+import LastSeen from '@console/components/last-seen'
 
 import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
 
+import { selectNsConfig, selectJsConfig } from '@ttn-lw/lib/selectors/env'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
@@ -36,7 +39,11 @@ import {
   mayViewApplicationDevices,
 } from '@console/lib/feature-checks'
 
-import { getDeviceTemplateFormats } from '@console/store/actions/device-template-formats'
+import {
+  getDeviceTemplateFormats,
+  getDeviceTemplateFormatsError,
+  getDeviceTemplateFormatsFetching,
+} from '@console/store/actions/device-template-formats'
 import { getDevicesList } from '@console/store/actions/devices'
 
 import { selectSelectedApplicationId } from '@console/store/selectors/applications'
@@ -46,6 +53,7 @@ import {
   selectDevicesTotalCount,
   selectDevicesFetching,
   selectDevicesError,
+  selectDeviceDerivedLastSeen,
 } from '@console/store/selectors/devices'
 
 import style from './devices-table.styl'
@@ -85,22 +93,33 @@ const headers = [
       ),
   },
   {
-    name: 'created_at',
-    displayName: sharedMessages.created,
-    sortable: true,
-    width: 12,
-    render(datetime) {
-      return <DateTime.Relative value={datetime} />
-    },
+    name: '_derivedLastSeen',
+    displayName: sharedMessages.lastSeen,
+    width: 14,
+    render: lastSeen =>
+      lastSeen ? (
+        <Status status="good">
+          <LastSeen lastSeen={lastSeen} short />
+        </Status>
+      ) : (
+        <Status status="mediocre" label={sharedMessages.unknown} />
+      ),
   },
 ]
 
 @connect(
-  function(state) {
+  state => {
+    const nsEnabled = selectNsConfig().enabled
+    const jsEnabled = selectJsConfig().enabled
+    const mayCreateDevices = checkFromState(mayCreateOrEditApplicationDevices, state)
+
     return {
       appId: selectSelectedApplicationId(state),
       deviceTemplateFormats: selectDeviceTemplateFormats(state),
-      mayCreateDevices: checkFromState(mayCreateOrEditApplicationDevices, state),
+      mayCreateDevices: mayCreateDevices && (nsEnabled || jsEnabled),
+      mayImportDevices: mayCreateDevices,
+      error: getDeviceTemplateFormatsError(state),
+      fetching: getDeviceTemplateFormatsFetching(state),
     }
   },
   { getDeviceTemplateFormats },
@@ -112,26 +131,40 @@ class DevicesTable extends React.Component {
     appId: PropTypes.string.isRequired,
     devicePathPrefix: PropTypes.string,
     deviceTemplateFormats: PropTypes.shape({}).isRequired,
+    error: PropTypes.error,
+    fetching: PropTypes.bool,
     mayCreateDevices: PropTypes.bool.isRequired,
+    mayImportDevices: PropTypes.bool.isRequired,
     totalCount: PropTypes.number,
   }
 
   static defaultProps = {
     devicePathPrefix: undefined,
     totalCount: 0,
+    error: undefined,
+    fetching: false,
   }
 
   constructor(props) {
     super(props)
 
-    this.getDevicesList = filters => getDevicesList(props.appId, filters, ['name'])
+    this.getDevicesList = filters =>
+      getDevicesList(props.appId, filters, ['name'], { withLastSeen: true })
   }
 
   @bind
   baseDataSelector(state) {
-    const { mayCreateDevices } = this.props
+    const { mayCreateDevices, appId } = this.props
+    const devices = selectDevices(state)
+    const decoratedDevices = []
+    for (const device of devices) {
+      decoratedDevices.push({
+        ...device,
+        _derivedLastSeen: selectDeviceDerivedLastSeen(state, appId, device.ids.device_id),
+      })
+    }
     return {
-      devices: selectDevices(state),
+      devices: decoratedDevices,
       totalCount: selectDevicesTotalCount(state),
       fetching: selectDevicesFetching(state),
       error: selectDevicesError(state),
@@ -140,10 +173,10 @@ class DevicesTable extends React.Component {
   }
 
   get importButton() {
-    const { mayCreateDevices, appId } = this.props
+    const { mayImportDevices, appId } = this.props
 
     return (
-      mayCreateDevices && (
+      mayImportDevices && (
         <Button.Link
           message={sharedMessages.importDevices}
           icon="import_devices"

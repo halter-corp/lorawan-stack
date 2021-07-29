@@ -36,7 +36,7 @@ func init() {
 }
 
 func main() {
-	typ := flag.String("type", "", "Proto type to be used (supported: ttnpb.EndDevice)")
+	typ := flag.String("type", "", "Proto type to be used")
 	encode := flag.Bool("encode", false, "Whether encoding should be performed (default: false)")
 
 	flag.Parse()
@@ -50,8 +50,12 @@ func main() {
 
 	case "ttnpb.EndDevice":
 		pb = &ttnpb.EndDevice{}
+	case "ttnpb.GatewayConnectionStats":
+		pb = &ttnpb.GatewayConnectionStats{}
 	case "ttnpb.ApplicationActivationSettings":
 		pb = &ttnpb.ApplicationActivationSettings{}
+	case "ttnpb.UplinkToken":
+		pb = &ttnpb.UplinkToken{}
 	default:
 		log.Printf("Unknown type: `%s`", *typ)
 		flag.Usage()

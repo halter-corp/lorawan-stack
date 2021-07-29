@@ -17,7 +17,6 @@ package oauthclient
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -29,12 +28,13 @@ import (
 
 // OAuthClient is the OAuth client component.
 type OAuthClient struct {
-	component *component.Component
-	rootURL   string
-	config    Config
-	oauth     OAuth2ConfigProvider
-	nextKey   string
-	callback  Callback
+	component       *component.Component
+	rootURL         string
+	config          Config
+	oauth           OAuth2ConfigProvider
+	nextKey         string
+	callback        Callback
+	authCodeURLOpts OAuth2AuthCodeURLOptionsProvider
 }
 
 var errNoOAuthConfig = errors.DefineInvalidArgument("no_oauth_config", "no OAuth configuration found for the OAuth client")
@@ -55,16 +55,12 @@ func (oc *OAuthClient) getMountPath() string {
 	return path
 }
 
-func (oc *OAuthClient) withTLSClientConfig(ctx context.Context) (context.Context, error) {
-	config, err := oc.component.GetTLSClientConfig(ctx)
+func (oc *OAuthClient) withHTTPClient(ctx context.Context) (context.Context, error) {
+	client, err := oc.component.HTTPClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: config,
-		},
-	}), nil
+	return context.WithValue(ctx, oauth2.HTTPClient, client), nil
 }
 
 // New returns a new OAuth client instance.
@@ -76,6 +72,7 @@ func New(c *component.Component, config Config, opts ...Option) (*OAuthClient, e
 	}
 	oc.callback = oc.defaultCallback
 	oc.oauth = oc.defaultOAuth
+	oc.authCodeURLOpts = oc.defaultAuthCodeURLOptions
 
 	for _, opt := range opts {
 		opt(oc)
@@ -98,7 +95,7 @@ func (oc *OAuthClient) configFromContext(ctx context.Context) *Config {
 	return &oc.config
 }
 
-func (oc *OAuthClient) defaultOAuth(c echo.Context) *oauth2.Config {
+func (oc *OAuthClient) defaultOAuth(c echo.Context) (*oauth2.Config, error) {
 	config := oc.configFromContext(c.Request().Context())
 
 	authorizeURL := config.AuthorizeURL
@@ -120,5 +117,5 @@ func (oc *OAuthClient) defaultOAuth(c echo.Context) *oauth2.Config {
 			AuthURL:   authorizeURL,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
-	}
+	}, nil
 }

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { GET_JOIN_EUI_PREFIXES_BASE } from '@console/store/actions/join-server'
+import { createFetchingSelector } from '@ttn-lw/lib/store/selectors/fetching'
+import { createErrorSelector } from '@ttn-lw/lib/store/selectors/error'
 
-import { createFetchingSelector } from './fetching'
-import { createErrorSelector } from './error'
+import { GET_JOIN_EUI_PREFIXES_BASE } from '@console/store/actions/join-server'
 
 const selectJsStore = state => state.js
 
-export const selectJoinEUIPrefixes = function(state) {
+export const selectJoinEUIPrefixes = state => {
   const store = selectJsStore(state)
 
   return store.prefixes

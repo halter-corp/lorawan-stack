@@ -23,7 +23,12 @@ import {
   getCombinedDeviceId,
   getApiKeyId,
   getCollaboratorId,
+  getPacketBrokerNetworkId,
 } from '@ttn-lw/lib/selectors/id'
+import { createNamedPaginationReducer } from '@ttn-lw/lib/store/reducers/pagination'
+import fetching from '@ttn-lw/lib/store/reducers/ui/fetching'
+import error from '@ttn-lw/lib/store/reducers/ui/error'
+import status from '@ttn-lw/lib/store/reducers/status'
 
 import { SHARED_NAME as APPLICATION_SHARED_NAME } from '@console/store/actions/applications'
 import { SHARED_NAME as GATEWAY_SHARED_NAME } from '@console/store/actions/gateways'
@@ -32,11 +37,11 @@ import { SHARED_NAME as DEVICE_SHARED_NAME } from '@console/store/actions/device
 import { SHARED_NAME as USER_SHARED_NAME } from '@console/store/actions/users'
 import { SHARED_NAME as API_KEYS_SHARED_NAME } from '@console/store/actions/api-keys'
 import { SHARED_NAME as COLLABORATORS_SHARED_NAME } from '@console/store/actions/collaborators'
+import { SHARED_NAME as PACKET_BROKER_NETWORKS_SHARED_NAME } from '@console/store/actions/packet-broker'
 
 import user from './user'
 import users from './users'
 import init from './init'
-import status from './status'
 import applications from './applications'
 import devices from './devices'
 import gateways from './gateways'
@@ -46,8 +51,6 @@ import createNamedRightsReducer from './rights'
 import collaborators from './collaborators'
 import createNamedEventsReducer from './events'
 import link from './link'
-import fetching from './ui/fetching'
-import error from './ui/error'
 import webhooks from './webhooks'
 import webhookFormats from './webhook-formats'
 import webhookTemplates from './webhook-templates'
@@ -56,10 +59,11 @@ import pubsubFormats from './pubsub-formats'
 import applicationPackages from './application-packages'
 import deviceTemplateFormats from './device-template-formats'
 import organizations from './organizations'
-import { createNamedPaginationReducer } from './pagination'
 import js from './join-server'
 import gatewayStatus from './gateway-status'
 import is from './identity-server'
+import deviceRepository from './device-repository'
+import packetBroker from './packet-broker'
 
 export default history =>
   combineReducers({
@@ -86,6 +90,7 @@ export default history =>
       applications: createNamedRightsReducer(APPLICATION_SHARED_NAME),
       gateways: createNamedRightsReducer(GATEWAY_SHARED_NAME),
       organizations: createNamedRightsReducer(ORGANIZATION_SHARED_NAME),
+      users: createNamedRightsReducer(USER_SHARED_NAME),
     }),
     events: combineReducers({
       applications: createNamedEventsReducer(APPLICATION_SHARED_NAME),
@@ -105,9 +110,15 @@ export default history =>
       gateways: createNamedPaginationReducer(GATEWAY_SHARED_NAME, getGatewayId),
       organizations: createNamedPaginationReducer(ORGANIZATION_SHARED_NAME, getOrganizationId),
       users: createNamedPaginationReducer(USER_SHARED_NAME, getUserId),
+      packetBrokerNetworks: createNamedPaginationReducer(
+        PACKET_BROKER_NETWORKS_SHARED_NAME,
+        getPacketBrokerNetworkId,
+      ),
     }),
     router: connectRouter(history),
     js,
     gatewayStatus,
     is,
+    deviceRepository,
+    packetBroker,
   })

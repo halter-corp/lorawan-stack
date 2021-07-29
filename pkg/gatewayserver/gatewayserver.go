@@ -32,7 +32,6 @@ import (
 
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
@@ -50,6 +49,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream/ns"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/upstream/packetbroker"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/random"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/rpclog"
@@ -57,6 +57,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // GatewayServer implements the Gateway Server component.
@@ -71,7 +72,7 @@ type GatewayServer struct {
 	requireRegisteredGateways bool
 	forward                   map[string][]types.DevAddrPrefix
 
-	registry ttnpb.GatewayRegistryClient
+	entityRegistry EntityRegistry
 
 	upstreamHandlers map[string]upstream.Handler
 
@@ -81,33 +82,13 @@ type GatewayServer struct {
 	updateConnectionStatsDebounceTime time.Duration
 }
 
-func (gs *GatewayServer) getRegistry(ctx context.Context, ids *ttnpb.GatewayIdentifiers) (ttnpb.GatewayRegistryClient, error) {
-	if gs.registry != nil {
-		return gs.registry, nil
-	}
-	var (
-		cc  *grpc.ClientConn
-		err error
-	)
-	if ids != nil {
-		cc, err = gs.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, ids)
-	} else {
-		// Don't pass a (*ttnpb.GatewayIdentifiers)(nil) to GetPeerConn.
-		cc, err = gs.GetPeerConn(ctx, ttnpb.ClusterRole_ENTITY_REGISTRY, nil)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return ttnpb.NewGatewayRegistryClient(cc), nil
-}
-
 // Option configures GatewayServer.
 type Option func(*GatewayServer)
 
 // WithRegistry overrides the registry.
-func WithRegistry(registry ttnpb.GatewayRegistryClient) Option {
+func WithRegistry(registry EntityRegistry) Option {
 	return func(gs *GatewayServer) {
-		gs.registry = registry
+		gs.entityRegistry = registry
 	}
 }
 
@@ -123,7 +104,6 @@ var (
 	)
 	errNotConnected        = errors.DefineNotFound("not_connected", "gateway `{gateway_uid}` not connected")
 	errSetupUpstream       = errors.DefineFailedPrecondition("upstream", "failed to setup upstream `{name}`")
-	errUpstreamType        = errors.DefineUnimplemented("upstream_type_not_implemented", "upstream `{name}` not implemented")
 	errInvalidUpstreamName = errors.DefineInvalidArgument("invalid_upstream_name", "upstream `{name}` is invalid")
 )
 
@@ -137,15 +117,18 @@ func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServe
 		forward[""] = []types.DevAddrPrefix{{}}
 	}
 
+	ctx := log.NewContextWithField(c.Context(), "namespace", "gatewayserver")
+
 	gs = &GatewayServer{
 		Component:                         c,
-		ctx:                               log.NewContextWithField(c.Context(), "namespace", "gatewayserver"),
+		ctx:                               ctx,
 		config:                            conf,
 		requireRegisteredGateways:         conf.RequireRegisteredGateways,
 		forward:                           forward,
 		upstreamHandlers:                  make(map[string]upstream.Handler),
 		statsRegistry:                     conf.Stats,
 		updateConnectionStatsDebounceTime: conf.UpdateConnectionStatsDebounceTime,
+		entityRegistry:                    NewIS(c),
 	}
 	for _, opt := range opts {
 		opt(gs)
@@ -162,9 +145,16 @@ func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServe
 		var handler upstream.Handler
 		switch name {
 		case "cluster":
-			handler = ns.NewHandler(gs.Context(), c, prefix)
+			handler = ns.NewHandler(gs.Context(), c, c, prefix)
 		case "packetbroker":
-			handler = packetbroker.NewHandler(gs.Context(), c, prefix)
+			handler = packetbroker.NewHandler(gs.Context(), packetbroker.Config{
+				GatewayRegistry: gs.entityRegistry,
+				Cluster:         c,
+				DevAddrPrefixes: prefix,
+				UpdateInterval:  conf.PacketBroker.UpdateGatewayInterval,
+				UpdateJitter:    conf.PacketBroker.UpdateGatewayJitter,
+				OnlineTTLMargin: conf.PacketBroker.OnlineTTLMargin,
+			})
 		default:
 			return nil, errInvalidUpstreamName.WithAttributes("name", name)
 		}
@@ -271,7 +261,7 @@ func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServe
 	}{
 		{
 			Name:      "basicstation",
-			Formatter: lbslns.NewFormatter(),
+			Formatter: lbslns.NewFormatter(conf.BasicStation.MaxValidRoundTripDelay),
 			listenerConfig: listenerConfig{
 				fallbackFreqPlanID: conf.BasicStation.FallbackFrequencyPlanID,
 				listen:             conf.BasicStation.Listen,
@@ -384,24 +374,20 @@ var (
 // This method should only be used for request contexts.
 func (gs *GatewayServer) FillGatewayContext(ctx context.Context, ids ttnpb.GatewayIdentifiers) (context.Context, ttnpb.GatewayIdentifiers, error) {
 	ctx = gs.FillContext(ctx)
-	if ids.IsZero() {
+	if ids.IsZero() || ids.Eui != nil && ids.Eui.IsZero() {
 		return nil, ttnpb.GatewayIdentifiers{}, errEmptyIdentifiers.New()
 	}
-	if ids.GatewayID == "" {
-		registry, err := gs.getRegistry(ctx, nil)
-		if err != nil {
-			return nil, ttnpb.GatewayIdentifiers{}, err
-		}
-		extIDs, err := registry.GetIdentifiersForEUI(ctx, &ttnpb.GetGatewayIdentifiersForEUIRequest{
-			EUI: *ids.EUI,
-		}, gs.WithClusterAuth())
+	if ids.GatewayId == "" {
+		extIDs, err := gs.entityRegistry.GetIdentifiersForEUI(ctx, &ttnpb.GetGatewayIdentifiersForEUIRequest{
+			Eui: *ids.Eui,
+		})
 		if err == nil {
 			ids = *extIDs
 		} else if errors.IsNotFound(err) {
 			if gs.requireRegisteredGateways {
-				return nil, ttnpb.GatewayIdentifiers{}, errGatewayEUINotRegistered.WithAttributes("eui", *ids.EUI).WithCause(err)
+				return nil, ttnpb.GatewayIdentifiers{}, errGatewayEUINotRegistered.WithAttributes("eui", *ids.Eui).WithCause(err)
 			}
-			ids.GatewayID = fmt.Sprintf("eui-%v", strings.ToLower(ids.EUI.String()))
+			ids.GatewayId = fmt.Sprintf("eui-%v", strings.ToLower(ids.Eui.String()))
 		} else {
 			return nil, ttnpb.GatewayIdentifiers{}, err
 		}
@@ -418,9 +404,15 @@ var (
 		"no_fallback_frequency_plan",
 		"gateway `{gateway_uid}` is not registered and no fallback frequency plan defined",
 	)
+	errUnauthenticatedGatewayConnection = errors.DefineUnauthenticated(
+		"unauthenticated_gateway_connection",
+		"gateway requires an authenticated connection",
+	)
+	errNewConnection = errors.DefineAborted(
+		"new_connection",
+		"new connection from same gateway",
+	)
 )
-
-var errNewConnection = errors.DefineAborted("new_connection", "new connection from same gateway")
 
 type connectionEntry struct {
 	*io.Connection
@@ -431,7 +423,7 @@ type connectionEntry struct {
 // Connect connects a gateway by its identifiers to the Gateway Server, and returns a io.Connection for traffic and
 // control.
 func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids ttnpb.GatewayIdentifiers) (*io.Connection, error) {
-	if err := rights.RequireGateway(ctx, ids, ttnpb.RIGHT_GATEWAY_LINK); err != nil {
+	if err := gs.entityRegistry.AssertGatewayRights(ctx, ids, ttnpb.RIGHT_GATEWAY_LINK); err != nil {
 		return nil, err
 	}
 
@@ -443,34 +435,29 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 	ctx = log.NewContext(ctx, logger)
 	ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:conn:%s", events.NewCorrelationID()))
 
-	var err error
-	var callOpt grpc.CallOption
-	callOpt, err = rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials())
-	if errors.IsUnauthenticated(err) {
-		callOpt = gs.WithClusterAuth()
-	} else if err != nil {
-		return nil, err
+	var isAuthenticated bool
+	if _, err := rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials()); err == nil {
+		isAuthenticated = true
 	}
-	registry, err := gs.getRegistry(ctx, &ids)
-	if err != nil {
-		return nil, err
-	}
-	gtw, err := registry.Get(ctx, &ttnpb.GetGatewayRequest{
+	gtw, err := gs.entityRegistry.Get(ctx, &ttnpb.GetGatewayRequest{
 		GatewayIdentifiers: ids,
-		FieldMask: pbtypes.FieldMask{
+		FieldMask: &pbtypes.FieldMask{
 			Paths: []string{
 				"antennas",
+				"disable_packet_broker_forwarding",
 				"downlink_path_constraint",
 				"enforce_duty_cycle",
 				"frequency_plan_id",
 				"frequency_plan_ids",
 				"location_public",
+				"require_authenticated_connection",
 				"schedule_anytime_delay",
 				"schedule_downlink_late",
+				"status_public",
 				"update_location_from_status",
 			},
 		},
-	}, callOpt)
+	})
 	if errors.IsNotFound(err) {
 		if gs.requireRegisteredGateways {
 			return nil, errGatewayNotRegistered.WithAttributes("gateway_uid", uid).WithCause(err)
@@ -481,17 +468,18 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 		}
 		logger.Warn("Connect unregistered gateway")
 		gtw = &ttnpb.Gateway{
-			GatewayIdentifiers:       ids,
-			FrequencyPlanID:          fpID,
-			FrequencyPlanIDs:         []string{fpID},
-			EnforceDutyCycle:         true,
-			DownlinkPathConstraint:   ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
-			Antennas:                 []ttnpb.GatewayAntenna{},
-			LocationPublic:           false,
-			UpdateLocationFromStatus: false,
+			GatewayIdentifiers:     ids,
+			FrequencyPlanID:        fpID,
+			FrequencyPlanIDs:       []string{fpID},
+			EnforceDutyCycle:       true,
+			DownlinkPathConstraint: ttnpb.DOWNLINK_PATH_CONSTRAINT_NONE,
+			Antennas:               []ttnpb.GatewayAntenna{},
 		}
 	} else if err != nil {
 		return nil, err
+	}
+	if gtw.RequireAuthenticatedConnection && !isAuthenticated {
+		return nil, errUnauthenticatedGatewayConnection.New()
 	}
 
 	ids = gtw.GatewayIdentifiers
@@ -521,8 +509,11 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 		}
 		existingConnEntry.tasksDone.Wait()
 	}
+
 	registerGatewayConnect(ctx, ids, frontend.Protocol())
 	logger.Info("Connected")
+
+	gs.startDisconnectOnChangeTask(connEntry)
 	go gs.handleUpstream(connEntry)
 	if gs.statsRegistry != nil {
 		go gs.updateConnStats(connEntry)
@@ -532,10 +523,11 @@ func (gs *GatewayServer) Connect(ctx context.Context, frontend io.Frontend, ids 
 	}
 
 	for name, handler := range gs.upstreamHandlers {
+		connCtx := log.NewContextWithField(conn.Context(), "upstream_handler", name)
 		handler := handler
 		gs.StartTask(&component.TaskConfig{
-			Context: conn.Context(),
-			ID:      fmt.Sprintf("%s_connect_gateway_%s", name, ids.GatewayID),
+			Context: connCtx,
+			ID:      fmt.Sprintf("%s_connect_gateway_%s", name, ids.GatewayId),
 			Func: func(ctx context.Context) error {
 				return handler.ConnectGateway(ctx, ids, conn)
 			},
@@ -556,11 +548,89 @@ func (gs *GatewayServer) GetConnection(ctx context.Context, ids ttnpb.GatewayIde
 	return entry.(connectionEntry).Connection, true
 }
 
-var (
-	errNoNetworkServer = errors.DefineNotFound("no_network_server", "no Network Server found to handle message")
-	errHostHandle      = errors.Define("host_handle", "host `{host}` failed to handle message")
-	errNoRoute         = errors.DefineAborted("no_route", "no route for `{host}`")
-)
+func requireDisconnect(connected, current *ttnpb.Gateway) bool {
+	if !sameAntennaLocations(connected.Antennas, current.Antennas) {
+		// Gateway Server may update the location from status messages. If the locations aren't the same, but if the new
+		// location is a GPS location, do not disconnect the gateway. This is to avoid that updating the location from a
+		// gateway status message results in disconnecting the gateway.
+		if len(current.Antennas) > 0 && current.Antennas[0].Location != nil && current.Antennas[0].Location.Source != ttnpb.SOURCE_GPS {
+			return true
+		}
+	}
+	if connected.DownlinkPathConstraint != current.DownlinkPathConstraint ||
+		connected.DisablePacketBrokerForwarding != current.DisablePacketBrokerForwarding ||
+		connected.EnforceDutyCycle != current.EnforceDutyCycle ||
+		connected.LocationPublic != current.LocationPublic ||
+		connected.RequireAuthenticatedConnection != current.RequireAuthenticatedConnection ||
+		(connected.ScheduleAnytimeDelay != nil) != (current.ScheduleAnytimeDelay != nil) ||
+		connected.ScheduleAnytimeDelay != nil && *connected.ScheduleAnytimeDelay != *current.ScheduleAnytimeDelay ||
+		connected.ScheduleDownlinkLate != current.ScheduleDownlinkLate ||
+		connected.StatusPublic != current.StatusPublic ||
+		connected.UpdateLocationFromStatus != current.UpdateLocationFromStatus ||
+		connected.FrequencyPlanID != current.FrequencyPlanID ||
+		len(connected.FrequencyPlanIDs) != len(current.FrequencyPlanIDs) {
+		return true
+	}
+	for i := range connected.FrequencyPlanIDs {
+		if connected.FrequencyPlanIDs[i] != current.FrequencyPlanIDs[i] {
+			return true
+		}
+	}
+	return false
+}
+
+var errGatewayChanged = errors.Define("gateway_changed", "gateway changed in registry")
+
+func (gs *GatewayServer) startDisconnectOnChangeTask(conn connectionEntry) {
+	conn.tasksDone.Add(1)
+	gs.StartTask(&component.TaskConfig{
+		Context: conn.Context(),
+		ID:      fmt.Sprintf("disconnect_on_change_%s", unique.ID(conn.Context(), conn.Gateway().GatewayIdentifiers)),
+		Func: func(ctx context.Context) error {
+			d := random.Jitter(gs.config.FetchGatewayInterval, gs.config.FetchGatewayJitter)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(d):
+			}
+
+			gtw, err := gs.entityRegistry.Get(ctx, &ttnpb.GetGatewayRequest{
+				GatewayIdentifiers: conn.Gateway().GatewayIdentifiers,
+				FieldMask: &pbtypes.FieldMask{
+					Paths: []string{
+						"antennas",
+						"disable_packet_broker_forwarding",
+						"downlink_path_constraint",
+						"enforce_duty_cycle",
+						"frequency_plan_id",
+						"frequency_plan_ids",
+						"location_public",
+						"require_authenticated_connection",
+						"schedule_anytime_delay",
+						"schedule_downlink_late",
+						"status_public",
+						"update_location_from_status",
+					},
+				},
+			})
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Warn("Failed to get gateway")
+				return err
+			}
+			if requireDisconnect(conn.Gateway(), gtw) {
+				log.FromContext(ctx).Info("Gateway changed in registry, disconnect")
+				conn.Disconnect(errGatewayChanged.New())
+			}
+
+			return nil
+		},
+		Done:    conn.tasksDone.Done,
+		Restart: component.TaskRestartAlways,
+		Backoff: component.DialTaskBackoffConfig,
+	})
+}
+
+var errHostHandle = errors.Define("host_handle", "host `{host}` failed to handle message")
 
 var (
 	// maxUpstreamHandlers is the maximum number of goroutines per gateway connection to handle upstream messages.
@@ -619,11 +689,11 @@ func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
 					msg.CorrelationIDs = append(msg.CorrelationIDs, host.correlationID)
 					drop := func(ids ttnpb.EndDeviceIdentifiers, err error) {
 						logger := logger.WithError(err)
-						if ids.JoinEUI != nil {
-							logger = logger.WithField("join_eui", *ids.JoinEUI)
+						if ids.JoinEui != nil {
+							logger = logger.WithField("join_eui", *ids.JoinEui)
 						}
-						if ids.DevEUI != nil && !ids.DevEUI.IsZero() {
-							logger = logger.WithField("dev_eui", *ids.DevEUI)
+						if ids.DevEui != nil && !ids.DevEui.IsZero() {
+							logger = logger.WithField("dev_eui", *ids.DevEui)
 						}
 						if ids.DevAddr != nil && !ids.DevAddr.IsZero() {
 							logger = logger.WithField("dev_addr", *ids.DevAddr)
@@ -639,7 +709,7 @@ func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
 					var pass bool
 					switch {
 					case ids.DevAddr != nil:
-						for _, prefix := range host.handler.GetDevAddrPrefixes() {
+						for _, prefix := range host.handler.DevAddrPrefixes() {
 							if ids.DevAddr.HasPrefix(prefix) {
 								pass = true
 								break
@@ -649,19 +719,25 @@ func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
 						pass = true
 					}
 					if !pass {
-						drop(ids, errNoRoute.WithAttributes("host", host.name))
 						break
 					}
-					if err := host.handler.HandleUplink(ctx, gtw.GatewayIdentifiers, ids, msg); err != nil {
+					switch err := host.handler.HandleUplink(ctx, gtw.GatewayIdentifiers, ids, msg); codes.Code(errors.Code(err)) {
+					case codes.Canceled, codes.DeadlineExceeded,
+						codes.Unknown, codes.Internal,
+						codes.Unimplemented, codes.Unavailable:
 						drop(ids, errHostHandle.WithCause(err).WithAttributes("host", host.name))
-						break
+					default:
+						registerForwardUplink(ctx, gtw, msg.UplinkMessage, host.name)
 					}
-					registerForwardUplink(ctx, gtw, msg.UplinkMessage, host.name)
 				case *ttnpb.GatewayStatus:
 					if err := host.handler.HandleStatus(ctx, gtw.GatewayIdentifiers, msg); err != nil {
 						registerDropStatus(ctx, gtw, msg, host.name, err)
 					} else {
 						registerForwardStatus(ctx, gtw, msg, host.name)
+					}
+				case *ttnpb.TxAcknowledgment:
+					if err := host.handler.HandleTxAck(ctx, gtw.GatewayIdentifiers, msg); err != nil {
+						logger.WithField("host", host.name).WithError(err).Debug("Drop Tx acknowledgment")
 					}
 				}
 			}
@@ -670,6 +746,9 @@ func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
 
 	hosts := make([]*upstreamHost, 0, len(gs.upstreamHandlers))
 	for name, handler := range gs.upstreamHandlers {
+		if name == "packetbroker" && gtw.DisablePacketBrokerForwarding {
+			continue
+		}
 		host := &upstreamHost{
 			name:          name,
 			handler:       handler,
@@ -707,14 +786,15 @@ func (gs *GatewayServer) handleUpstream(conn connectionEntry) {
 			registerReceiveStatus(ctx, gtw, msg, protocol)
 		case msg := <-conn.TxAck():
 			ctx = events.ContextWithCorrelationID(ctx, fmt.Sprintf("gs:tx_ack:%s", events.NewCorrelationID()))
-			msg.CorrelationIDs = append(msg.CorrelationIDs, events.CorrelationIDsFromContext(ctx)...)
+			if d := msg.DownlinkMessage; d != nil {
+				d.CorrelationIDs = append(d.CorrelationIDs, events.CorrelationIDsFromContext(ctx)...)
+			}
 			if msg.Result == ttnpb.TxAcknowledgment_SUCCESS {
 				registerSuccessDownlink(ctx, gtw, protocol)
 			} else {
 				registerFailDownlink(ctx, gtw, msg, protocol)
 			}
-			// TODO: Send Tx acknowledgement upstream (https://github.com/TheThingsNetwork/lorawan-stack/issues/76)
-			continue
+			val = msg
 		}
 		item := upstreamItem{ctx, val}
 		for _, host := range hosts {
@@ -759,20 +839,21 @@ func (gs *GatewayServer) updateConnStats(conn connectionEntry) {
 	ctx := conn.Context()
 	logger := log.FromContext(ctx)
 
-	// Initial dummy update, so that gateway appears connected
-	if err := gs.statsRegistry.Set(
-		ctx,
-		conn.Connection.Gateway().GatewayIdentifiers,
-		&ttnpb.GatewayConnectionStats{
-			ConnectedAt: func(t time.Time) *time.Time { return &t }(conn.Connection.ConnectTime()),
-			Protocol:    conn.Connection.Frontend().Protocol(),
-		}); err != nil {
+	ids := conn.Connection.Gateway().GatewayIdentifiers
+	connectTime := conn.Connection.ConnectTime()
+	stats := &ttnpb.GatewayConnectionStats{
+		ConnectedAt: &connectTime,
+		Protocol:    conn.Connection.Frontend().Protocol(),
+	}
+
+	// Initial update, so that the gateway appears connected.
+	if err := gs.statsRegistry.Set(ctx, ids, stats, ttnpb.GatewayConnectionStatsFieldPathsTopLevel); err != nil {
 		logger.WithError(err).Error("Failed to initialize connection stats")
 	}
 
 	defer func() {
 		logger.Debug("Delete connection stats")
-		if err := gs.statsRegistry.Set(gs.FromRequestContext(ctx), conn.Gateway().GatewayIdentifiers, nil); err != nil {
+		if err := gs.statsRegistry.Set(gs.FromRequestContext(ctx), ids, nil, nil); err != nil {
 			logger.WithError(err).Error("Failed to clear connection stats")
 		}
 	}()
@@ -782,7 +863,8 @@ func (gs *GatewayServer) updateConnStats(conn connectionEntry) {
 			return
 		case <-conn.StatsChanged():
 		}
-		if err := gs.statsRegistry.Set(ctx, conn.Gateway().GatewayIdentifiers, conn.Stats()); err != nil {
+		stats, paths := conn.Stats()
+		if err := gs.statsRegistry.Set(ctx, ids, stats, paths); err != nil {
 			logger.WithError(err).Error("Failed to update connection stats")
 		}
 		timeout := time.After(gs.updateConnectionStatsDebounceTime)
@@ -804,19 +886,29 @@ func sameLocation(a, b ttnpb.Location) bool {
 		math.Abs(a.Longitude-b.Longitude) <= allowedLocationDelta
 }
 
-func (gs *GatewayServer) handleLocationUpdates(conn connectionEntry) {
-	ctx := conn.Context()
+func sameAntennaLocations(a, b []ttnpb.GatewayAntenna) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for _, a := range a {
+		for _, b := range b {
+			if a.Location != nil && b.Location != nil && !sameLocation(*a.Location, *b.Location) {
+				return false
+			}
+			if (a.Location == nil) != (b.Location == nil) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
-	var err error
-	var callOpt grpc.CallOption
-	callOpt, err = rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials())
-	if err != nil {
-		return
-	}
-	registry, err := gs.getRegistry(ctx, &conn.Gateway().GatewayIdentifiers)
-	if err != nil {
-		return
-	}
+func (gs *GatewayServer) handleLocationUpdates(conn connectionEntry) {
+	var (
+		ctx          = conn.Context()
+		gtw          = conn.Gateway()
+		lastAntennas []ttnpb.GatewayAntenna
+	)
 
 	for {
 		select {
@@ -824,30 +916,33 @@ func (gs *GatewayServer) handleLocationUpdates(conn connectionEntry) {
 			return
 		case <-conn.LocationChanged():
 			status, _, ok := conn.StatusStats()
-			// TODO: Handle multiple antenna locations (https://github.com/TheThingsNetwork/lorawan-stack/issues/2006).
 			if ok && len(status.AntennaLocations) > 0 {
-				if len(conn.Gateway().Antennas) == 0 {
-					// Add an antenna if none are present
-					conn.Gateway().Antennas = []ttnpb.GatewayAntenna{{}}
+				// Construct the union of antennas that are in the gateway fetched from the entity registry with the antennas
+				// that are in the status message.
+				c := len(gtw.Antennas)
+				if cs := len(status.AntennaLocations); cs > c {
+					c = cs
 				}
-				if sameLocation(conn.Gateway().Antennas[0].Location, *status.AntennaLocations[0]) {
+				antennas := make([]ttnpb.GatewayAntenna, c)
+				for i, ant := range gtw.Antennas {
+					antennas[i].Gain = ant.Gain
+				}
+				for i := range antennas {
+					if i < len(status.AntennaLocations) && status.AntennaLocations[i] != nil {
+						loc := *status.AntennaLocations[i]
+						loc.Source = ttnpb.SOURCE_GPS
+						antennas[i].Location = &loc
+					}
+				}
+				if lastAntennas != nil && sameAntennaLocations(lastAntennas, antennas) {
 					break
 				}
-				status.AntennaLocations[0].Source = ttnpb.SOURCE_GPS
-				conn.Gateway().Antennas[0].Location = *status.AntennaLocations[0]
-				_, err := registry.Update(ctx, &ttnpb.UpdateGatewayRequest{
-					Gateway: ttnpb.Gateway{
-						GatewayIdentifiers: conn.Gateway().GatewayIdentifiers,
-						Antennas:           conn.Gateway().Antennas,
-					},
-					FieldMask: pbtypes.FieldMask{
-						Paths: []string{
-							"antennas",
-						},
-					},
-				}, callOpt)
+
+				err := gs.entityRegistry.UpdateAntennas(ctx, gtw.GatewayIdentifiers, antennas)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Warn("Failed to update antenna location")
+					log.FromContext(ctx).WithError(err).Warn("Failed to update antennas")
+				} else {
+					lastAntennas = antennas
 				}
 			}
 
@@ -863,22 +958,10 @@ func (gs *GatewayServer) handleLocationUpdates(conn connectionEntry) {
 
 // GetFrequencyPlans gets the frequency plans by the gateway identifiers.
 func (gs *GatewayServer) GetFrequencyPlans(ctx context.Context, ids ttnpb.GatewayIdentifiers) (map[string]*frequencyplans.FrequencyPlan, error) {
-	var err error
-	var callOpt grpc.CallOption
-	callOpt, err = rpcmetadata.WithForwardedAuth(ctx, gs.AllowInsecureForCredentials())
-	if errors.IsUnauthenticated(err) {
-		callOpt = gs.WithClusterAuth()
-	} else if err != nil {
-		return nil, err
-	}
-	registry, err := gs.getRegistry(ctx, &ids)
-	if err != nil {
-		return nil, err
-	}
-	gtw, err := registry.Get(ctx, &ttnpb.GetGatewayRequest{
+	gtw, err := gs.entityRegistry.Get(ctx, &ttnpb.GetGatewayRequest{
 		GatewayIdentifiers: ids,
-		FieldMask:          pbtypes.FieldMask{Paths: []string{"frequency_plan_ids"}},
-	}, callOpt)
+		FieldMask:          &pbtypes.FieldMask{Paths: []string{"frequency_plan_ids"}},
+	})
 	var fpIDs []string
 	if err == nil {
 		fpIDs = gtw.FrequencyPlanIDs
@@ -905,12 +988,16 @@ func (gs *GatewayServer) GetFrequencyPlans(ctx context.Context, ids ttnpb.Gatewa
 
 // ClaimDownlink claims the downlink path for the given gateway.
 func (gs *GatewayServer) ClaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
-	return gs.ClaimIDs(ctx, ids)
+	return gs.ClaimIDs(ctx, &ids)
 }
 
 // UnclaimDownlink releases the claim of the downlink path for the given gateway.
 func (gs *GatewayServer) UnclaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
-	return gs.UnclaimIDs(ctx, ids)
+	return gs.UnclaimIDs(ctx, &ids)
+}
+
+func (gs *GatewayServer) ValidateGatewayID(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
+	return gs.entityRegistry.ValidateGatewayID(ctx, ids)
 }
 
 type ctxConfigKeyType struct{}

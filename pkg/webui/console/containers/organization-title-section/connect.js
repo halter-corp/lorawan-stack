@@ -60,7 +60,7 @@ const mapStateToProps = (state, props) => {
 }
 
 const mapDispatchToProps = dispatch => ({
-  loadData(mayViewCollaborators, mayViewApiKeys, orgId) {
+  loadData: (mayViewCollaborators, mayViewApiKeys, orgId) => {
     if (mayViewCollaborators) {
       dispatch(getCollaboratorsList('organization', orgId))
     }
@@ -88,4 +88,9 @@ export default TitleSection =>
     mapStateToProps,
     mapDispatchToProps,
     mergeProps,
-  )(withRequest(({ loadData }) => loadData(), () => false)(TitleSection))
+  )(
+    withRequest(
+      ({ loadData }) => loadData(),
+      () => false,
+    )(TitleSection),
+  )

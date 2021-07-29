@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,6 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+import * as Sentry from '@sentry/browser'
+import { isPlainObject } from 'lodash'
+
+import { error as errorLog, warn } from '@ttn-lw/lib/log'
 
 import errorMessages from './error-messages'
 import grpcErrToHttpErr from './grpc-error-map'
@@ -100,6 +105,8 @@ export const httpStatusCode = error => {
     statusCode = error.statusCode
   } else if (Boolean(error.statusCode)) {
     statusCode = error.statusCode
+  } else if (Boolean(error.response) && Boolean(error.response.status)) {
+    statusCode = error.response.status
   }
 
   return Boolean(statusCode) ? parseInt(statusCode) : undefined
@@ -131,15 +138,24 @@ export const isNotFoundError = error => grpcStatusCode(error) === 5 || httpStatu
 export const isInternalError = error => grpcStatusCode(error) === 13 // NOTE: HTTP 500 can also be UnknownError.
 
 /**
- * Returns whether the grpc error represents an invalid argument or bad request
- * error.
+ * Returns whether the grpc error represents an invalid argument.
  *
  * @param {object} error - The error to be tested.
- * @returns {boolean} `true` if `error` represents an invalid argument or bad
- * request error, `false` otherwise.
+ * @returns {boolean} `true` if `error` represents an invalid argument error,
+ * `false` otherwise.
  */
 export const isInvalidArgumentError = error =>
   grpcStatusCode(error) === 3 || httpStatusCode(error) === 400
+
+/**
+ * Returns whether the grpc error represents a bad request error.
+ *
+ * @param {object} error - The error to be tested.
+ * @returns {boolean} `true` if `error` represents an bad request error,
+ * `false` otherwise.
+ */
+export const isBadRequestError = error =>
+  grpcStatusCode(error) === 9 || httpStatusCode(error) === 400
 
 /**
  * Returns whether the grpc error represents an already exists error.
@@ -188,6 +204,67 @@ export const isConflictError = error =>
  */
 export const isTranslated = error =>
   isBackend(error) || isFrontend(error) || (typeof error === 'object' && error.id)
+
+/**
+ * Returns whether `error` is a 'network error' as JavaScript TypeError.
+ *
+ * @param {object} error - The error to be tested.
+ * @returns {boolean} `true` if `error` is a network error, `false` otherwise.
+ */
+export const isNetworkError = error =>
+  error instanceof Error && error.message.toLowerCase() === 'network error'
+
+/**
+ * Returns whether `error` is a 'ECONNABORTED' error as returned from axios.
+ *
+ * @param {object} error - The error to be tested.
+ * @returns {boolean} `true` if `error` is a timeout error, `false` otherwise.
+ */
+export const isTimeoutError = error =>
+  Boolean(error) && typeof error === 'object' && error.code === 'ECONNABORTED'
+
+/**
+ * Returns whether the error is worth being sent to Sentry.
+ *
+ * @param {object} error - The error to be tested.
+ * @returns {boolean} `true` if `error` should be forwarded to Sentry,
+ * `false` otherwise.
+ */
+export const isSentryWorthy = error =>
+  (isUnknown(error) &&
+    httpStatusCode(error) === undefined &&
+    !isNetworkError(error) &&
+    !isTimeoutError(error)) ||
+  isInvalidArgumentError(error) ||
+  isInternalError(error) ||
+  httpStatusCode(error) >= 500 || // Server errors.
+  httpStatusCode(error) === 400 // Bad request.
+
+/**
+ * Returns an appropriate error title that can be used for Sentry.
+ *
+ * @param {object} error - The error object.
+ * @returns {string} The Sentry error title.
+ */
+export const getSentryErrorTitle = error => {
+  if (typeof error !== 'object') {
+    return `invalid error type: ${error}`
+  }
+
+  if (isBackend(error)) {
+    return error.message
+  } else if (isFrontend(error)) {
+    return error.errorTitle.defaultMessage
+  } else if ('message' in error) {
+    return error.message
+  } else if ('code' in error) {
+    return error.code
+  } else if ('statusCode' in error) {
+    return `status code: ${error.statusCode}`
+  }
+
+  return 'untitled or empty error'
+}
 
 /**
  * Returns the id of the error, used as message id.
@@ -275,7 +352,7 @@ export const getBackendErrorMessageAttributes = error => error.details[0].attrib
  * @param {object} error - The backend error object.
  * @returns {object} Message props of the error object, or generic error object.
  */
-export const toMessageProps = function(error) {
+export const toMessageProps = error => {
   let props
   // Check if it is a error message and transform it to a intl message.
   if (isBackend(error)) {
@@ -308,4 +385,35 @@ export const toMessageProps = function(error) {
   }
 
   return props
+}
+
+/**
+ * `ingestError` provides a unified error ingestion handler, which manages
+ * forwarding to Sentry and other logic that should be applied when errors
+ * occur. The error object is not modified.
+ *
+ * @param {object} error - The error object.
+ * @param {object} extras - Sentry extras to be sent.
+ * @param {object} tags - Sentry tags to be sent.
+ */
+export const ingestError = (error, extras = {}, tags = {}) => {
+  // Log the error when in development mode
+  errorLog(error)
+
+  // Send to Sentry if necessary.
+  if (isSentryWorthy(error)) {
+    warn('The above error was considered Sentry worthy')
+    Sentry.withScope(scope => {
+      scope.setTags({ ...tags, frontendOrigin: true })
+      scope.setFingerprint(isBackend(error) ? getBackendErrorId(error) : error)
+      if (isPlainObject(error)) {
+        scope.setExtras({ ...error, ...extras })
+      } else {
+        scope.setExtras({ error, ...extras })
+      }
+      Sentry.captureException(
+        error instanceof Error ? error : new Error(getSentryErrorTitle(error)),
+      )
+    })
+  }
 }

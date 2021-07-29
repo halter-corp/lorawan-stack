@@ -23,10 +23,6 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
-var (
-	errDuplicateIdentifiers = errors.DefineAlreadyExists("duplicate_identifiers", "identifiers already exists")
-)
-
 // DeviceRegistry is a store for end devices.
 type DeviceRegistry interface {
 	// Get returns the end device by its identifiers.
@@ -125,4 +121,14 @@ type LinkRegistry interface {
 	Range(ctx context.Context, paths []string, f func(context.Context, ttnpb.ApplicationIdentifiers, *ttnpb.ApplicationLink) bool) error
 	// Set creates, updates or deletes the link by the application identifiers.
 	Set(ctx context.Context, ids ttnpb.ApplicationIdentifiers, paths []string, f func(*ttnpb.ApplicationLink) (*ttnpb.ApplicationLink, []string, error)) (*ttnpb.ApplicationLink, error)
+}
+
+// ApplicationUplinkRegistry is a store for uplink messages.
+type ApplicationUplinkRegistry interface {
+	// Range ranges the uplink messagess and calls the callback function, until false is returned.
+	Range(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, paths []string, f func(context.Context, *ttnpb.ApplicationUplink) bool) error
+	// Push pushes the provided uplink message to the storage.
+	Push(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, up *ttnpb.ApplicationUplink) error
+	// Clear empties the uplink messages storage by the end device identifiers.
+	Clear(ctx context.Context, ids ttnpb.EndDeviceIdentifiers) error
 }

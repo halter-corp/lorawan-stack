@@ -30,7 +30,6 @@ import (
 	componenttest "go.thethings.network/lorawan-stack/v3/pkg/component/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
-	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
@@ -40,12 +39,12 @@ import (
 )
 
 var (
-	registeredApplicationID   = ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}
+	registeredApplicationID   = ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}
 	registeredApplicationUID  = unique.ID(test.Context(), registeredApplicationID)
 	registeredApplicationKey  = "test-key"
-	unregisteredApplicationID = ttnpb.ApplicationIdentifiers{ApplicationID: "invalid-app"}
-	registeredDeviceID        = ttnpb.EndDeviceIdentifiers{ApplicationIdentifiers: registeredApplicationID, DeviceID: "test-dev"}
-	unregisteredDeviceID      = ttnpb.EndDeviceIdentifiers{ApplicationIdentifiers: unregisteredApplicationID, DeviceID: "invalid-dev"}
+	unregisteredApplicationID = ttnpb.ApplicationIdentifiers{ApplicationId: "invalid-app"}
+	registeredDeviceID        = ttnpb.EndDeviceIdentifiers{ApplicationIdentifiers: registeredApplicationID, DeviceId: "test-dev"}
+	unregisteredDeviceID      = ttnpb.EndDeviceIdentifiers{ApplicationIdentifiers: unregisteredApplicationID, DeviceId: "invalid-dev"}
 	registeredAssociationID   = ttnpb.ApplicationPackageAssociationIdentifiers{EndDeviceIdentifiers: registeredDeviceID, FPort: 123}
 	unregisteredAssociationID = ttnpb.ApplicationPackageAssociationIdentifiers{EndDeviceIdentifiers: unregisteredDeviceID, FPort: 123}
 	registeredApplicationUp1  = ttnpb.ApplicationUp{
@@ -77,8 +76,7 @@ var (
 )
 
 func TestAuthentication(t *testing.T) {
-	ctx := log.NewContext(test.Context(), test.GetLogger(t))
-	a := assertions.New(t)
+	a, ctx := test.New(t)
 
 	is, isAddr := startMockIS(ctx)
 	is.add(ctx, registeredApplicationID, registeredApplicationKey)
@@ -95,11 +93,14 @@ func TestAuthentication(t *testing.T) {
 		},
 	})
 	as := mock.NewServer(c)
-	redisClient, flush := test.NewRedis(t, "applicationserver_test")
+	redisClient, flush := test.NewRedis(ctx, "applicationserver_test")
 	defer flush()
 	defer redisClient.Close()
-	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient}
-	srv, err := packages.New(ctx, as, apRegistry, map[string]packages.ApplicationPackageHandler{})
+	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient, LockTTL: 10 * time.Second}
+	if err := apRegistry.Init(ctx); !a.So(err, should.BeNil) {
+		t.FailNow()
+	}
+	srv, err := packages.New(ctx, as, apRegistry, map[string]packages.ApplicationPackageHandler{}, 1, 10*time.Second)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
@@ -132,7 +133,7 @@ func TestAuthentication(t *testing.T) {
 			OK:  false,
 		},
 	} {
-		t.Run(fmt.Sprintf("%v:%v", tc.ID.ApplicationID, tc.Key), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v:%v", tc.ID.ApplicationId, tc.Key), func(t *testing.T) {
 			a := assertions.New(t)
 
 			ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -156,8 +157,7 @@ func TestAuthentication(t *testing.T) {
 }
 
 func TestAssociations(t *testing.T) {
-	ctx := log.NewContext(test.Context(), test.GetLogger(t))
-	a := assertions.New(t)
+	a, ctx := test.New(t)
 
 	is, isAddr := startMockIS(ctx)
 	is.add(ctx, registeredApplicationID, registeredApplicationKey)
@@ -174,24 +174,25 @@ func TestAssociations(t *testing.T) {
 		},
 	})
 	as := mock.NewServer(c)
-	redisClient, flush := test.NewRedis(t, "applicationserver_test")
+	redisClient, flush := test.NewRedis(ctx, "applicationserver_test")
 	defer flush()
 	defer redisClient.Close()
-	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient}
-
+	apRegistry := &redis.ApplicationPackagesRegistry{Redis: redisClient, LockTTL: 10 * time.Second}
+	if err := apRegistry.Init(ctx); !a.So(err, should.BeNil) {
+		t.FailNow()
+	}
 	handleUpCh := make(chan *handleUpRequest, 4)
 	mockHandler := createMockPackageHandler(handleUpCh)
 	handlers := map[string]packages.ApplicationPackageHandler{
 		mockHandler.Package().Name: mockHandler,
 	}
-	srv, err := packages.New(ctx, as, apRegistry, handlers)
+	srv, err := packages.New(ctx, as, apRegistry, handlers, 1, 10*time.Second)
 	if !a.So(err, should.BeNil) {
 		t.FailNow()
 	}
 	c.RegisterGRPC(srv)
 	componenttest.StartComponent(t, c)
 	defer c.Close()
-	sub := srv.NewSubscription()
 
 	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
 		AuthType:      "Bearer",
@@ -255,7 +256,7 @@ func TestAssociations(t *testing.T) {
 		a := assertions.New(t)
 		res, err := client.SetAssociation(ctx, &ttnpb.SetApplicationPackageAssociationRequest{
 			ApplicationPackageAssociation: association,
-			FieldMask: types.FieldMask{
+			FieldMask: &types.FieldMask{
 				Paths: []string{
 					"package_name",
 					"data",
@@ -273,7 +274,7 @@ func TestAssociations(t *testing.T) {
 		a := assertions.New(t)
 		res1, err := client.GetAssociation(ctx, &ttnpb.GetApplicationPackageAssociationRequest{
 			ApplicationPackageAssociationIdentifiers: registeredAssociationID,
-			FieldMask: types.FieldMask{
+			FieldMask: &types.FieldMask{
 				Paths: []string{
 					"package_name",
 					"data",
@@ -285,7 +286,7 @@ func TestAssociations(t *testing.T) {
 
 		res2, err := client.ListAssociations(ctx, &ttnpb.ListApplicationPackageAssociationRequest{
 			EndDeviceIdentifiers: registeredDeviceID,
-			FieldMask: types.FieldMask{
+			FieldMask: &types.FieldMask{
 				Paths: []string{
 					"package_name",
 					"data",
@@ -324,7 +325,7 @@ func TestAssociations(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				a := assertions.New(t)
 
-				err := sub.SendUp(ctx, tc.up)
+				err := as.Publish(ctx, tc.up)
 				a.So(err, should.BeNil)
 
 				select {
@@ -368,7 +369,7 @@ func TestAssociations(t *testing.T) {
 		a.So(res, should.NotBeNil)
 		a.So(res.Associations, should.BeEmpty)
 
-		err = sub.SendUp(ctx, &registeredApplicationUp1)
+		err = as.Publish(ctx, &registeredApplicationUp1)
 		a.So(err, should.BeNil)
 		select {
 		case <-handleUpCh:
@@ -392,7 +393,7 @@ func TestAssociations(t *testing.T) {
 			}
 			res, err := client.SetAssociation(ctx, &ttnpb.SetApplicationPackageAssociationRequest{
 				ApplicationPackageAssociation: association,
-				FieldMask: types.FieldMask{
+				FieldMask: &types.FieldMask{
 					Paths: []string{
 						"package_name",
 					},
@@ -451,7 +452,7 @@ func TestAssociations(t *testing.T) {
 						EndDeviceIdentifiers: registeredDeviceID,
 						Limit:                tc.limit,
 						Page:                 tc.page,
-						FieldMask: types.FieldMask{
+						FieldMask: &types.FieldMask{
 							Paths: []string{
 								"package_name",
 							},

@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/interop"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/web"
@@ -64,6 +65,7 @@ type Component struct {
 	clusterNew func(ctx context.Context, config *cluster.Config, options ...cluster.Option) (cluster.Cluster, error)
 
 	grpc           *rpcserver.Server
+	grpcLogger     log.Interface
 	grpcSubsystems []rpcserver.Registerer
 
 	web           *web.Server
@@ -88,6 +90,8 @@ type Component struct {
 
 	taskStarter TaskStarter
 	taskConfigs []*TaskConfig
+
+	limiter ratelimit.Interface
 }
 
 // Option allows extending the component when it is instantiated with New.
@@ -100,6 +104,13 @@ type Option func(*Component)
 func WithClusterNew(f func(ctx context.Context, config *cluster.Config, options ...cluster.Option) (cluster.Cluster, error)) Option {
 	return func(c *Component) {
 		c.clusterNew = f
+	}
+}
+
+// WithGRPCLogger returns an option that overrides the component's gRPC logger.
+func WithGRPCLogger(l log.Interface) Option {
+	return func(c *Component) {
+		c.grpcLogger = l
 	}
 }
 
@@ -153,6 +164,11 @@ func New(logger log.Stack, config *Config, opts ...Option) (c *Component, err er
 		taskStarter: StartTaskFunc(DefaultStartTask),
 	}
 
+	c.limiter, err = ratelimit.New(ctx, config.RateLimiting, config.Blob)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -176,7 +192,7 @@ func New(logger log.Stack, config *Config, opts ...Option) (c *Component, err er
 	}
 
 	config.Interop.SenderClientCA.BlobConfig = config.Blob
-	c.interop, err = interop.NewServer(c.ctx, c.FillContext, config.Interop)
+	c.interop, err = interop.NewServer(c, c.FillContext, config.Interop)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +200,10 @@ func New(logger log.Stack, config *Config, opts ...Option) (c *Component, err er
 	c.initRights()
 
 	c.initGRPC()
+
+	if !config.ServiceBase.SkipVersionCheck {
+		c.RegisterTask(versionCheckTask(ctx, c))
+	}
 
 	return c, nil
 }
@@ -238,7 +258,10 @@ func (c *Component) AddContextFiller(f fillcontext.Filler) {
 // FromRequestContext returns a derived context from the component context with key values from the request context.
 // This can be used to decouple the lifetime from the request context while keeping security information.
 func (c *Component) FromRequestContext(ctx context.Context) context.Context {
-	return c.ctx
+	return &crossContext{
+		valueCtx:  ctx,
+		cancelCtx: c.ctx,
+	}
 }
 
 // Start starts the component.
@@ -330,16 +353,12 @@ func (c *Component) Run() error {
 		c.logger.Debug("Left cluster")
 	}()
 
-	signal.Notify(c.terminationSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(c.terminationSignals, os.Interrupt, syscall.SIGTERM)
 
-	for {
-		select {
-		case sig := <-c.terminationSignals:
-			fmt.Println()
-			c.logger.WithField("signal", sig).Info("Received signal, exiting...")
-			return nil
-		}
-	}
+	sig := <-c.terminationSignals
+	fmt.Println()
+	c.logger.WithField("signal", sig).Info("Received signal, exiting...")
+	return nil
 }
 
 // Close closes the server.

@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/api"
-	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/io"
 	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
-	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -35,7 +34,14 @@ var (
 	selectAllApplicationLinkFlags = util.SelectAllFlagSet("application link")
 )
 
-var errNoApplicationLinkAPIKey = errors.DefineInvalidArgument("no_application_link_api_key", "no application link API key set")
+func deprecatedApplicationLinkFlags() *pflag.FlagSet {
+	flagSet := &pflag.FlagSet{}
+	flagSet.String("api-key", "", "")
+	flagSet.Lookup("api-key").Hidden = true
+	flagSet.String("network-server-address", "", "")
+	flagSet.Lookup("network-server-address").Hidden = true
+	return flagSet
+}
 
 var (
 	applicationsLinkCommand = &cobra.Command{
@@ -58,7 +64,7 @@ var (
 					paths = append(paths, strings.Replace(flag.Name, "-", "_", -1))
 				})
 			}
-			paths = ttnpb.AllowedFields(paths, ttnpb.AllowedFieldMaskPathsForRPC["/ttn.lorawan.v3.As/GetLink"])
+			paths = ttnpb.AllowedFields(paths, ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.As/GetLink"].Allowed)
 
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -66,7 +72,7 @@ var (
 			}
 			res, err := ttnpb.NewAsClient(as).GetLink(ctx, &ttnpb.GetApplicationLinkRequest{
 				ApplicationIdentifiers: *appID,
-				FieldMask:              types.FieldMask{Paths: paths},
+				FieldMask:              &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -90,9 +96,6 @@ var (
 			if err := util.SetFields(&link, setApplicationLinkFlags); err != nil {
 				return err
 			}
-			if link.APIKey == "" {
-				return errNoApplicationLinkAPIKey
-			}
 			newPaths, err := parsePayloadFormatterParameterFlags("default-formatters", link.DefaultFormatters, cmd.Flags())
 			if err != nil {
 				return err
@@ -105,7 +108,7 @@ var (
 			res, err := ttnpb.NewAsClient(as).SetLink(ctx, &ttnpb.SetApplicationLinkRequest{
 				ApplicationIdentifiers: *appID,
 				ApplicationLink:        link,
-				FieldMask:              types.FieldMask{Paths: paths},
+				FieldMask:              &pbtypes.FieldMask{Paths: paths},
 			})
 			if err != nil {
 				return err
@@ -146,6 +149,7 @@ func init() {
 	applicationsLinkSetCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsLinkSetCommand.Flags().AddFlagSet(setApplicationLinkFlags)
 	applicationsLinkSetCommand.Flags().AddFlagSet(payloadFormatterParameterFlags("default-formatters"))
+	applicationsLinkSetCommand.Flags().AddFlagSet(deprecatedApplicationLinkFlags())
 	applicationsLinkCommand.AddCommand(applicationsLinkSetCommand)
 	applicationsLinkDeleteCommand.Flags().AddFlagSet(applicationIDFlags())
 	applicationsLinkCommand.AddCommand(applicationsLinkDeleteCommand)

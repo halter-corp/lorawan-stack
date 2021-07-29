@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export default function debounce(f, ms) {
+export default (f, ms) => {
   let timer = null
   let cancelled = false
   return {
-    debouncedFunction(...args) {
-      const onComplete = function() {
+    debounced: (...args) => {
+      const onComplete = () => {
         if (!cancelled) {
           f(...args)
         }
@@ -28,7 +28,7 @@ export default function debounce(f, ms) {
       }
       timer = setTimeout(onComplete, ms)
     },
-    cancel() {
+    cancel: () => {
       cancelled = true
     },
   }

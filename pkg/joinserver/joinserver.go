@@ -18,22 +18,15 @@ package joinserver
 import (
 	"bytes"
 	"context"
-	"crypto/x509/pkix"
 	"encoding/binary"
 	"io"
-	"math"
 	"math/rand"
-	"net"
-	"net/url"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	ulid "github.com/oklog/ulid/v2"
-	"go.thethings.network/lorawan-stack/v3/pkg/auth"
-	clusterauth "go.thethings.network/lorawan-stack/v3/pkg/auth/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/crypto"
@@ -52,7 +45,7 @@ import (
 
 // JoinServer implements the Join Server component.
 //
-// The Join Server exposes the NsJs and DeviceRegistry services.
+// The Join Server exposes the NsJs, AsJs, AppJs and DeviceRegistry services.
 type JoinServer struct {
 	*component.Component
 	ctx context.Context
@@ -69,6 +62,7 @@ type JoinServer struct {
 	grpc struct {
 		nsJs                          nsJsServer
 		asJs                          asJsServer
+		appJs                         appJsServer
 		jsDevices                     jsEndDeviceRegistryServer
 		js                            jsServer
 		applicationActivationSettings applicationActivationSettingsRegistryServer
@@ -105,14 +99,16 @@ func New(c *component.Component, conf *Config) (*JoinServer, error) {
 		JS:       js,
 		kekLabel: conf.DeviceKEKLabel,
 	}
-	js.grpc.asJs = asJsServer{JS: js}
 	js.grpc.nsJs = nsJsServer{JS: js}
+	js.grpc.asJs = asJsServer{JS: js}
+	js.grpc.appJs = appJsServer{JS: js}
 	js.grpc.js = jsServer{JS: js}
 	js.interop = interopServer{JS: js}
 
 	// TODO: Support authentication from non-cluster-local NS and AS (https://github.com/TheThingsNetwork/lorawan-stack/issues/4).
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsJs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("joinserver"))
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.AsJs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("joinserver"))
+	hooks.RegisterUnaryHook("/ttn.lorawan.v3.AppJs", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("joinserver"))
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.Js", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("joinserver"))
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.ApplicationActivationSettingsRegistry", rpclog.NamespaceHook, rpclog.UnaryNamespaceHook("joinserver"))
 	hooks.RegisterUnaryHook("/ttn.lorawan.v3.NsJs", cluster.HookName, c.ClusterAuthUnaryHook())
@@ -132,6 +128,7 @@ func (js *JoinServer) Roles() []ttnpb.ClusterRole {
 // RegisterServices registers services provided by js at s.
 func (js *JoinServer) RegisterServices(s *grpc.Server) {
 	ttnpb.RegisterAsJsServer(s, js.grpc.asJs)
+	ttnpb.RegisterAppJsServer(s, js.grpc.appJs)
 	ttnpb.RegisterNsJsServer(s, js.grpc.nsJs)
 	ttnpb.RegisterJsEndDeviceRegistryServer(s, js.grpc.jsDevices)
 	ttnpb.RegisterJsServer(s, js.grpc.js)
@@ -157,47 +154,6 @@ var supportedMACVersions = [...]ttnpb.MACVersion{
 	ttnpb.MAC_V1_0_3,
 	ttnpb.MAC_V1_0_4,
 	ttnpb.MAC_V1_1,
-}
-
-// validateCallerByID validates that the given ID matches the common name of the given X.509 distinguished name.
-func validateCallerByID(dn pkix.Name, id string) error {
-	if !strings.EqualFold(id, dn.CommonName) {
-		return errCallerNotAuthorized.WithAttributes("name", dn.CommonName)
-	}
-	return nil
-}
-
-// validateCallerByAddress validates that the host from the given address matches the common name of the given X.509 distinguished name.
-func validateCallerByAddress(dn pkix.Name, addr string) error {
-	host := addr
-	if url, err := url.Parse(addr); err == nil && url.Host != "" {
-		host = url.Host
-	}
-	if h, _, err := net.SplitHostPort(addr); err == nil {
-		host = h
-	}
-
-	host = strings.TrimSuffix(host, ".")
-	pattern := strings.TrimSuffix(dn.CommonName, ".")
-	if len(pattern) == 0 || len(host) == 0 {
-		return errCallerNotAuthorized.WithAttributes("name", dn.CommonName)
-	}
-
-	patternParts := strings.Split(pattern, ".")
-	hostParts := strings.Split(host, ".")
-	if len(patternParts) != len(hostParts) {
-		return errCallerNotAuthorized.WithAttributes("name", dn.CommonName)
-	}
-	for i, patternPart := range patternParts {
-		if i == 0 && patternPart == "*" {
-			continue
-		}
-		if patternPart != hostParts[i] {
-			return errCallerNotAuthorized.WithAttributes("name", dn.CommonName)
-		}
-	}
-
-	return nil
 }
 
 // wrapKeyWithVault wraps the given key with the configured KEK label.
@@ -241,11 +197,9 @@ var (
 )
 
 // HandleJoin handles the given join-request.
-func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (res *ttnpb.JoinResponse, err error) {
-	if _, ok := auth.X509DNFromContext(ctx); !ok {
-		if err := clusterauth.Authorized(ctx); err != nil {
-			return nil, err
-		}
+func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest, authorizer Authorizer) (res *ttnpb.JoinResponse, err error) {
+	if err := authorizer.Authorized(ctx); err != nil {
+		return nil, err
 	}
 
 	logger := log.FromContext(ctx)
@@ -282,17 +236,17 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 	if pld == nil {
 		return nil, errNoJoinRequest.New()
 	}
-	if pld.DevEUI.IsZero() {
+	if pld.DevEui.IsZero() {
 		return nil, errNoDevEUI.New()
 	}
 	logger = logger.WithFields(log.Fields(
-		"join_eui", pld.JoinEUI,
-		"dev_eui", pld.DevEUI,
+		"join_eui", pld.JoinEui,
+		"dev_eui", pld.DevEui,
 	))
 
 	var match bool
 	for _, p := range js.euiPrefixes {
-		if p.Matches(pld.JoinEUI) {
+		if p.Matches(pld.JoinEui) {
 			match = true
 			break
 		}
@@ -302,7 +256,7 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 	}
 
 	var handled bool
-	dev, err := js.devices.SetByEUI(ctx, pld.JoinEUI, pld.DevEUI,
+	dev, err := js.devices.SetByEUI(ctx, pld.JoinEui, pld.DevEui,
 		[]string{
 			"application_server_address",
 			"application_server_id",
@@ -336,12 +290,12 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 				}
 			}(dev.ApplicationIdentifiers)
 
-			if dn, ok := auth.X509DNFromContext(ctx); ok {
-				netID := dev.NetID
+			if trustedOriginAuth, ok := authorizer.(TrustedOriginAuthorizer); ok {
+				netID := dev.NetId
 				if netID == nil {
 					appSettings, err := getAppSettings()
 					if err == nil {
-						netID = appSettings.HomeNetID
+						netID = appSettings.HomeNetId
 					} else if !errors.IsNotFound(err) {
 						return nil, nil, errLookupNetID.WithCause(err)
 					}
@@ -349,11 +303,11 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 				if netID == nil {
 					return nil, nil, errNoNetID.New()
 				}
-				if !req.NetID.Equal(*netID) {
-					return nil, nil, errNetIDMismatch.WithAttributes("net_id", req.NetID)
+				if !req.NetId.Equal(*netID) {
+					return nil, nil, errNetIDMismatch.WithAttributes("net_id", req.NetId)
 				}
 				if dev.NetworkServerAddress != "" {
-					if err := validateCallerByAddress(dn, dev.NetworkServerAddress); err != nil {
+					if err := trustedOriginAuth.RequireAddress(ctx, dev.NetworkServerAddress); err != nil {
 						return nil, nil, err
 					}
 				}
@@ -366,9 +320,6 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 				if (dn != 0 || dev.LastDevNonce != 0 || dev.LastJoinNonce != 0) && !dev.ResetsJoinNonces {
 					if dn <= dev.LastDevNonce {
 						return nil, nil, errDevNonceTooSmall.New()
-					}
-					if dn == math.MaxUint32 {
-						return nil, nil, errDevNonceTooHigh.New()
 					}
 				}
 				dev.LastDevNonce = dn
@@ -411,7 +362,7 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 			copy(jn[:], nb[1:])
 
 			b, err = lorawan.AppendJoinAcceptPayload(b, ttnpb.JoinAcceptPayload{
-				NetID:      req.NetID,
+				NetId:      req.NetId,
 				JoinNonce:  jn,
 				CFList:     req.CFList,
 				DevAddr:    req.DevAddr,
@@ -429,7 +380,7 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 				return nil, nil, errGenerateSessionKeyID.New()
 			}
 
-			cc, err := js.GetPeerConn(ctx, ttnpb.ClusterRole_CRYPTO_SERVER, dev.EndDeviceIdentifiers)
+			cc, err := js.GetPeerConn(ctx, ttnpb.ClusterRole_CRYPTO_SERVER, &dev.EndDeviceIdentifiers)
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					logger.WithError(err).Debug("Crypto Server connection is not available")
@@ -489,11 +440,11 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 			if err != nil {
 				return nil, nil, errEncryptPayload.WithCause(err)
 			}
-			nwkSKeys, err := networkCryptoService.DeriveNwkSKeys(ctx, cryptoDev, req.SelectedMACVersion, jn, pld.DevNonce, req.NetID)
+			nwkSKeys, err := networkCryptoService.DeriveNwkSKeys(ctx, cryptoDev, req.SelectedMACVersion, jn, pld.DevNonce, req.NetId)
 			if err != nil {
 				return nil, nil, errDeriveNwkSKeys.WithCause(err)
 			}
-			appSKey, err := applicationCryptoService.DeriveAppSKey(ctx, cryptoDev, req.SelectedMACVersion, jn, pld.DevNonce, req.NetID)
+			appSKey, err := applicationCryptoService.DeriveAppSKey(ctx, cryptoDev, req.SelectedMACVersion, jn, pld.DevNonce, req.NetId)
 			if err != nil {
 				return nil, nil, errDeriveAppSKey.WithCause(err)
 			}
@@ -509,7 +460,7 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 			)
 			nsKEKLabel, asKEKLabel := dev.NetworkServerKEKLabel, dev.ApplicationServerKEKLabel
 			if nsKEKLabel == "" {
-				nsKEKLabel = js.KeyVault.NsKEKLabel(ctx, dev.NetID, dev.NetworkServerAddress)
+				nsKEKLabel = js.KeyVault.NsKEKLabel(ctx, dev.NetId, dev.NetworkServerAddress)
 				nsPlaintextCond = errors.IsNotFound
 			}
 			fNwkSIntKeyEnvelope, err = wrapKeyWithVault(ctx, nwkSKeys.FNwkSIntKey, nsKEKLabel, js.KeyVault, nsPlaintextCond)
@@ -565,7 +516,7 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 				SNwkSIntKey:  sNwkSIntKeyEnvelope,
 				AppSKey:      appSKeyEnvelope,
 			}
-			_, err = js.keys.SetByID(ctx, *dev.JoinEUI, *dev.DevEUI, sk.SessionKeyID,
+			_, err = js.keys.SetByID(ctx, *dev.JoinEui, *dev.DevEui, sk.SessionKeyID,
 				[]string{
 					"session_key_id",
 					"f_nwk_s_int_key",
@@ -621,9 +572,13 @@ func (js *JoinServer) HandleJoin(ctx context.Context, req *ttnpb.JoinRequest) (r
 }
 
 // GetNwkSKeys returns the requested network session keys.
-func (js *JoinServer) GetNwkSKeys(ctx context.Context, req *ttnpb.SessionKeyRequest) (*ttnpb.NwkSKeysResponse, error) {
-	if dn, ok := auth.X509DNFromContext(ctx); ok {
-		dev, err := js.devices.GetByEUI(ctx, req.JoinEUI, req.DevEUI,
+func (js *JoinServer) GetNwkSKeys(ctx context.Context, req *ttnpb.SessionKeyRequest, authorizer Authorizer) (*ttnpb.NwkSKeysResponse, error) {
+	if err := authorizer.Authorized(ctx); err != nil {
+		return nil, err
+	}
+
+	if trustedOriginAuth, ok := authorizer.(TrustedOriginAuthorizer); ok {
+		dev, err := js.devices.GetByEUI(ctx, req.JoinEui, req.DevEui,
 			[]string{
 				"network_server_address",
 			},
@@ -632,15 +587,13 @@ func (js *JoinServer) GetNwkSKeys(ctx context.Context, req *ttnpb.SessionKeyRequ
 			return nil, errRegistryOperation.WithCause(err)
 		}
 		if dev.NetworkServerAddress != "" {
-			if err := validateCallerByAddress(dn, dev.NetworkServerAddress); err != nil {
+			if err := trustedOriginAuth.RequireAddress(ctx, dev.NetworkServerAddress); err != nil {
 				return nil, err
 			}
 		}
-	} else if err := clusterauth.Authorized(ctx); err != nil {
-		return nil, err
 	}
 
-	ks, err := js.keys.GetByID(ctx, req.JoinEUI, req.DevEUI, req.SessionKeyID,
+	ks, err := js.keys.GetByID(ctx, req.JoinEui, req.DevEui, req.SessionKeyID,
 		[]string{
 			"f_nwk_s_int_key",
 			"nwk_s_enc_key",
@@ -669,9 +622,13 @@ func (js *JoinServer) GetNwkSKeys(ctx context.Context, req *ttnpb.SessionKeyRequ
 }
 
 // GetAppSKey returns the requested application session key.
-func (js *JoinServer) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest) (*ttnpb.AppSKeyResponse, error) {
-	if dn, ok := auth.X509DNFromContext(ctx); ok {
-		dev, err := js.devices.GetByEUI(ctx, req.JoinEUI, req.DevEUI,
+func (js *JoinServer) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyRequest, authorizer Authorizer) (*ttnpb.AppSKeyResponse, error) {
+	if err := authorizer.Authorized(ctx); err != nil {
+		return nil, err
+	}
+
+	if trustedOriginAuth, ok := authorizer.(TrustedOriginAuthorizer); ok {
+		dev, err := js.devices.GetByEUI(ctx, req.JoinEui, req.DevEui,
 			[]string{
 				"application_server_address",
 				"application_server_id",
@@ -681,11 +638,11 @@ func (js *JoinServer) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyReque
 			return nil, errRegistryOperation.WithCause(err)
 		}
 		if dev.ApplicationServerID != "" {
-			if err := validateCallerByID(dn, dev.ApplicationServerID); err != nil {
+			if err := trustedOriginAuth.RequireID(ctx, dev.ApplicationServerID); err != nil {
 				return nil, err
 			}
 		} else if dev.ApplicationServerAddress != "" {
-			if err := validateCallerByAddress(dn, dev.ApplicationServerAddress); err != nil {
+			if err := trustedOriginAuth.RequireAddress(ctx, dev.ApplicationServerAddress); err != nil {
 				return nil, err
 			}
 		} else {
@@ -701,15 +658,22 @@ func (js *JoinServer) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyReque
 			if sets.ApplicationServerID == "" {
 				return nil, errNoApplicationServerID.New()
 			}
-			if err := validateCallerByID(dn, sets.ApplicationServerID); err != nil {
+			if err := trustedOriginAuth.RequireID(ctx, sets.ApplicationServerID); err != nil {
 				return nil, err
 			}
 		}
-	} else if err := clusterauth.Authorized(ctx); err != nil {
-		return nil, err
+	}
+	if appAuth, ok := authorizer.(ApplicationAccessAuthorizer); ok {
+		dev, err := js.devices.GetByEUI(ctx, req.JoinEui, req.DevEui, nil)
+		if err != nil {
+			return nil, errRegistryOperation.WithCause(err)
+		}
+		if err := appAuth.RequireApplication(ctx, dev.ApplicationIdentifiers, ttnpb.RIGHT_APPLICATION_DEVICES_READ_KEYS); err != nil {
+			return nil, err
+		}
 	}
 
-	ks, err := js.keys.GetByID(ctx, req.JoinEUI, req.DevEUI, req.SessionKeyID,
+	ks, err := js.keys.GetByID(ctx, req.JoinEui, req.DevEui, req.SessionKeyID,
 		[]string{
 			"app_s_key",
 		},
@@ -726,11 +690,9 @@ func (js *JoinServer) GetAppSKey(ctx context.Context, req *ttnpb.SessionKeyReque
 }
 
 // GetHomeNetID returns the requested NetID.
-func (js *JoinServer) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EUI64) (*types.NetID, error) {
-	if _, ok := auth.X509DNFromContext(ctx); !ok {
-		if err := clusterauth.Authorized(ctx); err != nil {
-			return nil, err
-		}
+func (js *JoinServer) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EUI64, authorizer Authorizer) (*types.NetID, error) {
+	if err := authorizer.Authorized(ctx); err != nil {
+		return nil, err
 	}
 
 	dev, err := js.devices.GetByEUI(ctx, joinEUI, devEUI,
@@ -741,8 +703,8 @@ func (js *JoinServer) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EU
 	if err != nil {
 		return nil, errRegistryOperation.WithCause(err)
 	}
-	if dev.NetID != nil {
-		return dev.NetID, nil
+	if dev.NetId != nil {
+		return dev.NetId, nil
 	}
 	sets, err := js.applicationActivationSettings.GetByID(ctx, dev.ApplicationIdentifiers, []string{
 		"home_net_id",
@@ -753,5 +715,5 @@ func (js *JoinServer) GetHomeNetID(ctx context.Context, joinEUI, devEUI types.EU
 		}
 		return nil, nil
 	}
-	return sets.HomeNetID, nil
+	return sets.HomeNetId, nil
 }

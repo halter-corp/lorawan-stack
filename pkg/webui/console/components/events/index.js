@@ -16,9 +16,11 @@ import React, { useState, useCallback } from 'react'
 import classnames from 'classnames'
 
 import EVENT_STORE_LIMIT from '@console/constants/event-store-limit'
+import { EVENT_VERBOSE_FILTERS_REGEXP } from '@console/constants/event-filters'
 import hamburgerMenuClose from '@assets/misc/hamburger-menu-close.svg'
 
 import Button from '@ttn-lw/components/button'
+import Switch from '@ttn-lw/components/switch'
 import Icon from '@ttn-lw/components/icon'
 
 import Message from '@ttn-lw/lib/components/message'
@@ -35,7 +37,18 @@ import { getEventId } from './utils'
 import style from './events.styl'
 
 const Events = React.memo(
-  ({ events, scoped, paused, onClear, onPauseToggle, entityId, truncated }) => {
+  ({
+    events,
+    scoped,
+    paused,
+    onClear,
+    onPauseToggle,
+    onFilterChange,
+    entityId,
+    truncated,
+    filter,
+    disableFiltering,
+  }) => {
     const [focus, setFocus] = useState({ eventId: undefined, visible: false })
     const onPause = useCallback(() => onPauseToggle(paused), [onPauseToggle, paused])
     const handleRowClick = useCallback(
@@ -48,6 +61,10 @@ const Events = React.memo(
       },
       [focus],
     )
+
+    const handleVerboseFilterChange = useCallback(() => {
+      onFilterChange(Boolean(filter) ? undefined : EVENT_VERBOSE_FILTERS_REGEXP)
+    }, [onFilterChange, filter])
 
     const handleEventInfoCloseClick = useCallback(() => {
       setFocus({ eventId: undefined, visible: false })
@@ -65,6 +82,12 @@ const Events = React.memo(
             <Message content={m.dataPreview} className={style.cellData} component="div" />
             <div className={style.stickyContainer}>
               <div className={style.actions}>
+                {!disableFiltering && (
+                  <label className={style.toggleContainer}>
+                    <Message content={m.verboseStream} className={style.toggleLabel} />
+                    <Switch onChange={handleVerboseFilterChange} checked={!Boolean(filter)} />
+                  </label>
+                )}
                 <Button
                   onClick={onPause}
                   message={paused ? sharedMessages.resume : sharedMessages.pause}
@@ -105,7 +128,11 @@ const Events = React.memo(
         >
           <div className={style.sidebarHeader}>
             <Message content={m.eventDetails} className={style.sidebarTitle} />
-            <button className={style.sidebarCloseButton} onClick={handleEventInfoCloseClick}>
+            <button
+              className={style.sidebarCloseButton}
+              onClick={handleEventInfoCloseClick}
+              tabIndex={focus.visible ? '0' : '-1'}
+            >
               <img src={hamburgerMenuClose} alt="Close event info" />
             </button>
           </div>
@@ -121,9 +148,12 @@ const Events = React.memo(
 )
 
 Events.propTypes = {
+  disableFiltering: PropTypes.bool,
   entityId: PropTypes.string.isRequired,
   events: PropTypes.events.isRequired,
+  filter: PropTypes.string,
   onClear: PropTypes.func,
+  onFilterChange: PropTypes.func,
   onPauseToggle: PropTypes.func,
   paused: PropTypes.bool.isRequired,
   scoped: PropTypes.bool,
@@ -131,9 +161,12 @@ Events.propTypes = {
 }
 
 Events.defaultProps = {
+  disableFiltering: false,
+  filter: undefined,
   scoped: false,
   onClear: () => null,
   onPauseToggle: () => null,
+  onFilterChange: () => null,
 }
 
 Events.Widget = Widget

@@ -40,10 +40,10 @@ func (a ClientAuthorization) toPB() *ttnpb.OAuthClientAuthorization {
 		UpdatedAt: cleanTime(a.UpdatedAt),
 	}
 	if a.Client != nil {
-		pb.ClientIDs.ClientID = a.Client.ClientID
+		pb.ClientIds.ClientId = a.Client.ClientID
 	}
 	if a.User != nil {
-		pb.UserIDs.UserID = a.User.Account.UID
+		pb.UserIds.UserId = a.User.Account.UID
 	}
 	return pb
 }
@@ -78,10 +78,10 @@ func (a AuthorizationCode) toPB() *ttnpb.OAuthAuthorizationCode {
 		ExpiresAt:   cleanTime(a.ExpiresAt),
 	}
 	if a.Client != nil {
-		pb.ClientIDs.ClientID = a.Client.ClientID
+		pb.ClientIds.ClientId = a.Client.ClientID
 	}
 	if a.User != nil {
-		pb.UserIDs.UserID = a.User.Account.UID
+		pb.UserIds.UserId = a.User.Account.UID
 	}
 	if a.UserSessionID != nil {
 		pb.UserSessionID = *a.UserSessionID
@@ -124,10 +124,10 @@ func (a AccessToken) toPB() *ttnpb.OAuthAccessToken {
 		ExpiresAt:    cleanTime(a.ExpiresAt),
 	}
 	if a.Client != nil {
-		pb.ClientIDs.ClientID = a.Client.ClientID
+		pb.ClientIds.ClientId = a.Client.ClientID
 	}
 	if a.User != nil {
-		pb.UserIDs.UserID = a.User.Account.UID
+		pb.UserIds.UserId = a.User.Account.UID
 	}
 	if a.UserSessionID != nil {
 		pb.UserSessionID = *a.UserSessionID

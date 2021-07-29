@@ -15,8 +15,14 @@
 import axios from 'axios'
 import { cloneDeep, get, isObject } from 'lodash'
 
-import { URI_PREFIX_STACK_COMPONENT_MAP, STACK_COMPONENTS_MAP } from '../util/constants'
+import Token from '../util/token'
 import EventHandler from '../util/events'
+import {
+  URI_PREFIX_STACK_COMPONENT_MAP,
+  STACK_COMPONENTS_MAP,
+  AUTHORIZATION_MODES,
+  RATE_LIMIT_RETRIES,
+} from '../util/constants'
 
 import stream from './stream/stream-node'
 
@@ -24,26 +30,37 @@ import stream from './stream/stream-node'
  * Http Class is a connector for the API that uses the HTTP bridge to connect.
  */
 class Http {
-  constructor(token, stackConfig, axiosConfig = {}) {
-    this._stackConfig = stackConfig
-    const headers = axiosConfig.headers || {}
-
-    let Authorization = null
-    if (typeof token === 'string') {
-      Authorization = `Bearer ${token}`
+  constructor(authorization, stackConfig, axiosConfig = {}) {
+    if (typeof authorization !== 'object' || authorization === null) {
+      throw new Error('No authorization settings provided')
+    }
+    let authToken
+    let csrfToken
+    if (authorization.mode === AUTHORIZATION_MODES.KEY) {
+      if (typeof authorization.key !== 'string' && typeof authorization.key !== 'function') {
+        throw new Error('No valid key provided for key authorization')
+      }
+      authToken = new Token(authorization.key).get()
+    } else if (
+      authorization.mode === AUTHORIZATION_MODES.SESSION &&
+      typeof authorization.csrfToken === 'string'
+    ) {
+      csrfToken = authorization.csrfToken
     }
 
+    this._stackConfig = stackConfig
     const stackComponents = stackConfig.availableComponents
-    const instances = stackComponents.reduce(function(acc, curr) {
+    const instances = stackComponents.reduce((acc, curr) => {
       const componentUrl = stackConfig.getComponentUrlByName(curr)
       if (componentUrl) {
         acc[curr] = axios.create({
+          ...axiosConfig,
           baseURL: componentUrl,
           headers: {
-            Authorization,
-            ...headers,
+            ...(typeof authToken === 'string' ? { Authorization: `Bearer ${authToken}` } : {}),
+            ...(Boolean(csrfToken) ? { 'X-CSRF-Token': csrfToken } : {}),
+            ...(axiosConfig.headers || {}),
           },
-          ...axiosConfig,
         })
       }
 
@@ -56,10 +73,10 @@ class Http {
       // Re-evaluate headers on each request if token is a thunk. This can be
       // useful if the token needs to be refreshed frequently, as the case for
       // access tokens.
-      if (typeof token === 'function') {
+      if (typeof authToken === 'function') {
         this[instance].interceptors.request.use(
-          async function(config) {
-            const tkn = (await token()).access_token
+          async config => {
+            const tkn = (await authToken()).access_token
             config.headers.Authorization = `Bearer ${tkn}`
 
             return config
@@ -100,14 +117,59 @@ class Http {
         config.data = payload
       }
 
-      const response = await this[parsedComponent](config)
+      let statusCode, response, retryAfter, limit
+      let retries = 0
 
-      if ('X-Warning' in response.headers || 'x-warning' in response.headers) {
+      while (statusCode === undefined || statusCode === 429) {
+        if (statusCode === 429 && retryAfter !== undefined) {
+          // Dispatch a warning event to note the user about the waiting time
+          // resulting from the rate limitation.
+          EventHandler.dispatchEvent(
+            EventHandler.EVENTS.WARNING,
+            `The rate limitation of ${limit} requests per minute was exceeded while making a request. It will be automatically retried when the rate limiter resets.`,
+          )
+
+          // Sleep until the cool down elapsed before retrying.
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+        }
+
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          response = await this[parsedComponent](config)
+          statusCode = response.status
+        } catch (err) {
+          if (
+            typeof err === 'object' &&
+            'response' in err &&
+            typeof err.response === 'object' &&
+            err.response !== null &&
+            'status' in err.response &&
+            err.response.status === 429 &&
+            retries <= RATE_LIMIT_RETRIES
+          ) {
+            statusCode = 429
+            // Always wait at least one second to avoid retries in quick succession.
+            retryAfter = Math.max(1, parseInt(err.response.headers['x-rate-limit-retry']))
+            limit = err.response.headers['x-rate-limit-limit']
+          } else {
+            throw err
+          }
+        }
+
+        retries++
+      }
+
+      for (const key in response.headers) {
+        if (!(key.toLowerCase() in response.headers)) {
+          // Normalize capitalized HTTP/1 headers to lowercase HTTP/2 headers.
+          response.headers[key.toLowerCase()] = response.headers[key]
+        }
+      }
+
+      if ('x-warning' in response.headers) {
         // Dispatch a warning event when the server has set a warning header.
-        EventHandler.dispatchEvent(
-          EventHandler.EVENTS.WARNING,
-          response.headers['X-Warning'] || response.headers['x-warning'],
-        )
+        EventHandler.dispatchEvent(EventHandler.EVENTS.WARNING, response.headers['x-warning'])
       }
 
       return response
@@ -121,6 +183,7 @@ class Http {
           error.request_details = {
             url: get(err, 'response.config.url'),
             method: get(err, 'response.config.method'),
+            request_id: get(err, 'response.headers.x-request-id'),
             stack_component: parsedComponent,
           }
         }

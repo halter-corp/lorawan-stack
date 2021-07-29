@@ -25,10 +25,12 @@ import (
 	"time"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
+	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	encoding "go.thethings.network/lorawan-stack/v3/pkg/ttnpb/udp"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
@@ -44,12 +46,18 @@ type srv struct {
 	packetCh    chan encoding.Packet
 	connections sync.Map
 	firewall    Firewall
+
+	limitLogs ratelimit.Interface
 }
 
 func (*srv) Protocol() string            { return "udp" }
 func (*srv) SupportsDownlinkClaim() bool { return true }
 
-var errUDPFrontendRecovered = errors.DefineInternal("udp_frontend_recovered", "internal server error")
+var (
+	errUDPFrontendRecovered      = errors.DefineInternal("udp_frontend_recovered", "internal server error")
+	limitLogsConfig              = config.RateLimitingProfile{MaxPerMin: 1}
+	limitLogsSize           uint = 1 << 13
+)
 
 // Serve serves the UDP frontend.
 func Serve(ctx context.Context, server io.Server, conn *net.UDPConn, config Config) error {
@@ -58,8 +66,12 @@ func Serve(ctx context.Context, server io.Server, conn *net.UDPConn, config Conf
 	if config.AddrChangeBlock > 0 {
 		firewall = NewMemoryFirewall(ctx, config.AddrChangeBlock)
 	}
-	if config.RateLimiting.Enable == true {
+	if config.RateLimiting.Enable {
 		firewall = NewRateLimitingFirewall(firewall, config.RateLimiting.Messages, config.RateLimiting.Threshold)
+	}
+	limitLogs, err := ratelimit.NewProfile(ctx, limitLogsConfig, limitLogsSize)
+	if err != nil {
+		return err
 	}
 	s := &srv{
 		ctx:      ctx,
@@ -68,6 +80,8 @@ func Serve(ctx context.Context, server io.Server, conn *net.UDPConn, config Conf
 		conn:     conn,
 		packetCh: make(chan encoding.Packet, config.PacketBuffer),
 		firewall: firewall,
+
+		limitLogs: limitLogs,
 	}
 	go s.gc()
 	go func() {
@@ -97,11 +111,18 @@ func (s *srv) read() (err error) {
 			return err
 		}
 		now := time.Now()
+		ctx := log.NewContextWithField(s.ctx, "remote_addr", addr.String())
+
+		if err := ratelimit.Require(s.server.RateLimiter(), ratelimit.GatewayUDPTrafficResource(addr)); err != nil {
+			if ratelimit.Require(s.limitLogs, ratelimit.NewCustomResource(addr.IP.String())) == nil {
+				log.FromContext(s.ctx).WithError(err).Warn("Drop packet")
+			}
+			continue
+		}
 
 		packetBuf := make([]byte, n)
 		copy(packetBuf, buf[:])
 
-		ctx := log.NewContextWithField(s.ctx, "remote_addr", addr.String())
 		packet := encoding.Packet{
 			GatewayAddr: addr,
 			ReceivedAt:  now,
@@ -144,12 +165,15 @@ func (s *srv) handlePackets() {
 			switch packet.PacketType {
 			case encoding.PullData, encoding.PushData:
 				if err := s.writeAckFor(packet); err != nil {
-					logger.WithError(err).Warn("Failed to write acknowledgement")
+					logger.WithError(err).Warn("Failed to write acknowledgment")
 				}
 			}
 
 			if s.firewall != nil {
 				if err := s.firewall.Filter(packet); err != nil {
+					if errors.IsResourceExhausted(err) && ratelimit.Require(s.limitLogs, ratelimit.NewCustomResource(eui.String())) == nil {
+						break
+					}
 					logger.WithError(err).Warn("Packet filtered")
 					break
 				}
@@ -185,12 +209,17 @@ func (s *srv) connect(ctx context.Context, eui types.EUI64) (*state, error) {
 		var err error
 		defer func() {
 			if err != nil {
-				s.connections.Delete(eui)
+				delete := func() { s.connections.Delete(eui) }
+				if expiration := s.config.ConnectionErrorExpires; expiration != 0 {
+					time.AfterFunc(expiration, delete)
+				} else {
+					delete()
+				}
 			}
 			cs.io, cs.ioErr = io, err
 			close(cs.ioWait)
 		}()
-		ids := ttnpb.GatewayIdentifiers{EUI: &eui}
+		ids := ttnpb.GatewayIdentifiers{Eui: &eui}
 		ctx, ids, err = s.server.FillGatewayContext(ctx, ids)
 		if err != nil {
 			return nil, err
@@ -217,6 +246,12 @@ func (s *srv) connect(ctx context.Context, eui types.EUI64) (*state, error) {
 		if cs.ioErr != nil {
 			return nil, cs.ioErr
 		}
+		// The connection may be disconnected and is awaiting garbage collection, see gc().
+		// The connection cannot be deleted from the map at this point, because before that, the downlink tasks must be
+		// awaited, which is not desirable here in the hot path.
+		if err := cs.io.Context().Err(); err != nil {
+			return nil, err
+		}
 	}
 	return cs, nil
 }
@@ -241,7 +276,7 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 			state.downlinkTaskDone.Add(1)
 			go func() {
 				defer state.downlinkTaskDone.Done()
-				if err := s.handleDown(ctx, state); err != nil {
+				if err := s.handleDown(ctx, state); err != nil && !errors.Is(err, errDownlinkPathExpired) {
 					logger.WithError(err).Warn("Failed to handle downstream packet")
 				}
 			}()
@@ -266,7 +301,7 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 			logger.WithError(err).Warn("Failed to unmarshal packet")
 			return err
 		}
-		for _, up := range msg.UplinkMessages {
+		for _, up := range io.UniqueUplinkMessagesByRSSI(msg.UplinkMessages) {
 			up.ReceivedAt = packet.ReceivedAt
 			if err := state.io.HandleUp(up); err != nil {
 				logger.WithError(err).Warn("Failed to handle uplink message")
@@ -281,7 +316,7 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 	case encoding.TxAck:
 		atomic.StoreInt64(&state.lastSeenPull, now.UnixNano())
 		if atomic.CompareAndSwapUint32(&state.receivedTxAck, 0, 1) {
-			logger.Debug("Received Tx acknowledgement, JIT queue supported")
+			logger.Debug("Received Tx acknowledgment, JIT queue supported")
 		}
 		var msg *ttnpb.GatewayUp
 		if packet.Data.TxPacketAck != nil {
@@ -299,12 +334,13 @@ func (s *srv) handleUp(ctx context.Context, state *state, packet encoding.Packet
 			}
 		}
 		var rtt *time.Duration
-		if cids, delta, ok := state.tokens.Get(uint16(packet.Token[0])<<8|uint16(packet.Token[1]), packet.ReceivedAt); ok {
-			msg.TxAcknowledgment.CorrelationIDs = cids
+		if downlink, delta, ok := state.tokens.Get(uint16(packet.Token[0])<<8|uint16(packet.Token[1]), packet.ReceivedAt); ok {
+			msg.TxAcknowledgment.DownlinkMessage = downlink
+			msg.TxAcknowledgment.CorrelationIDs = downlink.CorrelationIDs
 			rtt = &delta
 		}
 		if err := state.io.HandleTxAck(msg.TxAcknowledgment); err != nil {
-			logger.WithError(err).Warn("Failed to handle Tx acknowledgement")
+			logger.WithError(err).Warn("Failed to handle Tx acknowledgment")
 		}
 		if rtt != nil {
 			state.io.RecordRTT(*rtt, packet.ReceivedAt)
@@ -334,6 +370,7 @@ func (s *srv) handleDown(ctx context.Context, state *state) error {
 	}
 	logger.Info("Downlink path claimed")
 	defer func() {
+		ctx := s.server.FromRequestContext(ctx)
 		if err := s.server.UnclaimDownlink(ctx, state.io.Gateway().GatewayIdentifiers); err != nil {
 			logger.WithError(err).Error("Failed to unclaim downlink path")
 			return
@@ -367,7 +404,7 @@ func (s *srv) handleDown(ctx context.Context, state *state) error {
 			}
 			write := func() {
 				logger.Debug("Write downlink message")
-				token := state.tokens.Next(down.CorrelationIDs, time.Now())
+				token := state.tokens.Next(down, time.Now())
 				packet.Token = [2]byte{byte(token >> 8), byte(token)}
 				if err := s.write(packet); err != nil {
 					logger.WithError(err).Warn("Failed to write downlink message")
@@ -443,6 +480,9 @@ func (s *srv) gc() {
 				default:
 					return true
 				}
+				if state.ioErr != nil {
+					return true
+				}
 				select {
 				case <-state.io.Context().Done():
 					logger.Debug("Connection context done")
@@ -454,7 +494,7 @@ func (s *srv) gc() {
 						lastSeenPush := time.Unix(0, atomic.LoadInt64(&state.lastSeenPush))
 						if time.Since(lastSeenPush) > s.config.ConnectionExpires {
 							logger.Debug("Connection expired")
-							state.io.Disconnect(errConnectionExpired)
+							state.io.Disconnect(errConnectionExpired.New())
 							state.downlinkTaskDone.Wait()
 							s.connections.Delete(k)
 						}

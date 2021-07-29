@@ -16,6 +16,7 @@ package ttnpb
 
 import (
 	"context"
+	"fmt"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
@@ -23,36 +24,70 @@ import (
 
 // IsZero returns true if all identifiers have zero-values.
 func (ids ApplicationIdentifiers) IsZero() bool {
-	return ids.ApplicationID == ""
+	return ids.ApplicationId == ""
+}
+
+// FieldIsZero returns whether path p is zero.
+func (v *ApplicationIdentifiers) FieldIsZero(p string) bool {
+	if v == nil {
+		return true
+	}
+	switch p {
+	case "application_id":
+		return v.ApplicationId == ""
+	}
+	panic(fmt.Sprintf("unknown path '%s'", p))
 }
 
 // IsZero returns true if all identifiers have zero-values.
 func (ids ClientIdentifiers) IsZero() bool {
-	return ids.ClientID == ""
+	return ids.ClientId == ""
 }
 
 // IsZero reports whether ids represent zero identifiers.
 func (ids EndDeviceIdentifiers) IsZero() bool {
-	return ids.GetDeviceID() == "" &&
-		ids.GetApplicationID() == "" &&
+	return ids.GetDeviceId() == "" &&
+		ids.GetApplicationId() == "" &&
 		(ids.DevAddr == nil || ids.DevAddr.IsZero()) &&
-		(ids.DevEUI == nil || ids.DevEUI.IsZero()) &&
-		ids.JoinEUI == nil
+		(ids.DevEui == nil || ids.DevEui.IsZero()) &&
+		ids.JoinEui == nil
+}
+
+// FieldIsZero returns whether path p is zero.
+func (v *EndDeviceIdentifiers) FieldIsZero(p string) bool {
+	if v == nil {
+		return true
+	}
+	switch p {
+	case "application_ids":
+		return v.ApplicationIdentifiers == ApplicationIdentifiers{}
+	case "application_ids.application_id":
+		return v.ApplicationIdentifiers.FieldIsZero("application_id")
+	case "dev_addr":
+		return v.DevAddr == nil
+	case "dev_eui":
+		return v.DevEui == nil
+	case "device_id":
+		return v.DeviceId == ""
+	case "join_eui":
+		return v.JoinEui == nil
+	}
+	panic(fmt.Sprintf("unknown path '%s'", p))
 }
 
 // IsZero returns true if all identifiers have zero-values.
 func (ids GatewayIdentifiers) IsZero() bool {
-	return ids.GatewayID == "" && ids.EUI == nil
+	return ids.GatewayId == "" && ids.Eui == nil
 }
 
 // IsZero returns true if all identifiers have zero-values.
 func (ids OrganizationIdentifiers) IsZero() bool {
-	return ids.OrganizationID == ""
+	return ids.OrganizationId == ""
 }
 
 // IsZero returns true if all identifiers have zero-values.
 func (ids UserIdentifiers) IsZero() bool {
-	return ids.UserID == "" && ids.Email == ""
+	return ids.UserId == "" && ids.Email == ""
 }
 
 // GetOrganizationOrUserIdentifiers returns the OrganizationIdentifiers as *OrganizationOrUserIdentifiers.
@@ -65,8 +100,8 @@ func (ids *OrganizationIdentifiers) GetOrganizationOrUserIdentifiers() *Organiza
 
 // OrganizationOrUserIdentifiers returns the OrganizationIdentifiers as *OrganizationOrUserIdentifiers.
 func (ids OrganizationIdentifiers) OrganizationOrUserIdentifiers() *OrganizationOrUserIdentifiers {
-	return &OrganizationOrUserIdentifiers{Ids: &OrganizationOrUserIdentifiers_OrganizationIDs{
-		OrganizationIDs: &ids,
+	return &OrganizationOrUserIdentifiers{Ids: &OrganizationOrUserIdentifiers_OrganizationIds{
+		OrganizationIds: &ids,
 	}}
 }
 
@@ -80,126 +115,25 @@ func (ids *UserIdentifiers) GetOrganizationOrUserIdentifiers() *OrganizationOrUs
 
 // OrganizationOrUserIdentifiers returns the UserIdentifiers as *OrganizationOrUserIdentifiers.
 func (ids UserIdentifiers) OrganizationOrUserIdentifiers() *OrganizationOrUserIdentifiers {
-	return &OrganizationOrUserIdentifiers{Ids: &OrganizationOrUserIdentifiers_UserIDs{
-		UserIDs: &ids,
+	return &OrganizationOrUserIdentifiers{Ids: &OrganizationOrUserIdentifiers_UserIds{
+		UserIds: &ids,
 	}}
-}
-
-// CombineIdentifiers merges the identifiers of the multiple entities.
-func CombineIdentifiers(ids ...Identifiers) *CombinedIdentifiers {
-	combined := &CombinedIdentifiers{}
-	for _, id := range ids {
-		combined.EntityIdentifiers = append(combined.EntityIdentifiers, id.EntityIdentifiers())
-	}
-	return combined
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (ids *CombinedIdentifiers) CombinedIdentifiers() *CombinedIdentifiers {
-	return ids
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListApplicationsRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	if m.Collaborator != nil {
-		return m.Collaborator.CombinedIdentifiers()
-	}
-	return &CombinedIdentifiers{}
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListClientsRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	if m.Collaborator != nil {
-		return m.Collaborator.CombinedIdentifiers()
-	}
-	return &CombinedIdentifiers{}
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListGatewaysRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	if m.Collaborator != nil {
-		return m.Collaborator.CombinedIdentifiers()
-	}
-	return &CombinedIdentifiers{}
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListOrganizationsRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	if m.Collaborator != nil {
-		return m.Collaborator.CombinedIdentifiers()
-	}
-	return &CombinedIdentifiers{}
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *CreateApplicationRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.Collaborator.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *CreateClientRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.Collaborator.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *CreateGatewayRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.Collaborator.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *CreateOrganizationRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.Collaborator.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *DownlinkMessage) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.GetEndDeviceIDs().CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *SetEndDeviceRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.EndDevice.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListOAuthAccessTokensRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return CombineIdentifiers(m.UserIDs, m.ClientIDs)
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *ListOAuthClientAuthorizationsRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return m.UserIdentifiers.CombinedIdentifiers()
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *OAuthAccessTokenIdentifiers) CombinedIdentifiers() *CombinedIdentifiers {
-	return CombineIdentifiers(m.UserIDs, m.ClientIDs)
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *OAuthClientAuthorizationIdentifiers) CombinedIdentifiers() *CombinedIdentifiers {
-	return CombineIdentifiers(m.UserIDs, m.ClientIDs)
-}
-
-// CombinedIdentifiers implements Identifiers.
-func (m *StreamEventsRequest) CombinedIdentifiers() *CombinedIdentifiers {
-	return &CombinedIdentifiers{EntityIdentifiers: m.Identifiers}
 }
 
 // Copy stores a copy of ids in x and returns it.
 func (ids EndDeviceIdentifiers) Copy(x *EndDeviceIdentifiers) *EndDeviceIdentifiers {
 	*x = EndDeviceIdentifiers{
-		DeviceID: ids.DeviceID,
+		DeviceId: ids.DeviceId,
 		ApplicationIdentifiers: ApplicationIdentifiers{
-			ApplicationID: ids.ApplicationID,
+			ApplicationId: ids.ApplicationId,
 		},
 		XXX_sizecache: ids.XXX_sizecache,
 	}
-	if ids.DevEUI != nil {
-		x.DevEUI = ids.DevEUI.Copy(&types.EUI64{})
+	if ids.DevEui != nil {
+		x.DevEui = ids.DevEui.Copy(&types.EUI64{})
 	}
-	if ids.JoinEUI != nil {
-		x.JoinEUI = ids.JoinEUI.Copy(&types.EUI64{})
+	if ids.JoinEui != nil {
+		x.JoinEui = ids.JoinEui.Copy(&types.EUI64{})
 	}
 	if ids.DevAddr != nil {
 		x.DevAddr = ids.DevAddr.Copy(&types.DevAddr{})
@@ -233,59 +167,17 @@ func (ids *GatewayIdentifiers) ValidateContext(context.Context) error {
 	return nil
 }
 
+func (ids *GatewayIdentifiers) GetEui() *types.EUI64 {
+	if ids == nil {
+		return nil
+	}
+	return ids.Eui
+}
+
 // ValidateContext wraps the generated validator with (optionally context-based) custom checks.
 func (ids *UserIdentifiers) ValidateContext(context.Context) error {
 	if err := ids.ValidateFields(); err != nil {
 		return errIdentifiers.WithCause(err)
 	}
 	return nil
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *ApplicationIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["application_id"] = ids.ApplicationID
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *ClientIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["client_id"] = ids.ClientID
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *EndDeviceIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["application_id"] = ids.ApplicationID
-	m["device_id"] = ids.DeviceID
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *GatewayIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["gateway_id"] = ids.GatewayID
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *OrganizationIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["organization_id"] = ids.OrganizationID
-}
-
-// ExtractRequestFields lets gRPC middleware extract fields from request messages that embed these identifiers.
-func (ids *UserIdentifiers) ExtractRequestFields(m map[string]interface{}) {
-	if ids == nil {
-		return
-	}
-	m["user_id"] = ids.UserID
 }

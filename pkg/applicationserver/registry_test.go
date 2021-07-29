@@ -43,10 +43,10 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 
 	pb := &ttnpb.EndDevice{
 		EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-			JoinEUI:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			DevEUI:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"},
-			DeviceID:               "test-dev",
+			JoinEui:                &types.EUI64{0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			DevEui:                 &types.EUI64{0x42, 0x42, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"},
+			DeviceId:               "test-dev",
 		},
 		Session: &ttnpb.Session{
 			DevAddr: types.DevAddr{0x42, 0xff, 0xff, 0xff},
@@ -168,47 +168,49 @@ func handleDeviceRegistryTest(t *testing.T, reg DeviceRegistry) {
 }
 
 func TestDeviceRegistry(t *testing.T) {
-	t.Parallel()
-
 	namespace := [...]string{
 		"applicationserver_test",
 		"devices",
 	}
 	for _, tc := range []struct {
 		Name string
-		New  func(t testing.TB) (reg DeviceRegistry, closeFn func() error)
+		New  func(ctx context.Context) (reg DeviceRegistry, closeFn func() error)
 		N    uint16
 	}{
 		{
 			Name: "Redis",
-			New: func(t testing.TB) (DeviceRegistry, func() error) {
-				cl, flush := test.NewRedis(t, namespace[:]...)
-				reg := &redis.DeviceRegistry{Redis: cl}
-				return reg, func() error {
-					flush()
-					return cl.Close()
-				}
+			New: func(ctx context.Context) (DeviceRegistry, func() error) {
+				cl, flush := test.NewRedis(ctx, namespace[:]...)
+				return &redis.DeviceRegistry{
+						Redis: cl,
+					}, func() error {
+						flush()
+						return cl.Close()
+					}
 			},
 			N: 8,
 		},
 	} {
 		for i := 0; i < int(tc.N); i++ {
-			t.Run(fmt.Sprintf("%s/%d", tc.Name, i), func(t *testing.T) {
-				t.Parallel()
-				reg, closeFn := tc.New(t)
-				reg = wrapEndDeviceRegistryWithReplacedFields(reg, replacedEndDeviceFields...)
-				if closeFn != nil {
-					defer func() {
-						if err := closeFn(); err != nil {
-							t.Errorf("Failed to close registry: %v", err)
-						}
-					}()
-				}
-				t.Run("1st run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
-				if t.Failed() {
-					t.Skip("Skipping 2nd run")
-				}
-				t.Run("2nd run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+			test.RunSubtest(t, test.SubtestConfig{
+				Name:     fmt.Sprintf("%s/%d", tc.Name, i),
+				Parallel: true,
+				Func: func(ctx context.Context, t *testing.T, _ *assertions.Assertion) {
+					reg, closeFn := tc.New(ctx)
+					reg = wrapEndDeviceRegistryWithReplacedFields(reg, replacedEndDeviceFields...)
+					if closeFn != nil {
+						defer func() {
+							if err := closeFn(); err != nil {
+								t.Errorf("Failed to close registry: %v", err)
+							}
+						}()
+					}
+					t.Run("1st run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+					if t.Failed() {
+						t.Skip("Skipping 2nd run")
+					}
+					t.Run("2nd run", func(t *testing.T) { handleDeviceRegistryTest(t, reg) })
+				},
 			})
 		}
 	}
@@ -218,18 +220,20 @@ func handleLinkRegistryTest(t *testing.T, reg LinkRegistry) {
 	a := assertions.New(t)
 	ctx := test.Context()
 	app1IDs := ttnpb.ApplicationIdentifiers{
-		ApplicationID: "app-1",
+		ApplicationId: "app-1",
 	}
 	app1 := &ttnpb.ApplicationLink{
-		APIKey:               "secret1",
-		NetworkServerAddress: "host1",
+		SkipPayloadCrypto: &pbtypes.BoolValue{
+			Value: true,
+		},
 	}
 	app2IDs := ttnpb.ApplicationIdentifiers{
-		ApplicationID: "app-2",
+		ApplicationId: "app-2",
 	}
 	app2 := &ttnpb.ApplicationLink{
-		APIKey:               "secret2",
-		NetworkServerAddress: "host2",
+		SkipPayloadCrypto: &pbtypes.BoolValue{
+			Value: false,
+		},
 	}
 
 	for ids, link := range map[ttnpb.ApplicationIdentifiers]*ttnpb.ApplicationLink{
@@ -264,11 +268,9 @@ func handleLinkRegistryTest(t *testing.T, reg LinkRegistry) {
 		seen[uid] = pb
 		return true
 	})
-	ok := a.So(seen, should.HaveEmptyDiff, map[string]*ttnpb.ApplicationLink{
-		unique.ID(ctx, app1IDs): app1,
-		unique.ID(ctx, app2IDs): app2,
-	})
-	if !ok {
+	if !a.So(len(seen), should.Equal, 2) ||
+		!a.So(seen[unique.ID(ctx, app1IDs)], should.Resemble, app1) ||
+		!a.So(seen[unique.ID(ctx, app2IDs)], should.Resemble, app2) {
 		t.FailNow()
 	}
 
@@ -287,47 +289,114 @@ func handleLinkRegistryTest(t *testing.T, reg LinkRegistry) {
 }
 
 func TestLinkRegistry(t *testing.T) {
-	t.Parallel()
-
 	namespace := [...]string{
 		"applicationserver_test",
 		"links",
 	}
 	for _, tc := range []struct {
 		Name string
-		New  func(t testing.TB) (reg LinkRegistry, closeFn func() error)
+		New  func(ctx context.Context) (reg LinkRegistry, closeFn func() error)
 		N    uint16
 	}{
 		{
 			Name: "Redis",
-			New: func(t testing.TB) (LinkRegistry, func() error) {
-				cl, flush := test.NewRedis(t, namespace[:]...)
-				reg := &redis.LinkRegistry{Redis: cl}
-				return reg, func() error {
-					flush()
-					return cl.Close()
-				}
+			New: func(ctx context.Context) (LinkRegistry, func() error) {
+				cl, flush := test.NewRedis(ctx, namespace[:]...)
+				return &redis.LinkRegistry{
+						Redis: cl,
+					}, func() error {
+						flush()
+						return cl.Close()
+					}
 			},
 			N: 8,
 		},
 	} {
 		for i := 0; i < int(tc.N); i++ {
-			t.Run(fmt.Sprintf("%s/%d", tc.Name, i), func(t *testing.T) {
-				t.Parallel()
-				reg, closeFn := tc.New(t)
-				if closeFn != nil {
-					defer func() {
-						if err := closeFn(); err != nil {
-							t.Errorf("Failed to close registry: %v", err)
-						}
-					}()
-				}
-				t.Run("1st run", func(t *testing.T) { handleLinkRegistryTest(t, reg) })
-				if t.Failed() {
-					t.Skip("Skipping 2nd run")
-				}
-				t.Run("2nd run", func(t *testing.T) { handleLinkRegistryTest(t, reg) })
+			test.RunSubtest(t, test.SubtestConfig{
+				Name:     fmt.Sprintf("%s/%d", tc.Name, i),
+				Parallel: true,
+				Func: func(ctx context.Context, t *testing.T, _ *assertions.Assertion) {
+					reg, closeFn := tc.New(ctx)
+					if closeFn != nil {
+						defer func() {
+							if err := closeFn(); err != nil {
+								t.Errorf("Failed to close registry: %v", err)
+							}
+						}()
+					}
+					t.Run("1st run", func(t *testing.T) { handleLinkRegistryTest(t, reg) })
+					if t.Failed() {
+						t.Skip("Skipping 2nd run")
+					}
+					t.Run("2nd run", func(t *testing.T) { handleLinkRegistryTest(t, reg) })
+				},
 			})
 		}
 	}
+}
+
+func TestApplicationUplinksRegistry(t *testing.T) {
+	namespace := [...]string{
+		"applicationserver_test",
+		"application_ups",
+	}
+	test.RunTest(t, test.TestConfig{
+		Func: func(ctx context.Context, a *assertions.Assertion) {
+			cl, flush := test.NewRedis(ctx, namespace[:]...)
+			defer flush()
+			defer cl.Close()
+			registry := &redis.ApplicationUplinkRegistry{
+				Redis: cl,
+				Limit: 16,
+			}
+
+			ids := ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"},
+				DeviceId:               "test-dev",
+			}
+
+			assertEmpty := func() {
+				err := registry.Range(ctx, ids, []string{}, func(ctx context.Context, up *ttnpb.ApplicationUplink) bool {
+					t.Fatal("list should be empty")
+					return false
+				})
+				a.So(err, should.BeNil)
+			}
+			assertEmpty()
+
+			push := func(start uint32, end uint32) {
+				for i := start; i < end; i++ {
+					err := registry.Push(ctx, ids, &ttnpb.ApplicationUplink{FCnt: i})
+					a.So(err, should.BeNil)
+				}
+			}
+			push(0, 16)
+
+			assertList := func(start uint32, end uint32) {
+				found := make(map[uint32]struct{})
+				err := registry.Range(ctx, ids, []string{
+					"f_cnt",
+				}, func(ctx context.Context, up *ttnpb.ApplicationUplink) bool {
+					a.So(up.FCnt, should.BeBetweenOrEqual, start, end-1)
+					if _, f := found[up.FCnt]; f {
+						t.Fatalf("Uplink already seen: %d", up.FCnt)
+					}
+					found[up.FCnt] = struct{}{}
+					return true
+				})
+				a.So(err, should.BeNil)
+				a.So(len(found), should.Equal, end-start)
+			}
+			assertList(0, 16)
+
+			push(32, 64)
+			// Since we allow at most 16 uplinks, only the last 16 are stored.
+			assertList(48, 64)
+
+			err := registry.Clear(ctx, ids)
+			a.So(err, should.BeNil)
+			assertEmpty()
+		},
+	})
 }

@@ -4,9 +4,8 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	time "time"
-
 	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
+	time "time"
 )
 
 func (dst *RxMetadata) SetFields(src *RxMetadata, paths ...string) error {
@@ -226,6 +225,26 @@ func (dst *RxMetadata) SetFields(src *RxMetadata, paths ...string) error {
 				var zero uint32
 				dst.ChannelIndex = zero
 			}
+		case "hopping_width":
+			if len(subs) > 0 {
+				return fmt.Errorf("'hopping_width' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.HoppingWidth = src.HoppingWidth
+			} else {
+				var zero uint32
+				dst.HoppingWidth = zero
+			}
+		case "frequency_drift":
+			if len(subs) > 0 {
+				return fmt.Errorf("'frequency_drift' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FrequencyDrift = src.FrequencyDrift
+			} else {
+				var zero int32
+				dst.FrequencyDrift = zero
+			}
 		case "advanced":
 			if len(subs) > 0 {
 				return fmt.Errorf("'advanced' has no subfields, but %s were specified", subs)
@@ -312,60 +331,88 @@ func (dst *PacketBrokerMetadata) SetFields(src *PacketBrokerMetadata, paths ...s
 				return fmt.Errorf("'message_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.MessageID = src.MessageID
+				dst.MessageId = src.MessageId
 			} else {
 				var zero string
-				dst.MessageID = zero
+				dst.MessageId = zero
 			}
 		case "forwarder_net_id":
 			if len(subs) > 0 {
 				return fmt.Errorf("'forwarder_net_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ForwarderNetID = src.ForwarderNetID
+				dst.ForwarderNetId = src.ForwarderNetId
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
-				dst.ForwarderNetID = zero
+				dst.ForwarderNetId = zero
 			}
 		case "forwarder_tenant_id":
 			if len(subs) > 0 {
 				return fmt.Errorf("'forwarder_tenant_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ForwarderTenantID = src.ForwarderTenantID
+				dst.ForwarderTenantId = src.ForwarderTenantId
 			} else {
 				var zero string
-				dst.ForwarderTenantID = zero
+				dst.ForwarderTenantId = zero
 			}
-		case "forwarder_id":
+		case "forwarder_cluster_id":
 			if len(subs) > 0 {
-				return fmt.Errorf("'forwarder_id' has no subfields, but %s were specified", subs)
+				return fmt.Errorf("'forwarder_cluster_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.ForwarderID = src.ForwarderID
+				dst.ForwarderClusterId = src.ForwarderClusterId
 			} else {
 				var zero string
-				dst.ForwarderID = zero
+				dst.ForwarderClusterId = zero
+			}
+		case "forwarder_gateway_eui":
+			if len(subs) > 0 {
+				return fmt.Errorf("'forwarder_gateway_eui' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ForwarderGatewayEui = src.ForwarderGatewayEui
+			} else {
+				dst.ForwarderGatewayEui = nil
+			}
+		case "forwarder_gateway_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'forwarder_gateway_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ForwarderGatewayId = src.ForwarderGatewayId
+			} else {
+				dst.ForwarderGatewayId = nil
 			}
 		case "home_network_net_id":
 			if len(subs) > 0 {
 				return fmt.Errorf("'home_network_net_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.HomeNetworkNetID = src.HomeNetworkNetID
+				dst.HomeNetworkNetId = src.HomeNetworkNetId
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.NetID
-				dst.HomeNetworkNetID = zero
+				dst.HomeNetworkNetId = zero
 			}
 		case "home_network_tenant_id":
 			if len(subs) > 0 {
 				return fmt.Errorf("'home_network_tenant_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.HomeNetworkTenantID = src.HomeNetworkTenantID
+				dst.HomeNetworkTenantId = src.HomeNetworkTenantId
 			} else {
 				var zero string
-				dst.HomeNetworkTenantID = zero
+				dst.HomeNetworkTenantId = zero
+			}
+		case "home_network_cluster_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'home_network_cluster_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.HomeNetworkClusterId = src.HomeNetworkClusterId
+			} else {
+				var zero string
+				dst.HomeNetworkClusterId = zero
 			}
 		case "hops":
 			if len(subs) > 0 {

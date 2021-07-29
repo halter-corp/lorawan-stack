@@ -21,7 +21,7 @@ import webpack from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import AddAssetHtmlPlugin from 'add-asset-html-webpack-plugin'
-import CleanWebpackPlugin from 'clean-webpack-plugin'
+import { CleanWebpackPlugin } from 'clean-webpack-plugin'
 import ShellPlugin from 'webpack-shell-plugin'
 import CopyWebpackPlugin from 'copy-webpack-plugin'
 import HashOutput from 'webpack-plugin-hash-output'
@@ -59,6 +59,45 @@ const modules = [path.resolve(context, 'node_modules')]
 
 const r = SUPPORT_LOCALES.split(',').map(l => new RegExp(l.trim()))
 
+const filterLocales = (context, request, callback) => {
+  if (context.endsWith('node_modules/intl/locale-data/jsonp')) {
+    const supported = r.reduce((acc, locale) => acc || locale.test(request), false)
+
+    if (!supported) {
+      return callback(null, `commonjs ${request}`)
+    }
+  }
+  callback()
+}
+
+// Env selects and merges the environments for the passed object based on
+// `NODE_ENV`, which can have the all, development and production keys.
+const env = (obj = {}) => {
+  if (!obj) {
+    return obj
+  }
+
+  const all = obj.all
+  const dev = obj.development
+  const prod = obj.production
+
+  if (Array.isArray(all) || Array.isArray(dev) || Array.isArray(prod)) {
+    return [...(all || []), ...(production ? prod || [] : dev || [])]
+  }
+
+  if (
+    (dev !== undefined && typeof dev !== 'object') ||
+    (prod !== undefined && typeof prod !== 'object')
+  ) {
+    return production ? prod : dev
+  }
+
+  return {
+    ...(all || {}),
+    ...(production ? prod || {} : dev || {}),
+  }
+}
+
 // Export the style config for usage in the storybook config.
 export const styleConfig = {
   test: /\.(styl|css)$/,
@@ -74,19 +113,22 @@ export const styleConfig = {
     {
       loader: 'css-loader',
       options: {
-        camelCase: true,
-        localIdentName: env({
-          production: '[hash:base64:10]',
-          development: '[path][local]-[hash:base64:10]',
-        }),
-        modules: true,
+        modules: {
+          exportLocalsConvention: 'camelCase',
+          localIdentName: env({
+            production: '[hash:base64:10]',
+            development: '[path][local]-[hash:base64:10]',
+          }),
+        },
       },
     },
     {
       loader: 'stylus-loader',
       options: {
-        import: [path.resolve(context, 'pkg/webui/styles/include.styl')],
-        use: [nib()],
+        stylusOptions: {
+          import: [path.resolve(context, 'pkg/webui/styles/include.styl')],
+          use: nib(),
+        },
       },
     },
   ],
@@ -108,7 +150,7 @@ export default {
       all: {
         '@ttn-lw': path.resolve(context, 'pkg/webui'),
         '@console': path.resolve(context, 'pkg/webui/console'),
-        '@oauth': path.resolve(context, 'pkg/webui/oauth'),
+        '@account': path.resolve(context, 'pkg/webui/account'),
         '@assets': path.resolve(context, 'pkg/webui/assets'),
       },
       development: {
@@ -125,7 +167,7 @@ export default {
     publicPath: `${ASSETS_ROOT}/`,
     proxy: [
       {
-        context: ['/console', '/oauth', '/api'],
+        context: ['/console', '/account', '/oauth', '/api', '/assets/blob'],
         target: WEBPACK_DEV_SERVER_USE_TLS ? 'https://localhost:8885' : 'http://localhost:1885',
         changeOrigin: true,
         secure: false,
@@ -144,7 +186,7 @@ export default {
   },
   entry: {
     console: ['./config/root.js', './pkg/webui/console.js'],
-    oauth: ['./config/root.js', './pkg/webui/oauth.js'],
+    account: ['./config/root.js', './pkg/webui/account.js'],
   },
   output: {
     filename: production ? '[name].[chunkhash].js' : '[name].js',
@@ -221,6 +263,7 @@ export default {
         filename: `manifest.yaml`,
         showErrors: false,
         template: path.resolve('config', 'manifest-template.yaml'),
+        minify: false,
       }),
       new MiniCssExtractPlugin({
         filename: env({
@@ -228,17 +271,16 @@ export default {
           production: '[name].[contenthash].css',
         }),
       }),
-      new CleanWebpackPlugin(path.resolve(CONTEXT, PUBLIC_DIR), {
-        root: context,
-        verbose: false,
+      new CleanWebpackPlugin({
         dry: WEBPACK_IS_DEV_SERVER_BUILD,
-        exclude: env({
-          production: [],
-          development: ['libs.bundle.js', 'libs.bundle.js.map'],
+        verbose: false,
+        cleanOnceBeforeBuildPatterns: env({
+          production: ['**/*'],
+          development: ['**/*', '!libs.bundle.js', '!libs.bundle.js.map'],
         }),
       }),
-      // Copy static assets to output directory
-      new CopyWebpackPlugin([`${src}/assets/static`]),
+      // Copy static assets to output directory.
+      new CopyWebpackPlugin({ patterns: [{ from: `${src}/assets/static` }] }),
     ],
     production: [
       new webpack.SourceMapDevToolPlugin({
@@ -265,45 +307,4 @@ export default {
       }),
     ],
   }),
-}
-
-function filterLocales(context, request, callback) {
-  if (context.endsWith('node_modules/intl/locale-data/jsonp')) {
-    const supported = r.reduce(function(acc, locale) {
-      return acc || locale.test(request)
-    }, false)
-
-    if (!supported) {
-      return callback(null, `commonjs ${request}`)
-    }
-  }
-  callback()
-}
-
-// Env selects and merges the environments for the passed object based on
-// `NODE_ENV`, which can have the all, development and production keys.
-function env(obj = {}) {
-  if (!obj) {
-    return obj
-  }
-
-  const all = obj.all
-  const dev = obj.development
-  const prod = obj.production
-
-  if (Array.isArray(all) || Array.isArray(dev) || Array.isArray(prod)) {
-    return [...(all || []), ...(production ? prod || [] : dev || [])]
-  }
-
-  if (
-    (dev !== undefined && typeof dev !== 'object') ||
-    (prod !== undefined && typeof prod !== 'object')
-  ) {
-    return production ? prod : dev
-  }
-
-  return {
-    ...(all || {}),
-    ...(production ? prod || {} : dev || {}),
-  }
 }

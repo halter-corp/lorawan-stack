@@ -18,7 +18,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -34,19 +36,14 @@ func (Git) installHook(name string) (err error) {
 	if mg.Verbose() {
 		fmt.Printf("Installing %s hook\n", name)
 	}
-	f, err := os.OpenFile(filepath.Join(".git", "hooks", name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := f.Close(); err == nil && closeErr != nil {
-			err = closeErr
-		}
-	}()
-	if _, err = fmt.Fprintf(f, "ARGS=\"$@\" make git.%s\n", name); err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(
+		filepath.Join(".git", "hooks", name),
+		[]byte(fmt.Sprintf(
+			`STDIN="$(cat /dev/stdin)" ARGS="$@" make git.%s`,
+			name,
+		)),
+		0o755,
+	)
 }
 
 var gitHooks = []string{"pre-commit", "commit-msg", "pre-push"}
@@ -109,14 +106,16 @@ var gitCommitPrefixes = []string{
 	"ci",
 	"cli",
 	"console",
+	"data",
 	"dev",
+	"dr",
 	"dtc",
 	"gcs",
 	"gs",
 	"is",
 	"js",
 	"ns",
-	"oauth",
+	"account",
 	"pba",
 	"qrg",
 	"util",
@@ -199,9 +198,74 @@ nextTopic:
 	return nil
 }
 
-// RunHook runs the Git hook for $HOOK, arguments are taken from $ARGS.
+func (g Git) prePush(stdin string, args ...string) error {
+	if mg.Verbose() {
+		fmt.Println("Running pre-push hook")
+	}
+	if stdin == "" {
+		fmt.Println("Standard input is empty, skip pre-push hook")
+		return nil
+	}
+	var (
+		ref  string
+		head string
+	)
+	if ss := strings.Fields(stdin); len(ss) == 4 {
+		ref = ss[0]
+		head = ss[1]
+	} else {
+		return fmt.Errorf("expected pre-push hook standard input to contain 4 fields, got: %d(`%s`)", len(ss), ss)
+	}
+	if len(args) != 2 {
+		return fmt.Errorf("pre-push hook expected to get 2 arguments, got: %s", args)
+	}
+	if head == "0000000000000000000000000000000000000000" {
+		// Remote branch is being deleted
+		return nil
+	}
+	const ttiMarkerHash = "f3df41ad99f4acdcb2b038da9a15671023bc827c" // Hash of the first proprietary commit.
+	switch err := exec.Command("git", "merge-base", "--is-ancestor", ttiMarkerHash, head).Run().(type) {
+	case nil:
+	case *exec.ExitError:
+		switch n := err.ExitCode(); n {
+		case 1:
+			return nil
+		case 128:
+			if mg.Verbose() {
+				fmt.Println("Unable to check presence of TTI marker commit: hash not found")
+			}
+			return nil
+		default:
+			return fmt.Errorf("expected exit code of 1, got %d", n)
+		}
+	default:
+		return fmt.Errorf("failed to check presence of TTI marker commit `%s`: %s", ttiMarkerHash, err)
+	}
+	if s := os.Getenv("TTI_REMOTES"); s != "" {
+		for _, remote := range strings.Fields(s) {
+			if args[1] == remote {
+				return nil
+			}
+		}
+	} else {
+		switch args[1] {
+		case "git@github.com:TheThingsIndustries/lorawan-stack",
+			"git@github.com:TheThingsIndustries/lorawan-stack.git",
+			"https://github.com/TheThingsIndustries/lorawan-stack",
+			"https://github.com/TheThingsIndustries/lorawan-stack.git",
+			"ssh://git@github.com:TheThingsIndustries/lorawan-stack",
+			"ssh://git@github.com:TheThingsIndustries/lorawan-stack.git":
+			return nil
+		}
+	}
+	return fmt.Errorf("trying to push TTI head `%s`(`%s`) to unverified remote `%s`, abort", head, ref, args[1])
+}
+
+// RunHook runs the Git hook for $HOOK.
+// - standard input contents are taken from $STDIN
+// - arguments are taken from $ARGS
 func (g Git) RunHook() error {
-	hook, args := os.Getenv("HOOK"), strings.Fields(os.Getenv("ARGS"))
+	hook, stdin, args := os.Getenv("HOOK"), os.Getenv("STDIN"), strings.Fields(os.Getenv("ARGS"))
 	switch hook {
 	case "pre-commit":
 		return g.preCommit()
@@ -215,7 +279,7 @@ func (g Git) RunHook() error {
 		if mg.Verbose() {
 			fmt.Println("Running pre-push hook with", args)
 		}
-		return nil
+		return g.prePush(stdin, args...)
 	default:
 		return fmt.Errorf("Unknown hook %s", hook)
 	}
@@ -234,4 +298,26 @@ func (Git) Diff() error {
 		return fmt.Errorf("Previous operations have created changes that were not recorded in the repository. Please make those changes on your local machine before pushing them to the repository:\n%s", output)
 	}
 	return nil
+}
+
+// UpdateSubmodules updates submodules, and initializes them when necessary.
+func (Git) UpdateSubmodules() error {
+	if mg.Verbose() {
+		fmt.Println("Updating submodules")
+	}
+	_, err := sh.Exec(nil, os.Stdout, os.Stderr, "git", "submodule", "update", "--init")
+	return err
+}
+
+func init() {
+	initDeps = append(initDeps, Git.UpdateSubmodules)
+}
+
+// PullSubmodules pulls in submodule updates.
+func (Git) PullSubmodules() error {
+	if mg.Verbose() {
+		fmt.Println("Updating submodules")
+	}
+	_, err := sh.Exec(nil, os.Stdout, os.Stderr, "git", "submodule", "update", "--init", "--remote")
+	return err
 }

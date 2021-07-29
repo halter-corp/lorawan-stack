@@ -25,8 +25,7 @@ import (
 	"gocloud.dev/pubsub/natspubsub"
 )
 
-type impl struct {
-}
+type impl struct{}
 
 type connection struct {
 	*nats.Conn
@@ -39,13 +38,17 @@ func (c *connection) Shutdown(_ context.Context) error {
 }
 
 // OpenConnection implements provider.Provider using the natspubsub package.
-func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *provider.Connection, err error) {
-	settings, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_NATS)
+func (impl) OpenConnection(ctx context.Context, target provider.Target, enabler provider.Enabler) (pc *provider.Connection, err error) {
+	settings, ok := target.GetProvider().(*ttnpb.ApplicationPubSub_Nats)
 	if !ok {
 		panic("wrong provider type provided to OpenConnection")
 	}
+	if err := enabler.Enabled(ctx, target.GetProvider()); err != nil {
+		return nil, err
+	}
+
 	var conn *nats.Conn
-	if conn, err = nats.Connect(settings.NATS.ServerURL); err != nil {
+	if conn, err = nats.Connect(settings.Nats.ServerUrl); err != nil {
 		return nil, err
 	}
 	pc = &provider.Connection{
@@ -139,5 +142,5 @@ func (impl) OpenConnection(ctx context.Context, target provider.Target) (pc *pro
 }
 
 func init() {
-	provider.RegisterProvider(&ttnpb.ApplicationPubSub_NATS{}, impl{})
+	provider.RegisterProvider(&ttnpb.ApplicationPubSub_Nats{}, impl{})
 }

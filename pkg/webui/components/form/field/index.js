@@ -18,7 +18,6 @@ import classnames from 'classnames'
 import { getIn } from 'formik'
 
 import Icon from '@ttn-lw/components/icon'
-import Link from '@ttn-lw/components/link'
 
 import Message from '@ttn-lw/lib/components/message'
 
@@ -27,9 +26,11 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import FormContext from '../context'
 
+import Tooltip from './tooltip'
+
 import style from './field.styl'
 
-export function getPassThroughProps(props, excludeProps) {
+export const getPassThroughProps = (props, excludeProps) => {
   const rest = {}
   for (const property of Object.keys(props)) {
     if (!excludeProps[property]) {
@@ -39,7 +40,7 @@ export function getPassThroughProps(props, excludeProps) {
   return rest
 }
 
-const isValueEmpty = function(value) {
+const isValueEmpty = value => {
   if (value === null || value === undefined) {
     return true
   }
@@ -59,6 +60,7 @@ class FormField extends React.Component {
   static contextType = FormContext
 
   static propTypes = {
+    autoWidth: PropTypes.bool,
     className: PropTypes.string,
     component: PropTypes.oneOfType([
       PropTypes.func,
@@ -71,28 +73,30 @@ class FormField extends React.Component {
     description: PropTypes.message,
     disabled: PropTypes.bool,
     encode: PropTypes.func,
-    glossaryId: PropTypes.string,
-    glossaryTerm: PropTypes.message,
     name: PropTypes.string.isRequired,
+    onBlur: PropTypes.func,
     onChange: PropTypes.func,
     readOnly: PropTypes.bool,
     required: PropTypes.bool,
-    title: PropTypes.message.isRequired,
+    title: PropTypes.message,
+    tooltipId: PropTypes.string,
     warning: PropTypes.message,
   }
 
   static defaultProps = {
+    autoWidth: false,
     className: undefined,
     disabled: false,
     encode: value => value,
     decode: value => value,
     onChange: () => null,
+    onBlur: () => null,
     warning: '',
     description: '',
-    glossaryTerm: '',
-    glossaryId: '',
     readOnly: false,
     required: false,
+    title: undefined,
+    tooltipId: '',
   }
 
   componentDidMount() {
@@ -109,7 +113,7 @@ class FormField extends React.Component {
 
   extractValue(value) {
     let newValue = value
-    if (typeof value === 'object' && 'target' in value) {
+    if (typeof value === 'object' && value !== null && 'target' in value) {
       const target = value.target
       if ('type' in target && target.type === 'checkbox') {
         newValue = target.checked
@@ -126,14 +130,18 @@ class FormField extends React.Component {
     const { name, onChange, encode } = this.props
     const { setFieldValue, setFieldTouched } = this.context
 
-    // Check if the value is react's synthetic event.
-    const isSyntheticEvent = typeof value === 'object' && 'target' in value
     const newValue = encode(this.extractValue(value))
+    let isSyntheticEvent = false
 
-    // TODO: Remove `await` and event persist when https://github.com/jaredpalmer/formik/issues/2457
-    // is resolved.
-    if (typeof value !== 'undefined' && typeof value.persist === 'function') {
-      value.persist()
+    if (typeof value === 'object' && value !== null) {
+      // Check if the value is react's synthetic event.
+      isSyntheticEvent = 'target' in value
+
+      // TODO: Remove `await` and event persist when https://github.com/jaredpalmer/formik/issues/2457
+      // is resolved.
+      if (typeof value.persist === 'function') {
+        value.persist()
+      }
     }
 
     await setFieldValue(name, newValue)
@@ -147,13 +155,15 @@ class FormField extends React.Component {
 
   @bind
   handleBlur(event) {
-    const { name } = this.props
+    const { name, onBlur } = this.props
     const { validateOnBlur, setFieldTouched } = this.context
 
     if (validateOnBlur) {
       const value = this.extractValue(event)
       setFieldTouched(name, !isValueEmpty(value))
     }
+
+    onBlur(event)
   }
 
   render() {
@@ -167,11 +177,11 @@ class FormField extends React.Component {
       disabled,
       required,
       readOnly,
-      glossaryTerm,
-      glossaryId,
+      tooltipId,
+      autoWidth,
       component: Component,
     } = this.props
-    const { horizontal, disabled: formDisabled } = this.context
+    const { disabled: formDisabled } = this.context
 
     const fieldValue = decode(getIn(this.context.values, name))
     const fieldError = getIn(this.context.errors, name)
@@ -181,7 +191,8 @@ class FormField extends React.Component {
     const hasError = Boolean(fieldError)
     const hasWarning = Boolean(warning)
     const hasDescription = Boolean(description)
-    const hasGlossaryTerm = Boolean(glossaryId)
+    const hasTooltip = Boolean(tooltipId)
+    const hasTitle = Boolean(title)
 
     const showError = fieldTouched && hasError
     const showWarning = !hasError && hasWarning
@@ -207,13 +218,17 @@ class FormField extends React.Component {
       <Message className={style.description} content={description} id={describedBy} />
     ) : null
 
+    let tooltipIcon = null
+    if (hasTooltip) {
+      tooltipIcon = <Tooltip id={tooltipId} glossaryTerm={title} />
+    }
+
     const fieldComponentProps = {
       value: fieldValue,
       error: showError,
       warning: showWarning,
       name,
       id: name,
-      horizontal,
       disabled: fieldDisabled,
       onChange: this.handleChange,
       onBlur: this.handleBlur,
@@ -225,33 +240,26 @@ class FormField extends React.Component {
       from(style, {
         error: showError,
         warning: showWarning,
-        horizontal,
         required,
         readOnly,
+        hasTooltip,
+        autoWidth,
       }),
     )
 
     return (
       <div className={cls} data-needs-focus={showError}>
-        <div className={style.label}>
-          <div className={style.labelContainer}>
+        {hasTitle && (
+          <div className={style.label}>
             <Message
               component="label"
               content={title}
               className={style.title}
               htmlFor={fieldComponentProps.id}
             />
-            {hasGlossaryTerm && (
-              <Link.GlossaryLink
-                hideTerm
-                secondary
-                term={glossaryTerm || title}
-                glossaryId={glossaryId}
-                className={style.glossaryLink}
-              />
-            )}
+            {tooltipIcon}
           </div>
-        </div>
+        )}
         <div className={style.componentArea}>
           <Component
             aria-invalid={showError}

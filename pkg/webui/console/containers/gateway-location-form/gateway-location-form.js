@@ -23,51 +23,59 @@ import LocationForm from '@console/components/location-form'
 import Yup from '@ttn-lw/lib/yup'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import tooltipIds from '@ttn-lw/lib/constants/tooltip-ids'
 
 import { latitude as latitudeRegexp, longitude as longitudeRegexp } from '@console/lib/regexp'
 
 const m = defineMessages({
-  locationDescription: 'The location of this gateway may be publicly displayed',
   updateLocationFromStatus: 'Update from status messages',
   updateLocationFromStatusDescription:
     'Update the location of this gateway based on incoming status messages',
   setGatewayLocation: 'Gateway antenna location settings',
   locationSource: 'Location source',
-  privacy: 'Privacy',
-  publishLocation: 'Publish location',
+  locationPrivacy: 'Location privacy',
 })
 
 const validationSchema = Yup.object().shape({
   latitude: Yup.number().when('update_location_from_status', {
     is: false,
     then: schema =>
-      schema.test('is-valid-latitude', sharedMessages.validateLat, value =>
-        latitudeRegexp.test(String(value)),
-      ),
+      schema
+        .required(sharedMessages.validateRequired)
+        .test('is-valid-latitude', sharedMessages.validateLatitude, value =>
+          latitudeRegexp.test(String(value)),
+        ),
     otherwise: schema => schema.strip(),
   }),
   longitude: Yup.number().when('update_location_from_status', {
     is: false,
     then: schema =>
-      schema.test('is-valid-longitude', sharedMessages.validateLong, value =>
-        longitudeRegexp.test(String(value)),
-      ),
+      schema
+        .required(sharedMessages.validateRequired)
+        .test('is-valid-longitude', sharedMessages.validateLongitude, value =>
+          longitudeRegexp.test(String(value)),
+        ),
     otherwise: schema => schema.strip(),
   }),
   altitude: Yup.number().when('update_location_from_status', {
     is: false,
-    then: schema => schema.integer(sharedMessages.validateInt32).required(),
+    then: schema =>
+      schema.integer(sharedMessages.validateInt32).required(sharedMessages.validateRequired),
     otherwise: schema => schema.strip(),
   }),
   location_public: Yup.bool(),
   update_location_from_status: Yup.bool(),
 })
 
-const getRegistryLocation = function(antennas) {
+const getRegistryLocation = antennas => {
   let registryLocation
   if (antennas) {
     for (const key of Object.keys(antennas)) {
-      if (antennas[key].location.source === 'SOURCE_REGISTRY') {
+      if (
+        antennas[key].location !== null &&
+        typeof antennas[key].location === 'object' &&
+        antennas[key].location.source === 'SOURCE_REGISTRY'
+      ) {
         registryLocation = { antenna: antennas[key], key }
         break
       }
@@ -156,11 +164,12 @@ const GatewayLocationForm = ({ gateway, gatewayId, updateGateway }) => {
       allowDelete={!updateLocationFromStatus}
     >
       <Form.Field
-        title={m.privacy}
+        title={m.locationPrivacy}
         name="location_public"
         component={Checkbox}
-        label={m.publishLocation}
-        description={m.locationDescription}
+        label={sharedMessages.public}
+        description={sharedMessages.locationDescription}
+        tooltipId={tooltipIds.GATEWAY_LOCATION}
       />
       <Form.Field
         title={m.locationSource}
@@ -169,6 +178,7 @@ const GatewayLocationForm = ({ gateway, gatewayId, updateGateway }) => {
         description={m.updateLocationFromStatusDescription}
         label={m.updateLocationFromStatus}
         onChange={handleUpdateLocationFromStatusChange}
+        tooltipId={tooltipIds.UPDATE_LOCATION_FROM_STATUS}
       />
     </LocationForm>
   )

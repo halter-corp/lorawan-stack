@@ -15,7 +15,9 @@
 package store
 
 import (
-	"github.com/gogo/protobuf/types"
+	"time"
+
+	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -40,6 +42,7 @@ type EndDevice struct {
 	ModelID         string `gorm:"type:VARCHAR"`
 	HardwareVersion string `gorm:"type:VARCHAR"`
 	FirmwareVersion string `gorm:"type:VARCHAR"`
+	BandID          string `gorm:"type:VARCHAR"`
 
 	NetworkServerAddress     string `gorm:"type:VARCHAR"`
 	ApplicationServerAddress string `gorm:"type:VARCHAR"`
@@ -51,6 +54,8 @@ type EndDevice struct {
 
 	Picture   *Picture
 	PictureID *string `gorm:"type:UUID;index:end_device_picture_index"`
+
+	ActivatedAt *time.Time `gorm:"default:null"`
 }
 
 func init() {
@@ -66,8 +71,8 @@ func mustEndDeviceVersionIDs(pb *ttnpb.EndDevice) *ttnpb.EndDeviceVersionIdentif
 
 // functions to set fields from the device model into the device proto.
 var devicePBSetters = map[string]func(*ttnpb.EndDevice, *EndDevice){
-	"ids.join_eui":   func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.JoinEUI = dev.JoinEUI.toPB() },
-	"ids.dev_eui":    func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.DevEUI = dev.DevEUI.toPB() },
+	"ids.join_eui":   func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.JoinEui = dev.JoinEUI.toPB() },
+	"ids.dev_eui":    func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.DevEui = dev.DevEUI.toPB() },
 	nameField:        func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.Name = dev.Name },
 	descriptionField: func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.Description = dev.Description },
 	attributesField:  func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.Attributes = attributes(dev.Attributes).toMap() },
@@ -77,6 +82,7 @@ var devicePBSetters = map[string]func(*ttnpb.EndDevice, *EndDevice){
 			ModelID:         dev.ModelID,
 			HardwareVersion: dev.HardwareVersion,
 			FirmwareVersion: dev.FirmwareVersion,
+			BandID:          dev.BandID,
 		}
 	},
 	brandIDField: func(pb *ttnpb.EndDevice, dev *EndDevice) {
@@ -91,6 +97,9 @@ var devicePBSetters = map[string]func(*ttnpb.EndDevice, *EndDevice){
 	firmwareVersionField: func(pb *ttnpb.EndDevice, dev *EndDevice) {
 		mustEndDeviceVersionIDs(pb).FirmwareVersion = dev.FirmwareVersion
 	},
+	bandIDField: func(pb *ttnpb.EndDevice, dev *EndDevice) {
+		mustEndDeviceVersionIDs(pb).BandID = dev.BandID
+	},
 	networkServerAddressField:     func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.NetworkServerAddress = dev.NetworkServerAddress },
 	applicationServerAddressField: func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.ApplicationServerAddress = dev.ApplicationServerAddress },
 	joinServerAddressField:        func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.JoinServerAddress = dev.JoinServerAddress },
@@ -103,12 +112,13 @@ var devicePBSetters = map[string]func(*ttnpb.EndDevice, *EndDevice){
 			pb.Picture = dev.Picture.toPB()
 		}
 	},
+	activatedAtField: func(pb *ttnpb.EndDevice, dev *EndDevice) { pb.ActivatedAt = dev.ActivatedAt },
 }
 
 // functions to set fields from the device proto into the device model.
 var deviceModelSetters = map[string]func(*EndDevice, *ttnpb.EndDevice){
-	"ids.join_eui":   func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.JoinEUI = eui(pb.JoinEUI) },
-	"ids.dev_eui":    func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.DevEUI = eui(pb.DevEUI) },
+	"ids.join_eui":   func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.JoinEUI = eui(pb.JoinEui) },
+	"ids.dev_eui":    func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.DevEUI = eui(pb.DevEui) },
 	nameField:        func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.Name = pb.Name },
 	descriptionField: func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.Description = pb.Description },
 	attributesField: func(dev *EndDevice, pb *ttnpb.EndDevice) {
@@ -119,6 +129,7 @@ var deviceModelSetters = map[string]func(*EndDevice, *ttnpb.EndDevice){
 		dev.ModelID = pb.GetVersionIDs().GetModelID()
 		dev.HardwareVersion = pb.GetVersionIDs().GetHardwareVersion()
 		dev.FirmwareVersion = pb.GetVersionIDs().GetFirmwareVersion()
+		dev.BandID = pb.GetVersionIDs().GetBandID()
 	},
 	brandIDField: func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.BrandID = pb.GetVersionIDs().GetBrandID() },
 	modelIDField: func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.ModelID = pb.GetVersionIDs().GetModelID() },
@@ -128,6 +139,7 @@ var deviceModelSetters = map[string]func(*EndDevice, *ttnpb.EndDevice){
 	firmwareVersionField: func(dev *EndDevice, pb *ttnpb.EndDevice) {
 		dev.FirmwareVersion = pb.GetVersionIDs().GetFirmwareVersion()
 	},
+	bandIDField:                   func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.BandID = pb.GetVersionIDs().GetBandID() },
 	networkServerAddressField:     func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.NetworkServerAddress = pb.NetworkServerAddress },
 	applicationServerAddressField: func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.ApplicationServerAddress = pb.ApplicationServerAddress },
 	joinServerAddressField:        func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.JoinServerAddress = pb.JoinServerAddress },
@@ -142,10 +154,11 @@ var deviceModelSetters = map[string]func(*EndDevice, *ttnpb.EndDevice){
 			dev.Picture.fromPB(pb.Picture)
 		}
 	},
+	activatedAtField: func(dev *EndDevice, pb *ttnpb.EndDevice) { dev.ActivatedAt = pb.ActivatedAt },
 }
 
 // fieldMask to use if a nil or empty fieldmask is passed.
-var defaultEndDeviceFieldMask = &types.FieldMask{}
+var defaultEndDeviceFieldMask = &pbtypes.FieldMask{}
 
 func init() {
 	paths := make([]string, 0, len(devicePBSetters))
@@ -164,9 +177,10 @@ var deviceColumnNames = map[string][]string{
 	attributesField:               {},
 	nameField:                     {nameField},
 	descriptionField:              {descriptionField},
-	versionIDsField:               {"brand_id", "model_id", "hardware_version", "firmware_version"},
+	versionIDsField:               {"brand_id", "model_id", "hardware_version", "firmware_version", "band_id"},
 	brandIDField:                  {"brand_id"},
 	modelIDField:                  {"model_id"},
+	bandIDField:                   {"band_id"},
 	hardwareVersionField:          {"hardware_version"},
 	firmwareVersionField:          {"firmware_version"},
 	networkServerAddressField:     {networkServerAddressField},
@@ -174,16 +188,17 @@ var deviceColumnNames = map[string][]string{
 	joinServerAddressField:        {joinServerAddressField},
 	serviceProfileIDField:         {serviceProfileIDField},
 	locationsField:                {},
+	activatedAtField:              {activatedAtField},
 }
 
-func (dev EndDevice) toPB(pb *ttnpb.EndDevice, fieldMask *types.FieldMask) {
-	pb.EndDeviceIdentifiers.ApplicationID = dev.ApplicationID
-	pb.EndDeviceIdentifiers.DeviceID = dev.DeviceID
-	pb.EndDeviceIdentifiers.JoinEUI = dev.JoinEUI.toPB() // Always present.
-	pb.EndDeviceIdentifiers.DevEUI = dev.DevEUI.toPB()   // Always present.
+func (dev EndDevice) toPB(pb *ttnpb.EndDevice, fieldMask *pbtypes.FieldMask) {
+	pb.EndDeviceIdentifiers.ApplicationId = dev.ApplicationID
+	pb.EndDeviceIdentifiers.DeviceId = dev.DeviceID
+	pb.EndDeviceIdentifiers.JoinEui = dev.JoinEUI.toPB() // Always present.
+	pb.EndDeviceIdentifiers.DevEui = dev.DevEUI.toPB()   // Always present.
 	pb.CreatedAt = cleanTime(dev.CreatedAt)
 	pb.UpdatedAt = cleanTime(dev.UpdatedAt)
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultEndDeviceFieldMask
 	}
 	for _, path := range fieldMask.Paths {
@@ -193,8 +208,8 @@ func (dev EndDevice) toPB(pb *ttnpb.EndDevice, fieldMask *types.FieldMask) {
 	}
 }
 
-func (dev *EndDevice) fromPB(pb *ttnpb.EndDevice, fieldMask *types.FieldMask) (columns []string) {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func (dev *EndDevice) fromPB(pb *ttnpb.EndDevice, fieldMask *pbtypes.FieldMask) (columns []string) {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultEndDeviceFieldMask
 	}
 	for _, path := range fieldMask.Paths {

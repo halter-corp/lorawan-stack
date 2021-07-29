@@ -24,7 +24,7 @@ import NotFoundRoute from '@ttn-lw/lib/components/not-found-route'
 
 import withFeatureRequirement from '@console/lib/components/with-feature-requirement'
 
-import SubViewError from '@console/views/error/sub-view'
+import SubViewError from '@console/views/sub-view-error'
 import OrganizationCollaboratorsList from '@console/views/organization-collaborators-list'
 import OrganizationCollaboratorAdd from '@console/views/organization-collaborator-add'
 import OrganizationCollaboratorEdit from '@console/views/organization-collaborator-edit'
@@ -40,7 +40,7 @@ import { selectSelectedOrganizationId } from '@console/store/selectors/organizat
 @withFeatureRequirement(mayViewOrEditOrganizationCollaborators, {
   redirect: ({ orgId }) => `/organizations/${orgId}`,
 })
-@withBreadcrumb('orgs.single.collaborators', function(props) {
+@withBreadcrumb('orgs.single.collaborators', props => {
   const { match } = props
   const { orgId } = match.params
 

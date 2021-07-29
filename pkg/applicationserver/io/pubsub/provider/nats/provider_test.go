@@ -32,6 +32,13 @@ import (
 
 var timeout = (1 << 8) * test.Delay
 
+type allEnabled struct{}
+
+// Enabled implements provider.Enabler.
+func (e *allEnabled) Enabled(context.Context, ttnpb.ApplicationPubSub_Provider) error {
+	return nil
+}
+
 func TestOpenConnection(t *testing.T) {
 	a := assertions.New(t)
 	ctx := test.Context()
@@ -53,12 +60,12 @@ func TestOpenConnection(t *testing.T) {
 	pb := &ttnpb.ApplicationPubSub{
 		ApplicationPubSubIdentifiers: ttnpb.ApplicationPubSubIdentifiers{
 			ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-				ApplicationID: "app1",
+				ApplicationId: "app1",
 			},
-			PubSubID: "ps1",
+			PubSubId: "ps1",
 		},
-		Provider: &ttnpb.ApplicationPubSub_NATS{
-			NATS: &ttnpb.ApplicationPubSub_NATSProvider{},
+		Provider: &ttnpb.ApplicationPubSub_Nats{
+			Nats: &ttnpb.ApplicationPubSub_NATSProvider{},
 		},
 		BaseTopic: "app1.ps1",
 		DownlinkPush: &ttnpb.ApplicationPubSub_Message{
@@ -100,27 +107,31 @@ func TestOpenConnection(t *testing.T) {
 	}
 
 	impl, err := provider.GetProvider(&ttnpb.ApplicationPubSub{
-		Provider: &ttnpb.ApplicationPubSub_NATS{},
+		Provider: &ttnpb.ApplicationPubSub_Nats{
+			Nats: &ttnpb.ApplicationPubSub_NATSProvider{
+				ServerUrl: "nats://invalid.local:4222",
+			},
+		},
 	})
 	a.So(impl, should.NotBeNil)
 	a.So(err, should.BeNil)
 
-	// Invalid attributes - no server provided.
+	// Invalid attributes - invalid server.
 	{
-		conn, err := impl.OpenConnection(ctx, pb)
+		conn, err := impl.OpenConnection(ctx, pb, &allEnabled{})
 		a.So(conn, should.BeNil)
 		a.So(err, should.NotBeNil)
 	}
 
-	pb.Provider = &ttnpb.ApplicationPubSub_NATS{
-		NATS: &ttnpb.ApplicationPubSub_NATSProvider{
-			ServerURL: "nats://localhost:4123",
+	pb.Provider = &ttnpb.ApplicationPubSub_Nats{
+		Nats: &ttnpb.ApplicationPubSub_NATSProvider{
+			ServerUrl: "nats://localhost:4123",
 		},
 	}
 
 	// Valid attributes - connection established.
 	{
-		conn, err := impl.OpenConnection(ctx, pb)
+		conn, err := impl.OpenConnection(ctx, pb, &allEnabled{})
 		a.So(conn, should.NotBeNil)
 		a.So(err, should.BeNil)
 		defer conn.Shutdown(ctx)

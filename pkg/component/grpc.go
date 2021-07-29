@@ -20,6 +20,7 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/metrics"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcclient"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/hooks"
@@ -29,13 +30,17 @@ import (
 )
 
 func (c *Component) initGRPC() {
-	rpclog.ReplaceGrpcLogger(c.logger.WithField("namespace", "grpc"))
+	if c.grpcLogger == nil {
+		c.grpcLogger = c.logger.WithField("namespace", "grpc")
+	}
+	rpclog.ReplaceGrpcLogger(c.grpcLogger)
 
 	c.grpc = rpcserver.New(
 		c.ctx,
 		rpcserver.WithContextFiller(c.FillContext),
 		rpcserver.WithTrustedProxies(c.config.GRPC.TrustedProxies...),
 		rpcserver.WithLogIgnoreMethods(c.config.GRPC.LogIgnoreMethods),
+		rpcserver.WithRateLimiter(c.RateLimiter()),
 	)
 }
 
@@ -45,7 +50,13 @@ func (c *Component) setupGRPC() (err error) {
 	}
 	metrics.InitializeServerMetrics(c.grpc.Server)
 	c.logger.Debug("Starting loopback connection")
-	c.loopback, err = rpcserver.StartLoopback(c.ctx, c.grpc.Server, rpcclient.DefaultDialOptions(c.ctx)...)
+	c.loopback, err = rpcserver.StartLoopback(
+		c.ctx, c.grpc.Server,
+		rpcclient.DefaultDialOptions(
+			// Suppress loopback client logs, because we already have server logs.
+			log.NewContext(c.ctx, log.Noop),
+		)...,
+	)
 	if err != nil {
 		return errors.New("could not start loopback connection").WithCause(err)
 	}

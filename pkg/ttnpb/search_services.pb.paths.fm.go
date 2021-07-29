@@ -2,8 +2,9 @@
 
 package ttnpb
 
-var SearchEntitiesRequestFieldPathsNested = []string{
+var SearchApplicationsRequestFieldPathsNested = []string{
 	"attributes_contain",
+	"deleted",
 	"description_contains",
 	"field_mask",
 	"id_contains",
@@ -13,8 +14,9 @@ var SearchEntitiesRequestFieldPathsNested = []string{
 	"page",
 }
 
-var SearchEntitiesRequestFieldPathsTopLevel = []string{
+var SearchApplicationsRequestFieldPathsTopLevel = []string{
 	"attributes_contain",
+	"deleted",
 	"description_contains",
 	"field_mask",
 	"id_contains",
@@ -22,6 +24,104 @@ var SearchEntitiesRequestFieldPathsTopLevel = []string{
 	"name_contains",
 	"order",
 	"page",
+}
+var SearchClientsRequestFieldPathsNested = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+	"state",
+}
+
+var SearchClientsRequestFieldPathsTopLevel = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+	"state",
+}
+var SearchGatewaysRequestFieldPathsNested = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"eui_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+}
+
+var SearchGatewaysRequestFieldPathsTopLevel = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"eui_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+}
+var SearchOrganizationsRequestFieldPathsNested = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+}
+
+var SearchOrganizationsRequestFieldPathsTopLevel = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+}
+var SearchUsersRequestFieldPathsNested = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+	"state",
+}
+
+var SearchUsersRequestFieldPathsTopLevel = []string{
+	"attributes_contain",
+	"deleted",
+	"description_contains",
+	"field_mask",
+	"id_contains",
+	"limit",
+	"name_contains",
+	"order",
+	"page",
+	"state",
 }
 var SearchEndDevicesRequestFieldPathsNested = []string{
 	"application_ids",

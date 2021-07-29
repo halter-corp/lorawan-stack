@@ -18,9 +18,9 @@ import { defineMessages } from 'react-intl'
 import Tag from '@ttn-lw/components/tag'
 import TagGroup from '@ttn-lw/components/tag/group'
 
-import Message from '@ttn-lw/lib/components/message'
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
-import FetchTable from '@console/containers/fetch-table'
+import Message from '@ttn-lw/lib/components/message'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
@@ -32,13 +32,12 @@ const m = defineMessages({
   grantedRights: 'Granted Rights',
 })
 
-const formatRight = function(right) {
-  return right
+const formatRight = right =>
+  right
     .split('_')
     .slice(1)
     .map(r => r.charAt(0) + r.slice(1).toLowerCase())
     .join(' ')
-}
 
 const RIGHT_TAG_MAX_WIDTH = 140
 
@@ -47,9 +46,7 @@ const headers = [
     name: 'id',
     displayName: m.keyId,
     width: 30,
-    render(id) {
-      return <span className={style.keyId}>{id}</span>
-    },
+    render: id => <span className={style.keyId}>{id}</span>,
   },
   {
     name: 'name',
@@ -60,14 +57,18 @@ const headers = [
     name: 'rights',
     displayName: m.grantedRights,
     width: 40,
-    render(rights) {
-      const tags = rights.map(r => (
-        <Tag className={style.rightTag} content={formatRight(r)} key={r} />
-      ))
+    render: (rights = []) => {
+      if (rights.length > 0) {
+        const tags = rights.map(r => (
+          <Tag className={style.rightTag} content={formatRight(r)} key={r} />
+        ))
 
-      return (
-        <TagGroup className={style.rightTagGroup} tagMaxWidth={RIGHT_TAG_MAX_WIDTH} tags={tags} />
-      )
+        return (
+          <TagGroup className={style.rightTagGroup} tagMaxWidth={RIGHT_TAG_MAX_WIDTH} tags={tags} />
+        )
+      }
+
+      return <Message className={style.none} content={sharedMessages.none} lowercase />
     },
   },
 ]

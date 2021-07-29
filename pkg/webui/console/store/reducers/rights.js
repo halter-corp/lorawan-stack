@@ -12,23 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
+
 import { createGetRightsListActionType } from '@console/store/actions/rights'
-import { createRequestActions } from '@console/store/actions/lib'
 
 const defaultState = {
-  rights: [],
+  rights: {
+    regular: [],
+    pseudo: [],
+  },
 }
 
-const createNamedRightsReducer = function(reducerName = '') {
+const createNamedRightsReducer = (reducerName = '') => {
   const GET_LIST_BASE = createGetRightsListActionType(reducerName)
   const [{ success: GET_LIST_SUCCESS }] = createRequestActions(GET_LIST_BASE)
 
-  return function(state = defaultState, { type, payload }) {
+  return (state = defaultState, { type, payload }) => {
     switch (type) {
       case GET_LIST_SUCCESS:
         return {
           ...state,
-          rights: payload,
+          rights: {
+            regular: payload.filter(right => !right.endsWith('_ALL')),
+            pseudo: payload.filter(right => right.endsWith('_ALL')),
+          },
         }
       default:
         return state

@@ -157,26 +157,26 @@ func (dst *DownlinkMessage) SetFields(src *DownlinkMessage, paths ...string) err
 		case "end_device_ids":
 			if len(subs) > 0 {
 				var newDst, newSrc *EndDeviceIdentifiers
-				if (src == nil || src.EndDeviceIDs == nil) && dst.EndDeviceIDs == nil {
+				if (src == nil || src.EndDeviceIds == nil) && dst.EndDeviceIds == nil {
 					continue
 				}
 				if src != nil {
-					newSrc = src.EndDeviceIDs
+					newSrc = src.EndDeviceIds
 				}
-				if dst.EndDeviceIDs != nil {
-					newDst = dst.EndDeviceIDs
+				if dst.EndDeviceIds != nil {
+					newDst = dst.EndDeviceIds
 				} else {
 					newDst = &EndDeviceIdentifiers{}
-					dst.EndDeviceIDs = newDst
+					dst.EndDeviceIds = newDst
 				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.EndDeviceIDs = src.EndDeviceIDs
+					dst.EndDeviceIds = src.EndDeviceIds
 				} else {
-					dst.EndDeviceIDs = nil
+					dst.EndDeviceIds = nil
 				}
 			}
 		case "correlation_ids":
@@ -187,6 +187,15 @@ func (dst *DownlinkMessage) SetFields(src *DownlinkMessage, paths ...string) err
 				dst.CorrelationIDs = src.CorrelationIDs
 			} else {
 				dst.CorrelationIDs = nil
+			}
+		case "session_key_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'session_key_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SessionKeyId = src.SessionKeyId
+			} else {
+				dst.SessionKeyId = nil
 			}
 
 		case "settings":
@@ -304,6 +313,92 @@ func (dst *TxAcknowledgment) SetFields(src *TxAcknowledgment, paths ...string) e
 			} else {
 				var zero TxAcknowledgment_Result
 				dst.Result = zero
+			}
+		case "downlink_message":
+			if len(subs) > 0 {
+				var newDst, newSrc *DownlinkMessage
+				if (src == nil || src.DownlinkMessage == nil) && dst.DownlinkMessage == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.DownlinkMessage
+				}
+				if dst.DownlinkMessage != nil {
+					newDst = dst.DownlinkMessage
+				} else {
+					newDst = &DownlinkMessage{}
+					dst.DownlinkMessage = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.DownlinkMessage = src.DownlinkMessage
+				} else {
+					dst.DownlinkMessage = nil
+				}
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *GatewayTxAcknowledgment) SetFields(src *GatewayTxAcknowledgment, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "gateway_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *GatewayIdentifiers
+				if (src == nil || src.GatewayIds == nil) && dst.GatewayIds == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.GatewayIds
+				}
+				if dst.GatewayIds != nil {
+					newDst = dst.GatewayIds
+				} else {
+					newDst = &GatewayIdentifiers{}
+					dst.GatewayIds = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.GatewayIds = src.GatewayIds
+				} else {
+					dst.GatewayIds = nil
+				}
+			}
+		case "tx_ack":
+			if len(subs) > 0 {
+				var newDst, newSrc *TxAcknowledgment
+				if (src == nil || src.TxAck == nil) && dst.TxAck == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.TxAck
+				}
+				if dst.TxAck != nil {
+					newDst = dst.TxAck
+				} else {
+					newDst = &TxAcknowledgment{}
+					dst.TxAck = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.TxAck = src.TxAck
+				} else {
+					dst.TxAck = nil
+				}
 			}
 
 		default:
@@ -517,6 +612,56 @@ func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string)
 				dst.Locations = src.Locations
 			} else {
 				dst.Locations = nil
+			}
+		case "version_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *EndDeviceVersionIdentifiers
+				if (src == nil || src.VersionIDs == nil) && dst.VersionIDs == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.VersionIDs
+				}
+				if dst.VersionIDs != nil {
+					newDst = dst.VersionIDs
+				} else {
+					newDst = &EndDeviceVersionIdentifiers{}
+					dst.VersionIDs = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.VersionIDs = src.VersionIDs
+				} else {
+					dst.VersionIDs = nil
+				}
+			}
+		case "network_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *NetworkIdentifiers
+				if (src == nil || src.NetworkIds == nil) && dst.NetworkIds == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.NetworkIds
+				}
+				if dst.NetworkIds != nil {
+					newDst = dst.NetworkIds
+				} else {
+					newDst = &NetworkIdentifiers{}
+					dst.NetworkIds = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.NetworkIds = src.NetworkIds
+				} else {
+					dst.NetworkIds = nil
+				}
 			}
 
 		default:
@@ -857,6 +1002,82 @@ func (dst *ApplicationInvalidatedDownlinks) SetFields(src *ApplicationInvalidate
 			} else {
 				var zero uint32
 				dst.LastFCntDown = zero
+			}
+		case "session_key_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'session_key_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SessionKeyID = src.SessionKeyID
+			} else {
+				dst.SessionKeyID = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *DownlinkQueueOperationErrorDetails) SetFields(src *DownlinkQueueOperationErrorDetails, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "dev_addr":
+			if len(subs) > 0 {
+				return fmt.Errorf("'dev_addr' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DevAddr = src.DevAddr
+			} else {
+				dst.DevAddr = nil
+			}
+		case "session_key_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'session_key_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.SessionKeyID = src.SessionKeyID
+			} else {
+				dst.SessionKeyID = nil
+			}
+		case "min_f_cnt_down":
+			if len(subs) > 0 {
+				return fmt.Errorf("'min_f_cnt_down' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.MinFCntDown = src.MinFCntDown
+			} else {
+				var zero uint32
+				dst.MinFCntDown = zero
+			}
+		case "pending_dev_addr":
+			if len(subs) > 0 {
+				return fmt.Errorf("'pending_dev_addr' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.PendingDevAddr = src.PendingDevAddr
+			} else {
+				dst.PendingDevAddr = nil
+			}
+		case "pending_session_key_id":
+			if len(subs) > 0 {
+				return fmt.Errorf("'pending_session_key_id' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.PendingSessionKeyID = src.PendingSessionKeyID
+			} else {
+				dst.PendingSessionKeyID = nil
+			}
+		case "pending_min_f_cnt_down":
+			if len(subs) > 0 {
+				return fmt.Errorf("'pending_min_f_cnt_down' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.PendingMinFCntDown = src.PendingMinFCntDown
+			} else {
+				var zero uint32
+				dst.PendingMinFCntDown = zero
 			}
 
 		default:

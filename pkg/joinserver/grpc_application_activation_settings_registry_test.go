@@ -36,8 +36,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewRedisApplicationActivationSettingRegistry(t testing.TB) (ApplicationActivationSettingRegistry, func()) {
-	cl, flush := test.NewRedis(t, "application-activation-settings")
+func NewRedisApplicationActivationSettingRegistry(ctx context.Context) (ApplicationActivationSettingRegistry, func()) {
+	tb := test.MustTBFromContext(ctx)
+	cl, flush := test.NewRedis(ctx, "application-activation-settings")
 	reg := &redis.ApplicationActivationSettingRegistry{
 		Redis: cl,
 	}
@@ -45,7 +46,7 @@ func NewRedisApplicationActivationSettingRegistry(t testing.TB) (ApplicationActi
 		func() {
 			flush()
 			if err := cl.Close(); err != nil {
-				t.Errorf("Failed to close Redis appliation activation setting registry client: %s", err)
+				tb.Errorf("Failed to close Redis appliation activation setting registry client: %s", err)
 			}
 		}
 }
@@ -61,7 +62,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 		asID     = "test-as-id"
 	)
 	appID := ttnpb.ApplicationIdentifiers{
-		ApplicationID: appIDStr,
+		ApplicationId: appIDStr,
 	}
 	netID := types.NetID{0x0, 0x1, 0x2}
 	jsKEK := types.AES128Key{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xe}
@@ -80,16 +81,16 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 		AuthValue:     "key",
 		AllowInsecure: true,
 	})
-	newJS := func(t *testing.T, rights ...ttnpb.Right) (ttnpb.ApplicationActivationSettingRegistryClient, ApplicationActivationSettingRegistry, func()) {
-		reg, closeFn := NewRedisApplicationActivationSettingRegistry(t)
+	newJS := func(ctx context.Context, rights ...ttnpb.Right) (ttnpb.ApplicationActivationSettingRegistryClient, ApplicationActivationSettingRegistry, func()) {
+		reg, closeFn := NewRedisApplicationActivationSettingRegistry(ctx)
 
 		js := test.Must(New(
 			componenttest.NewComponent(t, &component.Config{},
 				component.WithClusterNew(func(context.Context, *cluster.Config, ...cluster.Option) (cluster.Cluster, error) {
 					return &test.MockCluster{
 						JoinFunc: test.ClusterJoinNilFunc,
-						GetPeerFunc: func(reqCtx context.Context, role ttnpb.ClusterRole, ids ttnpb.Identifiers) (cluster.Peer, error) {
-							a, _ := test.New(t)
+						GetPeerFunc: func(reqCtx context.Context, role ttnpb.ClusterRole, ids cluster.EntityIdentifiers) (cluster.Peer, error) {
+							_, a := test.MustNewTFromContext(ctx)
 							a.So(role, should.Equal, ttnpb.ClusterRole_ACCESS)
 							return test.Must(test.NewGRPCServerPeer(ctx, &test.MockApplicationAccessServer{
 								ListRightsFunc: func(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (*ttnpb.Rights, error) {
@@ -134,7 +135,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name: "No rights",
 			Request: &ttnpb.GetApplicationActivationSettingsRequest{
 				ApplicationIdentifiers: appID,
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -149,7 +150,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name: "No read right",
 			Request: &ttnpb.GetApplicationActivationSettingsRequest{
 				ApplicationIdentifiers: appID,
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -179,7 +180,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name: "Not found/with paths",
 			Request: &ttnpb.GetApplicationActivationSettingsRequest{
 				ApplicationIdentifiers: appID,
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -199,7 +200,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name:     fmt.Sprintf("Get errors/%s", tc.Name),
 			Parallel: true,
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
-				cl, _, stop := newJS(t, tc.Rights...)
+				cl, _, stop := newJS(ctx, tc.Rights...)
 				defer stop()
 
 				sets, err := cl.Get(ctx, tc.Request, credOpt)
@@ -235,7 +236,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					KEKLabel: sessionKEKLabel,
 					KEK:      jsKEKEnvelopeUnwrapped,
 				},
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -254,7 +255,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					KEKLabel: sessionKEKLabel,
 					KEK:      jsKEKEnvelopeUnwrapped,
 				},
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -276,7 +277,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					KEKLabel: sessionKEKLabel,
 					KEK:      jsKEKEnvelopeUnwrapped,
 				},
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek",
 						"kek_label",
@@ -317,7 +318,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 						Key: &types.AES128Key{},
 					},
 				},
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek_label",
 						"kek",
@@ -339,7 +340,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 				ApplicationActivationSettings: ttnpb.ApplicationActivationSettings{
 					KEK: jsKEKEnvelopeUnwrapped,
 				},
-				FieldMask: pbtypes.FieldMask{
+				FieldMask: &pbtypes.FieldMask{
 					Paths: []string{
 						"kek_label",
 						"kek",
@@ -360,7 +361,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name:     fmt.Sprintf("Set errors/%s", tc.Name),
 			Parallel: true,
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
-				cl, _, stop := newJS(t, tc.Rights...)
+				cl, _, stop := newJS(ctx, tc.Rights...)
 				defer stop()
 
 				sets, err := cl.Set(ctx, tc.Request, credOpt)
@@ -440,7 +441,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name:     fmt.Sprintf("Delete errors/%s", tc.Name),
 			Parallel: true,
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
-				cl, _, stop := newJS(t, tc.Rights...)
+				cl, _, stop := newJS(ctx, tc.Rights...)
 				defer stop()
 
 				v, err := cl.Delete(ctx, tc.Request, credOpt)
@@ -465,7 +466,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			CreateSettings: &ttnpb.ApplicationActivationSettings{
 				KEKLabel:            sessionKEKLabel,
 				KEK:                 jsKEKEnvelopeUnwrapped,
-				HomeNetID:           &netID,
+				HomeNetId:           &netID,
 				ApplicationServerID: asID,
 			},
 			CreatePaths: []string{
@@ -477,7 +478,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			GetSettings: &ttnpb.ApplicationActivationSettings{
 				KEKLabel:            sessionKEKLabel,
 				KEK:                 jsKEKEnvelopeUnwrapped,
-				HomeNetID:           &netID,
+				HomeNetId:           &netID,
 				ApplicationServerID: asID,
 			},
 		},
@@ -487,7 +488,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 			Name:     fmt.Sprintf("Flow/%s", tc.Name),
 			Parallel: true,
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
-				cl, reg, stop := newJS(t,
+				cl, reg, stop := newJS(ctx,
 					ttnpb.RIGHT_APPLICATION_DEVICES_READ_KEYS,
 					ttnpb.RIGHT_APPLICATION_DEVICES_WRITE_KEYS,
 				)
@@ -499,7 +500,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 						sets, err := cl.Set(ctx, &ttnpb.SetApplicationActivationSettingsRequest{
 							ApplicationIdentifiers:        appID,
 							ApplicationActivationSettings: *tc.CreateSettings,
-							FieldMask: pbtypes.FieldMask{
+							FieldMask: &pbtypes.FieldMask{
 								Paths: tc.CreatePaths,
 							},
 						}, credOpt)
@@ -526,7 +527,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 						sets, err := cl.Get(ctx, &ttnpb.GetApplicationActivationSettingsRequest{
 							ApplicationIdentifiers: appID,
-							FieldMask: pbtypes.FieldMask{
+							FieldMask: &pbtypes.FieldMask{
 								Paths: tc.CreatePaths,
 							},
 						}, credOpt)
@@ -542,7 +543,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 						sets, err := cl.Set(ctx, &ttnpb.SetApplicationActivationSettingsRequest{
 							ApplicationIdentifiers:        appID,
 							ApplicationActivationSettings: *tc.CreateSettings,
-							FieldMask: pbtypes.FieldMask{
+							FieldMask: &pbtypes.FieldMask{
 								Paths: tc.CreatePaths,
 							},
 						}, credOpt)
@@ -557,7 +558,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 						sets, err := cl.Set(ctx, &ttnpb.SetApplicationActivationSettingsRequest{
 							ApplicationIdentifiers: appID,
-							FieldMask: pbtypes.FieldMask{
+							FieldMask: &pbtypes.FieldMask{
 								Paths: []string{
 									"kek_label",
 									"kek",
@@ -586,7 +587,7 @@ func TestApplicationActivationSettingRegistryServer(t *testing.T) {
 					Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 						sets, err := cl.Get(ctx, &ttnpb.GetApplicationActivationSettingsRequest{
 							ApplicationIdentifiers: appID,
-							FieldMask: pbtypes.FieldMask{
+							FieldMask: &pbtypes.FieldMask{
 								Paths: tc.CreatePaths,
 							},
 						}, credOpt)

@@ -15,7 +15,7 @@ builds:
       - -w
       - -X go.thethings.network/lorawan-stack/v3/pkg/version.BuildDate={{.Date}}
       - -X go.thethings.network/lorawan-stack/v3/pkg/version.GitCommit={{.ShortCommit}}
-      - -X go.thethings.network/lorawan-stack/v3/pkg/version.TTN={{.Version}}
+      - -X go.thethings.network/lorawan-stack/v3/pkg/version.TTN={{ trimprefix .Version "v" }}
     env:
       - CGO_ENABLED=0
     goos:
@@ -31,7 +31,7 @@ builds:
       - -w
       - -X go.thethings.network/lorawan-stack/v3/pkg/version.BuildDate={{.Date}}
       - -X go.thethings.network/lorawan-stack/v3/pkg/version.GitCommit={{.ShortCommit}}
-      - -X go.thethings.network/lorawan-stack/v3/pkg/version.TTN={{.Version}}
+      - -X go.thethings.network/lorawan-stack/v3/pkg/version.TTN={{ trimprefix .Version "v" }}
     env:
       - CGO_ENABLED=0
     goos:
@@ -43,11 +43,25 @@ dockers:
   - goos: linux
     goarch: amd64
     dockerfile: Dockerfile
+    use_buildx: true
     binaries:
       - ttn-lw-cli
       - ttn-lw-stack
+    build_flag_templates:
+      - --platform=linux/amd64
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.vendor=The Things Network Foundation"
+      - "--label=org.opencontainers.image.title=The Things Stack"
+      - "--label=org.opencontainers.image.url=https://www.thethingsindustries.com/docs"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     image_templates:
-      - 'lorawan-stack-dev:{{ .FullCommit }}'
+      - 'lorawan-stack-dev:{{ .FullCommit }}-amd64'
     skip_push: true
     extra_files:
+      - data
       - public
+
+signs:
+  - artifacts: checksum
+    args: ["--pinentry-mode=loopback", "--no-tty", "--passphrase-fd", "0", "--batch", "--output", "${signature}", "--detach-sign", "-u", "{{ .Env.SIGN_KEY_NAME }}", "${artifact}"]
+    stdin_file: /tmp/gpg_passphrase

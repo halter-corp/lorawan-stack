@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
 	. "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/grpc"
@@ -31,8 +32,11 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/messageprocessors"
+	"go.thethings.network/lorawan-stack/v3/pkg/messageprocessors/cayennelpp"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
@@ -40,7 +44,7 @@ import (
 )
 
 var (
-	registeredApplicationID  = ttnpb.ApplicationIdentifiers{ApplicationID: "test-app"}
+	registeredApplicationID  = ttnpb.ApplicationIdentifiers{ApplicationId: "test-app"}
 	registeredApplicationUID = unique.ID(test.Context(), registeredApplicationID)
 	registeredApplicationKey = "test-key"
 
@@ -90,12 +94,12 @@ func TestAuthentication(t *testing.T) {
 			OK:  false,
 		},
 		{
-			ID:  ttnpb.ApplicationIdentifiers{ApplicationID: "invalid-application"},
+			ID:  ttnpb.ApplicationIdentifiers{ApplicationId: "invalid-application"},
 			Key: "invalid-key",
 			OK:  false,
 		},
 	} {
-		t.Run(fmt.Sprintf("%v:%v", tc.ID.ApplicationID, tc.Key), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v:%v", tc.ID.ApplicationId, tc.Key), func(t *testing.T) {
 			a := assertions.New(t)
 
 			ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -109,18 +113,19 @@ func TestAuthentication(t *testing.T) {
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
+			var err error
 			go func() {
 				defer wg.Done()
-				_, err := client.Subscribe(ctx, &tc.ID, creds)
-				if tc.OK && err != nil && !a.So(errors.IsCanceled(err), should.BeTrue) {
-					t.Fatalf("Unexpected link error: %v", err)
-				}
-				if !tc.OK && !a.So(errors.IsCanceled(err), should.BeFalse) {
-					t.FailNow()
-				}
+				_, err = client.Subscribe(ctx, &tc.ID, creds)
 			}()
-
 			wg.Wait()
+
+			if tc.OK && err != nil && !a.So(errors.IsCanceled(err), should.BeTrue) {
+				t.Fatalf("Unexpected link error: %v", err)
+			}
+			if !tc.OK && !a.So(errors.IsCanceled(err), should.BeFalse) {
+				t.FailNow()
+			}
 		})
 	}
 }
@@ -195,7 +200,7 @@ func TestTraffic(t *testing.T) {
 		up := &ttnpb.ApplicationUp{
 			EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 				ApplicationIdentifiers: registeredApplicationID,
-				DeviceID:               "foo-device",
+				DeviceId:               "foo-device",
 			},
 			Up: &ttnpb.ApplicationUp_UplinkMessage{
 				UplinkMessage: &ttnpb.ApplicationUplink{
@@ -203,7 +208,7 @@ func TestTraffic(t *testing.T) {
 				},
 			},
 		}
-		if err := sub.SendUp(ctx, up); !a.So(err, should.BeNil) {
+		if err := sub.Publish(ctx, up); !a.So(err, should.BeNil) {
 			t.FailNow()
 		}
 
@@ -220,7 +225,7 @@ func TestTraffic(t *testing.T) {
 		a := assertions.New(t)
 		ids := ttnpb.EndDeviceIdentifiers{
 			ApplicationIdentifiers: registeredApplicationID,
-			DeviceID:               "foo-device",
+			DeviceId:               "foo-device",
 		}
 
 		// List: unauthorized.
@@ -256,7 +261,7 @@ func TestTraffic(t *testing.T) {
 				EndDeviceIdentifiers: ids,
 				Downlinks: []*ttnpb.ApplicationDownlink{
 					{
-						SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44}, // This gets discarded.
+						SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44},
 						FPort:          1,
 						FRMPayload:     []byte{0x01, 0x01, 0x01},
 						Confirmed:      true,
@@ -288,6 +293,7 @@ func TestTraffic(t *testing.T) {
 			a.So(res.Downlinks, should.HaveLength, 3)
 			a.So(res.Downlinks, should.Resemble, []*ttnpb.ApplicationDownlink{
 				{
+					SessionKeyID:   []byte{0x11, 0x22, 0x33, 0x44},
 					FPort:          1,
 					Confirmed:      true,
 					FRMPayload:     []byte{0x01, 0x01, 0x01},
@@ -403,4 +409,251 @@ func TestMQTTConfig(t *testing.T) {
 		PublicAddress:    "example.com:1883",
 		PublicTLSAddress: "example.com:8883",
 	})
+}
+
+func TestSimulateUplink(t *testing.T) {
+	a := assertions.New(t)
+	ctx := log.NewContext(test.Context(), test.GetLogger(t))
+
+	is, isAddr := startMockIS(ctx)
+	is.add(ctx, registeredApplicationID, registeredApplicationKey)
+
+	c := componenttest.NewComponent(t, &component.Config{
+		ServiceBase: config.ServiceBase{
+			GRPC: config.GRPC{
+				Listen:                      ":0",
+				AllowInsecureForCredentials: true,
+			},
+			Cluster: cluster.Config{
+				IdentityServer: isAddr,
+			},
+		},
+	})
+
+	registeredDeviceID := ttnpb.EndDeviceIdentifiers{
+		DeviceId:               "dev1",
+		ApplicationIdentifiers: registeredApplicationID,
+		DevEui:                 &types.EUI64{0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01},
+	}
+
+	as := mock.NewServer(c)
+	f := &mockFetcher{}
+	srv := New(as, WithEndDeviceFetcher(f))
+	c.RegisterGRPC(&mockRegisterer{ctx, srv})
+	componenttest.StartComponent(t, c)
+	defer c.Close()
+
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
+
+	client := ttnpb.NewAppAsClient(c.LoopbackConn())
+	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
+		AuthType:      "Bearer",
+		AuthValue:     registeredApplicationKey,
+		AllowInsecure: true,
+	})
+
+	upCh := make(chan erroredApplicationUp, 1)
+	streamCtx := test.Context()
+	stream, err := client.Subscribe(streamCtx, &registeredApplicationID, creds)
+	if err != nil {
+		t.Fatalf("Failed to subscribe: %s\n", err)
+	}
+	go func() {
+		for streamCtx.Done() == nil {
+			up, err := stream.Recv()
+			upCh <- erroredApplicationUp{up, err}
+		}
+	}()
+
+	<-as.Subscriptions()
+	for _, tc := range []struct {
+		name              string
+		up                *ttnpb.ApplicationUp
+		setup             func(f *mockFetcher)
+		expectIdentifiers ttnpb.EndDeviceIdentifiers
+	}{
+		{
+			name: "Fetch",
+			up: &ttnpb.ApplicationUp{
+				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+					DeviceId:               registeredDeviceID.DeviceId,
+					ApplicationIdentifiers: registeredApplicationID,
+				},
+				Up: &ttnpb.ApplicationUp_ServiceData{
+					ServiceData: &ttnpb.ApplicationServiceData{},
+				},
+			},
+			setup: func(f *mockFetcher) {
+				f.dev = &ttnpb.EndDevice{
+					EndDeviceIdentifiers: registeredDeviceID,
+				}
+				f.err = nil
+			},
+			expectIdentifiers: registeredDeviceID,
+		},
+		{
+			name: "FetchError",
+			up: &ttnpb.ApplicationUp{
+				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
+					DeviceId:               registeredDeviceID.DeviceId,
+					ApplicationIdentifiers: registeredApplicationID,
+				},
+				Up: &ttnpb.ApplicationUp_ServiceData{
+					ServiceData: &ttnpb.ApplicationServiceData{},
+				},
+			},
+			setup: func(f *mockFetcher) {
+				f.dev = nil
+				f.err = fmt.Errorf("mock error")
+			},
+			expectIdentifiers: ttnpb.EndDeviceIdentifiers{
+				DeviceId:               registeredDeviceID.DeviceId,
+				ApplicationIdentifiers: registeredApplicationID,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setup(f)
+
+			_, err = client.SimulateUplink(ctx, tc.up, creds)
+			if !a.So(err, should.BeNil) {
+				t.FailNow()
+			}
+			select {
+			case up := <-upCh:
+				if err := up.error; err != nil {
+					t.Fatalf("Received unexpected error: %s\n", err)
+				}
+				a.So(f.calledWithIdentifers, should.Resemble, tc.up.EndDeviceIdentifiers)
+				a.So(f.calledWithPaths, should.Resemble, []string{"ids"})
+				a.So(up.EndDeviceIdentifiers, should.Resemble, tc.expectIdentifiers)
+			case <-time.After(timeout):
+				t.Fatal("Timed out waiting for simulated uplink")
+			}
+		})
+	}
+}
+
+func TestMessageProcessors(t *testing.T) {
+	a := assertions.New(t)
+	ctx := log.NewContext(test.Context(), test.GetLogger(t))
+
+	is, isAddr := startMockIS(ctx)
+	is.add(ctx, registeredApplicationID, registeredApplicationKey)
+
+	c := componenttest.NewComponent(t, &component.Config{
+		ServiceBase: config.ServiceBase{
+			GRPC: config.GRPC{
+				Listen:                      ":0",
+				AllowInsecureForCredentials: true,
+			},
+			Cluster: cluster.Config{
+				IdentityServer: isAddr,
+			},
+		},
+	})
+	as := mock.NewServer(c)
+	srv := New(as, WithPayloadProcessor(&messageprocessors.MapPayloadProcessor{
+		ttnpb.PayloadFormatter_FORMATTER_CAYENNELPP: cayennelpp.New(),
+	}))
+	c.RegisterGRPC(&mockRegisterer{ctx, srv})
+	componenttest.StartComponent(t, c)
+	defer c.Close()
+
+	mustHavePeer(ctx, c, ttnpb.ClusterRole_ENTITY_REGISTRY)
+
+	client := ttnpb.NewAppAsClient(c.LoopbackConn())
+
+	creds := grpc.PerRPCCredentials(rpcmetadata.MD{
+		AuthType:      "Bearer",
+		AuthValue:     registeredApplicationKey,
+		AllowInsecure: true,
+	})
+
+	{
+		resp, err := client.EncodeDownlink(ctx, &ttnpb.EncodeDownlinkRequest{
+			EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: registeredApplicationID,
+				DeviceId:               "foobar",
+			},
+			Downlink: &ttnpb.ApplicationDownlink{
+				DecodedPayload: &pbtypes.Struct{
+					Fields: map[string]*pbtypes.Value{
+						"value_2": {
+							Kind: &pbtypes.Value_NumberValue{
+								NumberValue: -50.51,
+							},
+						},
+					},
+				},
+				FPort: 1,
+			},
+			Formatter: ttnpb.PayloadFormatter_FORMATTER_CAYENNELPP,
+		}, creds)
+		if !a.So(err, should.BeNil) {
+			t.FailNow()
+		}
+		if a.So(resp.Downlink, should.NotBeNil) {
+			a.So(resp.Downlink.FPort, should.Equal, 1)
+			a.So(resp.Downlink.FRMPayload, should.Resemble, []byte{2, 236, 69})
+		}
+	}
+
+	{
+		resp, err := client.DecodeUplink(ctx, &ttnpb.DecodeUplinkRequest{
+			EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: registeredApplicationID,
+				DeviceId:               "foobar",
+			},
+			Uplink: &ttnpb.ApplicationUplink{
+				FRMPayload: []byte{1, 0, 255},
+				RxMetadata: []*ttnpb.RxMetadata{{GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayId: "gtw"}}},
+				Settings:   ttnpb.TxSettings{DataRate: ttnpb.DataRate{Modulation: &ttnpb.DataRate_Lora{Lora: &ttnpb.LoRaDataRate{}}}},
+				FPort:      1,
+			},
+			Formatter: ttnpb.PayloadFormatter_FORMATTER_CAYENNELPP,
+		}, creds)
+		if !a.So(err, should.BeNil) {
+			t.FailNow()
+		}
+		if a.So(resp.Uplink, should.NotBeNil) {
+			a.So(resp.Uplink.FPort, should.Equal, 1)
+			a.So(resp.Uplink.DecodedPayload, should.Resemble, &pbtypes.Struct{
+				Fields: map[string]*pbtypes.Value{
+					"digital_in_1": {
+						Kind: &pbtypes.Value_NumberValue{NumberValue: 255},
+					},
+				},
+			})
+		}
+	}
+
+	{
+		resp, err := client.DecodeDownlink(ctx, &ttnpb.DecodeDownlinkRequest{
+			EndDeviceIds: &ttnpb.EndDeviceIdentifiers{
+				ApplicationIdentifiers: registeredApplicationID,
+				DeviceId:               "foobar",
+			},
+			Downlink: &ttnpb.ApplicationDownlink{
+				FRMPayload: []byte{2, 236, 69},
+				FPort:      1,
+			},
+			Formatter: ttnpb.PayloadFormatter_FORMATTER_CAYENNELPP,
+		}, creds)
+		if !a.So(err, should.BeNil) {
+			t.FailNow()
+		}
+		if a.So(resp.Downlink, should.NotBeNil) {
+			a.So(resp.Downlink.FPort, should.Equal, 1)
+			a.So(resp.Downlink.DecodedPayload, should.Resemble, &pbtypes.Struct{
+				Fields: map[string]*pbtypes.Value{
+					"value_2": {
+						Kind: &pbtypes.Value_NumberValue{
+							NumberValue: -50.51,
+						},
+					},
+				},
+			})
+		}
+	}
 }

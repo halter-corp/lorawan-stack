@@ -28,16 +28,16 @@ import Yup from '@ttn-lw/lib/yup'
 
 import Form from '.'
 
-const handleSubmit = function(data, { resetForm }) {
+const handleSubmit = (data, { resetForm }) => {
   action('Submit')(data)
   setTimeout(() => resetForm({ values: data }), 1000)
 }
 
-const containerStyles = {
+const containerLoginStyles = {
   maxWidth: '400px',
 }
 
-const containerHorizontalStyles = {
+const containerDefaultStyles = {
   maxWidth: '600px',
 }
 
@@ -51,7 +51,7 @@ storiesOf('Form', module)
     })(story)(context),
   )
   .add('Login', () => (
-    <div style={containerStyles}>
+    <div style={containerLoginStyles}>
       <Form
         onSubmit={handleSubmit}
         initialValues={{
@@ -69,7 +69,7 @@ storiesOf('Form', module)
     </div>
   ))
   .add('Field Groups', () => (
-    <div style={containerHorizontalStyles}>
+    <div style={containerDefaultStyles}>
       <Form
         onSubmit={handleSubmit}
         initialValues={{
@@ -77,7 +77,6 @@ storiesOf('Form', module)
           'checkbox-story': { foo: true },
         }}
         submitEnabledWhenInvalid
-        horizontal
       >
         <Form.Field name="radio-story" title="Radio Buttons" component={Radio.Group}>
           <Radio label="Foo" value="foo" name="foo" />
@@ -96,21 +95,15 @@ storiesOf('Form', module)
     </div>
   ))
   .add('Mixed', () => (
-    <div style={containerHorizontalStyles}>
+    <div style={containerDefaultStyles}>
       <Form
         validateOnBlur
         validateOnChange
         validate
-        horizontal
         onSubmit={handleSubmit}
         validationSchema={Yup.object().shape({
-          name: Yup.string()
-            .min(5, 'Too Short')
-            .max(25, 'Too Long')
-            .required('Required'),
-          description: Yup.string()
-            .min(5, 'Too Short')
-            .max(50, 'Too Long'),
+          name: Yup.string().min(5, 'Too Short').max(25, 'Too Long').required('Required'),
+          description: Yup.string().min(5, 'Too Short').max(50, 'Too Long'),
           checkboxes: Yup.object().test('checkboxes', 'Cannot be empty', values =>
             Object.values(values).reduce((acc, curr) => acc || curr, false),
           ),

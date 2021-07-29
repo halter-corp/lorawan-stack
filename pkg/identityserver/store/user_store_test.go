@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"github.com/smartystreets/assertions"
 	"github.com/smartystreets/assertions/should"
@@ -33,15 +33,16 @@ func TestUserStore(t *testing.T) {
 
 	WithDB(t, func(t *testing.T, db *gorm.DB) {
 		prepareTest(db, &Account{}, &User{}, &Attribute{}, &Picture{})
+		s := newStore(db)
 		store := GetUserStore(db)
 
-		list, err := store.ListAdmins(ctx, &types.FieldMask{Paths: []string{"name"}})
+		list, err := store.ListAdmins(ctx, &pbtypes.FieldMask{Paths: []string{"name"}})
 
 		a.So(err, should.BeNil)
 		a.So(list, should.BeEmpty)
 
 		created, err := store.CreateUser(ctx, &ttnpb.User{
-			UserIdentifiers: ttnpb.UserIdentifiers{UserID: "foo"},
+			UserIdentifiers: ttnpb.UserIdentifiers{UserId: "foo"},
 			Name:            "Foo User",
 			Description:     "The Amazing Foo User",
 			Attributes: map[string]string{
@@ -59,7 +60,7 @@ func TestUserStore(t *testing.T) {
 
 		a.So(err, should.BeNil)
 		if a.So(created, should.NotBeNil) {
-			a.So(created.UserID, should.Equal, "foo")
+			a.So(created.UserId, should.Equal, "foo")
 			a.So(created.Name, should.Equal, "Foo User")
 			a.So(created.Description, should.Equal, "The Amazing Foo User")
 			a.So(created.Attributes, should.HaveLength, 3)
@@ -70,11 +71,11 @@ func TestUserStore(t *testing.T) {
 			a.So(created.UpdatedAt, should.HappenAfter, time.Now().Add(-1*time.Hour))
 		}
 
-		got, err := store.GetUser(ctx, &ttnpb.UserIdentifiers{UserID: "foo"}, &types.FieldMask{Paths: []string{"name", "attributes"}})
+		got, err := store.GetUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"}, &pbtypes.FieldMask{Paths: []string{"name", "attributes"}})
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.UserID, should.Equal, "foo")
+			a.So(got.UserId, should.Equal, "foo")
 			a.So(got.Name, should.Equal, "Foo User")
 			a.So(got.Description, should.BeEmpty)
 			a.So(got.Attributes, should.HaveLength, 3)
@@ -83,7 +84,7 @@ func TestUserStore(t *testing.T) {
 		}
 
 		_, err = store.UpdateUser(ctx, &ttnpb.User{
-			UserIdentifiers: ttnpb.UserIdentifiers{UserID: "bar"},
+			UserIdentifiers: ttnpb.UserIdentifiers{UserId: "bar"},
 		}, nil)
 
 		if a.So(err, should.NotBeNil) {
@@ -91,7 +92,7 @@ func TestUserStore(t *testing.T) {
 		}
 
 		updated, err := store.UpdateUser(ctx, &ttnpb.User{
-			UserIdentifiers: ttnpb.UserIdentifiers{UserID: "foo"},
+			UserIdentifiers: ttnpb.UserIdentifiers{UserId: "foo"},
 			Name:            "Foobar User",
 			Description:     "The Amazing Foobar User",
 			Attributes: map[string]string{
@@ -103,7 +104,7 @@ func TestUserStore(t *testing.T) {
 				Sizes: map[uint32]string{0: "https://example.com/profile_picture.jpg"},
 			},
 			Admin: true,
-		}, &types.FieldMask{Paths: []string{"description", "attributes", "profile_picture", "admin"}})
+		}, &pbtypes.FieldMask{Paths: []string{"description", "attributes", "profile_picture", "admin"}})
 
 		a.So(err, should.BeNil)
 		if a.So(updated, should.NotBeNil) {
@@ -116,11 +117,11 @@ func TestUserStore(t *testing.T) {
 			a.So(updated.UpdatedAt, should.HappenAfter, created.CreatedAt)
 		}
 
-		got, err = store.GetUser(ctx, &ttnpb.UserIdentifiers{UserID: "foo"}, nil)
+		got, err = store.GetUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"}, nil)
 
 		a.So(err, should.BeNil)
 		if a.So(got, should.NotBeNil) {
-			a.So(got.UserID, should.Equal, created.UserID)
+			a.So(got.UserId, should.Equal, created.UserId)
 			a.So(got.Name, should.Equal, created.Name)
 			a.So(got.Description, should.Equal, updated.Description)
 			a.So(got.Attributes, should.Resemble, updated.Attributes)
@@ -128,33 +129,84 @@ func TestUserStore(t *testing.T) {
 			a.So(got.UpdatedAt, should.Equal, updated.UpdatedAt)
 		}
 
-		list, err = store.FindUsers(ctx, nil, &types.FieldMask{Paths: []string{"name"}})
+		list, err = store.FindUsers(ctx, nil, &pbtypes.FieldMask{Paths: []string{"name"}})
 
 		a.So(err, should.BeNil)
 		if a.So(list, should.HaveLength, 1) {
 			a.So(list[0].Name, should.EndWith, got.Name)
 		}
 
-		list, err = store.ListAdmins(ctx, &types.FieldMask{Paths: []string{"name"}})
+		list, err = store.ListAdmins(ctx, &pbtypes.FieldMask{Paths: []string{"name"}})
 
 		a.So(err, should.BeNil)
 		if a.So(list, should.HaveLength, 1) {
 			a.So(list[0].Name, should.EndWith, got.Name)
 		}
 
-		err = store.DeleteUser(ctx, &ttnpb.UserIdentifiers{UserID: "foo"})
+		err = store.DeleteUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"})
 
 		a.So(err, should.BeNil)
 
-		got, err = store.GetUser(ctx, &ttnpb.UserIdentifiers{UserID: "foo"}, nil)
+		got, err = store.GetUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"}, nil)
 
 		if a.So(err, should.NotBeNil) {
 			a.So(errors.IsNotFound(err), should.BeTrue)
 		}
 
+		err = store.RestoreUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		got, err = store.GetUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"}, nil)
+
+		a.So(err, should.BeNil)
+
+		err = store.DeleteUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"})
+
+		a.So(err, should.BeNil)
+
 		list, err = store.FindUsers(ctx, nil, nil)
 
 		a.So(err, should.BeNil)
 		a.So(list, should.BeEmpty)
+
+		list, err = store.FindUsers(WithSoftDeleted(ctx, false), nil, nil)
+
+		a.So(err, should.BeNil)
+		a.So(list, should.NotBeEmpty)
+
+		entity, _ := s.findDeletedEntity(ctx, &ttnpb.UserIdentifiers{UserId: "foo"}, "id")
+
+		err = store.PurgeUser(ctx, &ttnpb.UserIdentifiers{UserId: "foo"})
+
+		a.So(err, should.BeNil)
+
+		var attribute []Attribute
+		s.query(ctx, Attribute{}).Where(&Attribute{
+			EntityID:   entity.PrimaryKey(),
+			EntityType: "user",
+		}).Find(&attribute)
+
+		a.So(attribute, should.HaveLength, 0)
+
+		// Check that user ids are released
+		_, err = store.CreateUser(ctx, &ttnpb.User{
+			UserIdentifiers: ttnpb.UserIdentifiers{UserId: "foo"},
+			Name:            "Foo User",
+			Description:     "The Amazing Foo User",
+			Attributes: map[string]string{
+				"foo": "bar",
+				"bar": "baz",
+				"baz": "qux",
+			},
+			ProfilePicture: &ttnpb.Picture{
+				Embedded: &ttnpb.Picture_Embedded{
+					MimeType: "image/png",
+					Data:     []byte("foobarbaz"),
+				},
+			},
+		})
+
+		a.So(err, should.BeNil)
 	})
 }

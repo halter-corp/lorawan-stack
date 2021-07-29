@@ -16,45 +16,134 @@ package packages
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcserver"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
-	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc"
 )
+
+const namespace = "applicationserver/io/packages"
 
 type server struct {
 	ctx context.Context
 
-	io       io.Server
+	server   io.Server
 	registry Registry
 
-	handlers map[string]ApplicationPackageHandler
+	handlers      map[string]ApplicationPackageHandler
+	subscriptions map[string]*io.Subscription
 }
 
 // Server is an application packages frontend.
 type Server interface {
 	rpcserver.Registerer
-	NewSubscription() *io.Subscription
+}
+
+func startPackageWorker(ctx context.Context, as io.Server, name string, handler ApplicationPackageHandler, sub *io.Subscription, id int, timeout time.Duration) {
+	handleUp := func(ctx context.Context, defAssoc *ttnpb.ApplicationPackageDefaultAssociation, assoc *ttnpb.ApplicationPackageAssociation, up *ttnpb.ApplicationUp) error {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		return handler.HandleUp(ctx, defAssoc, assoc, up)
+	}
+	as.StartTask(&component.TaskConfig{
+		Context: ctx,
+		ID:      fmt.Sprintf("run_application_packages_%v_%v", name, id),
+		Func: func(ctx context.Context) error {
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-sub.Context().Done():
+					return sub.Context().Err()
+				case up := <-sub.Up():
+					ctx := up.Context
+					pair := associationsPairFromContext(ctx)
+					if err := handleUp(ctx, pair.defaultAssociation, pair.association, up.ApplicationUp); err != nil {
+						log.FromContext(ctx).WithError(err).Warn("Failed to handle message")
+						registerMessageFailed(name, err)
+						continue
+					}
+					registerMessageProcessed(name)
+				}
+			}
+		},
+		Restart: component.TaskRestartOnFailure,
+		Backoff: component.DefaultTaskBackoffConfig,
+	})
+}
+
+func startFrontendWorker(ctx context.Context, as io.Server, sub *io.Subscription, handler func(context.Context, *ttnpb.ApplicationUp) error) {
+	as.StartTask(&component.TaskConfig{
+		Context: ctx,
+		ID:      "run_application_packages",
+		Func: func(ctx context.Context) error {
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-sub.Context().Done():
+					return sub.Context().Err()
+				case up := <-sub.Up():
+					ctx := log.NewContextWithField(up.Context, "namespace", namespace)
+					if err := handler(ctx, up.ApplicationUp); err != nil {
+						log.FromContext(ctx).WithError(err).Warn("Failed to handle message")
+					}
+				}
+			}
+		},
+		Restart: component.TaskRestartOnFailure,
+		Backoff: component.DefaultTaskBackoffConfig,
+	})
 }
 
 // New returns an application packages server wrapping the given registries and handlers.
-func New(ctx context.Context, io io.Server, registry Registry, handlers map[string]ApplicationPackageHandler) (Server, error) {
-	ctx = log.NewContextWithField(ctx, "namespace", "applicationserver/io/packages")
-	return &server{
-		ctx:      ctx,
-		io:       io,
-		registry: registry,
-		handlers: handlers,
-	}, nil
+func New(ctx context.Context, as io.Server, registry Registry, handlers map[string]ApplicationPackageHandler, workers int, timeout time.Duration) (Server, error) {
+	ctx = log.NewContextWithField(ctx, "namespace", namespace)
+	s := &server{
+		ctx:           ctx,
+		server:        as,
+		registry:      registry,
+		handlers:      handlers,
+		subscriptions: make(map[string]*io.Subscription),
+	}
+	for name, handler := range handlers {
+		s.subscriptions[name] = io.NewSubscription(ctx, name, nil)
+		for id := 0; id < workers; id++ {
+			startPackageWorker(ctx, as, name, handler, s.subscriptions[name], id, timeout)
+		}
+	}
+	sub, err := as.Subscribe(ctx, "applicationpackages", nil, false)
+	if err != nil {
+		return nil, err
+	}
+	startFrontendWorker(ctx, as, sub, s.handleUp)
+	return s, nil
 }
 
 type associationsPair struct {
 	defaultAssociation *ttnpb.ApplicationPackageDefaultAssociation
 	association        *ttnpb.ApplicationPackageAssociation
+}
+
+type associationsPairCtxKeyType struct{}
+
+var associationsPairCtxKey = &associationsPairCtxKeyType{}
+
+func contextWithAssociationsPair(ctx context.Context, pair *associationsPair) context.Context {
+	return context.WithValue(ctx, associationsPairCtxKey, pair)
+}
+
+func associationsPairFromContext(ctx context.Context) *associationsPair {
+	if val, ok := ctx.Value(associationsPairCtxKey).(*associationsPair); ok {
+		return val
+	}
+	return nil
 }
 
 type associationsMap map[string]*associationsPair
@@ -92,20 +181,20 @@ func (s *server) findAssociations(ctx context.Context, ids ttnpb.EndDeviceIdenti
 }
 
 func (s *server) handleUp(ctx context.Context, msg *ttnpb.ApplicationUp) error {
-	ctx = log.NewContextWithField(ctx, "device_uid", unique.ID(ctx, msg.EndDeviceIdentifiers))
 	associations, err := s.findAssociations(ctx, msg.EndDeviceIdentifiers)
 	if err != nil {
 		return err
 	}
 	for name, pair := range associations {
-		if handler, ok := s.handlers[name]; ok {
-			ctx := log.NewContextWithField(ctx, "package", name)
-			err := handler.HandleUp(ctx, pair.defaultAssociation, pair.association, msg)
-			if err != nil {
-				return err
-			}
-		} else {
-			return errNotImplemented.WithAttributes("name", name)
+		sub, ok := s.subscriptions[name]
+		if !ok {
+			continue
+		}
+		ctx := log.NewContextWithField(ctx, "package", name)
+		ctx = contextWithAssociationsPair(ctx, pair)
+		if err := sub.Publish(ctx, msg); err != nil {
+			log.FromContext(ctx).WithError(err).Warn("Failed to handle message")
+			registerMessageFailed(name, err)
 		}
 	}
 	return nil
@@ -130,22 +219,4 @@ func (s *server) RegisterHandlers(rs *runtime.ServeMux, conn *grpc.ClientConn) {
 	for _, subsystem := range s.handlers {
 		subsystem.RegisterHandlers(rs, conn)
 	}
-}
-
-// NewSubscription creates a new default subscription for upstream application packages traffic.
-func (s *server) NewSubscription() *io.Subscription {
-	sub := io.NewSubscription(s.ctx, "applicationpackages", nil)
-	go func() {
-		for {
-			select {
-			case <-sub.Context().Done():
-				return
-			case up := <-sub.Up():
-				if err := s.handleUp(up.Context, up.ApplicationUp); err != nil {
-					log.FromContext(s.ctx).WithError(err).Warn("Failed to handle message")
-				}
-			}
-		}
-	}()
-	return sub
 }

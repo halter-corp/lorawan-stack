@@ -4,10 +4,8 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	time "time"
-
-	types "github.com/gogo/protobuf/types"
 	go_thethings_network_lorawan_stack_v3_pkg_types "go.thethings.network/lorawan-stack/v3/pkg/types"
+	time "time"
 )
 
 func (dst *GatewayBrand) SetFields(src *GatewayBrand, paths ...string) error {
@@ -228,54 +226,51 @@ func (dst *GatewayRadio) SetFields(src *GatewayRadio, paths ...string) error {
 	return nil
 }
 
-func (dst *GatewayVersion) SetFields(src *GatewayVersion, paths ...string) error {
+func (dst *GatewayClaimAuthenticationCode) SetFields(src *GatewayClaimAuthenticationCode, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
-		case "ids":
+		case "secret":
 			if len(subs) > 0 {
-				var newDst, newSrc *GatewayVersionIdentifiers
-				if src != nil {
-					newSrc = &src.GatewayVersionIdentifiers
+				var newDst, newSrc *Secret
+				if (src == nil || src.Secret == nil) && dst.Secret == nil {
+					continue
 				}
-				newDst = &dst.GatewayVersionIdentifiers
+				if src != nil {
+					newSrc = src.Secret
+				}
+				if dst.Secret != nil {
+					newDst = dst.Secret
+				} else {
+					newDst = &Secret{}
+					dst.Secret = newDst
+				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
 			} else {
 				if src != nil {
-					dst.GatewayVersionIdentifiers = src.GatewayVersionIdentifiers
+					dst.Secret = src.Secret
 				} else {
-					var zero GatewayVersionIdentifiers
-					dst.GatewayVersionIdentifiers = zero
+					dst.Secret = nil
 				}
 			}
-		case "photos":
+		case "valid_from":
 			if len(subs) > 0 {
-				return fmt.Errorf("'photos' has no subfields, but %s were specified", subs)
+				return fmt.Errorf("'valid_from' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.Photos = src.Photos
+				dst.ValidFrom = src.ValidFrom
 			} else {
-				dst.Photos = nil
+				dst.ValidFrom = nil
 			}
-		case "radios":
+		case "valid_to":
 			if len(subs) > 0 {
-				return fmt.Errorf("'radios' has no subfields, but %s were specified", subs)
+				return fmt.Errorf("'valid_to' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.Radios = src.Radios
+				dst.ValidTo = src.ValidTo
 			} else {
-				dst.Radios = nil
-			}
-		case "clock_source":
-			if len(subs) > 0 {
-				return fmt.Errorf("'clock_source' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.ClockSource = src.ClockSource
-			} else {
-				var zero uint32
-				dst.ClockSource = zero
+				dst.ValidTo = nil
 			}
 
 		default:
@@ -325,6 +320,15 @@ func (dst *Gateway) SetFields(src *Gateway, paths ...string) error {
 			} else {
 				var zero time.Time
 				dst.UpdatedAt = zero
+			}
+		case "deleted_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DeletedAt = src.DeletedAt
+			} else {
+				dst.DeletedAt = nil
 			}
 		case "name":
 			if len(subs) > 0 {
@@ -534,6 +538,111 @@ func (dst *Gateway) SetFields(src *Gateway, paths ...string) error {
 					dst.LBSLNSSecret = nil
 				}
 			}
+		case "claim_authentication_code":
+			if len(subs) > 0 {
+				var newDst, newSrc *GatewayClaimAuthenticationCode
+				if (src == nil || src.ClaimAuthenticationCode == nil) && dst.ClaimAuthenticationCode == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.ClaimAuthenticationCode
+				}
+				if dst.ClaimAuthenticationCode != nil {
+					newDst = dst.ClaimAuthenticationCode
+				} else {
+					newDst = &GatewayClaimAuthenticationCode{}
+					dst.ClaimAuthenticationCode = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.ClaimAuthenticationCode = src.ClaimAuthenticationCode
+				} else {
+					dst.ClaimAuthenticationCode = nil
+				}
+			}
+		case "target_cups_uri":
+			if len(subs) > 0 {
+				return fmt.Errorf("'target_cups_uri' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.TargetCUPSURI = src.TargetCUPSURI
+			} else {
+				var zero string
+				dst.TargetCUPSURI = zero
+			}
+		case "target_cups_key":
+			if len(subs) > 0 {
+				var newDst, newSrc *Secret
+				if (src == nil || src.TargetCUPSKey == nil) && dst.TargetCUPSKey == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.TargetCUPSKey
+				}
+				if dst.TargetCUPSKey != nil {
+					newDst = dst.TargetCUPSKey
+				} else {
+					newDst = &Secret{}
+					dst.TargetCUPSKey = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.TargetCUPSKey = src.TargetCUPSKey
+				} else {
+					dst.TargetCUPSKey = nil
+				}
+			}
+		case "require_authenticated_connection":
+			if len(subs) > 0 {
+				return fmt.Errorf("'require_authenticated_connection' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.RequireAuthenticatedConnection = src.RequireAuthenticatedConnection
+			} else {
+				var zero bool
+				dst.RequireAuthenticatedConnection = zero
+			}
+		case "lrfhss":
+			if len(subs) > 0 {
+				var newDst, newSrc *Gateway_LRFHSS
+				if (src == nil || src.Lrfhss == nil) && dst.Lrfhss == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.Lrfhss
+				}
+				if dst.Lrfhss != nil {
+					newDst = dst.Lrfhss
+				} else {
+					newDst = &Gateway_LRFHSS{}
+					dst.Lrfhss = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.Lrfhss = src.Lrfhss
+				} else {
+					dst.Lrfhss = nil
+				}
+			}
+		case "disable_packet_broker_forwarding":
+			if len(subs) > 0 {
+				return fmt.Errorf("'disable_packet_broker_forwarding' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.DisablePacketBrokerForwarding = src.DisablePacketBrokerForwarding
+			} else {
+				var zero bool
+				dst.DisablePacketBrokerForwarding = zero
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -590,8 +699,7 @@ func (dst *GetGatewayRequest) SetFields(src *GetGatewayRequest, paths ...string)
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -609,10 +717,10 @@ func (dst *GetGatewayIdentifiersForEUIRequest) SetFields(src *GetGatewayIdentifi
 				return fmt.Errorf("'eui' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.EUI = src.EUI
+				dst.Eui = src.Eui
 			} else {
 				var zero go_thethings_network_lorawan_stack_v3_pkg_types.EUI64
-				dst.EUI = zero
+				dst.Eui = zero
 			}
 
 		default:
@@ -657,8 +765,7 @@ func (dst *ListGatewaysRequest) SetFields(src *ListGatewaysRequest, paths ...str
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 		case "order":
 			if len(subs) > 0 {
@@ -689,6 +796,16 @@ func (dst *ListGatewaysRequest) SetFields(src *ListGatewaysRequest, paths ...str
 			} else {
 				var zero uint32
 				dst.Page = zero
+			}
+		case "deleted":
+			if len(subs) > 0 {
+				return fmt.Errorf("'deleted' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Deleted = src.Deleted
+			} else {
+				var zero bool
+				dst.Deleted = zero
 			}
 
 		default:
@@ -773,8 +890,7 @@ func (dst *UpdateGatewayRequest) SetFields(src *UpdateGatewayRequest, paths ...s
 			if src != nil {
 				dst.FieldMask = src.FieldMask
 			} else {
-				var zero types.FieldMask
-				dst.FieldMask = zero
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -859,10 +975,10 @@ func (dst *GetGatewayAPIKeyRequest) SetFields(src *GetGatewayAPIKeyRequest, path
 				return fmt.Errorf("'key_id' has no subfields, but %s were specified", subs)
 			}
 			if src != nil {
-				dst.KeyID = src.KeyID
+				dst.KeyId = src.KeyId
 			} else {
 				var zero string
-				dst.KeyID = zero
+				dst.KeyId = zero
 			}
 
 		default:
@@ -912,6 +1028,15 @@ func (dst *CreateGatewayAPIKeyRequest) SetFields(src *CreateGatewayAPIKeyRequest
 			} else {
 				dst.Rights = nil
 			}
+		case "expires_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'expires_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ExpiresAt = src.ExpiresAt
+			} else {
+				dst.ExpiresAt = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
@@ -958,6 +1083,15 @@ func (dst *UpdateGatewayAPIKeyRequest) SetFields(src *UpdateGatewayAPIKeyRequest
 					var zero APIKey
 					dst.APIKey = zero
 				}
+			}
+		case "field_mask":
+			if len(subs) > 0 {
+				return fmt.Errorf("'field_mask' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FieldMask = src.FieldMask
+			} else {
+				dst.FieldMask = nil
 			}
 
 		default:
@@ -1126,10 +1260,18 @@ func (dst *GatewayAntenna) SetFields(src *GatewayAntenna, paths ...string) error
 		case "location":
 			if len(subs) > 0 {
 				var newDst, newSrc *Location
-				if src != nil {
-					newSrc = &src.Location
+				if (src == nil || src.Location == nil) && dst.Location == nil {
+					continue
 				}
-				newDst = &dst.Location
+				if src != nil {
+					newSrc = src.Location
+				}
+				if dst.Location != nil {
+					newDst = dst.Location
+				} else {
+					newDst = &Location{}
+					dst.Location = newDst
+				}
 				if err := newDst.SetFields(newSrc, subs...); err != nil {
 					return err
 				}
@@ -1137,8 +1279,7 @@ func (dst *GatewayAntenna) SetFields(src *GatewayAntenna, paths ...string) error
 				if src != nil {
 					dst.Location = src.Location
 				} else {
-					var zero Location
-					dst.Location = zero
+					dst.Location = nil
 				}
 			}
 		case "attributes":
@@ -1149,6 +1290,16 @@ func (dst *GatewayAntenna) SetFields(src *GatewayAntenna, paths ...string) error
 				dst.Attributes = src.Attributes
 			} else {
 				dst.Attributes = nil
+			}
+		case "placement":
+			if len(subs) > 0 {
+				return fmt.Errorf("'placement' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Placement = src.Placement
+			} else {
+				var zero GatewayAntennaPlacement
+				dst.Placement = zero
 			}
 
 		default:
@@ -1402,6 +1553,27 @@ func (dst *GatewayRadio_TxConfiguration) SetFields(src *GatewayRadio_TxConfigura
 			} else {
 				var zero uint64
 				dst.NotchFrequency = zero
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
+func (dst *Gateway_LRFHSS) SetFields(src *Gateway_LRFHSS, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "supported":
+			if len(subs) > 0 {
+				return fmt.Errorf("'supported' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Supported = src.Supported
+			} else {
+				var zero bool
+				dst.Supported = zero
 			}
 
 		default:

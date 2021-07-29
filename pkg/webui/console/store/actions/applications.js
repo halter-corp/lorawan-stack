@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import createGetRightsListRequestActions, { createGetRightsListActionType } from './rights'
+import createRequestActions from '@ttn-lw/lib/store/actions/create-request-actions'
 import {
   createPaginationRequestActions,
   createPaginationBaseActionType,
   createPaginationDeleteBaseActionType,
   createPaginationDeleteActions,
-} from './pagination'
-import { createRequestActions } from './lib'
+} from '@ttn-lw/lib/store/actions/pagination'
+
+import createGetRightsListRequestActions, { createGetRightsListActionType } from './rights'
 import {
   startEventsStream,
   createStartEventsStreamActionType,
@@ -36,6 +37,8 @@ import {
   clearEvents,
   createClearEventsActionType,
   createGetEventMessageSuccessActionType,
+  createSetEventsFilterActionType,
+  setEventsFilter,
 } from './events'
 
 export const SHARED_NAME = 'APPLICATION'
@@ -44,7 +47,25 @@ export const GET_APP_BASE = 'GET_APPLICATION'
 export const [
   { request: GET_APP, success: GET_APP_SUCCESS, failure: GET_APP_FAILURE },
   { request: getApplication, success: getApplicationSuccess, failure: getApplicationFailure },
-] = createRequestActions(GET_APP_BASE, id => ({ id }), (id, selector) => ({ selector }))
+] = createRequestActions(
+  GET_APP_BASE,
+  id => ({ id }),
+  (id, selector) => ({ selector }),
+)
+
+export const GET_APP_DEV_EUI_COUNT_BASE = 'GET_APP_DEV_EUI_COUNT'
+export const [
+  {
+    request: GET_APP_DEV_EUI_COUNT,
+    success: GET_APP_DEV_EUI_COUNT_SUCCESS,
+    failure: GET_APP_DEV_EUI_COUNT_FAILURE,
+  },
+  {
+    request: getApplicationDevEUICount,
+    success: getApplicationDevEUICountSuccess,
+    failure: getApplicationDevEUICountFailure,
+  },
+] = createRequestActions(GET_APP_DEV_EUI_COUNT_BASE, id => ({ id }))
 
 export const GET_APP_DEV_COUNT_BASE = 'GET_APPLICATION_DEVICE_COUNT'
 export const [
@@ -111,6 +132,7 @@ export const PAUSE_APP_EVENT_STREAM = createPauseEventsStreamActionType(SHARED_N
 export const RESUME_APP_EVENT_STREAM = createResumeEventsStreamActionType(SHARED_NAME)
 export const STOP_APP_EVENT_STREAM = createStopEventsStreamActionType(SHARED_NAME)
 export const CLEAR_APP_EVENTS = createClearEventsActionType(SHARED_NAME)
+export const SET_APP_EVENTS_FILTER = createSetEventsFilterActionType(SHARED_NAME)
 export const GET_APP_EVENT_MESSAGE_SUCCESS = createGetEventMessageSuccessActionType(SHARED_NAME)
 
 export const startApplicationEventsStream = startEventsStream(SHARED_NAME)
@@ -120,3 +142,4 @@ export const pauseApplicationEventsStream = pauseEventsStream(SHARED_NAME)
 export const resumeApplicationEventsStream = resumeEventsStream(SHARED_NAME)
 export const stopApplicationEventsStream = stopEventsStream(SHARED_NAME)
 export const clearApplicationEventsStream = clearEvents(SHARED_NAME)
+export const setApplicationEventsFilter = setEventsFilter(SHARED_NAME)

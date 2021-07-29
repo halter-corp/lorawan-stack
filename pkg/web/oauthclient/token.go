@@ -39,11 +39,15 @@ func (oc *OAuthClient) freshToken(c echo.Context) (*oauth2.Token, error) {
 		Expiry:       time.Now(),
 	}
 
-	ctx, err := oc.withTLSClientConfig(c.Request().Context())
+	ctx, err := oc.withHTTPClient(c.Request().Context())
 	if err != nil {
 		return nil, err
 	}
-	freshToken, err := oc.oauth(c).TokenSource(ctx, token).Token()
+	conf, err := oc.oauth(c)
+	if err != nil {
+		return nil, err
+	}
+	freshToken, err := conf.TokenSource(ctx, token).Token()
 	if err != nil {
 		var retrieveError *oauth2.RetrieveError
 		if stderrors.As(err, &retrieveError) {

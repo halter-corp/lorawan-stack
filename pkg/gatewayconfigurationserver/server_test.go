@@ -46,7 +46,7 @@ import (
 )
 
 var (
-	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"}
+	registeredGatewayID  = ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"}
 	registeredGatewayUID = unique.ID(test.Context(), registeredGatewayID)
 	registeredGatewayKey = "test-key"
 
@@ -144,7 +144,7 @@ func TestWeb(t *testing.T) {
 			},
 			{
 				Name:       "InvalidIDAndKey",
-				ID:         ttnpb.GatewayIdentifiers{GatewayID: "--invalid-id"},
+				ID:         ttnpb.GatewayIdentifiers{GatewayId: "--invalid-id"},
 				Key:        "invalid key",
 				ExpectCode: http.StatusBadRequest,
 			},
@@ -154,7 +154,7 @@ func TestWeb(t *testing.T) {
 					a := assertions.New(t)
 					url := fmt.Sprintf(
 						"/api/v3/gcs/gateways/%s/semtechudp/global_conf.json",
-						tc.ID.GatewayID,
+						tc.ID.GatewayId,
 					)
 					body := bytes.NewReader([]byte(`{"downlinks":[]}`))
 					req := httptest.NewRequest(http.MethodGet, url, body).WithContext(test.Context())
@@ -182,7 +182,7 @@ func TestWeb(t *testing.T) {
 					a := assertions.New(t)
 					url := fmt.Sprintf(
 						"/api/v3/gcs/gateways/%s/kerlink-cpf/lorad/lorad.json",
-						tc.ID.GatewayID,
+						tc.ID.GatewayId,
 					)
 					req := httptest.NewRequest(http.MethodGet, url, nil).WithContext(test.Context())
 					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tc.Key))
@@ -208,7 +208,7 @@ func TestWeb(t *testing.T) {
 					a := assertions.New(t)
 					url := fmt.Sprintf(
 						"/api/v3/gcs/gateways/%s/kerlink-cpf/lorafwd/lorafwd.toml",
-						tc.ID.GatewayID,
+						tc.ID.GatewayId,
 					)
 					req := httptest.NewRequest(http.MethodGet, url, nil).WithContext(test.Context())
 					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tc.Key))
@@ -235,24 +235,27 @@ func TestWeb(t *testing.T) {
 	})
 }
 
+type rightsFetcher struct {
+	rights.AuthInfoFetcher
+	rights.EntityFetcher
+}
+
 func newContextWithRightsFetcher(ctx context.Context) context.Context {
-	return rights.NewContextWithFetcher(
-		ctx,
-		rights.FetcherFunc(func(ctx context.Context, ids ttnpb.Identifiers) (set *ttnpb.Rights, err error) {
+	return rights.NewContextWithFetcher(ctx, &rightsFetcher{
+		EntityFetcher: rights.EntityFetcherFunc(func(ctx context.Context, ids *ttnpb.EntityIdentifiers) (*ttnpb.Rights, error) {
 			uid := unique.ID(ctx, ids)
 			if uid != registeredGatewayUID {
-				return
+				return nil, nil
 			}
 			md := rpcmetadata.FromIncomingContext(ctx)
 			if md.AuthType != "Bearer" || md.AuthValue != registeredGatewayKey {
-				return
+				return nil, nil
 			}
-			set = ttnpb.RightsFrom(
+			return ttnpb.RightsFrom(
 				ttnpb.RIGHT_GATEWAY_INFO,
-			)
-			return
+			), nil
 		}),
-	)
+	})
 }
 
 func mustHavePeer(ctx context.Context, c *component.Component, role ttnpb.ClusterRole) {

@@ -16,6 +16,7 @@ package ttnmage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 	"go.thethings.network/lorawan-stack/v3/pkg/identityserver/store"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
 // Dev namespace.
@@ -64,6 +66,7 @@ var (
 	redisDatabase         = "redis"
 	devDatabases          = []string{sqlDatabase, redisDatabase}
 	devDataDir            = ".env/data"
+	devDir                = ".env"
 	devDatabaseName       = "ttn_lorawan_dev"
 	devDockerComposeFlags = []string{"-p", "lorawan-stack-dev"}
 	databaseURI           = fmt.Sprintf("postgresql://root@localhost:26257/%s?sslmode=disable", devDatabaseName)
@@ -145,7 +148,7 @@ func (Dev) SQLRestore(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return db.Exec(fmt.Sprintf(`DROP DATABASE %s;
+	return db.Exec(fmt.Sprintf(`DROP DATABASE IF EXISTS %s;
 		CREATE DATABASE %s;
 		%s`,
 		devDatabaseName, devDatabaseName, string(b)),
@@ -220,6 +223,11 @@ func (Dev) DBRedisCli() error {
 	return execDockerCompose("exec", "redis", "redis-cli")
 }
 
+// InitDeviceRepo initializes the device repository.
+func (Dev) InitDeviceRepo() error {
+	return runGo("./cmd/ttn-lw-stack", "dr-db", "init")
+}
+
 // InitStack initializes the Stack.
 func (Dev) InitStack() error {
 	if mg.Verbose() {
@@ -230,7 +238,7 @@ func (Dev) InitStack() error {
 	}
 	if err := runGo("./cmd/ttn-lw-stack", "is-db", "create-admin-user",
 		"--id", "admin",
-		"--email", "admin@localhost",
+		"--email", "admin@example.com",
 		"--password", "admin",
 	); err != nil {
 		return err
@@ -245,7 +253,7 @@ func (Dev) InitStack() error {
 	); err != nil {
 		return err
 	}
-	return runGo("./cmd/ttn-lw-stack", "is-db", "create-oauth-client",
+	if err := runGo("./cmd/ttn-lw-stack", "is-db", "create-oauth-client",
 		"--id", "console",
 		"--name", "Console",
 		"--owner", "admin",
@@ -256,12 +264,31 @@ func (Dev) InitStack() error {
 		"--logout-redirect-uri", "https://localhost:8885/console",
 		"--logout-redirect-uri", "http://localhost:1885/console",
 		"--logout-redirect-uri", "/console",
-	)
+	); err != nil {
+		return err
+	}
+	var key ttnpb.APIKey
+	var jsonVal []byte
+	var err error
+	if jsonVal, err = outputJSONGo("run", "./cmd/ttn-lw-stack", "is-db", "create-user-api-key",
+		"--user-id", "admin",
+		"--name", "Admin User API Key",
+	); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(jsonVal, &key); err != nil {
+		return err
+	}
+	if err := writeToFile(filepath.Join(devDir, "admin_api_key.txt"), []byte(key.Key)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // StartDevStack starts TTS in end-to-end test configuration.
 func (Dev) StartDevStack() error {
 	os.Setenv("TTN_LW_IS_DATABASE_URI", databaseURI)
+	os.Setenv("TTN_LW_IS_ADMIN_RIGHTS_ALL", "true")
 	if mg.Verbose() {
 		fmt.Println("Starting the Stack")
 	}
@@ -273,9 +300,9 @@ func (Dev) StartDevStack() error {
 		return err
 	}
 	defer logFile.Close()
-	return execGo(logFile, logFile, "run", "./cmd/ttn-lw-stack", "start")
+	return execGo(logFile, logFile, "run", "./cmd/ttn-lw-stack", "start", "--log.format=json")
 }
 
 func init() {
-	initDeps = append(initDeps, Dev.Certificates)
+	initDeps = append(initDeps, Dev.Certificates, Dev.InitDeviceRepo)
 }

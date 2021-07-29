@@ -14,7 +14,11 @@
 
 package store
 
-import "go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+import (
+	"time"
+
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+)
 
 // APIKey model.
 type APIKey struct {
@@ -28,6 +32,8 @@ type APIKey struct {
 
 	EntityID   string `gorm:"type:UUID;index:api_key_entity_index;not null"`
 	EntityType string `gorm:"type:VARCHAR(32);index:api_key_entity_index;not null"`
+
+	ExpiresAt *time.Time
 }
 
 func init() {
@@ -36,9 +42,12 @@ func init() {
 
 func (k APIKey) toPB() *ttnpb.APIKey {
 	return &ttnpb.APIKey{
-		ID:     k.APIKeyID,
-		Key:    k.Key,
-		Name:   k.Name,
-		Rights: k.Rights.Rights,
+		ID:        k.APIKeyID,
+		Key:       k.Key,
+		Name:      k.Name,
+		Rights:    k.Rights.Rights,
+		CreatedAt: cleanTime(k.CreatedAt),
+		UpdatedAt: cleanTime(k.UpdatedAt),
+		ExpiresAt: cleanTimePtr(k.ExpiresAt),
 	}
 }

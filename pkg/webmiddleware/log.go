@@ -16,12 +16,18 @@ package webmiddleware
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/felixge/httpsnoop"
+	"go.thethings.network/lorawan-stack/v3/pkg/auth"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/webhandlers"
 )
+
+func shouldSuppressError(httpStatus int) bool {
+	return httpStatus == http.StatusTooManyRequests
+}
 
 // Log returns a middleware that logs requests.
 // If logger is nil, the logger will be extracted from the context.
@@ -57,17 +63,33 @@ func Log(logger log.Interface, ignorePathsArray []string) MiddlewareFunc {
 					return
 				}
 			}
+			if shouldSuppressError(metrics.Code) {
+				return
+			}
 
 			logFields = logFields.With(map[string]interface{}{
 				"http.status": metrics.Code,
 				"duration":    metrics.Duration.Round(time.Microsecond * 100),
 			})
+			if authorization := r.Header.Get("Authorization"); authorization != "" {
+				parts := strings.SplitN(authorization, " ", 2)
+				if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+					if tokenType, tokenID, _, err := auth.SplitToken(parts[1]); err == nil {
+						logFields = logFields.WithFields(log.Fields(
+							"auth.token_type", tokenType.String(),
+							"auth.token_id", tokenID,
+						))
+					}
+				}
+			}
 			if err := getError(); err != nil {
 				logFields = logFields.WithError(err)
 			}
 			requestLogger = requestLogger.WithFields(logFields)
 
 			switch {
+			case metrics.Code == http.StatusNotImplemented:
+				requestLogger.Info("Client called unimplemented route")
 			case metrics.Code >= 500:
 				requestLogger.Error("Server error")
 			case metrics.Code >= 400:

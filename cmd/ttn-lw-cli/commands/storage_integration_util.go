@@ -16,12 +16,16 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/spf13/pflag"
+	"go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/internal/util"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
+
+var applicationUpFlags = util.FieldMaskFlags(&ttnpb.ApplicationUp{})
 
 func getStoredUpFlags() *pflag.FlagSet {
 	flags := &pflag.FlagSet{}
@@ -33,12 +37,16 @@ func getStoredUpFlags() *pflag.FlagSet {
 	flags.Uint32("limit", 0, "limit number of upstream messages to fetch")
 	flags.AddFlagSet(timestampFlags("after", "query upstream messages after specified timestamp"))
 	flags.AddFlagSet(timestampFlags("before", "query upstream messages before specified timestamp"))
+	flags.Duration("last", 0, "query upstream messages in the last hours or minutes")
+
+	flags.AddFlagSet(applicationUpFlags)
 
 	types := make([]string, 0, len(ttnpb.StoredApplicationUpTypes))
 	for k := range ttnpb.StoredApplicationUpTypes {
 		types = append(types, k)
 	}
-	flags.String("type", "", fmt.Sprintf("message type (%s)", strings.Join(types, "|")))
+	sort.Strings(types)
+	flags.String("type", "", fmt.Sprintf("message type (allowed values: %s)", strings.Join(types, ", ")))
 
 	return flags
 }
@@ -47,13 +55,34 @@ func getStoredUpRequest(flags *pflag.FlagSet) (*ttnpb.GetStoredApplicationUpRequ
 	var err error
 	req := &ttnpb.GetStoredApplicationUpRequest{}
 
-	req.After, err = getTimestampFlags(flags, "after")
+	if flags.Changed("last") && (hasTimestampFlags(flags, "after") || hasTimestampFlags(flags, "before")) {
+		return nil, fmt.Errorf("--last cannot be used with --after or --before flags")
+	}
+	after, err := getTimestampFlags(flags, "after")
 	if err != nil {
 		return nil, err
 	}
-	req.Before, err = getTimestampFlags(flags, "before")
+	if after != nil {
+		if req.After, err = pbtypes.TimestampProto(*after); err != nil {
+			return nil, err
+		}
+	}
+	before, err := getTimestampFlags(flags, "before")
 	if err != nil {
 		return nil, err
+	}
+	if before != nil {
+		if req.Before, err = pbtypes.TimestampProto(*before); err != nil {
+			return nil, err
+		}
+	}
+
+	if flags.Changed("last") {
+		d, err := flags.GetDuration("last")
+		if err != nil {
+			return nil, err
+		}
+		req.Last = pbtypes.DurationProto(d)
 	}
 	req.Order, _ = flags.GetString("order")
 	req.Type, _ = flags.GetString("type")
@@ -63,6 +92,12 @@ func getStoredUpRequest(flags *pflag.FlagSet) (*ttnpb.GetStoredApplicationUpRequ
 		req.FPort = &pbtypes.UInt32Value{
 			Value: fport,
 		}
+	}
+	req.FieldMask = &pbtypes.FieldMask{
+		Paths: ttnpb.AllowedFields(
+			util.SelectFieldMask(flags, applicationUpFlags),
+			ttnpb.RPCFieldMaskPaths["/ttn.lorawan.v3.ApplicationUpStorage/GetStoredApplicationUp"].Allowed,
+		),
 	}
 
 	if flags.Changed("limit") {

@@ -21,12 +21,10 @@ import {
   mayViewOrEditApplicationApiKeys,
   mayViewOrEditApplicationCollaborators,
   mayViewApplicationDevices,
-  mayLinkApplication,
 } from '@console/lib/feature-checks'
 
 import { getCollaboratorsList } from '@console/store/actions/collaborators'
 import { getApiKeysList } from '@console/store/actions/api-keys'
-import { getApplicationLink } from '@console/store/actions/link'
 import { getApplicationDeviceCount } from '@console/store/actions/applications'
 
 import {
@@ -34,10 +32,7 @@ import {
   selectApplicationDeviceCount,
   selectApplicationDevicesFetching,
   selectApplicationDevicesError,
-  selectApplicationLinkIndicator,
-  selectApplicationLinkStats,
-  selectApplicationLinkFetching,
-  selectApplicationLastSeen,
+  selectApplicationDerivedLastSeen,
 } from '@console/store/selectors/applications'
 import {
   selectCollaboratorsTotalCount,
@@ -60,45 +55,33 @@ const mapStateToProps = (state, props) => {
   const devicesTotalCount = selectApplicationDeviceCount(state)
   const devicesFetching = selectApplicationDevicesFetching(state)
   const devicesError = selectApplicationDevicesError(state)
-  const linked = selectApplicationLinkIndicator(state)
-  const linkStats = selectApplicationLinkStats(state)
-  const lastSeen = selectApplicationLastSeen(state)
-  const linkFetching = selectApplicationLinkFetching(state)
 
-  const fetching = apiKeysFetching || collaboratorsFetching || devicesFetching || linkFetching
+  const fetching = apiKeysFetching || collaboratorsFetching || devicesFetching
 
   return {
-    mayViewLink: checkFromState(mayLinkApplication, state),
     mayViewCollaborators: checkFromState(mayViewOrEditApplicationCollaborators, state),
     mayViewApiKeys: checkFromState(mayViewOrEditApplicationApiKeys, state),
     mayViewDevices: checkFromState(mayViewApplicationDevices, state),
-    mayViewApplicationLink: checkFromState(mayLinkApplication, state),
     application: selectApplicationById(state, props.appId),
+    lastSeen: selectApplicationDerivedLastSeen(state, props.appId),
     apiKeysTotalCount,
     apiKeysErrored: Boolean(apiKeysError),
     collaboratorsTotalCount,
     collaboratorsErrored: Boolean(collaboratorsError),
     devicesTotalCount,
     devicesErrored: Boolean(devicesError),
-    linked,
-    linkStats,
-    lastSeen,
     fetching,
   }
 }
 
 const mapDispatchToProps = dispatch => ({
-  loadData(mayViewCollaborators, mayViewApiKeys, mayViewLink, mayViewDevices, appId) {
+  loadData: (mayViewCollaborators, mayViewApiKeys, mayViewDevices, appId) => {
     if (mayViewCollaborators) {
       dispatch(getCollaboratorsList('application', appId))
     }
 
     if (mayViewApiKeys) {
       dispatch(getApiKeysList('application', appId))
-    }
-
-    if (mayViewLink) {
-      dispatch(getApplicationLink(appId))
     }
 
     if (mayViewDevices) {
@@ -115,7 +98,6 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => ({
     dispatchProps.loadData(
       stateProps.mayViewCollaborators,
       stateProps.mayViewApiKeys,
-      stateProps.mayViewLink,
       stateProps.mayViewDevices,
       ownProps.appId,
     ),
@@ -126,4 +108,9 @@ export default TitleSection =>
     mapStateToProps,
     mapDispatchToProps,
     mergeProps,
-  )(withRequest(({ appId, loadData }) => loadData(appId), () => false)(TitleSection))
+  )(
+    withRequest(
+      ({ appId, loadData }) => loadData(appId),
+      () => false,
+    )(TitleSection),
+  )

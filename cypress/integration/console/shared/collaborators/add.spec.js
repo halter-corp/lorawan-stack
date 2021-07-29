@@ -47,14 +47,7 @@ describe('Collaborators', () => {
     cy.createUser(user)
     cy.createUser(collaboratorUser)
     cy.createUser(orgUser)
-
-    cy.loginConsole({
-      user_id: orgUserId,
-      password: orgUser.password,
-    })
     cy.createOrganization(organization, orgUserId)
-    cy.clearLocalStorage()
-    cy.clearCookies()
   })
 
   describe('Application', () => {
@@ -62,14 +55,11 @@ describe('Collaborators', () => {
     const application = { ids: { application_id: applicationId } }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createApplication(application, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
-      cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
+      cy.loginConsole({ user_id: userId, password: user.password })
       cy.visit(
         `${Cypress.config('consoleRootPath')}/applications/${applicationId}/collaborators/add`,
       )
@@ -96,7 +86,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`user \`${userNotExist}\` not found`)
+        .findByText(userNotExist)
         .should('be.visible')
       cy.visit(
         `${Cypress.config('consoleRootPath')}/applications/${applicationId}/collaborators/add`,
@@ -124,7 +114,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`organization \`${orgNotExist}\` not found`)
+        .findByText(orgNotExist)
         .should('be.visible')
       cy.visit(
         `${Cypress.config('consoleRootPath')}/applications/${applicationId}/collaborators/add`,
@@ -137,14 +127,11 @@ describe('Collaborators', () => {
     const gateway = { ids: { gateway_id: gatewayId } }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createGateway(gateway, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
-      cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
+      cy.loginConsole({ user_id: userId, password: user.password })
       cy.visit(`${Cypress.config('consoleRootPath')}/gateways/${gatewayId}/collaborators/add`)
     })
 
@@ -169,7 +156,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`user \`${userNotExist}\` not found`)
+        .findByText(userNotExist)
         .should('be.visible')
       cy.visit(`${Cypress.config('consoleRootPath')}/gateways/${gatewayId}/collaborators/add`)
     })
@@ -195,7 +182,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`organization \`${orgNotExist}\` not found`)
+        .findByText(orgNotExist)
         .should('be.visible')
       cy.visit(`${Cypress.config('consoleRootPath')}/gateways/${gatewayId}/collaborators/add`)
     })
@@ -208,14 +195,11 @@ describe('Collaborators', () => {
     }
 
     before(() => {
-      cy.loginConsole({ user_id: userId, password: user.password })
       cy.createOrganization(testOrg, userId)
-      cy.clearLocalStorage()
-      cy.clearCookies()
     })
 
     beforeEach(() => {
-      cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
+      cy.loginConsole({ user_id: userId, password: user.password })
       cy.visit(`${Cypress.config('consoleRootPath')}/organizations/${testOrgId}/collaborators/add`)
     })
 
@@ -240,7 +224,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`user \`${userNotExist}\` not found`)
+        .findByText(userNotExist)
         .should('be.visible')
       cy.visit(`${Cypress.config('consoleRootPath')}/organizations/${testOrgId}/collaborators/add`)
     })
@@ -253,7 +237,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText('account of type `organization` can not collaborate on `organization`')
+        .findByText(/can not collaborate/i)
         .should('be.visible')
       cy.visit(`${Cypress.config('consoleRootPath')}/organizations/${testOrgId}/collaborators/add`)
     })
@@ -266,7 +250,7 @@ describe('Collaborators', () => {
 
       cy.findByTestId('error-notification')
         .should('be.visible')
-        .findByText(`organization \`${orgNotExist}\` not found`)
+        .findByText(orgNotExist)
         .should('be.visible')
       cy.visit(`${Cypress.config('consoleRootPath')}/organizations/${testOrgId}/collaborators/add`)
     })

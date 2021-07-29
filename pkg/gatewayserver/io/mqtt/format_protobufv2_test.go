@@ -33,7 +33,7 @@ func TestProtobufV2Downlink(t *testing.T) {
 	a := assertions.New(t)
 	pld, _ := base64.RawStdEncoding.DecodeString("YHBhYUoAAgABj9/clY414A")
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: "gateway-id",
+		GatewayId: "gateway-id",
 	}
 	input := &ttnpb.DownlinkMessage{
 		RawPayload: pld,
@@ -41,8 +41,8 @@ func TestProtobufV2Downlink(t *testing.T) {
 		Settings: &ttnpb.DownlinkMessage_Scheduled{
 			Scheduled: &ttnpb.TxSettings{
 				DataRate: ttnpb.DataRate{
-					Modulation: &ttnpb.DataRate_LoRa{
-						LoRa: &ttnpb.LoRaDataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
 							Bandwidth:       125000,
 							SpreadingFactor: 12,
 						},
@@ -104,8 +104,8 @@ func TestProtobufV2Uplinks(t *testing.T) {
 	validV3Settings := ttnpb.TxSettings{
 		Timestamp: 1000,
 		DataRate: ttnpb.DataRate{
-			Modulation: &ttnpb.DataRate_LoRa{
-				LoRa: &ttnpb.LoRaDataRate{
+			Modulation: &ttnpb.DataRate_Lora{
+				Lora: &ttnpb.LoRaDataRate{
 					Bandwidth:       125000,
 					SpreadingFactor: 7,
 				},
@@ -132,7 +132,7 @@ func TestProtobufV2Uplinks(t *testing.T) {
 	}
 	nilTime := time.Unix(0, 0)
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: "gateway-id",
+		GatewayId: "gateway-id",
 	}
 	validV3Metadata := []*ttnpb.RxMetadata{
 		{
@@ -242,7 +242,7 @@ func TestProtobufV2Uplinks(t *testing.T) {
 
 func TestProtobufV2Status(t *testing.T) {
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: "gateway-id",
+		GatewayId: "gateway-id",
 	}
 	for _, tc := range []struct {
 		Name           string

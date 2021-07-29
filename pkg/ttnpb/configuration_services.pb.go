@@ -6,12 +6,6 @@ package ttnpb
 import (
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	golang_proto "github.com/golang/protobuf/proto"
@@ -19,6 +13,10 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -46,25 +44,16 @@ func (*ListFrequencyPlansRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2ed64f51a0283877, []int{0}
 }
 func (m *ListFrequencyPlansRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListFrequencyPlansRequest.Unmarshal(m, b)
 }
 func (m *ListFrequencyPlansRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListFrequencyPlansRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListFrequencyPlansRequest.Marshal(b, m, deterministic)
 }
 func (m *ListFrequencyPlansRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListFrequencyPlansRequest.Merge(m, src)
 }
 func (m *ListFrequencyPlansRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListFrequencyPlansRequest.Size(m)
 }
 func (m *ListFrequencyPlansRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListFrequencyPlansRequest.DiscardUnknown(m)
@@ -96,25 +85,16 @@ func (*FrequencyPlanDescription) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2ed64f51a0283877, []int{1}
 }
 func (m *FrequencyPlanDescription) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_FrequencyPlanDescription.Unmarshal(m, b)
 }
 func (m *FrequencyPlanDescription) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_FrequencyPlanDescription.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_FrequencyPlanDescription.Marshal(b, m, deterministic)
 }
 func (m *FrequencyPlanDescription) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_FrequencyPlanDescription.Merge(m, src)
 }
 func (m *FrequencyPlanDescription) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_FrequencyPlanDescription.Size(m)
 }
 func (m *FrequencyPlanDescription) XXX_DiscardUnknown() {
 	xxx_messageInfo_FrequencyPlanDescription.DiscardUnknown(m)
@@ -162,25 +142,16 @@ func (*ListFrequencyPlansResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2ed64f51a0283877, []int{2}
 }
 func (m *ListFrequencyPlansResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListFrequencyPlansResponse.Unmarshal(m, b)
 }
 func (m *ListFrequencyPlansResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListFrequencyPlansResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListFrequencyPlansResponse.Marshal(b, m, deterministic)
 }
 func (m *ListFrequencyPlansResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListFrequencyPlansResponse.Merge(m, src)
 }
 func (m *ListFrequencyPlansResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListFrequencyPlansResponse.Size(m)
 }
 func (m *ListFrequencyPlansResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListFrequencyPlansResponse.DiscardUnknown(m)
@@ -212,39 +183,34 @@ func init() {
 }
 
 var fileDescriptor_2ed64f51a0283877 = []byte{
-	// 497 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xbf, 0x6b, 0x1b, 0x3f,
-	0x14, 0xd7, 0x73, 0x82, 0xbf, 0x7c, 0x55, 0xe2, 0x82, 0x86, 0xe2, 0x9a, 0xf2, 0x62, 0x5c, 0x5a,
-	0xdc, 0x82, 0xef, 0x20, 0xfe, 0x0f, 0x5c, 0x53, 0x30, 0x74, 0x68, 0x6f, 0xec, 0x62, 0xce, 0x67,
-	0xf9, 0x2c, 0xec, 0x48, 0xd7, 0x93, 0xec, 0xd0, 0x2d, 0x74, 0xca, 0x58, 0x9a, 0xa5, 0x63, 0x97,
-	0x40, 0xc6, 0x8c, 0x19, 0x33, 0x66, 0x0c, 0x74, 0xc9, 0x14, 0x72, 0xba, 0x0e, 0x19, 0x33, 0x66,
-	0x2c, 0xa7, 0x34, 0xa6, 0x6e, 0x1d, 0xe8, 0xa6, 0x77, 0xef, 0x7d, 0x7e, 0x9d, 0x9e, 0xa8, 0x37,
-	0x55, 0x69, 0xb8, 0x13, 0xca, 0x96, 0x36, 0x61, 0x34, 0xf1, 0xc3, 0x44, 0xf8, 0x91, 0x92, 0x23,
-	0x11, 0xcf, 0xd2, 0xd0, 0x08, 0x25, 0xfb, 0x9a, 0xa7, 0x73, 0x11, 0x71, 0xed, 0x25, 0xa9, 0x32,
-	0x8a, 0x55, 0x8c, 0x91, 0x77, 0x18, 0x6f, 0xde, 0xae, 0xb5, 0x62, 0x61, 0xc6, 0xb3, 0x81, 0x17,
-	0xa9, 0x6d, 0x3f, 0x56, 0xb1, 0xf2, 0xdd, 0xd8, 0x60, 0x36, 0x72, 0x95, 0x2b, 0xdc, 0xe9, 0x16,
-	0x5e, 0x7b, 0x12, 0x2b, 0x15, 0x4f, 0xb9, 0xd3, 0x09, 0xa5, 0x54, 0xc6, 0x89, 0xfc, 0x22, 0x6f,
-	0x74, 0xe8, 0xe3, 0x37, 0x42, 0x9b, 0xd7, 0x29, 0xff, 0x30, 0xe3, 0x32, 0xfa, 0xf8, 0x76, 0x1a,
-	0x4a, 0x1d, 0x14, 0x85, 0x36, 0xec, 0x19, 0xad, 0x0c, 0x42, 0xcd, 0xfb, 0xa3, 0xbb, 0x6e, 0x15,
-	0xea, 0xd0, 0xdc, 0x08, 0x36, 0x8a, 0xaf, 0x0b, 0x48, 0xe3, 0x0b, 0xd0, 0xea, 0x12, 0x41, 0x97,
-	0xeb, 0x28, 0x15, 0x49, 0xa1, 0xc3, 0x1e, 0xd1, 0x92, 0x18, 0x3a, 0xdc, 0xff, 0x9d, 0xb2, 0xbd,
-	0xd8, 0x2c, 0xf5, 0xba, 0x41, 0x49, 0x0c, 0xd9, 0x53, 0xfa, 0x9f, 0xe3, 0x16, 0xc3, 0x6a, 0xc9,
-	0x35, 0xa9, 0xbd, 0xd8, 0x2c, 0x77, 0x42, 0xcd, 0x7b, 0xdd, 0xa0, 0x5c, 0xb4, 0x7a, 0x43, 0xc6,
-	0xe8, 0xba, 0x0c, 0xb7, 0x79, 0x75, 0xad, 0x98, 0x08, 0xdc, 0x79, 0x85, 0xa9, 0xf5, 0x55, 0xa6,
-	0x14, 0xad, 0xad, 0x0a, 0xa6, 0x13, 0x25, 0x35, 0x67, 0xef, 0xe8, 0xc3, 0x05, 0xbe, 0x9f, 0x14,
-	0xad, 0x2a, 0xd4, 0xd7, 0x9a, 0x0f, 0xb6, 0x9a, 0xde, 0xf2, 0xdf, 0xf6, 0xee, 0x0b, 0x16, 0x54,
-	0x46, 0x4b, 0xd4, 0x5b, 0x07, 0x40, 0x37, 0x5e, 0xfd, 0x7e, 0x8f, 0x6c, 0x1f, 0x28, 0xfb, 0xdb,
-	0x03, 0x7b, 0xf1, 0xa7, 0xc4, 0xbd, 0x17, 0x50, 0x7b, 0xf9, 0x2f, 0xa3, 0xb7, 0x91, 0x1a, 0xcf,
-	0x3f, 0x7d, 0xff, 0xb1, 0x5f, 0xaa, 0x33, 0x5c, 0xde, 0x26, 0x7f, 0x61, 0xb3, 0xe5, 0x72, 0x76,
-	0x0e, 0xe0, 0x34, 0x43, 0x38, 0xcb, 0x10, 0xce, 0x33, 0x24, 0x97, 0x19, 0x92, 0xab, 0x0c, 0xc9,
-	0x75, 0x86, 0xe4, 0x26, 0x43, 0xd8, 0xb5, 0x08, 0x7b, 0x16, 0xc9, 0xa1, 0x45, 0x38, 0xb2, 0x48,
-	0x8e, 0x2d, 0x92, 0x13, 0x8b, 0xe4, 0xd4, 0x22, 0x9c, 0x59, 0x84, 0x73, 0x8b, 0xe4, 0xd2, 0x22,
-	0x5c, 0x59, 0x24, 0xd7, 0x16, 0xe1, 0xc6, 0x22, 0xd9, 0xcd, 0x91, 0xec, 0xe5, 0x08, 0x9f, 0x73,
-	0x24, 0x5f, 0x73, 0x84, 0x6f, 0x39, 0x92, 0xc3, 0x1c, 0xc9, 0x51, 0x8e, 0x70, 0x9c, 0x23, 0x9c,
-	0xe4, 0x08, 0xef, 0xfd, 0x58, 0x79, 0x66, 0xcc, 0xcd, 0x58, 0xc8, 0x58, 0x7b, 0x92, 0x9b, 0x1d,
-	0x95, 0x4e, 0xfc, 0xe5, 0xa7, 0x30, 0x6f, 0xfb, 0xc9, 0x24, 0xf6, 0x8d, 0x91, 0xc9, 0x60, 0x50,
-	0x76, 0x0b, 0xda, 0xfe, 0x19, 0x00, 0x00, 0xff, 0xff, 0xc1, 0x98, 0x74, 0x50, 0x2f, 0x03, 0x00,
-	0x00,
+	// 429 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xcf, 0x8a, 0xd3, 0x40,
+	0x18, 0xcf, 0x64, 0x97, 0x88, 0x23, 0xad, 0x30, 0x07, 0x89, 0x41, 0x66, 0x4b, 0x45, 0xa9, 0x42,
+	0x67, 0x60, 0xfb, 0x06, 0xb1, 0x08, 0x05, 0x0f, 0x1a, 0xf0, 0xe2, 0xa5, 0x4c, 0x92, 0xc9, 0x74,
+	0x68, 0x77, 0x26, 0x66, 0x26, 0x5d, 0xbc, 0x89, 0x4f, 0x20, 0xee, 0x0b, 0x78, 0x11, 0x7c, 0x0c,
+	0xdf, 0xc1, 0x8b, 0xa7, 0x45, 0x53, 0x0f, 0x1e, 0x7d, 0x04, 0xc9, 0xac, 0x2d, 0x46, 0x5b, 0xf0,
+	0x36, 0x5f, 0xbe, 0xef, 0xf7, 0x2f, 0xdf, 0x07, 0xc9, 0x4a, 0x57, 0xec, 0x9c, 0xa9, 0xb1, 0xb1,
+	0x2c, 0x5b, 0x52, 0x56, 0x4a, 0x9a, 0x69, 0x55, 0x48, 0x51, 0x57, 0xcc, 0x4a, 0xad, 0xe6, 0x86,
+	0x57, 0x6b, 0x99, 0x71, 0x43, 0xca, 0x4a, 0x5b, 0x8d, 0xfa, 0xd6, 0xaa, 0x2d, 0x86, 0xac, 0x27,
+	0xd1, 0x58, 0x48, 0xbb, 0xa8, 0x53, 0x92, 0xe9, 0x33, 0x2a, 0xb4, 0xd0, 0xd4, 0x8d, 0xa5, 0x75,
+	0xe1, 0x2a, 0x57, 0xb8, 0xd7, 0x15, 0x3c, 0xba, 0x23, 0xb4, 0x16, 0x2b, 0xee, 0x74, 0x98, 0x52,
+	0xda, 0x3a, 0x91, 0xdf, 0xe4, 0xc3, 0x18, 0xde, 0x7e, 0x22, 0x8d, 0x7d, 0x5c, 0xf1, 0x97, 0x35,
+	0x57, 0xd9, 0xab, 0xa7, 0x2b, 0xa6, 0x4c, 0xd2, 0x16, 0xc6, 0xa2, 0x7b, 0xb0, 0x9f, 0x32, 0xc3,
+	0xe7, 0xc5, 0xb6, 0x1b, 0x82, 0x01, 0x18, 0xf5, 0x92, 0x5e, 0xfb, 0x75, 0x07, 0x19, 0xbe, 0x03,
+	0x30, 0xec, 0x10, 0x4c, 0xb9, 0xc9, 0x2a, 0x59, 0xb6, 0x3a, 0xe8, 0x16, 0xf4, 0x65, 0xee, 0x70,
+	0xd7, 0xe3, 0xa0, 0xb9, 0x3c, 0xf1, 0x67, 0xd3, 0xc4, 0x97, 0x39, 0xba, 0x0b, 0xaf, 0x39, 0x6e,
+	0x99, 0x87, 0xbe, 0x6b, 0xc2, 0xe6, 0xf2, 0x24, 0x88, 0x99, 0xe1, 0xb3, 0x69, 0x12, 0xb4, 0xad,
+	0x59, 0x8e, 0x10, 0x3c, 0x56, 0xec, 0x8c, 0x87, 0x47, 0xed, 0x44, 0xe2, 0xde, 0x7b, 0x4c, 0x1d,
+	0xef, 0x33, 0xa5, 0x61, 0xb4, 0x2f, 0x98, 0x29, 0xb5, 0x32, 0x1c, 0x3d, 0x83, 0x37, 0x77, 0xf8,
+	0x79, 0xd9, 0xb6, 0x42, 0x30, 0x38, 0x1a, 0xdd, 0x38, 0x1d, 0x91, 0xee, 0xdf, 0x26, 0x87, 0x82,
+	0x25, 0xfd, 0xa2, 0x43, 0x7d, 0xfa, 0x01, 0xc0, 0xde, 0xa3, 0x3f, 0xf7, 0x88, 0x2e, 0x00, 0x44,
+	0xff, 0x7a, 0x40, 0x0f, 0xfe, 0x96, 0x38, 0xb8, 0x80, 0xe8, 0xe1, 0xff, 0x8c, 0x5e, 0x45, 0x1a,
+	0xde, 0x7f, 0xf3, 0xf9, 0xfb, 0x85, 0x3f, 0x40, 0xb8, 0x7b, 0x4d, 0x74, 0x67, 0x73, 0xec, 0x72,
+	0xc6, 0xcf, 0xbf, 0x7c, 0xc3, 0xde, 0xeb, 0x06, 0x83, 0x8f, 0x0d, 0x06, 0x5f, 0x1b, 0x0c, 0x7e,
+	0x34, 0xd8, 0xfb, 0xd9, 0x60, 0xf0, 0x76, 0x83, 0xbd, 0xf7, 0x1b, 0xec, 0x7d, 0xda, 0x60, 0xf0,
+	0x82, 0x0a, 0x4d, 0xec, 0x82, 0xdb, 0x85, 0x54, 0xc2, 0x10, 0xc5, 0xed, 0xb9, 0xae, 0x96, 0xb4,
+	0x7b, 0xb9, 0xeb, 0x09, 0x2d, 0x97, 0x82, 0x5a, 0xab, 0xca, 0x34, 0x0d, 0xdc, 0x3d, 0x4d, 0x7e,
+	0x05, 0x00, 0x00, 0xff, 0xff, 0x7b, 0x8f, 0x0f, 0xf0, 0xde, 0x02, 0x00, 0x00,
 }
 
 func (this *ListFrequencyPlansRequest) Equal(that interface{}) bool {
@@ -414,236 +380,6 @@ var _Configuration_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/configuration_services.proto",
 }
 
-func (m *ListFrequencyPlansRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListFrequencyPlansRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListFrequencyPlansRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.BaseFrequency != 0 {
-		i = encodeVarintConfigurationServices(dAtA, i, uint64(m.BaseFrequency))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *FrequencyPlanDescription) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *FrequencyPlanDescription) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FrequencyPlanDescription) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.BaseFrequency != 0 {
-		i = encodeVarintConfigurationServices(dAtA, i, uint64(m.BaseFrequency))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintConfigurationServices(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.BaseID) > 0 {
-		i -= len(m.BaseID)
-		copy(dAtA[i:], m.BaseID)
-		i = encodeVarintConfigurationServices(dAtA, i, uint64(len(m.BaseID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.ID) > 0 {
-		i -= len(m.ID)
-		copy(dAtA[i:], m.ID)
-		i = encodeVarintConfigurationServices(dAtA, i, uint64(len(m.ID)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ListFrequencyPlansResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListFrequencyPlansResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListFrequencyPlansResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.FrequencyPlans) > 0 {
-		for iNdEx := len(m.FrequencyPlans) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.FrequencyPlans[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintConfigurationServices(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintConfigurationServices(dAtA []byte, offset int, v uint64) int {
-	offset -= sovConfigurationServices(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func NewPopulatedListFrequencyPlansRequest(r randyConfigurationServices, easy bool) *ListFrequencyPlansRequest {
-	this := &ListFrequencyPlansRequest{}
-	this.BaseFrequency = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedFrequencyPlanDescription(r randyConfigurationServices, easy bool) *FrequencyPlanDescription {
-	this := &FrequencyPlanDescription{}
-	this.ID = randStringConfigurationServices(r)
-	this.BaseID = randStringConfigurationServices(r)
-	this.Name = randStringConfigurationServices(r)
-	this.BaseFrequency = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListFrequencyPlansResponse(r randyConfigurationServices, easy bool) *ListFrequencyPlansResponse {
-	this := &ListFrequencyPlansResponse{}
-	if r.Intn(5) != 0 {
-		v1 := r.Intn(5)
-		this.FrequencyPlans = make([]*FrequencyPlanDescription, v1)
-		for i := 0; i < v1; i++ {
-			this.FrequencyPlans[i] = NewPopulatedFrequencyPlanDescription(r, easy)
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-type randyConfigurationServices interface {
-	Float32() float32
-	Float64() float64
-	Int63() int64
-	Int31() int32
-	Uint32() uint32
-	Intn(n int) int
-}
-
-func randUTF8RuneConfigurationServices(r randyConfigurationServices) rune {
-	ru := r.Intn(62)
-	if ru < 10 {
-		return rune(ru + 48)
-	} else if ru < 36 {
-		return rune(ru + 55)
-	}
-	return rune(ru + 61)
-}
-func randStringConfigurationServices(r randyConfigurationServices) string {
-	v2 := r.Intn(100)
-	tmps := make([]rune, v2)
-	for i := 0; i < v2; i++ {
-		tmps[i] = randUTF8RuneConfigurationServices(r)
-	}
-	return string(tmps)
-}
-func randUnrecognizedConfigurationServices(r randyConfigurationServices, maxFieldNumber int) (dAtA []byte) {
-	l := r.Intn(5)
-	for i := 0; i < l; i++ {
-		wire := r.Intn(4)
-		if wire == 3 {
-			wire = 5
-		}
-		fieldNumber := maxFieldNumber + r.Intn(100)
-		dAtA = randFieldConfigurationServices(dAtA, r, fieldNumber, wire)
-	}
-	return dAtA
-}
-func randFieldConfigurationServices(dAtA []byte, r randyConfigurationServices, fieldNumber int, wire int) []byte {
-	key := uint32(fieldNumber)<<3 | uint32(wire)
-	switch wire {
-	case 0:
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(key))
-		v3 := r.Int63()
-		if r.Intn(2) == 0 {
-			v3 *= -1
-		}
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(v3))
-	case 1:
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	case 2:
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(key))
-		ll := r.Intn(100)
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(ll))
-		for j := 0; j < ll; j++ {
-			dAtA = append(dAtA, byte(r.Intn(256)))
-		}
-	default:
-		dAtA = encodeVarintPopulateConfigurationServices(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	}
-	return dAtA
-}
-func encodeVarintPopulateConfigurationServices(dAtA []byte, v uint64) []byte {
-	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
-		v >>= 7
-	}
-	dAtA = append(dAtA, uint8(v))
-	return dAtA
-}
 func (m *ListFrequencyPlansRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -699,7 +435,7 @@ func sovConfigurationServices(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozConfigurationServices(x uint64) (n int) {
-	return sovConfigurationServices((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovConfigurationServices(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *ListFrequencyPlansRequest) String() string {
 	if this == nil {
@@ -747,414 +483,3 @@ func valueToStringConfigurationServices(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ListFrequencyPlansRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowConfigurationServices
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListFrequencyPlansRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListFrequencyPlansRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BaseFrequency", wireType)
-			}
-			m.BaseFrequency = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.BaseFrequency |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipConfigurationServices(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *FrequencyPlanDescription) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowConfigurationServices
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FrequencyPlanDescription: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FrequencyPlanDescription: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BaseID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BaseID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BaseFrequency", wireType)
-			}
-			m.BaseFrequency = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.BaseFrequency |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipConfigurationServices(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListFrequencyPlansResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowConfigurationServices
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListFrequencyPlansResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListFrequencyPlansResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FrequencyPlans", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FrequencyPlans = append(m.FrequencyPlans, &FrequencyPlanDescription{})
-			if err := m.FrequencyPlans[len(m.FrequencyPlans)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipConfigurationServices(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthConfigurationServices
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipConfigurationServices(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowConfigurationServices
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowConfigurationServices
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthConfigurationServices
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupConfigurationServices
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthConfigurationServices
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthConfigurationServices        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowConfigurationServices          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupConfigurationServices = fmt.Errorf("proto: unexpected end of group")
-)

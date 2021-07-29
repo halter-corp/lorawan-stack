@@ -69,7 +69,7 @@ func NewPopulatedMACCommand_LinkADRReq(r randyLorawan, easy bool) *MACCommand_Li
 func NewPopulatedMACCommand_RxParamSetupReq(r randyLorawan, easy bool) *MACCommand_RxParamSetupReq {
 	out := &MACCommand_RxParamSetupReq{}
 	out.Rx2DataRateIndex = NewPopulatedDataRateIndex(r, easy)
-	out.Rx1DataRateOffset = r.Uint32() % 8
+	out.Rx1DataRateOffset = DataRateOffset(r.Uint32() % 8)
 	out.Rx2Frequency = NewPopulatedFrequency(r, easy)
 	return out
 }
@@ -102,7 +102,7 @@ func NewPopulatedMACCommand_DLChannelReq(r randyLorawan, easy bool) *MACCommand_
 
 func NewPopulatedMACCommand_ForceRejoinReq(r randyLorawan, easy bool) *MACCommand_ForceRejoinReq {
 	out := &MACCommand_ForceRejoinReq{}
-	out.RejoinType = RejoinType(r.Intn(3))
+	out.RejoinType = RejoinRequestType(r.Intn(3))
 	out.DataRateIndex = NewPopulatedDataRateIndex(r, easy)
 	out.MaxRetries = r.Uint32() % 8
 	out.PeriodExponent = RejoinPeriodExponent(r.Intn(8))
@@ -145,9 +145,9 @@ func NewPopulatedMACCommand(r randyLorawan, easy bool) *MACCommand {
 		}
 	case CID_LINK_ADR:
 		if r.Intn(2) == 1 {
-			out.Payload = &MACCommand_LinkADRReq_{LinkADRReq: NewPopulatedMACCommand_LinkADRReq(r, easy)}
+			out.Payload = &MACCommand_LinkAdrReq{LinkAdrReq: NewPopulatedMACCommand_LinkADRReq(r, easy)}
 		} else {
-			out.Payload = &MACCommand_LinkADRAns_{LinkADRAns: NewPopulatedMACCommand_LinkADRAns(r, easy)}
+			out.Payload = &MACCommand_LinkAdrAns{LinkAdrAns: NewPopulatedMACCommand_LinkADRAns(r, easy)}
 		}
 	case CID_DUTY_CYCLE:
 		if r.Intn(2) == 1 {
@@ -191,7 +191,7 @@ func NewPopulatedMACCommand(r randyLorawan, easy bool) *MACCommand {
 		}
 	case CID_ADR_PARAM_SETUP:
 		if r.Intn(2) == 1 {
-			out.Payload = &MACCommand_ADRParamSetupReq_{ADRParamSetupReq: NewPopulatedMACCommand_ADRParamSetupReq(r, easy)}
+			out.Payload = &MACCommand_AdrParamSetupReq{AdrParamSetupReq: NewPopulatedMACCommand_ADRParamSetupReq(r, easy)}
 		}
 	case CID_DEVICE_TIME:
 		if r.Intn(2) == 1 {
@@ -330,8 +330,8 @@ func NewPopulatedTxSettings(r randyLorawan, easy bool) *TxSettings {
 			},
 		}
 	case 1:
-		out.DataRate.Modulation = &DataRate_LoRa{
-			LoRa: &LoRaDataRate{
+		out.DataRate.Modulation = &DataRate_Lora{
+			Lora: &LoRaDataRate{
 				Bandwidth:       []uint32{125000, 250000, 500000}[r.Intn(3)],
 				SpreadingFactor: uint32(r.Intn(6) + 7),
 			},
@@ -350,8 +350,8 @@ func NewPopulatedMessage_MACPayload(r randyLorawan) *Message_MACPayload {
 
 func NewPopulatedJoinRequestPayload(r randyLorawan, easy bool) *JoinRequestPayload {
 	out := &JoinRequestPayload{}
-	out.JoinEUI = *types.NewPopulatedEUI64(r)
-	out.DevEUI = *types.NewPopulatedEUI64(r)
+	out.JoinEui = *types.NewPopulatedEUI64(r)
+	out.DevEui = *types.NewPopulatedEUI64(r)
 	out.DevNonce = *types.NewPopulatedDevNonce(r)
 	return out
 }
@@ -362,7 +362,7 @@ func NewPopulatedMessage_JoinRequestPayload(r randyLorawan) *Message_JoinRequest
 
 func NewPopulatedDLSettings(r randyLorawan, easy bool) *DLSettings {
 	out := &DLSettings{}
-	out.Rx1DROffset = uint32(r.Intn(8))
+	out.Rx1DROffset = DataRateOffset(r.Uint32() % 8)
 	out.Rx2DR = NewPopulatedDataRateIndex(r, easy)
 	return out
 }
@@ -390,7 +390,7 @@ func NewPopulatedCFList(r randyLorawan, easy bool) *CFList {
 func NewPopulatedJoinAcceptPayload(r randyLorawan, easy bool) *JoinAcceptPayload {
 	out := &JoinAcceptPayload{}
 	out.JoinNonce = *types.NewPopulatedJoinNonce(r)
-	out.NetID = *types.NewPopulatedNetID(r)
+	out.NetId = *types.NewPopulatedNetID(r)
 	out.DevAddr = *types.NewPopulatedDevAddr(r)
 	out.DLSettings = *NewPopulatedDLSettings(r, easy)
 	out.RxDelay = RxDelay(r.Intn(16))
@@ -404,33 +404,33 @@ func NewPopulatedMessage_JoinAcceptPayload(r randyLorawan) *Message_JoinAcceptPa
 	return &Message_JoinAcceptPayload{NewPopulatedJoinAcceptPayload(r, false)}
 }
 
-func NewPopulatedRejoinRequestPayloadType(r randyLorawan, typ RejoinType) *RejoinRequestPayload {
+func NewPopulatedRejoinRequestPayloadType(r randyLorawan, typ RejoinRequestType) *RejoinRequestPayload {
 	out := &RejoinRequestPayload{}
 	out.RejoinType = typ
 	switch typ {
 	case 0, 2:
-		out.JoinEUI = types.EUI64{}
-		out.NetID = *types.NewPopulatedNetID(r)
-		out.DevEUI = *types.NewPopulatedEUI64(r)
+		out.JoinEui = types.EUI64{}
+		out.NetId = *types.NewPopulatedNetID(r)
+		out.DevEui = *types.NewPopulatedEUI64(r)
 		out.RejoinCnt = uint32(uint16(r.Uint32()))
 	case 1:
-		out.NetID = types.NetID{}
-		out.JoinEUI = *types.NewPopulatedEUI64(r)
-		out.DevEUI = *types.NewPopulatedEUI64(r)
+		out.NetId = types.NetID{}
+		out.JoinEui = *types.NewPopulatedEUI64(r)
+		out.DevEui = *types.NewPopulatedEUI64(r)
 		out.RejoinCnt = uint32(uint16(r.Uint32()))
 	}
 	return out
 }
 
 func NewPopulatedRejoinRequestPayload(r randyLorawan, easy bool) *RejoinRequestPayload {
-	return NewPopulatedRejoinRequestPayloadType(r, RejoinType(r.Intn(3)))
+	return NewPopulatedRejoinRequestPayloadType(r, RejoinRequestType(r.Intn(3)))
 }
 
 func NewPopulatedMessage_RejoinRequestPayload(r randyLorawan) *Message_RejoinRequestPayload {
 	return &Message_RejoinRequestPayload{NewPopulatedRejoinRequestPayload(r, false)}
 }
 
-func NewPopulatedMessage_RejoinRequestPayloadType(r randyLorawan, typ RejoinType) *Message_RejoinRequestPayload {
+func NewPopulatedMessage_RejoinRequestPayloadType(r randyLorawan, typ RejoinRequestType) *Message_RejoinRequestPayload {
 	return &Message_RejoinRequestPayload{NewPopulatedRejoinRequestPayloadType(r, typ)}
 }
 
@@ -463,8 +463,8 @@ func NewPopulatedMessageUplink(r randyLorawan, sNwkSIntKey, fNwkSIntKey types.AE
 	}
 	pld := NewPopulatedMessage_MACPayload(r)
 	pld.MACPayload.FHDR.FCtrl = FCtrl{
-		ADR:       r.Intn(2) == 0,
-		ADRAckReq: r.Intn(2) == 0,
+		Adr:       r.Intn(2) == 0,
+		AdrAckReq: r.Intn(2) == 0,
 		ClassB:    r.Intn(2) == 0,
 		Ack:       r.Intn(2) == 0,
 	}
@@ -496,7 +496,7 @@ func NewPopulatedMessageDownlink(r randyLorawan, sNwkSIntKey types.AES128Key, co
 	}
 	pld := NewPopulatedMessage_MACPayload(r)
 	pld.MACPayload.FHDR.FCtrl = FCtrl{
-		ADR:      r.Intn(2) == 0,
+		Adr:      r.Intn(2) == 0,
 		FPending: r.Intn(2) == 0,
 		Ack:      r.Intn(2) == 0,
 	}
@@ -548,7 +548,7 @@ func NewPopulatedMessageJoinAccept(r randyLorawan, decrypted bool) *Message {
 	return out
 }
 
-func NewPopulatedMessageRejoinRequest(r randyLorawan, typ RejoinType) *Message {
+func NewPopulatedMessageRejoinRequest(r randyLorawan, typ RejoinRequestType) *Message {
 	out := &Message{}
 	out.MHDR = *NewPopulatedMHDR(r, false)
 	out.MHDR.MType = MType_REJOIN_REQUEST
@@ -582,7 +582,7 @@ func NewPopulatedMessage(r randyLorawan, easy bool) *Message {
 	case MType_JOIN_ACCEPT:
 		return NewPopulatedMessageJoinAccept(r, false)
 	case MType_REJOIN_REQUEST:
-		return NewPopulatedMessageRejoinRequest(r, RejoinType(r.Intn(3)))
+		return NewPopulatedMessageRejoinRequest(r, RejoinRequestType(r.Intn(3)))
 	}
 	panic("unreachable")
 }

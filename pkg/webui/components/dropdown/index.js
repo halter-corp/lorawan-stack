@@ -17,6 +17,7 @@ import classnames from 'classnames'
 import { NavLink } from 'react-router-dom'
 
 import Icon from '@ttn-lw/components/icon'
+import Link from '@ttn-lw/components/link'
 
 import Message from '@ttn-lw/lib/components/message'
 
@@ -46,15 +47,23 @@ Dropdown.defaultProps = {
   onItemsClick: () => null,
 }
 
-const DropdownItem = function({ icon, title, path, action, exact }) {
+const DropdownItem = ({ icon, title, path, action, exact, showActive, tabIndex, external }) => {
   const iconElement = icon && <Icon className={style.icon} icon={icon} nudgeUp />
+  const activeClassName = classnames({
+    [style.active]: showActive,
+  })
   const ItemElement = action ? (
-    <button onClick={action} onKeyPress={action} role="tab" tabIndex="0">
+    <button onClick={action} onKeyPress={action} role="tab" tabIndex={tabIndex}>
       {iconElement}
       <Message content={title} />
     </button>
+  ) : external ? (
+    <Link.Anchor href={path} external tabIndex={tabIndex}>
+      {iconElement}
+      <Message content={title} />
+    </Link.Anchor>
   ) : (
-    <NavLink activeClassName={style.active} to={path} exact={exact}>
+    <NavLink activeClassName={activeClassName} to={path} exact={exact} tabIndex={tabIndex}>
       {iconElement}
       <Message content={title} />
     </NavLink>
@@ -69,17 +78,36 @@ const DropdownItem = function({ icon, title, path, action, exact }) {
 DropdownItem.propTypes = {
   action: PropTypes.func,
   exact: PropTypes.bool,
+  external: PropTypes.bool,
   icon: PropTypes.string.isRequired,
   path: PropTypes.string,
+  showActive: PropTypes.bool,
+  tabIndex: PropTypes.string,
   title: PropTypes.message.isRequired,
 }
 
 DropdownItem.defaultProps = {
   action: undefined,
   exact: false,
+  external: false,
   path: undefined,
+  showActive: true,
+  tabIndex: '0',
+}
+
+const DropdownHeaderItem = ({ title }) => (
+  <li className={style.dropdownHeaderItem}>
+    <span>
+      <Message content={title} />
+    </span>
+  </li>
+)
+
+DropdownHeaderItem.propTypes = {
+  title: PropTypes.message.isRequired,
 }
 
 Dropdown.Item = DropdownItem
+Dropdown.HeaderItem = DropdownHeaderItem
 
 export default Dropdown

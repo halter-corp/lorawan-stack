@@ -66,17 +66,30 @@ type Gateway struct {
 	Antennas []GatewayAntenna
 
 	LBSLNSSecret []byte `gorm:"type:BYTEA;column:lbs_lns_secret"`
+
+	ClaimAuthenticationCodeSecret    []byte `gorm:"type:BYTEA"`
+	ClaimAuthenticationCodeValidFrom *time.Time
+	ClaimAuthenticationCodeValidTo   *time.Time
+
+	TargetCUPSURI string `gorm:"type:VARCHAR"`
+	TargetCUPSKey []byte `gorm:"type:BYTEA"`
+
+	RequireAuthenticatedConnection bool
+
+	SupportsLRFHSS bool `gorm:"default:false not null"`
+
+	DisablePacketBrokerForwarding bool `gorm:"default:false not null"`
 }
 
 func init() {
 	registerModel(&Gateway{})
 }
 
-var lbsLNSSecretSeparator = []byte(":")
+var secretFieldSeparator = []byte(":")
 
 // functions to set fields from the gateway model into the gateway proto.
 var gatewayPBSetters = map[string]func(*ttnpb.Gateway, *Gateway){
-	"ids.eui":        func(pb *ttnpb.Gateway, gtw *Gateway) { pb.EUI = gtw.GatewayEUI.toPB() },
+	"ids.eui":        func(pb *ttnpb.Gateway, gtw *Gateway) { pb.Eui = gtw.GatewayEUI.toPB() },
 	nameField:        func(pb *ttnpb.Gateway, gtw *Gateway) { pb.Name = gtw.Name },
 	descriptionField: func(pb *ttnpb.Gateway, gtw *Gateway) { pb.Description = gtw.Description },
 	attributesField:  func(pb *ttnpb.Gateway, gtw *Gateway) { pb.Attributes = attributes(gtw.Attributes).toMap() },
@@ -122,21 +135,60 @@ var gatewayPBSetters = map[string]func(*ttnpb.Gateway, *Gateway){
 		}
 	},
 	lbsLNSSecretField: func(pb *ttnpb.Gateway, gtw *Gateway) {
-		blocks := bytes.SplitN(gtw.LBSLNSSecret, lbsLNSSecretSeparator, 2)
+		blocks := bytes.SplitN(gtw.LBSLNSSecret, secretFieldSeparator, 2)
 		if len(blocks) == 2 {
 			pb.LBSLNSSecret = &ttnpb.Secret{
-				KeyID: string(blocks[0]),
+				KeyId: string(blocks[0]),
 				Value: blocks[1],
 			}
 		} else {
 			pb.LBSLNSSecret = nil
 		}
 	},
+	claimAuthenticationCodeField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		blocks := bytes.SplitN(gtw.ClaimAuthenticationCodeSecret, secretFieldSeparator, 2)
+		var secret *ttnpb.Secret
+		if len(blocks) == 2 {
+			secret = &ttnpb.Secret{
+				KeyId: string(blocks[0]),
+				Value: blocks[1],
+			}
+		}
+		pb.ClaimAuthenticationCode = &ttnpb.GatewayClaimAuthenticationCode{
+			Secret:    secret,
+			ValidFrom: gtw.ClaimAuthenticationCodeValidFrom,
+			ValidTo:   gtw.ClaimAuthenticationCodeValidTo,
+		}
+	},
+	targetCUPSURIField: func(pb *ttnpb.Gateway, gtw *Gateway) { pb.TargetCUPSURI = gtw.TargetCUPSURI },
+	targetCUPSKeyField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		blocks := bytes.SplitN(gtw.TargetCUPSKey, secretFieldSeparator, 2)
+		if len(blocks) == 2 {
+			pb.TargetCUPSKey = &ttnpb.Secret{
+				KeyId: string(blocks[0]),
+				Value: blocks[1],
+			}
+		} else {
+			pb.TargetCUPSKey = nil
+		}
+	},
+	requireAuthenticatedConnectionField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		pb.RequireAuthenticatedConnection = gtw.RequireAuthenticatedConnection
+	},
+	supportsLRFHSSField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		if pb.Lrfhss == nil {
+			pb.Lrfhss = &ttnpb.Gateway_LRFHSS{}
+		}
+		pb.Lrfhss.Supported = gtw.SupportsLRFHSS
+	},
+	disablePacketBrokerForwardingField: func(pb *ttnpb.Gateway, gtw *Gateway) {
+		pb.DisablePacketBrokerForwarding = gtw.DisablePacketBrokerForwarding
+	},
 }
 
 // functions to set fields from the gateway proto into the gateway model.
 var gatewayModelSetters = map[string]func(*Gateway, *ttnpb.Gateway){
-	"ids.eui":        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.GatewayEUI = eui(pb.EUI) },
+	"ids.eui":        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.GatewayEUI = eui(pb.Eui) },
 	nameField:        func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.Name = pb.Name },
 	descriptionField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.Description = pb.Description },
 	attributesField: func(gtw *Gateway, pb *ttnpb.Gateway) {
@@ -184,13 +236,52 @@ var gatewayModelSetters = map[string]func(*Gateway, *ttnpb.Gateway){
 	lbsLNSSecretField: func(gtw *Gateway, pb *ttnpb.Gateway) {
 		if pb.LBSLNSSecret != nil {
 			var secretBuffer bytes.Buffer
-			secretBuffer.WriteString(pb.LBSLNSSecret.KeyID)
-			secretBuffer.Write(lbsLNSSecretSeparator)
+			secretBuffer.WriteString(pb.LBSLNSSecret.KeyId)
+			secretBuffer.Write(secretFieldSeparator)
 			secretBuffer.Write(pb.LBSLNSSecret.Value)
 			gtw.LBSLNSSecret = secretBuffer.Bytes()
 		} else {
 			gtw.LBSLNSSecret = nil
 		}
+	},
+	claimAuthenticationCodeField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		// This allows the setting of individual fields while retaining values of other fields.
+		if pb.ClaimAuthenticationCode != nil {
+			if pb.ClaimAuthenticationCode.Secret != nil {
+				var secretBuffer bytes.Buffer
+				secretBuffer.WriteString(pb.ClaimAuthenticationCode.Secret.KeyId)
+				secretBuffer.Write(secretFieldSeparator)
+				secretBuffer.Write(pb.ClaimAuthenticationCode.Secret.Value)
+				gtw.ClaimAuthenticationCodeSecret = secretBuffer.Bytes()
+			}
+			if pb.ClaimAuthenticationCode.ValidFrom != nil {
+				gtw.ClaimAuthenticationCodeValidFrom = pb.ClaimAuthenticationCode.ValidFrom
+			}
+			if pb.ClaimAuthenticationCode.ValidTo != nil {
+				gtw.ClaimAuthenticationCodeValidTo = pb.ClaimAuthenticationCode.ValidTo
+			}
+		}
+	},
+	targetCUPSURIField: func(gtw *Gateway, pb *ttnpb.Gateway) { gtw.TargetCUPSURI = pb.TargetCUPSURI },
+	targetCUPSKeyField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		if pb.TargetCUPSKey != nil {
+			var secretBuffer bytes.Buffer
+			secretBuffer.WriteString(pb.TargetCUPSKey.KeyId)
+			secretBuffer.Write(secretFieldSeparator)
+			secretBuffer.Write(pb.TargetCUPSKey.Value)
+			gtw.TargetCUPSKey = secretBuffer.Bytes()
+		} else {
+			gtw.TargetCUPSKey = nil
+		}
+	},
+	requireAuthenticatedConnectionField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		gtw.RequireAuthenticatedConnection = pb.RequireAuthenticatedConnection
+	},
+	supportsLRFHSSField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		gtw.SupportsLRFHSS = pb.GetLrfhss().GetSupported()
+	},
+	disablePacketBrokerForwardingField: func(gtw *Gateway, pb *ttnpb.Gateway) {
+		gtw.DisablePacketBrokerForwarding = pb.DisablePacketBrokerForwarding
 	},
 }
 
@@ -209,37 +300,43 @@ func init() {
 
 // fieldmask path to column name in gateways table.
 var gatewayColumnNames = map[string][]string{
-	"ids.eui":                     {"gateway_eui"},
-	antennasField:                 {},
-	attributesField:               {},
-	autoUpdateField:               {autoUpdateField},
-	brandIDField:                  {"brand_id"},
-	contactInfoField:              {},
-	descriptionField:              {descriptionField},
-	downlinkPathConstraintField:   {downlinkPathConstraintField},
-	enforceDutyCycleField:         {enforceDutyCycleField},
-	firmwareVersionField:          {"firmware_version"},
-	frequencyPlanIDsField:         {"frequency_plan_id"},
-	gatewayServerAddressField:     {gatewayServerAddressField},
-	hardwareVersionField:          {"hardware_version"},
-	locationPublicField:           {locationPublicField},
-	lbsLNSSecretField:             {lbsLNSSecretField},
-	modelIDField:                  {"model_id"},
-	nameField:                     {nameField},
-	scheduleAnytimeDelayField:     {scheduleAnytimeDelayField},
-	scheduleDownlinkLateField:     {scheduleDownlinkLateField},
-	statusPublicField:             {statusPublicField},
-	updateChannelField:            {updateChannelField},
-	updateLocationFromStatusField: {updateLocationFromStatusField},
-	versionIDsField:               {"brand_id", "model_id", "hardware_version", "firmware_version"},
+	"ids.eui":                           {"gateway_eui"},
+	antennasField:                       {},
+	attributesField:                     {},
+	autoUpdateField:                     {autoUpdateField},
+	brandIDField:                        {"brand_id"},
+	claimAuthenticationCodeField:        {"claim_authentication_code_secret", "claim_authentication_code_valid_from", "claim_authentication_code_valid_to"},
+	contactInfoField:                    {},
+	descriptionField:                    {descriptionField},
+	downlinkPathConstraintField:         {downlinkPathConstraintField},
+	enforceDutyCycleField:               {enforceDutyCycleField},
+	firmwareVersionField:                {"firmware_version"},
+	frequencyPlanIDsField:               {"frequency_plan_id"},
+	gatewayServerAddressField:           {gatewayServerAddressField},
+	hardwareVersionField:                {"hardware_version"},
+	locationPublicField:                 {locationPublicField},
+	lbsLNSSecretField:                   {lbsLNSSecretField},
+	modelIDField:                        {"model_id"},
+	nameField:                           {nameField},
+	scheduleAnytimeDelayField:           {scheduleAnytimeDelayField},
+	scheduleDownlinkLateField:           {scheduleDownlinkLateField},
+	statusPublicField:                   {statusPublicField},
+	targetCUPSURIField:                  {"target_cups_uri"},
+	targetCUPSKeyField:                  {"target_cups_key"},
+	updateChannelField:                  {updateChannelField},
+	updateLocationFromStatusField:       {updateLocationFromStatusField},
+	versionIDsField:                     {"brand_id", "model_id", "hardware_version", "firmware_version"},
+	requireAuthenticatedConnectionField: {requireAuthenticatedConnectionField},
+	disablePacketBrokerForwardingField:  {disablePacketBrokerForwardingField},
 }
 
 func (gtw Gateway) toPB(pb *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) {
-	pb.GatewayIdentifiers.GatewayID = gtw.GatewayID
-	pb.GatewayIdentifiers.EUI = gtw.GatewayEUI.toPB() // Always present.
+	pb.GatewayIdentifiers.GatewayId = gtw.GatewayID
+	pb.GatewayIdentifiers.Eui = gtw.GatewayEUI.toPB() // Always present.
 	pb.CreatedAt = cleanTime(gtw.CreatedAt)
 	pb.UpdatedAt = cleanTime(gtw.UpdatedAt)
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	pb.DeletedAt = cleanTimePtr(gtw.DeletedAt)
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultGatewayFieldMask
 	}
 	for _, path := range fieldMask.Paths {
@@ -250,7 +347,7 @@ func (gtw Gateway) toPB(pb *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) {
 }
 
 func (gtw *Gateway) fromPB(pb *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) (columns []string) {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultGatewayFieldMask
 	}
 	for _, path := range fieldMask.Paths {

@@ -16,6 +16,7 @@ import { disableApplicationServer } from '../../../support/utils'
 
 describe('Application create', () => {
   let user
+  const applicationId = 'test-application'
 
   before(() => {
     cy.dropAndSeedDatabase()
@@ -54,13 +55,6 @@ describe('Application create', () => {
         'Optional application description; can also be used to save notes about the application',
       )
       .and('be.visible')
-    cy.findByLabelText('Linking')
-      .should('be.visible')
-      .should('have.attr', 'value', 'true')
-    cy.findByLabelText('Network Server address').should('be.visible')
-    cy.findDescriptionByLabelText('Network Server address')
-      .should('contain', 'Leave empty to link to the Network Server in the same cluster')
-      .and('be.visible')
     cy.findByRole('button', { name: 'Create application' }).should('be.visible')
   })
 
@@ -76,6 +70,21 @@ describe('Application create', () => {
       .should('contain.text', 'Application ID is required')
       .and('be.visible')
     cy.location('pathname').should('eq', `${Cypress.config('consoleRootPath')}/applications/add`)
+  })
+
+  it('succeeds adding application', () => {
+    cy.loginConsole({ user_id: user.ids.user_id, password: user.password })
+    cy.visit(`${Cypress.config('consoleRootPath')}/applications/add`)
+    cy.findByLabelText('Application ID').type(applicationId)
+
+    cy.findByRole('button', { name: 'Create application' }).click()
+
+    cy.findByTestId('error-notification').should('not.exist')
+    cy.findByTestId('full-error-view').should('not.exist')
+    cy.location('pathname').should(
+      'eq',
+      `${Cypress.config('consoleRootPath')}/applications/${applicationId}`,
+    )
   })
 
   describe('when has no Application Server in the local cluster', () => {
@@ -116,8 +125,6 @@ describe('Application create', () => {
           'Optional application description; can also be used to save notes about the application',
         )
         .and('be.visible')
-      cy.findByLabelText('Linking').should('not.exist')
-      cy.findByLabelText('Network Server address').should('not.exist')
       cy.findByRole('button', { name: 'Create application' }).should('be.visible')
     })
   })

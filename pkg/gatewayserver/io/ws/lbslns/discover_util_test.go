@@ -16,24 +16,13 @@ package lbslns
 
 import (
 	"context"
-	"time"
 
-	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/config"
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
-
-func mustHavePeer(ctx context.Context, c *component.Component, role ttnpb.ClusterRole) {
-	for i := 0; i < 20; i++ {
-		time.Sleep(20 * time.Millisecond)
-		if _, err := c.GetPeer(ctx, role, nil); err == nil {
-			return
-		}
-	}
-	panic("could not connect to peer")
-}
 
 type mockServer struct {
 	ids ttnpb.GatewayIdentifiers
@@ -61,4 +50,16 @@ func (srv mockServer) ClaimDownlink(ctx context.Context, ids ttnpb.GatewayIdenti
 
 func (srv mockServer) UnclaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
 	return nil
+}
+
+func (srv mockServer) FromRequestContext(ctx context.Context) context.Context {
+	return ctx
+}
+
+func (srv mockServer) RateLimiter() ratelimit.Interface {
+	return nil
+}
+
+func (srv mockServer) ValidateGatewayID(ctx context.Context, ids ttnpb.GatewayIdentifiers) error {
+	return ids.ValidateContext(ctx)
 }

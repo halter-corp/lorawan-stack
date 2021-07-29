@@ -57,8 +57,8 @@ func TestJoinServerFQDN(t *testing.T) {
 func TestGetAppSKey(t *testing.T) {
 	makeSessionKeyRequest := func() *ttnpb.SessionKeyRequest {
 		return &ttnpb.SessionKeyRequest{
-			JoinEUI:      types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00},
-			DevEUI:       types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+			JoinEui:      types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00},
+			DevEui:       types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
 			SessionKeyID: []byte{0x01, 0x6b, 0xfa, 0x7b, 0xad, 0x47, 0x56, 0x34, 0x6a, 0x67, 0x49, 0x81, 0xe7, 0x5c, 0xdb, 0xdc},
 		}
 	}
@@ -176,6 +176,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -294,6 +295,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -424,6 +426,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -559,6 +562,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -619,8 +623,8 @@ func TestHandleJoinRequest(t *testing.T) {
 			Payload: &ttnpb.Message{
 				Payload: &ttnpb.Message_JoinRequestPayload{
 					JoinRequestPayload: &ttnpb.JoinRequestPayload{
-						JoinEUI: types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00},
-						DevEUI:  types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+						JoinEui: types.EUI64{0x70, 0xb3, 0xd5, 0x7e, 0xd0, 0x00, 0x00, 0x00},
+						DevEui:  types.EUI64{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
 					},
 				},
 			},
@@ -741,6 +745,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -859,6 +864,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -995,6 +1001,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -1144,6 +1151,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}
@@ -1292,6 +1300,7 @@ paths:
 				return config.InteropClient{
 						Directory:            confDir,
 						GetFallbackTLSConfig: func(context.Context) (*tls.Config, error) { return nil, nil },
+						HTTPClient:           http.DefaultClient,
 					}, func() error {
 						return os.RemoveAll(confDir)
 					}

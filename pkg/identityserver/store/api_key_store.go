@@ -16,10 +16,14 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"runtime/trace"
+	"strings"
 
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
+	"go.thethings.network/lorawan-stack/v3/pkg/rpcmiddleware/warning"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -32,11 +36,35 @@ type apiKeyStore struct {
 	*store
 }
 
-func (s *apiKeyStore) CreateAPIKey(ctx context.Context, entityID ttnpb.Identifiers, key *ttnpb.APIKey) error {
+func selectAPIKeyFields(ctx context.Context, query *gorm.DB, fieldMask *pbtypes.FieldMask) *gorm.DB {
+	var apiKeyColumns []string
+	var notFoundPaths []string
+
+	for _, path := range ttnpb.TopLevelFields(fieldMask.GetPaths()) {
+		switch path {
+		case "updated_at", "entity_id", "entity_type", "id":
+			// always selected
+		case "expires_at":
+			apiKeyColumns = append(apiKeyColumns, "expires_at")
+		case "rights":
+			apiKeyColumns = append(apiKeyColumns, "rights")
+		case "name":
+			apiKeyColumns = append(apiKeyColumns, "name")
+		default:
+			notFoundPaths = append(notFoundPaths, path)
+		}
+	}
+	if len(notFoundPaths) > 0 {
+		warning.Add(ctx, fmt.Sprintf("unsupported field mask paths: %s", strings.Join(notFoundPaths, ", ")))
+	}
+	return query.Select(cleanFields(append(append(modelColumns, "updated_at"), apiKeyColumns...)...))
+}
+
+func (s *apiKeyStore) CreateAPIKey(ctx context.Context, entityID *ttnpb.EntityIdentifiers, key *ttnpb.APIKey) (*ttnpb.APIKey, error) {
 	defer trace.StartRegion(ctx, "create api key").End()
 	entity, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	model := &APIKey{
 		APIKeyID:   key.ID,
@@ -45,11 +73,15 @@ func (s *apiKeyStore) CreateAPIKey(ctx context.Context, entityID ttnpb.Identifie
 		Name:       key.Name,
 		EntityID:   entity.PrimaryKey(),
 		EntityType: entityTypeForID(entityID),
+		ExpiresAt:  key.ExpiresAt,
 	}
-	return s.createEntity(ctx, model)
+	if err = s.createEntity(ctx, model); err != nil {
+		return nil, err
+	}
+	return model.toPB(), nil
 }
 
-func (s *apiKeyStore) FindAPIKeys(ctx context.Context, entityID ttnpb.Identifiers) ([]*ttnpb.APIKey, error) {
+func (s *apiKeyStore) FindAPIKeys(ctx context.Context, entityID *ttnpb.EntityIdentifiers) ([]*ttnpb.APIKey, error) {
 	defer trace.StartRegion(ctx, "find api keys").End()
 	entity, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
@@ -78,7 +110,7 @@ func (s *apiKeyStore) FindAPIKeys(ctx context.Context, entityID ttnpb.Identifier
 
 var errAPIKeyEntity = errors.DefineCorruption("api_key_entity", "API key not linked to an entity")
 
-func (s *apiKeyStore) GetAPIKey(ctx context.Context, id string) (ttnpb.Identifiers, *ttnpb.APIKey, error) {
+func (s *apiKeyStore) GetAPIKey(ctx context.Context, id string) (*ttnpb.EntityIdentifiers, *ttnpb.APIKey, error) {
 	defer trace.StartRegion(ctx, "get api key").End()
 	query := s.query(ctx, APIKey{})
 	var keyModel APIKey
@@ -103,7 +135,7 @@ func (s *apiKeyStore) GetAPIKey(ctx context.Context, id string) (ttnpb.Identifie
 	return ids, keyModel.toPB(), nil
 }
 
-func (s *apiKeyStore) UpdateAPIKey(ctx context.Context, entityID ttnpb.Identifiers, key *ttnpb.APIKey) (*ttnpb.APIKey, error) {
+func (s *apiKeyStore) UpdateAPIKey(ctx context.Context, entityID *ttnpb.EntityIdentifiers, key *ttnpb.APIKey, fieldMask *pbtypes.FieldMask) (*ttnpb.APIKey, error) {
 	defer trace.StartRegion(ctx, "update api key").End()
 	entity, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
@@ -122,13 +154,38 @@ func (s *apiKeyStore) UpdateAPIKey(ctx context.Context, entityID ttnpb.Identifie
 		}
 		return nil, err
 	}
-	if len(key.Rights) == 0 {
+	// Support for previous versions of The Things Stack.
+	if len(fieldMask.GetPaths()) == 0 {
+		fieldMask = &pbtypes.FieldMask{Paths: []string{"rights", "name"}}
+	}
+	// If empty rights are passed and rights are in the fieldmask, delete the key.
+	if len(key.Rights) == 0 && ttnpb.HasAnyField(fieldMask.GetPaths(), "rights") {
 		return nil, query.Delete(&keyModel).Error
 	}
-	keyModel.Name = key.Name
-	keyModel.Rights = Rights{Rights: key.Rights}
-	if err = query.Select("name", "rights", "updated_at").Save(&keyModel).Error; err != nil {
+	query = selectAPIKeyFields(ctx, query, fieldMask)
+	if ttnpb.HasAnyField(fieldMask.GetPaths(), "rights") {
+		keyModel.Rights = Rights{Rights: key.Rights}
+	}
+	if ttnpb.HasAnyField(fieldMask.GetPaths(), "expires_at") {
+		keyModel.ExpiresAt = key.ExpiresAt
+	}
+	if ttnpb.HasAnyField(fieldMask.GetPaths(), "name") {
+		keyModel.Name = key.Name
+	}
+	if err = query.Save(&keyModel).Error; err != nil {
 		return nil, err
 	}
 	return keyModel.toPB(), nil
+}
+
+func (s *apiKeyStore) DeleteEntityAPIKeys(ctx context.Context, entityID *ttnpb.EntityIdentifiers) error {
+	defer trace.StartRegion(ctx, "delete entity api keys").End()
+	entity, err := s.findDeletedEntity(ctx, entityID, "id")
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, APIKey{}).Where(&APIKey{
+		EntityID:   entity.PrimaryKey(),
+		EntityType: entityTypeForID(entityID),
+	}).Delete(&APIKey{}).Error
 }

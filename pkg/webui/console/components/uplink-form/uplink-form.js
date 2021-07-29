@@ -15,6 +15,7 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 
+import Notification from '@ttn-lw/components/notification'
 import SubmitButton from '@ttn-lw/components/submit-button'
 import Input from '@ttn-lw/components/input'
 import SubmitBar from '@ttn-lw/components/submit-bar'
@@ -22,7 +23,6 @@ import toast from '@ttn-lw/components/toast'
 import Form from '@ttn-lw/components/form'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
-import Message from '@ttn-lw/lib/components/message'
 
 import Yup from '@ttn-lw/lib/yup'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -51,7 +51,7 @@ const validationSchema = Yup.object({
 const initialValues = { f_port: 1, frm_payload: '' }
 
 const UplinkForm = props => {
-  const { simulateUplink } = props
+  const { simulateUplink, device, skipPayloadCrypto } = props
 
   const [error, setError] = React.useState('')
 
@@ -61,6 +61,12 @@ const UplinkForm = props => {
         await simulateUplink({
           f_port: values.f_port,
           frm_payload: hexToBase64(values.frm_payload),
+          // `rx_metadata` and `settings` fields are required by the validation middleware in AS.
+          // These fields won't affect the result of simulating an uplink message.
+          rx_metadata: [
+            { gateway_ids: { gateway_id: 'test' }, rssi: 42, channel_rssi: 42, snr: 4.2 },
+          ],
+          settings: { data_rate: { lora: { bandwidth: 125000, spreading_factor: 7 } } },
         })
         toast({
           title: sharedMessages.success,
@@ -76,16 +82,22 @@ const UplinkForm = props => {
     [simulateUplink],
   )
 
+  const deviceSimulationDisabled = device.skip_payload_crypto_override || skipPayloadCrypto
+
   return (
     <>
+      {deviceSimulationDisabled && (
+        <Notification content={sharedMessages.deviceSimulationDisabledWarning} warning small />
+      )}
       <IntlHelmet title={m.simulateUplink} />
       <Form
         error={error}
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
+        disabled={deviceSimulationDisabled}
       >
-        <Message component="h4" content={m.simulateUplink} />
+        <Form.SubTitle title={m.simulateUplink} />
         <Form.Field
           name="f_port"
           title="FPort"
@@ -112,7 +124,13 @@ const UplinkForm = props => {
 }
 
 UplinkForm.propTypes = {
+  device: PropTypes.device.isRequired,
   simulateUplink: PropTypes.func.isRequired,
+  skipPayloadCrypto: PropTypes.bool,
+}
+
+UplinkForm.defaultProps = {
+  skipPayloadCrypto: false,
 }
 
 export default UplinkForm

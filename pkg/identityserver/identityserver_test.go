@@ -28,6 +28,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/rpcmetadata"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"google.golang.org/grpc"
 )
@@ -35,7 +36,7 @@ import (
 var (
 	setup        sync.Once
 	dbConnString string
-	population   = store.NewPopulator(15, 42)
+	population   = store.NewPopulator(16, 42)
 )
 
 var (
@@ -45,6 +46,7 @@ var (
 	defaultUser, defaultUserIdx                             = getTestUser()
 	suspendedUser, suspendedUserIdx                         = getTestUser()
 	adminUser, adminUserIdx                                 = getTestUser()
+	userTestUser, userTestUserIdx                           = getTestUser()
 	collaboratorUser, collaboratorUserIdx                   = getTestUser()
 	applicationAccessUser, applicationAccessUserIdx         = getTestUser()
 	appAccessCollaboratorUser, appAccessCollaboratorUserIdx = getTestUser()
@@ -76,13 +78,27 @@ func init() {
 	defaultUser.TemporaryPasswordCreatedAt = nil
 	defaultUser.TemporaryPasswordExpiresAt = nil
 
+	userTestUser.Admin = false
+	userTestUser.PrimaryEmailAddressValidatedAt = &now
+	userTestUser.State = ttnpb.STATE_APPROVED
+
+	userTestUser.TemporaryPassword = ""
+	userTestUser.TemporaryPasswordCreatedAt = nil
+	userTestUser.TemporaryPasswordExpiresAt = nil
+
 	for id, apiKeys := range population.APIKeys {
-		if id.GetUserIDs().GetUserID() == defaultUser.GetUserID() {
+		if id.GetUserIds().GetUserId() == defaultUser.GetUserId() || id.GetUserIds().GetUserId() == userTestUser.GetUserId() {
+			expiredTime := time.Now().Add(-1 * time.Hour)
 			population.APIKeys[id] = append(
 				apiKeys,
 				&ttnpb.APIKey{
 					Name:   "key without rights",
 					Rights: []ttnpb.Right{ttnpb.RIGHT_SEND_INVITES},
+				},
+				&ttnpb.APIKey{
+					Name:      "expired key",
+					Rights:    []ttnpb.Right{ttnpb.RIGHT_USER_ALL},
+					ExpiresAt: &expiredTime,
 				},
 			)
 		}
@@ -109,7 +125,7 @@ func getTestUser() (*ttnpb.User, int) {
 
 func userCreds(idx int, preferredNames ...string) grpc.CallOption {
 	for id, apiKeys := range population.APIKeys {
-		if id.GetUserIDs().GetUserID() == population.Users[idx].GetUserID() {
+		if id.GetUserIds().GetUserId() == population.Users[idx].GetUserId() {
 			selectedIdx := 0
 			if len(preferredNames) == 0 {
 				preferredNames = []string{"default key"}
@@ -135,7 +151,7 @@ func userCreds(idx int, preferredNames ...string) grpc.CallOption {
 
 func userAPIKeys(userID *ttnpb.UserIdentifiers) ttnpb.APIKeys {
 	for id, apiKeys := range population.APIKeys {
-		if id.GetUserIDs().GetUserID() == userID.GetUserID() {
+		if id.GetUserIds().GetUserId() == userID.GetUserId() {
 			return ttnpb.APIKeys{
 				APIKeys: apiKeys,
 			}
@@ -149,7 +165,7 @@ func userAPIKeys(userID *ttnpb.UserIdentifiers) ttnpb.APIKeys {
 
 func applicationAPIKeys(applicationID *ttnpb.ApplicationIdentifiers) ttnpb.APIKeys {
 	for id, apiKeys := range population.APIKeys {
-		if id.GetApplicationIDs().GetApplicationID() == applicationID.GetApplicationID() {
+		if id.GetApplicationIds().GetApplicationId() == applicationID.GetApplicationId() {
 			return ttnpb.APIKeys{
 				APIKeys: apiKeys,
 			}
@@ -163,7 +179,7 @@ func applicationAPIKeys(applicationID *ttnpb.ApplicationIdentifiers) ttnpb.APIKe
 
 func gatewayAPIKeys(gatewayID *ttnpb.GatewayIdentifiers) ttnpb.APIKeys {
 	for id, apiKeys := range population.APIKeys {
-		if id.GetGatewayIDs().GetGatewayID() == gatewayID.GetGatewayID() {
+		if id.GetGatewayIds().GetGatewayId() == gatewayID.GetGatewayId() {
 			return ttnpb.APIKeys{
 				APIKeys: apiKeys,
 			}
@@ -177,7 +193,7 @@ func gatewayAPIKeys(gatewayID *ttnpb.GatewayIdentifiers) ttnpb.APIKeys {
 
 func organizationAPIKeys(organizationID *ttnpb.OrganizationIdentifiers) ttnpb.APIKeys {
 	for id, apiKeys := range population.APIKeys {
-		if id.GetOrganizationIDs().GetOrganizationID() == organizationID.GetOrganizationID() {
+		if id.GetOrganizationIds().GetOrganizationId() == organizationID.GetOrganizationId() {
 			return ttnpb.APIKeys{
 				APIKeys: apiKeys,
 			}
@@ -195,7 +211,7 @@ func userApplications(userID *ttnpb.UserIdentifiers) ttnpb.Applications {
 		for id, collaborators := range population.Memberships {
 			if app.IDString() == id.IDString() {
 				for _, collaborator := range collaborators {
-					if collaborator.IDString() == userID.GetUserID() {
+					if collaborator.IDString() == userID.GetUserId() {
 						applications = append(applications, app)
 					}
 				}
@@ -214,7 +230,7 @@ func userClients(userID *ttnpb.UserIdentifiers) ttnpb.Clients {
 		for id, collaborators := range population.Memberships {
 			if client.IDString() == id.IDString() {
 				for _, collaborator := range collaborators {
-					if collaborator.IDString() == userID.GetUserID() {
+					if collaborator.IDString() == userID.GetUserId() {
 						clients = append(clients, client)
 					}
 				}
@@ -233,7 +249,7 @@ func userGateways(userID *ttnpb.UserIdentifiers) ttnpb.Gateways {
 		for id, collaborators := range population.Memberships {
 			if gateway.IDString() == id.IDString() {
 				for _, collaborator := range collaborators {
-					if collaborator.IDString() == userID.GetUserID() {
+					if collaborator.IDString() == userID.GetUserId() {
 						gateways = append(gateways, gateway)
 					}
 				}
@@ -252,7 +268,7 @@ func userOrganizations(userID *ttnpb.UserIdentifiers) ttnpb.Organizations {
 		for id, collaborators := range population.Memberships {
 			if organization.IDString() == id.IDString() {
 				for _, collaborator := range collaborators {
-					if collaborator.IDString() == userID.GetUserID() {
+					if collaborator.IDString() == userID.GetUserId() {
 						organizations = append(organizations, organization)
 					}
 				}
@@ -315,6 +331,7 @@ func getIdentityServer(t *testing.T) (*IdentityServer, *grpc.ClientConn) {
 	conf := &Config{
 		DatabaseURI: dbConnString,
 	}
+	conf.UserRegistration.Enabled = true
 	conf.UserRegistration.PasswordRequirements.MinLength = 10
 	conf.UserRegistration.PasswordRequirements.MaxLength = 1000
 	conf.Email.Templates.Static = map[string][]byte{
@@ -326,6 +343,12 @@ func getIdentityServer(t *testing.T) (*IdentityServer, *grpc.ClientConn) {
 	conf.UserRights.CreateClients = true
 	conf.UserRights.CreateGateways = true
 	conf.UserRights.CreateOrganizations = true
+	conf.AdminRights.All = true
+	var euiBlock types.EUI64Prefix
+	euiBlock.UnmarshalConfigString("70B3D57ED0000000/36")
+	conf.DevEUIBlock.Enabled = true
+	conf.DevEUIBlock.Prefix = euiBlock
+	conf.DevEUIBlock.ApplicationLimit = 3
 	is, err := New(c, conf)
 	if err != nil {
 		t.Fatal(err)

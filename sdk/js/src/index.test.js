@@ -14,7 +14,7 @@
 
 import Applications from './service/applications'
 
-import TTN from '.'
+import TTS from '.'
 
 const mockApplicationData = {
   ids: {
@@ -52,47 +52,49 @@ const mockDeviceData = {
   },
 }
 
-jest.mock('./api', function() {
-  return jest.fn().mockImplementation(function() {
-    return {
-      ApplicationRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockApplicationData }),
-        List: jest.fn().mockResolvedValue({
-          data: { applications: [mockApplicationData] },
-          headers: { 'x-total-count': 1 },
-        }),
-      },
-      EndDeviceRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
-      },
-      NsEndDeviceRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
-      },
-      AsEndDeviceRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
-      },
-      JsEndDeviceRegistry: {
-        Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
-      },
-    }
-  })
-})
+jest.mock('./api', () =>
+  jest.fn().mockImplementation(() => ({
+    ApplicationRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockApplicationData }),
+      List: jest.fn().mockResolvedValue({
+        data: { applications: [mockApplicationData] },
+        headers: { 'x-total-count': 1 },
+      }),
+    },
+    EndDeviceRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
+    },
+    NsEndDeviceRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
+    },
+    AsEndDeviceRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
+    },
+    JsEndDeviceRegistry: {
+      Get: jest.fn().mockResolvedValue({ data: mockDeviceData }),
+    },
+  })),
+)
 
-describe('SDK class', function() {
+describe('SDK class', () => {
   const token = 'faketoken'
-  const ttn = new TTN(token, {
+  const tts = new TTS({
+    authorization: {
+      mode: 'key',
+      key: token,
+    },
     connectionType: 'http',
     stackConfig: { is: 'http://localhost:1885/api/v3' },
   })
 
-  it('instanciates successfully', async function() {
-    expect(ttn).toBeDefined()
-    expect(ttn).toBeInstanceOf(TTN)
-    expect(ttn.Applications).toBeInstanceOf(Applications)
+  it('instanciates successfully', async () => {
+    expect(tts).toBeDefined()
+    expect(tts).toBeInstanceOf(TTS)
+    expect(tts.Applications).toBeInstanceOf(Applications)
   })
 
-  it('retrieves application instance correctly', async function() {
-    const app = await ttn.Applications.getById('test')
+  it('retrieves application instance correctly', async () => {
+    const app = await tts.Applications.getById('test')
     expect(app).toBeDefined()
   })
 })

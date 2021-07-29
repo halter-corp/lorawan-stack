@@ -76,15 +76,15 @@ func init() {
 		},
 		MaxADRDataRateIndex: ttnpb.DATA_RATE_5,
 
-		ReceiveDelay1:    defaultReceiveDelay1,
-		ReceiveDelay2:    defaultReceiveDelay2,
-		JoinAcceptDelay1: defaultJoinAcceptDelay1,
-		JoinAcceptDelay2: defaultJoinAcceptDelay2,
-		MaxFCntGap:       defaultMaxFCntGap,
-		ADRAckLimit:      defaultADRAckLimit,
-		ADRAckDelay:      defaultADRAckDelay,
-		MinAckTimeout:    defaultAckTimeout - defaultAckTimeoutMargin,
-		MaxAckTimeout:    defaultAckTimeout + defaultAckTimeoutMargin,
+		ReceiveDelay1:        defaultReceiveDelay1,
+		ReceiveDelay2:        defaultReceiveDelay2,
+		JoinAcceptDelay1:     defaultJoinAcceptDelay1,
+		JoinAcceptDelay2:     defaultJoinAcceptDelay2,
+		MaxFCntGap:           defaultMaxFCntGap,
+		ADRAckLimit:          defaultADRAckLimit,
+		ADRAckDelay:          defaultADRAckDelay,
+		MinRetransmitTimeout: defaultRetransmitTimeout - defaultRetransmitTimeoutMargin,
+		MaxRetransmitTimeout: defaultRetransmitTimeout + defaultRetransmitTimeoutMargin,
 
 		DefaultMaxEIRP: 30,
 		TxOffset: []float32{
@@ -102,11 +102,7 @@ func init() {
 		},
 
 		Rx1Channel: channelIndexIdentity,
-		Rx1DataRate: func(idx ttnpb.DataRateIndex, offset uint32, _ bool) (ttnpb.DataRateIndex, error) {
-			if offset > 7 {
-				return 0, errDataRateOffsetTooHigh.WithAttributes("max", 7)
-			}
-
+		Rx1DataRate: func(idx ttnpb.DataRateIndex, offset ttnpb.DataRateOffset, _ bool) (ttnpb.DataRateIndex, error) {
 			so := int8(offset)
 			if so > 5 {
 				so = 5 - so
@@ -143,9 +139,9 @@ func init() {
 		// No LoRaWAN 1.0
 		// No LoRaWAN 1.0.1
 		// No LoRaWAN 1.0.2rA
-		regionalParameters1_0_2RevB: bandIdentity,
-		regionalParameters1_0_3RevA: bandIdentity,
-		regionalParameters1_1RevA:   bandIdentity,
+		regionalParameters1_v1_0_2RevB: bandIdentity,
+		regionalParameters1_v1_0_3RevA: bandIdentity,
+		regionalParameters1_v1_1RevA:   bandIdentity,
 	}
 	All[IN_865_867] = in_865_867
 }

@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"github.com/TheThingsIndustries/mystique/pkg/auth"
 	mqttlog "github.com/TheThingsIndustries/mystique/pkg/log"
@@ -33,6 +34,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/mqtt"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"google.golang.org/grpc/metadata"
@@ -71,8 +73,19 @@ func (s *srv) accept() error {
 			return err
 		}
 
+		remoteAddr := mqttConn.RemoteAddr().String()
+		ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", remoteAddr))
+
+		resource := ratelimit.GatewayAcceptMQTTConnectionResource(remoteAddr)
+		if err := ratelimit.Require(s.server.RateLimiter(), resource); err != nil {
+			if err := mqttConn.Close(); err != nil {
+				log.FromContext(ctx).WithError(err).Warn("Close connection failed")
+			}
+			log.FromContext(ctx).WithError(err).Debug("Drop connection")
+			continue
+		}
+
 		go func() {
-			ctx := log.NewContextWithFields(s.ctx, log.Fields("remote_addr", mqttConn.RemoteAddr().String()))
 			conn := &connection{server: s.server, mqtt: mqttConn, format: s.format}
 			if err := conn.setup(ctx); err != nil {
 				switch err {
@@ -93,6 +106,9 @@ type connection struct {
 	mqtt    mqttnet.Conn
 	session session.Session
 	io      *io.Connection
+	tokens  io.DownlinkTokens
+
+	resource ratelimit.Resource
 }
 
 func (*connection) Protocol() string            { return "mqtt" }
@@ -148,6 +164,9 @@ func (c *connection) setup(ctx context.Context) (err error) {
 			case <-ctx.Done():
 				return
 			case down := <-c.io.Down():
+				token := c.tokens.Next(down, time.Now())
+				down.CorrelationIDs = append(down.CorrelationIDs, c.tokens.FormatCorrelationID(token))
+
 				buf, err := c.format.FromDownlink(down, c.io.Gateway().GatewayIdentifiers)
 				if err != nil {
 					logger.WithError(err).Warn("Failed to marshal downlink message")
@@ -211,14 +230,14 @@ type topicAccess struct {
 
 func (c *connection) Connect(ctx context.Context, info *auth.Info) (context.Context, error) {
 	ids := ttnpb.GatewayIdentifiers{
-		GatewayID: info.Username,
+		GatewayId: info.Username,
 	}
-	if err := ids.ValidateContext(ctx); err != nil {
+	if err := c.server.ValidateGatewayID(ctx, ids); err != nil {
 		return nil, err
 	}
 
 	md := metadata.New(map[string]string{
-		"id":            ids.GatewayID,
+		"id":            ids.GatewayId,
 		"authorization": fmt.Sprintf("Bearer %s", info.Password),
 	})
 	if ctxMd, ok := metadata.FromIncomingContext(ctx); ok {
@@ -237,6 +256,7 @@ func (c *connection) Connect(ctx context.Context, info *auth.Info) (context.Cont
 	if err != nil {
 		return nil, err
 	}
+	c.resource = ratelimit.GatewayUpResource(ctx, ids)
 
 	access := topicAccess{
 		gtwUID: uid,
@@ -291,6 +311,13 @@ func (c *connection) CanWrite(info *auth.Info, topicParts ...string) bool {
 
 func (c *connection) deliver(pkt *packet.PublishPacket) {
 	logger := log.FromContext(c.io.Context()).WithField("topic", pkt.TopicName)
+
+	if err := ratelimit.Require(c.server.RateLimiter(), c.resource); err != nil {
+		logger.WithError(err).Warn("Terminate connection")
+		c.io.Disconnect(err)
+		return
+	}
+
 	switch {
 	case c.format.IsBirthTopic(pkt.TopicParts):
 	case c.format.IsLastWillTopic(pkt.TopicParts):
@@ -318,6 +345,11 @@ func (c *connection) deliver(pkt *packet.PublishPacket) {
 		if err != nil {
 			logger.WithError(err).Warn("Failed to unmarshal Tx acknowledgment message")
 			return
+		}
+		if token, ok := c.tokens.ParseTokenFromCorrelationIDs(ack.GetCorrelationIDs()); ok {
+			if down, _, ok := c.tokens.Get(token, time.Now()); ok {
+				ack.DownlinkMessage = down
+			}
 		}
 		if err := c.io.HandleTxAck(ack); err != nil {
 			logger.WithError(err).Warn("Failed to handle Tx acknowledgment message")

@@ -5,13 +5,6 @@ package ttnpb
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-	time "time"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -19,6 +12,11 @@ import (
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	types "github.com/gogo/protobuf/types"
 	golang_proto "github.com/golang/protobuf/proto"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -36,10 +34,11 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Organization struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=ids,proto3,embedded=ids" json:"ids"`
-	CreatedAt               time.Time `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,stdtime" json:"created_at"`
-	UpdatedAt               time.Time `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
-	Name                    string    `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	Description             string    `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	CreatedAt               time.Time  `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,stdtime" json:"created_at"`
+	UpdatedAt               time.Time  `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
+	DeletedAt               *time.Time `protobuf:"bytes,8,opt,name=deleted_at,json=deletedAt,proto3,stdtime" json:"deleted_at,omitempty"`
+	Name                    string     `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Description             string     `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
 	// Key-value attributes for this organization. Typically used for organizing organizations or for storing integration-specific data.
 	Attributes map[string]string `protobuf:"bytes,6,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Contact information for this organization. Typically used to indicate who to contact with security/billing questions about the organization.
@@ -54,25 +53,16 @@ func (*Organization) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{0}
 }
 func (m *Organization) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_Organization.Unmarshal(m, b)
 }
 func (m *Organization) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Organization.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_Organization.Marshal(b, m, deterministic)
 }
 func (m *Organization) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Organization.Merge(m, src)
 }
 func (m *Organization) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_Organization.Size(m)
 }
 func (m *Organization) XXX_DiscardUnknown() {
 	xxx_messageInfo_Organization.DiscardUnknown(m)
@@ -92,6 +82,13 @@ func (m *Organization) GetUpdatedAt() time.Time {
 		return m.UpdatedAt
 	}
 	return time.Time{}
+}
+
+func (m *Organization) GetDeletedAt() *time.Time {
+	if m != nil {
+		return m.DeletedAt
+	}
+	return nil
 }
 
 func (m *Organization) GetName() string {
@@ -134,25 +131,16 @@ func (*Organizations) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{1}
 }
 func (m *Organizations) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_Organizations.Unmarshal(m, b)
 }
 func (m *Organizations) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Organizations.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_Organizations.Marshal(b, m, deterministic)
 }
 func (m *Organizations) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Organizations.Merge(m, src)
 }
 func (m *Organizations) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_Organizations.Size(m)
 }
 func (m *Organizations) XXX_DiscardUnknown() {
 	xxx_messageInfo_Organizations.DiscardUnknown(m)
@@ -170,9 +158,9 @@ func (m *Organizations) GetOrganizations() []*Organization {
 type GetOrganizationRequest struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=organization_ids,json=organizationIds,proto3,embedded=organization_ids" json:"organization_ids"`
 	// The names of the organization fields that should be returned.
-	FieldMask            types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	FieldMask            *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *GetOrganizationRequest) Reset()      { *m = GetOrganizationRequest{} }
@@ -181,25 +169,16 @@ func (*GetOrganizationRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{2}
 }
 func (m *GetOrganizationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetOrganizationRequest.Unmarshal(m, b)
 }
 func (m *GetOrganizationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetOrganizationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetOrganizationRequest.Marshal(b, m, deterministic)
 }
 func (m *GetOrganizationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetOrganizationRequest.Merge(m, src)
 }
 func (m *GetOrganizationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetOrganizationRequest.Size(m)
 }
 func (m *GetOrganizationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetOrganizationRequest.DiscardUnknown(m)
@@ -207,11 +186,11 @@ func (m *GetOrganizationRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetOrganizationRequest proto.InternalMessageInfo
 
-func (m *GetOrganizationRequest) GetFieldMask() types.FieldMask {
+func (m *GetOrganizationRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type ListOrganizationsRequest struct {
@@ -222,14 +201,16 @@ type ListOrganizationsRequest struct {
 	// other organizations.
 	Collaborator *OrganizationOrUserIdentifiers `protobuf:"bytes,1,opt,name=collaborator,proto3" json:"collaborator,omitempty"`
 	// The names of the organization fields that should be returned.
-	FieldMask types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
+	FieldMask *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
 	// Order the results by this field path (must be present in the field mask).
 	// Default ordering is by ID. Prepend with a minus (-) to reverse the order.
 	Order string `protobuf:"bytes,3,opt,name=order,proto3" json:"order,omitempty"`
 	// Limit the number of results per page.
 	Limit uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	// Page number for pagination. 0 is interpreted as 1.
-	Page                 uint32   `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	Page uint32 `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	// Only return recently deleted organizations.
+	Deleted              bool     `protobuf:"varint,6,opt,name=deleted,proto3" json:"deleted,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
@@ -240,25 +221,16 @@ func (*ListOrganizationsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{3}
 }
 func (m *ListOrganizationsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListOrganizationsRequest.Unmarshal(m, b)
 }
 func (m *ListOrganizationsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListOrganizationsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListOrganizationsRequest.Marshal(b, m, deterministic)
 }
 func (m *ListOrganizationsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListOrganizationsRequest.Merge(m, src)
 }
 func (m *ListOrganizationsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListOrganizationsRequest.Size(m)
 }
 func (m *ListOrganizationsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListOrganizationsRequest.DiscardUnknown(m)
@@ -273,11 +245,11 @@ func (m *ListOrganizationsRequest) GetCollaborator() *OrganizationOrUserIdentifi
 	return nil
 }
 
-func (m *ListOrganizationsRequest) GetFieldMask() types.FieldMask {
+func (m *ListOrganizationsRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 func (m *ListOrganizationsRequest) GetOrder() string {
@@ -301,6 +273,13 @@ func (m *ListOrganizationsRequest) GetPage() uint32 {
 	return 0
 }
 
+func (m *ListOrganizationsRequest) GetDeleted() bool {
+	if m != nil {
+		return m.Deleted
+	}
+	return false
+}
+
 type CreateOrganizationRequest struct {
 	Organization `protobuf:"bytes,1,opt,name=organization,proto3,embedded=organization" json:"organization"`
 	// Collaborator to grant all rights on the newly created application.
@@ -317,25 +296,16 @@ func (*CreateOrganizationRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{4}
 }
 func (m *CreateOrganizationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CreateOrganizationRequest.Unmarshal(m, b)
 }
 func (m *CreateOrganizationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CreateOrganizationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CreateOrganizationRequest.Marshal(b, m, deterministic)
 }
 func (m *CreateOrganizationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CreateOrganizationRequest.Merge(m, src)
 }
 func (m *CreateOrganizationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CreateOrganizationRequest.Size(m)
 }
 func (m *CreateOrganizationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CreateOrganizationRequest.DiscardUnknown(m)
@@ -353,9 +323,9 @@ func (m *CreateOrganizationRequest) GetCollaborator() OrganizationOrUserIdentifi
 type UpdateOrganizationRequest struct {
 	Organization `protobuf:"bytes,1,opt,name=organization,proto3,embedded=organization" json:"organization"`
 	// The names of the organization fields that should be updated.
-	FieldMask            types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	FieldMask            *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UpdateOrganizationRequest) Reset()      { *m = UpdateOrganizationRequest{} }
@@ -364,25 +334,16 @@ func (*UpdateOrganizationRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{5}
 }
 func (m *UpdateOrganizationRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_UpdateOrganizationRequest.Unmarshal(m, b)
 }
 func (m *UpdateOrganizationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateOrganizationRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_UpdateOrganizationRequest.Marshal(b, m, deterministic)
 }
 func (m *UpdateOrganizationRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UpdateOrganizationRequest.Merge(m, src)
 }
 func (m *UpdateOrganizationRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_UpdateOrganizationRequest.Size(m)
 }
 func (m *UpdateOrganizationRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_UpdateOrganizationRequest.DiscardUnknown(m)
@@ -390,11 +351,11 @@ func (m *UpdateOrganizationRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UpdateOrganizationRequest proto.InternalMessageInfo
 
-func (m *UpdateOrganizationRequest) GetFieldMask() types.FieldMask {
+func (m *UpdateOrganizationRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type ListOrganizationAPIKeysRequest struct {
@@ -413,25 +374,16 @@ func (*ListOrganizationAPIKeysRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{6}
 }
 func (m *ListOrganizationAPIKeysRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListOrganizationAPIKeysRequest.Unmarshal(m, b)
 }
 func (m *ListOrganizationAPIKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListOrganizationAPIKeysRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListOrganizationAPIKeysRequest.Marshal(b, m, deterministic)
 }
 func (m *ListOrganizationAPIKeysRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListOrganizationAPIKeysRequest.Merge(m, src)
 }
 func (m *ListOrganizationAPIKeysRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListOrganizationAPIKeysRequest.Size(m)
 }
 func (m *ListOrganizationAPIKeysRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListOrganizationAPIKeysRequest.DiscardUnknown(m)
@@ -456,7 +408,7 @@ func (m *ListOrganizationAPIKeysRequest) GetPage() uint32 {
 type GetOrganizationAPIKeyRequest struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=organization_ids,json=organizationIds,proto3,embedded=organization_ids" json:"organization_ids"`
 	// Unique public identifier for the API key.
-	KeyID                string   `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	KeyId                string   `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
@@ -467,25 +419,16 @@ func (*GetOrganizationAPIKeyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{7}
 }
 func (m *GetOrganizationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetOrganizationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *GetOrganizationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *GetOrganizationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetOrganizationAPIKeyRequest.Merge(m, src)
 }
 func (m *GetOrganizationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetOrganizationAPIKeyRequest.Size(m)
 }
 func (m *GetOrganizationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetOrganizationAPIKeyRequest.DiscardUnknown(m)
@@ -493,19 +436,20 @@ func (m *GetOrganizationAPIKeyRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetOrganizationAPIKeyRequest proto.InternalMessageInfo
 
-func (m *GetOrganizationAPIKeyRequest) GetKeyID() string {
+func (m *GetOrganizationAPIKeyRequest) GetKeyId() string {
 	if m != nil {
-		return m.KeyID
+		return m.KeyId
 	}
 	return ""
 }
 
 type CreateOrganizationAPIKeyRequest struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=organization_ids,json=organizationIds,proto3,embedded=organization_ids" json:"organization_ids"`
-	Name                    string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Rights                  []Right  `protobuf:"varint,3,rep,packed,name=rights,proto3,enum=ttn.lorawan.v3.Right" json:"rights,omitempty"`
-	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
-	XXX_sizecache           int32    `json:"-"`
+	Name                    string     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Rights                  []Right    `protobuf:"varint,3,rep,packed,name=rights,proto3,enum=ttn.lorawan.v3.Right" json:"rights,omitempty"`
+	ExpiresAt               *time.Time `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,stdtime" json:"expires_at,omitempty"`
+	XXX_NoUnkeyedLiteral    struct{}   `json:"-"`
+	XXX_sizecache           int32      `json:"-"`
 }
 
 func (m *CreateOrganizationAPIKeyRequest) Reset()      { *m = CreateOrganizationAPIKeyRequest{} }
@@ -514,25 +458,16 @@ func (*CreateOrganizationAPIKeyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{8}
 }
 func (m *CreateOrganizationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_CreateOrganizationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *CreateOrganizationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CreateOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_CreateOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *CreateOrganizationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CreateOrganizationAPIKeyRequest.Merge(m, src)
 }
 func (m *CreateOrganizationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_CreateOrganizationAPIKeyRequest.Size(m)
 }
 func (m *CreateOrganizationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CreateOrganizationAPIKeyRequest.DiscardUnknown(m)
@@ -554,11 +489,20 @@ func (m *CreateOrganizationAPIKeyRequest) GetRights() []Right {
 	return nil
 }
 
+func (m *CreateOrganizationAPIKeyRequest) GetExpiresAt() *time.Time {
+	if m != nil {
+		return m.ExpiresAt
+	}
+	return nil
+}
+
 type UpdateOrganizationAPIKeyRequest struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=organization_ids,json=organizationIds,proto3,embedded=organization_ids" json:"organization_ids"`
 	APIKey                  `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3,embedded=api_key" json:"api_key"`
-	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
-	XXX_sizecache           int32    `json:"-"`
+	// The names of the api key fields that should be updated.
+	FieldMask            *types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UpdateOrganizationAPIKeyRequest) Reset()      { *m = UpdateOrganizationAPIKeyRequest{} }
@@ -567,31 +511,29 @@ func (*UpdateOrganizationAPIKeyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{9}
 }
 func (m *UpdateOrganizationAPIKeyRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_UpdateOrganizationAPIKeyRequest.Unmarshal(m, b)
 }
 func (m *UpdateOrganizationAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_UpdateOrganizationAPIKeyRequest.Marshal(b, m, deterministic)
 }
 func (m *UpdateOrganizationAPIKeyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UpdateOrganizationAPIKeyRequest.Merge(m, src)
 }
 func (m *UpdateOrganizationAPIKeyRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_UpdateOrganizationAPIKeyRequest.Size(m)
 }
 func (m *UpdateOrganizationAPIKeyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_UpdateOrganizationAPIKeyRequest.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdateOrganizationAPIKeyRequest proto.InternalMessageInfo
+
+func (m *UpdateOrganizationAPIKeyRequest) GetFieldMask() *types.FieldMask {
+	if m != nil {
+		return m.FieldMask
+	}
+	return nil
+}
 
 type ListOrganizationCollaboratorsRequest struct {
 	OrganizationIdentifiers `protobuf:"bytes,1,opt,name=organization_ids,json=organizationIds,proto3,embedded=organization_ids" json:"organization_ids"`
@@ -609,25 +551,16 @@ func (*ListOrganizationCollaboratorsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{10}
 }
 func (m *ListOrganizationCollaboratorsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ListOrganizationCollaboratorsRequest.Unmarshal(m, b)
 }
 func (m *ListOrganizationCollaboratorsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListOrganizationCollaboratorsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ListOrganizationCollaboratorsRequest.Marshal(b, m, deterministic)
 }
 func (m *ListOrganizationCollaboratorsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListOrganizationCollaboratorsRequest.Merge(m, src)
 }
 func (m *ListOrganizationCollaboratorsRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ListOrganizationCollaboratorsRequest.Size(m)
 }
 func (m *ListOrganizationCollaboratorsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListOrganizationCollaboratorsRequest.DiscardUnknown(m)
@@ -664,25 +597,16 @@ func (*GetOrganizationCollaboratorRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{11}
 }
 func (m *GetOrganizationCollaboratorRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetOrganizationCollaboratorRequest.Unmarshal(m, b)
 }
 func (m *GetOrganizationCollaboratorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetOrganizationCollaboratorRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetOrganizationCollaboratorRequest.Marshal(b, m, deterministic)
 }
 func (m *GetOrganizationCollaboratorRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetOrganizationCollaboratorRequest.Merge(m, src)
 }
 func (m *GetOrganizationCollaboratorRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetOrganizationCollaboratorRequest.Size(m)
 }
 func (m *GetOrganizationCollaboratorRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetOrganizationCollaboratorRequest.DiscardUnknown(m)
@@ -703,25 +627,16 @@ func (*SetOrganizationCollaboratorRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_312da2e2e650bd3b, []int{12}
 }
 func (m *SetOrganizationCollaboratorRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_SetOrganizationCollaboratorRequest.Unmarshal(m, b)
 }
 func (m *SetOrganizationCollaboratorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SetOrganizationCollaboratorRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_SetOrganizationCollaboratorRequest.Marshal(b, m, deterministic)
 }
 func (m *SetOrganizationCollaboratorRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SetOrganizationCollaboratorRequest.Merge(m, src)
 }
 func (m *SetOrganizationCollaboratorRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_SetOrganizationCollaboratorRequest.Size(m)
 }
 func (m *SetOrganizationCollaboratorRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_SetOrganizationCollaboratorRequest.DiscardUnknown(m)
@@ -775,77 +690,77 @@ func init() {
 }
 
 var fileDescriptor_312da2e2e650bd3b = []byte{
-	// 1105 bytes of a gzipped FileDescriptorProto
+	// 1106 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x57, 0x4d, 0x6c, 0x1b, 0x45,
-	0x1b, 0xde, 0xf1, 0x4f, 0x52, 0x4f, 0x92, 0x26, 0x5a, 0x7d, 0x5f, 0xb5, 0x4d, 0xa3, 0xb1, 0xb5,
-	0x44, 0x90, 0x56, 0xf1, 0x1a, 0x39, 0x17, 0xa8, 0x80, 0xc8, 0x1b, 0x7e, 0x14, 0x85, 0xd2, 0xb2,
-	0xa5, 0x17, 0xaa, 0x62, 0x8d, 0xbd, 0xe3, 0xcd, 0xc8, 0xf6, 0xee, 0x32, 0x3b, 0x4e, 0x71, 0x10,
-	0x52, 0xc5, 0xa9, 0xe2, 0x54, 0x71, 0x42, 0x9c, 0xb8, 0x80, 0xca, 0x2d, 0xc7, 0x8a, 0x0b, 0x39,
-	0x46, 0x3d, 0xe5, 0x58, 0x71, 0x08, 0xf5, 0xfa, 0x92, 0x1b, 0x3d, 0x56, 0x3e, 0xa1, 0xfd, 0x71,
-	0xb3, 0xbb, 0x36, 0x96, 0xa0, 0x55, 0x0a, 0x27, 0xcf, 0xcf, 0x33, 0xef, 0xfb, 0x3e, 0x33, 0xcf,
-	0x33, 0xb3, 0x86, 0xcb, 0x2d, 0x8b, 0xe1, 0xdb, 0xd8, 0x2c, 0x3a, 0x1c, 0xd7, 0x9b, 0x25, 0x6c,
-	0xd3, 0x92, 0xc5, 0x0c, 0x6c, 0xd2, 0x5d, 0xcc, 0xa9, 0x65, 0x2a, 0x36, 0xb3, 0xb8, 0x25, 0x9e,
-	0xe5, 0xdc, 0x54, 0x42, 0xa4, 0xb2, 0xb3, 0xb6, 0x58, 0x31, 0x28, 0xdf, 0xee, 0xd4, 0x94, 0xba,
-	0xd5, 0x2e, 0x11, 0x73, 0xc7, 0xea, 0xda, 0xcc, 0xfa, 0xa2, 0x5b, 0xf2, 0xc1, 0xf5, 0xa2, 0x41,
-	0xcc, 0xe2, 0x0e, 0x6e, 0x51, 0x1d, 0x73, 0x52, 0x1a, 0x69, 0x04, 0x21, 0x17, 0x8b, 0x91, 0x10,
-	0x86, 0x65, 0x58, 0xc1, 0xe2, 0x5a, 0xa7, 0xe1, 0xf7, 0xfc, 0x8e, 0xdf, 0x0a, 0xe1, 0x05, 0xc3,
-	0xb2, 0x8c, 0x16, 0x39, 0x41, 0x35, 0x28, 0x69, 0xe9, 0xd5, 0x36, 0x76, 0x9a, 0x21, 0x22, 0x9f,
-	0x44, 0x70, 0xda, 0x26, 0x0e, 0xc7, 0x6d, 0x3b, 0x04, 0x8c, 0xa1, 0x5a, 0xb7, 0x4c, 0x8e, 0xeb,
-	0xbc, 0x4a, 0xcd, 0xc6, 0x30, 0xd1, 0x2b, 0xa3, 0x28, 0xaa, 0x13, 0x93, 0xd3, 0x06, 0x25, 0xcc,
-	0x09, 0x41, 0x68, 0x14, 0xc4, 0xa8, 0xb1, 0xcd, 0xc3, 0x79, 0xf9, 0xe7, 0x0c, 0x9c, 0xbd, 0x1a,
-	0xd9, 0x46, 0x71, 0x0b, 0xa6, 0xa9, 0xee, 0x48, 0xa0, 0x00, 0x56, 0x66, 0xca, 0xaf, 0x29, 0xf1,
-	0xed, 0x54, 0xa2, 0xd0, 0xcd, 0x93, 0x64, 0xea, 0xc2, 0x40, 0xcd, 0x7e, 0x03, 0x52, 0x0b, 0xe0,
-	0xe0, 0x28, 0x2f, 0x1c, 0x1e, 0xe5, 0x81, 0xe6, 0x45, 0x11, 0x37, 0x20, 0xac, 0x33, 0x82, 0x39,
-	0xd1, 0xab, 0x98, 0x4b, 0x29, 0x3f, 0xe6, 0xa2, 0x12, 0xd0, 0x57, 0x86, 0xf4, 0x95, 0x4f, 0x86,
-	0xf4, 0xd5, 0x33, 0xde, 0xf2, 0x7b, 0xbf, 0xe7, 0x81, 0x96, 0x0b, 0xd7, 0x55, 0xb8, 0x17, 0xa4,
-	0x63, 0xeb, 0xc3, 0x20, 0xe9, 0xbf, 0x13, 0x24, 0x5c, 0x57, 0xe1, 0xe2, 0x05, 0x98, 0x31, 0x71,
-	0x9b, 0x48, 0x99, 0x02, 0x58, 0xc9, 0xa9, 0xd3, 0x03, 0x35, 0xc3, 0x52, 0x52, 0x59, 0xf3, 0x07,
-	0xc5, 0x4b, 0x70, 0x46, 0x27, 0x4e, 0x9d, 0x51, 0xdb, 0xe3, 0x25, 0x65, 0x7d, 0xcc, 0x99, 0x81,
-	0x9a, 0x65, 0x69, 0xe9, 0x70, 0x5e, 0x8b, 0x4e, 0x8a, 0xbb, 0x10, 0x62, 0xce, 0x19, 0xad, 0x75,
-	0x38, 0x71, 0xa4, 0xa9, 0x42, 0x7a, 0x65, 0xa6, 0xbc, 0x3a, 0x69, 0x9b, 0x94, 0xca, 0x33, 0xf8,
-	0x7b, 0x26, 0x67, 0x5d, 0x75, 0x75, 0xa0, 0x5e, 0xfc, 0x1e, 0xbc, 0x2a, 0x2f, 0x33, 0x59, 0x5a,
-	0x2e, 0xa3, 0xcf, 0x6e, 0xe2, 0xe2, 0xee, 0xeb, 0xc5, 0x37, 0x6f, 0xad, 0xac, 0x5f, 0xbe, 0x59,
-	0xbc, 0xb5, 0x3e, 0xec, 0x5e, 0xfc, 0xb2, 0xbc, 0xfa, 0xd5, 0xb2, 0x16, 0xc9, 0x26, 0xbe, 0x03,
-	0x67, 0xa3, 0x3a, 0x90, 0xa6, 0xfd, 0xec, 0x17, 0x92, 0xd9, 0x37, 0x02, 0xcc, 0xa6, 0xd9, 0xb0,
-	0xb4, 0x99, 0xfa, 0x49, 0x67, 0xf1, 0x6d, 0x38, 0x9f, 0x28, 0x46, 0x5c, 0x80, 0xe9, 0x26, 0xe9,
-	0xfa, 0xc7, 0x9d, 0xd3, 0xbc, 0xa6, 0xf8, 0x3f, 0x98, 0xdd, 0xc1, 0xad, 0x0e, 0xf1, 0x8f, 0x2b,
-	0xa7, 0x05, 0x9d, 0xcb, 0xa9, 0x37, 0x80, 0x7c, 0x1d, 0xce, 0x45, 0x89, 0x39, 0xa2, 0x0a, 0xe7,
-	0xa2, 0x16, 0xf4, 0x54, 0xe3, 0x15, 0xb4, 0x34, 0x69, 0x3b, 0xb4, 0xf8, 0x12, 0xf9, 0x57, 0x00,
-	0xcf, 0x7d, 0x40, 0x78, 0x0c, 0x42, 0x3e, 0xef, 0x10, 0x87, 0x8b, 0x3a, 0x5c, 0x88, 0x62, 0xab,
-	0x2f, 0x44, 0x97, 0xf3, 0x56, 0x0c, 0xea, 0x88, 0xeb, 0x10, 0x9e, 0x38, 0xf4, 0x2f, 0x35, 0xfa,
-	0xbe, 0x07, 0xb9, 0x82, 0x9d, 0xa6, 0x9a, 0xf1, 0x42, 0x69, 0xb9, 0xc6, 0x70, 0x40, 0x7e, 0x98,
-	0x82, 0xd2, 0x87, 0xd4, 0x89, 0x51, 0x70, 0x86, 0x1c, 0x3e, 0xf6, 0x8e, 0xac, 0xd5, 0xc2, 0x35,
-	0x8b, 0x61, 0x6e, 0xb1, 0xb0, 0xfe, 0xe2, 0xa4, 0xfa, 0xaf, 0xb2, 0x1b, 0x0e, 0x61, 0x11, 0x16,
-	0x5a, 0x2c, 0xc4, 0x73, 0x17, 0x2c, 0x36, 0x60, 0xd6, 0x62, 0x3a, 0x61, 0xbe, 0x97, 0x72, 0xea,
-	0xb5, 0x81, 0x7a, 0x85, 0x6d, 0x69, 0x42, 0x7c, 0x6b, 0xaa, 0x54, 0xd7, 0x16, 0x8a, 0xc9, 0x11,
-	0xdf, 0x2f, 0x5a, 0xb6, 0xe8, 0xff, 0x44, 0xbc, 0xad, 0xcd, 0x14, 0x23, 0x9d, 0x20, 0xbc, 0x88,
-	0x60, 0xb6, 0x45, 0xdb, 0x94, 0xfb, 0xa6, 0x9b, 0xf3, 0x0d, 0x75, 0x29, 0x2d, 0x1d, 0x4f, 0x6b,
-	0xc1, 0xb0, 0x28, 0xc2, 0x8c, 0x8d, 0x0d, 0xe2, 0xfb, 0x6d, 0x4e, 0xf3, 0xdb, 0xf2, 0x21, 0x80,
-	0xe7, 0x37, 0xfc, 0x48, 0xe3, 0x14, 0xa1, 0xc1, 0xd9, 0x68, 0x45, 0xe1, 0x6e, 0x4e, 0xd4, 0xdb,
-	0x18, 0x09, 0xc4, 0x62, 0x88, 0xd5, 0xc4, 0x09, 0xa5, 0xfe, 0xc1, 0x09, 0xa9, 0xb3, 0xd1, 0x24,
-	0xf1, 0xf3, 0x92, 0xf7, 0x00, 0x3c, 0x7f, 0xc3, 0xbf, 0x88, 0x4e, 0x8b, 0xd2, 0x73, 0x4b, 0xfa,
-	0x17, 0x00, 0x51, 0x52, 0xd2, 0x95, 0x6b, 0x9b, 0x5b, 0xa4, 0xeb, 0x9c, 0xae, 0x39, 0x9f, 0x49,
-	0x28, 0x35, 0x59, 0x42, 0xe9, 0x88, 0x84, 0x7e, 0x02, 0x70, 0x29, 0x71, 0xa3, 0x04, 0xb5, 0x9f,
-	0x6e, 0xe9, 0x05, 0x38, 0xd5, 0x24, 0xdd, 0x2a, 0xd5, 0x83, 0x8b, 0x54, 0xcd, 0xb9, 0x47, 0xf9,
-	0xec, 0x16, 0xe9, 0x6e, 0xbe, 0xab, 0x65, 0x9b, 0xa4, 0xbb, 0xa9, 0xcb, 0x2e, 0x80, 0xf9, 0x51,
-	0xad, 0xbf, 0x8c, 0x5a, 0x87, 0xaf, 0x63, 0x6a, 0xdc, 0xeb, 0xf8, 0x16, 0x9c, 0x0a, 0x3e, 0x19,
-	0xa4, 0x74, 0x21, 0xbd, 0x72, 0xb6, 0xfc, 0xff, 0x64, 0x62, 0xcd, 0x9b, 0x55, 0xe7, 0x06, 0x2a,
-	0xfc, 0x16, 0x4c, 0xcb, 0xd9, 0xaf, 0xbd, 0x5c, 0x5a, 0xb8, 0x46, 0x7e, 0x08, 0x60, 0x7e, 0x54,
-	0xfd, 0x2f, 0x83, 0x64, 0x05, 0x4e, 0x63, 0x9b, 0x56, 0xbd, 0xe7, 0x2e, 0xb0, 0xc4, 0xb9, 0x64,
-	0xf0, 0xa0, 0xaa, 0x31, 0xb1, 0xa6, 0xb0, 0x4d, 0xb7, 0x48, 0x57, 0xde, 0x07, 0x70, 0x39, 0xe9,
-	0x8b, 0x8d, 0x88, 0xd7, 0xff, 0x03, 0xee, 0xf8, 0x03, 0x40, 0x39, 0xe1, 0x8e, 0x28, 0x83, 0xd3,
-	0x25, 0x50, 0x7f, 0x11, 0x77, 0xef, 0x98, 0xdb, 0x30, 0x76, 0xff, 0xfe, 0x06, 0xa0, 0x7c, 0xfd,
-	0xdf, 0xc2, 0xf8, 0xa3, 0xb1, 0x8c, 0x97, 0x46, 0x3f, 0xe1, 0x4e, 0x30, 0x93, 0x1e, 0x17, 0xf5,
-	0x47, 0x70, 0xd0, 0x43, 0xe0, 0xb0, 0x87, 0xc0, 0xa3, 0x1e, 0x12, 0x1e, 0xf7, 0x90, 0x70, 0xdc,
-	0x43, 0xc2, 0x93, 0x1e, 0x12, 0x9e, 0xf6, 0x10, 0xb8, 0xe3, 0x22, 0x70, 0xd7, 0x45, 0xc2, 0x7d,
-	0x17, 0x81, 0x3d, 0x17, 0x09, 0x0f, 0x5c, 0x24, 0xec, 0xbb, 0x48, 0x38, 0x70, 0x11, 0x38, 0x74,
-	0x11, 0x78, 0xe4, 0x22, 0xe1, 0xb1, 0x8b, 0xc0, 0xb1, 0x8b, 0x84, 0x27, 0x2e, 0x02, 0x4f, 0x5d,
-	0x24, 0xdc, 0xe9, 0x23, 0xe1, 0x6e, 0x1f, 0x81, 0x7b, 0x7d, 0x24, 0x7c, 0xd7, 0x47, 0xe0, 0x87,
-	0x3e, 0x12, 0xee, 0xf7, 0x91, 0xb0, 0xd7, 0x47, 0xe0, 0x41, 0x1f, 0x81, 0xfd, 0x3e, 0x02, 0x9f,
-	0x96, 0x0c, 0x4b, 0xe1, 0xdb, 0x84, 0x6f, 0x53, 0xd3, 0x70, 0x14, 0x93, 0xf0, 0xdb, 0x16, 0x6b,
-	0x96, 0xe2, 0xff, 0x35, 0x76, 0xd6, 0x4a, 0x76, 0xd3, 0x28, 0x71, 0x6e, 0xda, 0xb5, 0xda, 0x94,
-	0xff, 0xec, 0xac, 0xfd, 0x19, 0x00, 0x00, 0xff, 0xff, 0xab, 0x0c, 0x13, 0x61, 0xc6, 0x0d, 0x00,
-	0x00,
+	0x14, 0xf6, 0xac, 0x7f, 0x12, 0x3f, 0x27, 0x8d, 0x59, 0xd1, 0x6a, 0x9b, 0x46, 0x6b, 0x6b, 0x89,
+	0x84, 0x89, 0xea, 0x35, 0x72, 0x84, 0x44, 0x23, 0xa1, 0xd4, 0x1b, 0x41, 0x89, 0x42, 0x69, 0xd9,
+	0x92, 0x0b, 0x55, 0xb1, 0xc6, 0xde, 0xf1, 0x66, 0x64, 0x7b, 0x77, 0x99, 0x1d, 0xa7, 0x75, 0x11,
+	0x12, 0xe2, 0xe7, 0xc2, 0xa9, 0xea, 0x11, 0x2e, 0x3d, 0x22, 0x2e, 0x48, 0x9c, 0x80, 0x53, 0x8f,
+	0x3d, 0xe6, 0x88, 0x38, 0x04, 0x48, 0x2e, 0xbd, 0xc1, 0xd9, 0x27, 0xb4, 0x3f, 0xae, 0xd7, 0x6b,
+	0xe3, 0xaa, 0xb4, 0x4a, 0xe1, 0x94, 0x99, 0xdd, 0xef, 0xbd, 0xf9, 0xde, 0xdb, 0xef, 0x7b, 0xe3,
+	0xc0, 0x6a, 0xc7, 0x66, 0xf8, 0x26, 0xb6, 0xca, 0x2e, 0xc7, 0xcd, 0x76, 0x05, 0x3b, 0xb4, 0x62,
+	0x33, 0x13, 0x5b, 0xf4, 0x36, 0xe6, 0xd4, 0xb6, 0x54, 0x87, 0xd9, 0xdc, 0x16, 0x4f, 0x71, 0x6e,
+	0xa9, 0x21, 0x52, 0xdd, 0x5f, 0x5f, 0xae, 0x99, 0x94, 0xef, 0xf5, 0x1a, 0x6a, 0xd3, 0xee, 0x56,
+	0x88, 0xb5, 0x6f, 0xf7, 0x1d, 0x66, 0xdf, 0xea, 0x57, 0x7c, 0x70, 0xb3, 0x6c, 0x12, 0xab, 0xbc,
+	0x8f, 0x3b, 0xd4, 0xc0, 0x9c, 0x54, 0x26, 0x16, 0x41, 0xca, 0xe5, 0x72, 0x24, 0x85, 0x69, 0x9b,
+	0x76, 0x10, 0xdc, 0xe8, 0xb5, 0xfc, 0x9d, 0xbf, 0xf1, 0x57, 0x21, 0xbc, 0x68, 0xda, 0xb6, 0xd9,
+	0x21, 0x23, 0x54, 0x8b, 0x92, 0x8e, 0x51, 0xef, 0x62, 0xb7, 0x1d, 0x22, 0x0a, 0x71, 0x04, 0xa7,
+	0x5d, 0xe2, 0x72, 0xdc, 0x75, 0x42, 0xc0, 0x94, 0x52, 0x9b, 0xb6, 0xc5, 0x71, 0x93, 0xd7, 0xa9,
+	0xd5, 0x1a, 0x1e, 0xf4, 0xd2, 0x24, 0x8a, 0x1a, 0xc4, 0xe2, 0xb4, 0x45, 0x09, 0x73, 0x43, 0x90,
+	0x3c, 0x09, 0x62, 0xd4, 0xdc, 0xe3, 0xe1, 0x7b, 0xe5, 0x8b, 0x34, 0x2c, 0x5c, 0x89, 0xb4, 0x51,
+	0xdc, 0x81, 0x24, 0x35, 0x5c, 0x09, 0x15, 0x51, 0x29, 0x57, 0x7d, 0x59, 0x1d, 0x6f, 0xa7, 0x1a,
+	0x85, 0x6e, 0x8f, 0x0e, 0xd3, 0xf2, 0x03, 0x2d, 0xfd, 0x15, 0x12, 0xf2, 0xe8, 0xc1, 0x61, 0x21,
+	0x71, 0x70, 0x58, 0x40, 0xba, 0x97, 0x45, 0xdc, 0x02, 0x68, 0x32, 0x82, 0x39, 0x31, 0xea, 0x98,
+	0x4b, 0x82, 0x9f, 0x73, 0x59, 0x0d, 0xca, 0x57, 0x87, 0xe5, 0xab, 0xef, 0x0f, 0xcb, 0xd7, 0xe6,
+	0xbd, 0xf0, 0x3b, 0xbf, 0x15, 0x90, 0x9e, 0x0d, 0xe3, 0x6a, 0xdc, 0x4b, 0xd2, 0x73, 0x8c, 0x61,
+	0x92, 0xe4, 0x93, 0x24, 0x09, 0xe3, 0x6a, 0x5c, 0xdc, 0x04, 0x30, 0x48, 0x87, 0x84, 0x49, 0xe6,
+	0x1f, 0x9b, 0x24, 0x15, 0x24, 0x08, 0x63, 0x6a, 0x5c, 0x3c, 0x07, 0x29, 0x0b, 0x77, 0x89, 0x94,
+	0x2a, 0xa2, 0x52, 0x56, 0x9b, 0x1b, 0x68, 0x29, 0x26, 0x48, 0x55, 0xdd, 0x7f, 0x28, 0xae, 0x41,
+	0xce, 0x20, 0x6e, 0x93, 0x51, 0xc7, 0x6b, 0x8c, 0x94, 0xf6, 0x31, 0xf3, 0x03, 0x2d, 0xcd, 0x92,
+	0xd2, 0xc1, 0x92, 0x1e, 0x7d, 0x29, 0x7e, 0x8e, 0x00, 0x30, 0xe7, 0x8c, 0x36, 0x7a, 0x9c, 0xb8,
+	0x52, 0xa6, 0x98, 0x2c, 0xe5, 0xaa, 0xe7, 0x67, 0x35, 0x5a, 0xad, 0x3d, 0x82, 0xbf, 0x69, 0x71,
+	0xd6, 0xd7, 0x5e, 0x1b, 0x68, 0xd5, 0xaf, 0x51, 0x25, 0x0f, 0xca, 0x2a, 0x53, 0xa4, 0xd5, 0xaa,
+	0xfc, 0xe1, 0x75, 0x5c, 0xbe, 0xfd, 0x6a, 0xf9, 0xc2, 0x8d, 0xd2, 0xe6, 0xc6, 0xf5, 0xf2, 0x8d,
+	0xcd, 0xe1, 0xf6, 0x95, 0x8f, 0xab, 0xe7, 0x3f, 0x59, 0x5d, 0xf3, 0x68, 0x3c, 0x40, 0x7a, 0xe4,
+	0x58, 0xf1, 0x6d, 0x58, 0x88, 0x4a, 0x4a, 0x9a, 0xf3, 0x69, 0x9c, 0x8b, 0xd3, 0xd8, 0x0a, 0x30,
+	0xdb, 0x56, 0xcb, 0xf6, 0xeb, 0xb9, 0x8b, 0x84, 0x3c, 0xe8, 0xb9, 0xe6, 0xe8, 0xf1, 0xf2, 0x1b,
+	0xb0, 0x14, 0xe3, 0x27, 0xe6, 0x21, 0xd9, 0x26, 0x7d, 0x5f, 0x43, 0x59, 0xdd, 0x5b, 0x8a, 0x2f,
+	0x42, 0x7a, 0x1f, 0x77, 0x7a, 0xc4, 0xd7, 0x40, 0x56, 0x0f, 0x36, 0x1b, 0xc2, 0xeb, 0x68, 0x23,
+	0xf5, 0xe3, 0xbd, 0x02, 0x52, 0xae, 0xc1, 0x62, 0xb4, 0x62, 0x57, 0xd4, 0x60, 0x31, 0xea, 0x6e,
+	0x4f, 0x90, 0x1e, 0xc1, 0x95, 0x59, 0x7d, 0xd2, 0xc7, 0x43, 0x94, 0x9f, 0x10, 0x9c, 0xb9, 0x44,
+	0xf8, 0x18, 0x84, 0x7c, 0xd4, 0x23, 0x2e, 0x17, 0x0d, 0xc8, 0x47, 0xb1, 0xf5, 0x67, 0x22, 0xf9,
+	0x25, 0x7b, 0x0c, 0xea, 0x8a, 0x17, 0x00, 0x46, 0xe6, 0xff, 0x47, 0xf9, 0xbf, 0xe5, 0x41, 0x2e,
+	0x63, 0xb7, 0xad, 0x67, 0x5b, 0xc3, 0xa5, 0x72, 0x28, 0x80, 0xf4, 0x0e, 0x75, 0xc7, 0xc8, 0xbb,
+	0x43, 0xf6, 0xef, 0x79, 0x1f, 0xaf, 0xd3, 0xc1, 0x0d, 0x9b, 0x61, 0x6e, 0xb3, 0x90, 0x79, 0x79,
+	0x16, 0xf3, 0x2b, 0x6c, 0xd7, 0x25, 0x2c, 0xc2, 0x5f, 0x1f, 0x4b, 0xf1, 0x14, 0x54, 0xc5, 0x16,
+	0xa4, 0x6d, 0x66, 0x10, 0xe6, 0x5b, 0x33, 0xab, 0x5d, 0x1d, 0x68, 0x97, 0xd9, 0x8e, 0x9e, 0x18,
+	0x6f, 0x47, 0x9d, 0x1a, 0x7a, 0xbe, 0x1c, 0x7f, 0xe2, 0xbb, 0x47, 0x4f, 0x97, 0xfd, 0x3f, 0x91,
+	0x51, 0xa1, 0xe7, 0xca, 0x91, 0x4d, 0x90, 0x5e, 0x94, 0x21, 0xdd, 0xa1, 0x5d, 0xca, 0x7d, 0x0b,
+	0x2e, 0xfa, 0x72, 0x5c, 0x4b, 0x4a, 0x0f, 0xe7, 0xf4, 0xe0, 0xb1, 0x28, 0x42, 0xca, 0xc1, 0x26,
+	0xf1, 0xdd, 0xb7, 0xa8, 0xfb, 0x6b, 0x51, 0x82, 0xb9, 0xd0, 0xc2, 0x52, 0xa6, 0x88, 0x4a, 0xf3,
+	0xfa, 0x70, 0xab, 0x1c, 0x20, 0x38, 0xbb, 0xe5, 0x9f, 0x31, 0x4d, 0x1f, 0x3a, 0x2c, 0x44, 0xb9,
+	0x86, 0x1d, 0x9e, 0xa9, 0xbe, 0x29, 0x82, 0x18, 0xcb, 0x21, 0xd6, 0x63, 0x5f, 0x4d, 0xf8, 0x17,
+	0x5f, 0x4d, 0x5b, 0x88, 0x1e, 0x32, 0xfe, 0x0d, 0x95, 0xef, 0x10, 0x9c, 0xdd, 0xf5, 0x27, 0xde,
+	0x49, 0x95, 0xf4, 0x14, 0x02, 0xff, 0x19, 0x81, 0x1c, 0x17, 0x78, 0xed, 0xea, 0xf6, 0x0e, 0xe9,
+	0xbb, 0x27, 0x6b, 0xd2, 0x47, 0xb2, 0x12, 0x66, 0xcb, 0x2a, 0x39, 0x92, 0x95, 0xf2, 0x0d, 0x82,
+	0x95, 0xd8, 0x64, 0x09, 0xb8, 0x9f, 0x2c, 0xf5, 0xd3, 0x90, 0x69, 0x93, 0x7e, 0x9d, 0x1a, 0xc3,
+	0xb1, 0xda, 0x26, 0xfd, 0x6d, 0x43, 0xf9, 0x5e, 0x80, 0xc2, 0xa4, 0xb4, 0x9f, 0x07, 0xc1, 0xe1,
+	0xa5, 0x29, 0x4c, 0xbb, 0x34, 0x2f, 0x42, 0x26, 0xf8, 0x29, 0x22, 0x25, 0x8b, 0xc9, 0xd2, 0xa9,
+	0xea, 0xe9, 0xf8, 0xc1, 0xba, 0xf7, 0x56, 0x7b, 0x61, 0xa0, 0x9d, 0xba, 0x8b, 0x72, 0xf3, 0x48,
+	0x42, 0x4a, 0xfa, 0x33, 0xef, 0x3c, 0x3d, 0x8c, 0x13, 0x2f, 0x01, 0x90, 0x5b, 0x0e, 0x65, 0xc4,
+	0xf5, 0x2e, 0xf5, 0xd4, 0x63, 0x2f, 0x75, 0xcf, 0x3c, 0x3f, 0x20, 0xe1, 0x22, 0x0a, 0x2e, 0xf7,
+	0x30, 0xb6, 0xc6, 0x95, 0x2f, 0x05, 0x28, 0x4c, 0x3a, 0xe7, 0x79, 0x74, 0xac, 0x06, 0x73, 0xd8,
+	0xa1, 0x75, 0xef, 0xfa, 0x0c, 0xec, 0x74, 0x26, 0x9e, 0x3c, 0x60, 0x35, 0x25, 0x57, 0x06, 0x3b,
+	0x74, 0x87, 0xf4, 0x63, 0xa6, 0x4c, 0x3e, 0x89, 0x29, 0xef, 0x23, 0x58, 0x8d, 0x9b, 0x72, 0x2b,
+	0x32, 0x62, 0xfe, 0x07, 0xd6, 0xfc, 0x13, 0x81, 0x12, 0xb3, 0x66, 0xb4, 0x82, 0x93, 0x2d, 0xa0,
+	0xf9, 0x2c, 0x46, 0xfe, 0x94, 0x21, 0x3c, 0x36, 0xf6, 0x7f, 0x45, 0xa0, 0x5c, 0xfb, 0xaf, 0x54,
+	0xfc, 0xee, 0xd4, 0x8a, 0x57, 0x26, 0x7f, 0x57, 0x8e, 0x30, 0xb3, 0xee, 0x34, 0x6d, 0xf7, 0x97,
+	0x3f, 0xe4, 0xc4, 0xa7, 0x47, 0x32, 0xfa, 0xf6, 0x48, 0x46, 0xbf, 0x1f, 0xc9, 0xe8, 0xe1, 0x91,
+	0x9c, 0xf8, 0xeb, 0x48, 0x46, 0x77, 0x8e, 0xe5, 0xc4, 0xbd, 0x63, 0x39, 0x71, 0xff, 0x58, 0x46,
+	0x1f, 0x54, 0x4c, 0x5b, 0xe5, 0x7b, 0x84, 0xef, 0x51, 0xcb, 0x74, 0x55, 0x8b, 0xf0, 0x9b, 0x36,
+	0x6b, 0x57, 0xc6, 0xff, 0xf5, 0xd9, 0x5f, 0xaf, 0x38, 0x6d, 0xb3, 0xc2, 0xb9, 0xe5, 0x34, 0x1a,
+	0x19, 0xdf, 0x07, 0xeb, 0x7f, 0x07, 0x00, 0x00, 0xff, 0xff, 0x8c, 0xbe, 0xb5, 0x6e, 0x55, 0x0e,
+	0x00, 0x00,
 }
 
 func (this *Organization) Equal(that interface{}) bool {
@@ -874,6 +789,13 @@ func (this *Organization) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.UpdatedAt.Equal(that1.UpdatedAt) {
+		return false
+	}
+	if that1.DeletedAt == nil {
+		if this.DeletedAt != nil {
+			return false
+		}
+	} else if !this.DeletedAt.Equal(*that1.DeletedAt) {
 		return false
 	}
 	if this.Name != that1.Name {
@@ -951,7 +873,7 @@ func (this *GetOrganizationRequest) Equal(that interface{}) bool {
 	if !this.OrganizationIdentifiers.Equal(&that1.OrganizationIdentifiers) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -978,7 +900,7 @@ func (this *ListOrganizationsRequest) Equal(that interface{}) bool {
 	if !this.Collaborator.Equal(that1.Collaborator) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	if this.Order != that1.Order {
@@ -988,6 +910,9 @@ func (this *ListOrganizationsRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Page != that1.Page {
+		return false
+	}
+	if this.Deleted != that1.Deleted {
 		return false
 	}
 	return true
@@ -1041,7 +966,7 @@ func (this *UpdateOrganizationRequest) Equal(that interface{}) bool {
 	if !this.Organization.Equal(&that1.Organization) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1098,7 +1023,7 @@ func (this *GetOrganizationAPIKeyRequest) Equal(that interface{}) bool {
 	if !this.OrganizationIdentifiers.Equal(&that1.OrganizationIdentifiers) {
 		return false
 	}
-	if this.KeyID != that1.KeyID {
+	if this.KeyId != that1.KeyId {
 		return false
 	}
 	return true
@@ -1136,6 +1061,13 @@ func (this *CreateOrganizationAPIKeyRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if that1.ExpiresAt == nil {
+		if this.ExpiresAt != nil {
+			return false
+		}
+	} else if !this.ExpiresAt.Equal(*that1.ExpiresAt) {
+		return false
+	}
 	return true
 }
 func (this *UpdateOrganizationAPIKeyRequest) Equal(that interface{}) bool {
@@ -1161,6 +1093,9 @@ func (this *UpdateOrganizationAPIKeyRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.APIKey.Equal(&that1.APIKey) {
+		return false
+	}
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -1249,654 +1184,6 @@ func (this *SetOrganizationCollaboratorRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (m *Organization) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Organization) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Organization) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ContactInfo) > 0 {
-		for iNdEx := len(m.ContactInfo) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ContactInfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintOrganization(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if len(m.Attributes) > 0 {
-		for k := range m.Attributes {
-			v := m.Attributes[k]
-			baseI := i
-			i -= len(v)
-			copy(dAtA[i:], v)
-			i = encodeVarintOrganization(dAtA, i, uint64(len(v)))
-			i--
-			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintOrganization(dAtA, i, uint64(len(k)))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintOrganization(dAtA, i, uint64(baseI-i))
-			i--
-			dAtA[i] = 0x32
-		}
-	}
-	if len(m.Description) > 0 {
-		i -= len(m.Description)
-		copy(dAtA[i:], m.Description)
-		i = encodeVarintOrganization(dAtA, i, uint64(len(m.Description)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintOrganization(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x22
-	}
-	n1, err1 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.UpdatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt):])
-	if err1 != nil {
-		return 0, err1
-	}
-	i -= n1
-	i = encodeVarintOrganization(dAtA, i, uint64(n1))
-	i--
-	dAtA[i] = 0x1a
-	n2, err2 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CreatedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CreatedAt):])
-	if err2 != nil {
-		return 0, err2
-	}
-	i -= n2
-	i = encodeVarintOrganization(dAtA, i, uint64(n2))
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *Organizations) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Organizations) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Organizations) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Organizations) > 0 {
-		for iNdEx := len(m.Organizations) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Organizations[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintOrganization(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetOrganizationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetOrganizationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetOrganizationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListOrganizationsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListOrganizationsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListOrganizationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Limit != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.Order) > 0 {
-		i -= len(m.Order)
-		copy(dAtA[i:], m.Order)
-		i = encodeVarintOrganization(dAtA, i, uint64(len(m.Order)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if m.Collaborator != nil {
-		{
-			size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintOrganization(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CreateOrganizationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CreateOrganizationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CreateOrganizationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.Organization.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *UpdateOrganizationRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UpdateOrganizationRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UpdateOrganizationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.Organization.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListOrganizationAPIKeysRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListOrganizationAPIKeysRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListOrganizationAPIKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Limit != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *GetOrganizationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetOrganizationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetOrganizationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.KeyID) > 0 {
-		i -= len(m.KeyID)
-		copy(dAtA[i:], m.KeyID)
-		i = encodeVarintOrganization(dAtA, i, uint64(len(m.KeyID)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *CreateOrganizationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CreateOrganizationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CreateOrganizationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Rights) > 0 {
-		dAtA15 := make([]byte, len(m.Rights)*10)
-		var j14 int
-		for _, num := range m.Rights {
-			for num >= 1<<7 {
-				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j14++
-			}
-			dAtA15[j14] = uint8(num)
-			j14++
-		}
-		i -= j14
-		copy(dAtA[i:], dAtA15[:j14])
-		i = encodeVarintOrganization(dAtA, i, uint64(j14))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintOrganization(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x12
-	}
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *UpdateOrganizationAPIKeyRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UpdateOrganizationAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UpdateOrganizationAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.APIKey.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ListOrganizationCollaboratorsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ListOrganizationCollaboratorsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ListOrganizationCollaboratorsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Page != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Limit != 0 {
-		i = encodeVarintOrganization(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x10
-	}
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *GetOrganizationCollaboratorRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetOrganizationCollaboratorRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetOrganizationCollaboratorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.OrganizationOrUserIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *SetOrganizationCollaboratorRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SetOrganizationCollaboratorRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SetOrganizationCollaboratorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Collaborator.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.OrganizationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintOrganization(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintOrganization(dAtA []byte, offset int, v uint64) int {
-	offset -= sovOrganization(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
 func NewPopulatedOrganization(r randyOrganization, easy bool) *Organization {
 	this := &Organization{}
 	v1 := NewPopulatedOrganizationIdentifiers(r, easy)
@@ -1905,8 +1192,11 @@ func NewPopulatedOrganization(r randyOrganization, easy bool) *Organization {
 	this.CreatedAt = *v2
 	v3 := github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
 	this.UpdatedAt = *v3
-	this.Name = randStringOrganization(r)
-	this.Description = randStringOrganization(r)
+	if r.Intn(5) != 0 {
+		this.DeletedAt = github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
+	}
+	this.Name = string(randStringOrganization(r))
+	this.Description = string(randStringOrganization(r))
 	if r.Intn(5) != 0 {
 		v4 := r.Intn(10)
 		this.Attributes = make(map[string]string)
@@ -1921,148 +1211,6 @@ func NewPopulatedOrganization(r randyOrganization, easy bool) *Organization {
 			this.ContactInfo[i] = NewPopulatedContactInfo(r, easy)
 		}
 	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedOrganizations(r randyOrganization, easy bool) *Organizations {
-	this := &Organizations{}
-	if r.Intn(5) != 0 {
-		v6 := r.Intn(5)
-		this.Organizations = make([]*Organization, v6)
-		for i := 0; i < v6; i++ {
-			this.Organizations[i] = NewPopulatedOrganization(r, easy)
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetOrganizationRequest(r randyOrganization, easy bool) *GetOrganizationRequest {
-	this := &GetOrganizationRequest{}
-	v7 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v7
-	v8 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v8
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListOrganizationsRequest(r randyOrganization, easy bool) *ListOrganizationsRequest {
-	this := &ListOrganizationsRequest{}
-	if r.Intn(5) != 0 {
-		this.Collaborator = NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	}
-	v9 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v9
-	this.Order = randStringOrganization(r)
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCreateOrganizationRequest(r randyOrganization, easy bool) *CreateOrganizationRequest {
-	this := &CreateOrganizationRequest{}
-	v10 := NewPopulatedOrganization(r, easy)
-	this.Organization = *v10
-	v11 := NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	this.Collaborator = *v11
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedUpdateOrganizationRequest(r randyOrganization, easy bool) *UpdateOrganizationRequest {
-	this := &UpdateOrganizationRequest{}
-	v12 := NewPopulatedOrganization(r, easy)
-	this.Organization = *v12
-	v13 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v13
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListOrganizationAPIKeysRequest(r randyOrganization, easy bool) *ListOrganizationAPIKeysRequest {
-	this := &ListOrganizationAPIKeysRequest{}
-	v14 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v14
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetOrganizationAPIKeyRequest(r randyOrganization, easy bool) *GetOrganizationAPIKeyRequest {
-	this := &GetOrganizationAPIKeyRequest{}
-	v15 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v15
-	this.KeyID = randStringOrganization(r)
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedCreateOrganizationAPIKeyRequest(r randyOrganization, easy bool) *CreateOrganizationAPIKeyRequest {
-	this := &CreateOrganizationAPIKeyRequest{}
-	v16 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v16
-	this.Name = randStringOrganization(r)
-	v17 := r.Intn(10)
-	this.Rights = make([]Right, v17)
-	for i := 0; i < v17; i++ {
-		this.Rights[i] = Right([]int32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 56, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 57, 58, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55}[r.Intn(59)])
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedUpdateOrganizationAPIKeyRequest(r randyOrganization, easy bool) *UpdateOrganizationAPIKeyRequest {
-	this := &UpdateOrganizationAPIKeyRequest{}
-	v18 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v18
-	v19 := NewPopulatedAPIKey(r, easy)
-	this.APIKey = *v19
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedListOrganizationCollaboratorsRequest(r randyOrganization, easy bool) *ListOrganizationCollaboratorsRequest {
-	this := &ListOrganizationCollaboratorsRequest{}
-	v20 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v20
-	this.Limit = r.Uint32()
-	this.Page = r.Uint32()
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetOrganizationCollaboratorRequest(r randyOrganization, easy bool) *GetOrganizationCollaboratorRequest {
-	this := &GetOrganizationCollaboratorRequest{}
-	v21 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v21
-	v22 := NewPopulatedOrganizationOrUserIdentifiers(r, easy)
-	this.OrganizationOrUserIdentifiers = *v22
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedSetOrganizationCollaboratorRequest(r randyOrganization, easy bool) *SetOrganizationCollaboratorRequest {
-	this := &SetOrganizationCollaboratorRequest{}
-	v23 := NewPopulatedOrganizationIdentifiers(r, easy)
-	this.OrganizationIdentifiers = *v23
-	v24 := NewPopulatedCollaborator(r, easy)
-	this.Collaborator = *v24
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2087,9 +1235,9 @@ func randUTF8RuneOrganization(r randyOrganization) rune {
 	return rune(ru + 61)
 }
 func randStringOrganization(r randyOrganization) string {
-	v25 := r.Intn(100)
-	tmps := make([]rune, v25)
-	for i := 0; i < v25; i++ {
+	v6 := r.Intn(100)
+	tmps := make([]rune, v6)
+	for i := 0; i < v6; i++ {
 		tmps[i] = randUTF8RuneOrganization(r)
 	}
 	return string(tmps)
@@ -2111,11 +1259,11 @@ func randFieldOrganization(dAtA []byte, r randyOrganization, fieldNumber int, wi
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateOrganization(dAtA, uint64(key))
-		v26 := r.Int63()
+		v7 := r.Int63()
 		if r.Intn(2) == 0 {
-			v26 *= -1
+			v7 *= -1
 		}
-		dAtA = encodeVarintPopulateOrganization(dAtA, uint64(v26))
+		dAtA = encodeVarintPopulateOrganization(dAtA, uint64(v7))
 	case 1:
 		dAtA = encodeVarintPopulateOrganization(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -2134,7 +1282,7 @@ func randFieldOrganization(dAtA []byte, r randyOrganization, fieldNumber int, wi
 }
 func encodeVarintPopulateOrganization(dAtA []byte, v uint64) []byte {
 	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
+		dAtA = append(dAtA, uint8(uint64(v)&0x7f|0x80))
 		v >>= 7
 	}
 	dAtA = append(dAtA, uint8(v))
@@ -2152,6 +1300,10 @@ func (m *Organization) Size() (n int) {
 	n += 1 + l + sovOrganization(uint64(l))
 	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.UpdatedAt)
 	n += 1 + l + sovOrganization(uint64(l))
+	if m.DeletedAt != nil {
+		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.DeletedAt)
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	l = len(m.Name)
 	if l > 0 {
 		n += 1 + l + sovOrganization(uint64(l))
@@ -2200,8 +1352,10 @@ func (m *GetOrganizationRequest) Size() (n int) {
 	_ = l
 	l = m.OrganizationIdentifiers.Size()
 	n += 1 + l + sovOrganization(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovOrganization(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	return n
 }
 
@@ -2215,8 +1369,10 @@ func (m *ListOrganizationsRequest) Size() (n int) {
 		l = m.Collaborator.Size()
 		n += 1 + l + sovOrganization(uint64(l))
 	}
-	l = m.FieldMask.Size()
-	n += 1 + l + sovOrganization(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	l = len(m.Order)
 	if l > 0 {
 		n += 1 + l + sovOrganization(uint64(l))
@@ -2226,6 +1382,9 @@ func (m *ListOrganizationsRequest) Size() (n int) {
 	}
 	if m.Page != 0 {
 		n += 1 + sovOrganization(uint64(m.Page))
+	}
+	if m.Deleted {
+		n += 2
 	}
 	return n
 }
@@ -2251,8 +1410,10 @@ func (m *UpdateOrganizationRequest) Size() (n int) {
 	_ = l
 	l = m.Organization.Size()
 	n += 1 + l + sovOrganization(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovOrganization(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	return n
 }
 
@@ -2281,7 +1442,7 @@ func (m *GetOrganizationAPIKeyRequest) Size() (n int) {
 	_ = l
 	l = m.OrganizationIdentifiers.Size()
 	n += 1 + l + sovOrganization(uint64(l))
-	l = len(m.KeyID)
+	l = len(m.KeyId)
 	if l > 0 {
 		n += 1 + l + sovOrganization(uint64(l))
 	}
@@ -2307,6 +1468,10 @@ func (m *CreateOrganizationAPIKeyRequest) Size() (n int) {
 		}
 		n += 1 + sovOrganization(uint64(l)) + l
 	}
+	if m.ExpiresAt != nil {
+		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.ExpiresAt)
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	return n
 }
 
@@ -2320,6 +1485,10 @@ func (m *UpdateOrganizationAPIKeyRequest) Size() (n int) {
 	n += 1 + l + sovOrganization(uint64(l))
 	l = m.APIKey.Size()
 	n += 1 + l + sovOrganization(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovOrganization(uint64(l))
+	}
 	return n
 }
 
@@ -2370,7 +1539,7 @@ func sovOrganization(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozOrganization(x uint64) (n int) {
-	return sovOrganization((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovOrganization(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *Organization) String() string {
 	if this == nil {
@@ -2395,6 +1564,7 @@ func (this *Organization) String() string {
 		`OrganizationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OrganizationIdentifiers), "OrganizationIdentifiers", "OrganizationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`CreatedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.CreatedAt), "Timestamp", "types.Timestamp", 1), `&`, ``, 1) + `,`,
 		`UpdatedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.UpdatedAt), "Timestamp", "types.Timestamp", 1), `&`, ``, 1) + `,`,
+		`DeletedAt:` + strings.Replace(fmt.Sprintf("%v", this.DeletedAt), "Timestamp", "types.Timestamp", 1) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
 		`Attributes:` + mapStringForAttributes + `,`,
@@ -2424,7 +1594,7 @@ func (this *GetOrganizationRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetOrganizationRequest{`,
 		`OrganizationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OrganizationIdentifiers), "OrganizationIdentifiers", "OrganizationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2435,10 +1605,11 @@ func (this *ListOrganizationsRequest) String() string {
 	}
 	s := strings.Join([]string{`&ListOrganizationsRequest{`,
 		`Collaborator:` + strings.Replace(fmt.Sprintf("%v", this.Collaborator), "OrganizationOrUserIdentifiers", "OrganizationOrUserIdentifiers", 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`Order:` + fmt.Sprintf("%v", this.Order) + `,`,
 		`Limit:` + fmt.Sprintf("%v", this.Limit) + `,`,
 		`Page:` + fmt.Sprintf("%v", this.Page) + `,`,
+		`Deleted:` + fmt.Sprintf("%v", this.Deleted) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2460,7 +1631,7 @@ func (this *UpdateOrganizationRequest) String() string {
 	}
 	s := strings.Join([]string{`&UpdateOrganizationRequest{`,
 		`Organization:` + strings.Replace(strings.Replace(this.Organization.String(), "Organization", "Organization", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2483,7 +1654,7 @@ func (this *GetOrganizationAPIKeyRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetOrganizationAPIKeyRequest{`,
 		`OrganizationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OrganizationIdentifiers), "OrganizationIdentifiers", "OrganizationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`KeyID:` + fmt.Sprintf("%v", this.KeyID) + `,`,
+		`KeyId:` + fmt.Sprintf("%v", this.KeyId) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2496,6 +1667,7 @@ func (this *CreateOrganizationAPIKeyRequest) String() string {
 		`OrganizationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OrganizationIdentifiers), "OrganizationIdentifiers", "OrganizationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Rights:` + fmt.Sprintf("%v", this.Rights) + `,`,
+		`ExpiresAt:` + strings.Replace(fmt.Sprintf("%v", this.ExpiresAt), "Timestamp", "types.Timestamp", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2507,6 +1679,7 @@ func (this *UpdateOrganizationAPIKeyRequest) String() string {
 	s := strings.Join([]string{`&UpdateOrganizationAPIKeyRequest{`,
 		`OrganizationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OrganizationIdentifiers), "OrganizationIdentifiers", "OrganizationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`APIKey:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.APIKey), "APIKey", "APIKey", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2553,2010 +1726,3 @@ func valueToStringOrganization(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *Organization) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Organization: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Organization: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.CreatedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.UpdatedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Description = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Attributes == nil {
-				m.Attributes = make(map[string]string)
-			}
-			var mapkey string
-			var mapvalue string
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowOrganization
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowOrganization
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthOrganization
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthOrganization
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var stringLenmapvalue uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowOrganization
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapvalue |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapvalue := int(stringLenmapvalue)
-					if intStringLenmapvalue < 0 {
-						return ErrInvalidLengthOrganization
-					}
-					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
-					if postStringIndexmapvalue < 0 {
-						return ErrInvalidLengthOrganization
-					}
-					if postStringIndexmapvalue > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
-					iNdEx = postStringIndexmapvalue
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipOrganization(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if skippy < 0 {
-						return ErrInvalidLengthOrganization
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.Attributes[mapkey] = mapvalue
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContactInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ContactInfo = append(m.ContactInfo, &ContactInfo{})
-			if err := m.ContactInfo[len(m.ContactInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Organizations) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Organizations: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Organizations: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Organizations", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Organizations = append(m.Organizations, &Organization{})
-			if err := m.Organizations[len(m.Organizations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetOrganizationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetOrganizationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetOrganizationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListOrganizationsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListOrganizationsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListOrganizationsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Collaborator == nil {
-				m.Collaborator = &OrganizationOrUserIdentifiers{}
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Order", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Order = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateOrganizationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CreateOrganizationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CreateOrganizationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Organization", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Organization.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UpdateOrganizationRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UpdateOrganizationRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UpdateOrganizationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Organization", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Organization.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListOrganizationAPIKeysRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListOrganizationAPIKeysRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListOrganizationAPIKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetOrganizationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetOrganizationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetOrganizationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KeyID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.KeyID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateOrganizationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CreateOrganizationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CreateOrganizationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType == 0 {
-				var v Right
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowOrganization
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= Right(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Rights = append(m.Rights, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowOrganization
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthOrganization
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthOrganization
-				}
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				if elementCount != 0 && len(m.Rights) == 0 {
-					m.Rights = make([]Right, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v Right
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowOrganization
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= Right(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Rights = append(m.Rights, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Rights", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UpdateOrganizationAPIKeyRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UpdateOrganizationAPIKeyRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UpdateOrganizationAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field APIKey", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.APIKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ListOrganizationCollaboratorsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ListOrganizationCollaboratorsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ListOrganizationCollaboratorsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetOrganizationCollaboratorRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetOrganizationCollaboratorRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetOrganizationCollaboratorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationOrUserIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationOrUserIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *SetOrganizationCollaboratorRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SetOrganizationCollaboratorRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SetOrganizationCollaboratorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.OrganizationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Collaborator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Collaborator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipOrganization(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthOrganization
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipOrganization(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowOrganization
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowOrganization
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthOrganization
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupOrganization
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthOrganization
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthOrganization        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowOrganization          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupOrganization = fmt.Errorf("proto: unexpected end of group")
-)

@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { mergeWith, merge } from 'lodash'
+import { mergeWith } from 'lodash'
+
+import { EVENT_END_DEVICE_HEARTBEAT_FILTERS_REGEXP } from '@console/constants/event-filters'
 
 import { getCombinedDeviceId, combineDeviceIds } from '@ttn-lw/lib/selectors/id'
 import getByPath from '@ttn-lw/lib/get-by-path'
 
-import { parseLorawanMacVersion } from '@console/lib/device-utils'
+import { parseLorawanMacVersion, getLastSeen } from '@console/lib/device-utils'
 
 import {
   GET_DEV,
@@ -33,20 +35,25 @@ const defaultState = {
   selectedDevice: undefined,
 }
 
-const heartbeatEvents = ['ns.up.data.receive', 'ns.up.join.receive', 'ns.up.rejoin.receive']
+const heartbeatFilterRegExp = new RegExp(EVENT_END_DEVICE_HEARTBEAT_FILTERS_REGEXP)
 const uplinkFrameCountEvent = 'ns.up.data.process'
 const downlinkFrameCountEvent = 'ns.down.data.schedule.attempt'
 
 const mergeDerived = (state, id, derived) =>
   Object.keys(derived).length > 0
-    ? merge({}, state, {
+    ? {
+        ...state,
         derived: {
-          [id]: derived,
+          ...state.derived,
+          [id]: {
+            ...state.derived[id],
+            ...derived,
+          },
         },
-      })
+      }
     : state
 
-const devices = function(state = defaultState, { type, payload, event }) {
+const devices = (state = defaultState, { type, payload, event }) => {
   switch (type) {
     case GET_DEV:
       return {
@@ -57,6 +64,8 @@ const devices = function(state = defaultState, { type, payload, event }) {
     case GET_DEV_SUCCESS:
       const updatedState = { ...state }
       const id = getCombinedDeviceId(payload)
+      const lorawanVersion = getByPath(state.entities, `${id}.lorawan_version`)
+
       const mergedDevice = mergeWith({}, state.entities[id], payload, (_, __, key, ___, source) => {
         // Always set location from the payload.
         if (source === payload && key === 'locations') {
@@ -74,36 +83,52 @@ const devices = function(state = defaultState, { type, payload, event }) {
       }
 
       // Update derived last seen value if possible.
-      const { recent_uplinks } = payload
       const derived = {}
-      if (recent_uplinks) {
-        const last_uplink = Boolean(recent_uplinks)
-          ? recent_uplinks[recent_uplinks.length - 1]
-          : undefined
-        if (last_uplink) {
-          derived.lastSeen = last_uplink.received_at
+      const lastSeen = getLastSeen(payload)
+      if (lastSeen) {
+        derived.lastSeen = lastSeen
+      }
+
+      // Update uplink and downlink frame counts if possible.
+      const { session } = payload
+      if (session) {
+        derived.uplinkFrameCount = session.last_f_cnt_up
+        if (parseLorawanMacVersion(lorawanVersion) < 110) {
+          derived.downlinkFrameCount = session.last_n_f_cnt_down
+        } else {
+          // For 1.1+ end devices there are two frame counters. Currently, we
+          // display only the application counter.
+          // Also, see https://github.com/TheThingsNetwork/lorawan-stack/issues/2740.
+          derived.downlinkFrameCount = session.last_a_f_cnt_down
         }
       }
 
       return mergeDerived(updatedState, id, derived)
     case GET_DEVICES_LIST_SUCCESS:
-      const entities = payload.entities.reduce(
-        function(acc, dev) {
+      return payload.entities.reduce(
+        (acc, dev) => {
           const id = getCombinedDeviceId(dev)
+          acc.entities[id] = dev
 
-          acc[id] = dev
+          // Update derived last seen value if possible.
+          const derived = {}
+          const lastSeen = getLastSeen(dev)
+          if (lastSeen) {
+            derived.lastSeen = lastSeen
+          }
+          if (acc.derived[id]) {
+            acc.derived[id] = { ...acc.derived[id], ...derived }
+          } else {
+            acc.derived[id] = derived
+          }
+
           return acc
         },
-        { ...state.entities },
+        { ...state },
       )
-
-      return {
-        ...state,
-        entities,
-      }
     case GET_APP_EVENT_MESSAGE_SUCCESS:
       // Detect heartbeat events to update last seen state.
-      if (heartbeatEvents.includes(event.name)) {
+      if (heartbeatFilterRegExp.test(event.name)) {
         const id = getCombinedDeviceId(event.identifiers[0].device_ids)
         const receivedAt = getByPath(event, 'data.received_at')
         if (receivedAt) {

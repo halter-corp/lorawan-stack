@@ -17,8 +17,9 @@ package store
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	ttntypes "go.thethings.network/lorawan-stack/v3/pkg/types"
 )
 
 // ApplicationStore interface for storing Applications.
@@ -27,10 +28,12 @@ import (
 // sufficient rights to perform the action.
 type ApplicationStore interface {
 	CreateApplication(ctx context.Context, app *ttnpb.Application) (*ttnpb.Application, error)
-	FindApplications(ctx context.Context, ids []*ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Application, error)
-	GetApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Application, error)
-	UpdateApplication(ctx context.Context, app *ttnpb.Application, fieldMask *types.FieldMask) (*ttnpb.Application, error)
+	FindApplications(ctx context.Context, ids []*ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Application, error)
+	GetApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Application, error)
+	UpdateApplication(ctx context.Context, app *ttnpb.Application, fieldMask *pbtypes.FieldMask) (*ttnpb.Application, error)
 	DeleteApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error
+	RestoreApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error
+	PurgeApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers) error
 }
 
 // ClientStore interface for storing Clients.
@@ -39,10 +42,12 @@ type ApplicationStore interface {
 // sufficient rights to perform the action.
 type ClientStore interface {
 	CreateClient(ctx context.Context, cli *ttnpb.Client) (*ttnpb.Client, error)
-	FindClients(ctx context.Context, ids []*ttnpb.ClientIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Client, error)
-	GetClient(ctx context.Context, id *ttnpb.ClientIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Client, error)
-	UpdateClient(ctx context.Context, cli *ttnpb.Client, fieldMask *types.FieldMask) (*ttnpb.Client, error)
+	FindClients(ctx context.Context, ids []*ttnpb.ClientIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Client, error)
+	GetClient(ctx context.Context, id *ttnpb.ClientIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Client, error)
+	UpdateClient(ctx context.Context, cli *ttnpb.Client, fieldMask *pbtypes.FieldMask) (*ttnpb.Client, error)
 	DeleteClient(ctx context.Context, id *ttnpb.ClientIdentifiers) error
+	RestoreClient(ctx context.Context, id *ttnpb.ClientIdentifiers) error
+	PurgeClient(ctx context.Context, id *ttnpb.ClientIdentifiers) error
 }
 
 // EndDeviceStore interface for storing EndDevices.
@@ -52,10 +57,10 @@ type ClientStore interface {
 type EndDeviceStore interface {
 	CreateEndDevice(ctx context.Context, dev *ttnpb.EndDevice) (*ttnpb.EndDevice, error)
 	CountEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers) (uint64, error)
-	ListEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error)
-	FindEndDevices(ctx context.Context, ids []*ttnpb.EndDeviceIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.EndDevice, error)
-	GetEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdentifiers, fieldMask *types.FieldMask) (*ttnpb.EndDevice, error)
-	UpdateEndDevice(ctx context.Context, dev *ttnpb.EndDevice, fieldMask *types.FieldMask) (*ttnpb.EndDevice, error)
+	ListEndDevices(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.EndDevice, error)
+	FindEndDevices(ctx context.Context, ids []*ttnpb.EndDeviceIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.EndDevice, error)
+	GetEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.EndDevice, error)
+	UpdateEndDevice(ctx context.Context, dev *ttnpb.EndDevice, fieldMask *pbtypes.FieldMask) (*ttnpb.EndDevice, error)
 	DeleteEndDevice(ctx context.Context, id *ttnpb.EndDeviceIdentifiers) error
 }
 
@@ -65,10 +70,12 @@ type EndDeviceStore interface {
 // sufficient rights to perform the action.
 type GatewayStore interface {
 	CreateGateway(ctx context.Context, gtw *ttnpb.Gateway) (*ttnpb.Gateway, error)
-	FindGateways(ctx context.Context, ids []*ttnpb.GatewayIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Gateway, error)
-	GetGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Gateway, error)
-	UpdateGateway(ctx context.Context, gtw *ttnpb.Gateway, fieldMask *types.FieldMask) (*ttnpb.Gateway, error)
+	FindGateways(ctx context.Context, ids []*ttnpb.GatewayIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Gateway, error)
+	GetGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Gateway, error)
+	UpdateGateway(ctx context.Context, gtw *ttnpb.Gateway, fieldMask *pbtypes.FieldMask) (*ttnpb.Gateway, error)
 	DeleteGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error
+	RestoreGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error
+	PurgeGateway(ctx context.Context, id *ttnpb.GatewayIdentifiers) error
 }
 
 // OrganizationStore interface for storing Organizations.
@@ -77,10 +84,12 @@ type GatewayStore interface {
 // sufficient rights to perform the action.
 type OrganizationStore interface {
 	CreateOrganization(ctx context.Context, org *ttnpb.Organization) (*ttnpb.Organization, error)
-	FindOrganizations(ctx context.Context, ids []*ttnpb.OrganizationIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.Organization, error)
-	GetOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers, fieldMask *types.FieldMask) (*ttnpb.Organization, error)
-	UpdateOrganization(ctx context.Context, org *ttnpb.Organization, fieldMask *types.FieldMask) (*ttnpb.Organization, error)
+	FindOrganizations(ctx context.Context, ids []*ttnpb.OrganizationIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.Organization, error)
+	GetOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.Organization, error)
+	UpdateOrganization(ctx context.Context, org *ttnpb.Organization, fieldMask *pbtypes.FieldMask) (*ttnpb.Organization, error)
 	DeleteOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) error
+	RestoreOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) error
+	PurgeOrganization(ctx context.Context, id *ttnpb.OrganizationIdentifiers) error
 }
 
 // UserStore interface for storing Users.
@@ -89,11 +98,13 @@ type OrganizationStore interface {
 // sufficient rights to perform the action.
 type UserStore interface {
 	CreateUser(ctx context.Context, usr *ttnpb.User) (*ttnpb.User, error)
-	FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers, fieldMask *types.FieldMask) ([]*ttnpb.User, error)
-	ListAdmins(ctx context.Context, fieldMask *types.FieldMask) ([]*ttnpb.User, error)
-	GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fieldMask *types.FieldMask) (*ttnpb.User, error)
-	UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *types.FieldMask) (*ttnpb.User, error)
+	FindUsers(ctx context.Context, ids []*ttnpb.UserIdentifiers, fieldMask *pbtypes.FieldMask) ([]*ttnpb.User, error)
+	ListAdmins(ctx context.Context, fieldMask *pbtypes.FieldMask) ([]*ttnpb.User, error)
+	GetUser(ctx context.Context, id *ttnpb.UserIdentifiers, fieldMask *pbtypes.FieldMask) (*ttnpb.User, error)
+	UpdateUser(ctx context.Context, usr *ttnpb.User, fieldMask *pbtypes.FieldMask) (*ttnpb.User, error)
 	DeleteUser(ctx context.Context, id *ttnpb.UserIdentifiers) error
+	RestoreUser(ctx context.Context, id *ttnpb.UserIdentifiers) error
+	PurgeUser(ctx context.Context, id *ttnpb.UserIdentifiers) error
 }
 
 // UserSessionStore interface for storing User sessions.
@@ -106,6 +117,7 @@ type UserSessionStore interface {
 	GetSessionByID(ctx context.Context, tokenID string) (*ttnpb.UserSession, error)
 	UpdateSession(ctx context.Context, sess *ttnpb.UserSession) (*ttnpb.UserSession, error)
 	DeleteSession(ctx context.Context, userIDs *ttnpb.UserIdentifiers, sessionID string) error
+	DeleteAllUserSessions(ctx context.Context, userIDs *ttnpb.UserIdentifiers) error
 }
 
 // MembershipStore interface for storing membership (collaboration) relations
@@ -116,29 +128,35 @@ type UserSessionStore interface {
 // operations should typically be cached. The recommended cache behavior is:
 type MembershipStore interface {
 	// Find direct and optionally also indirect memberships of the organization or user.
-	FindMemberships(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityType string, includeIndirect bool) ([]ttnpb.Identifiers, error)
+	FindMemberships(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityType string, includeIndirect bool) ([]*ttnpb.EntityIdentifiers, error)
 	// Find indirect memberships (through organizations) between the user and entity.
-	FindIndirectMemberships(ctx context.Context, userID *ttnpb.UserIdentifiers, entityID ttnpb.Identifiers) ([]IndirectMembership, error)
+	FindIndirectMemberships(ctx context.Context, userID *ttnpb.UserIdentifiers, entityID *ttnpb.EntityIdentifiers) ([]IndirectMembership, error)
 
 	// Find direct members and rights of the given entity.
-	FindMembers(ctx context.Context, entityID ttnpb.Identifiers) (map[*ttnpb.OrganizationOrUserIdentifiers]*ttnpb.Rights, error)
+	FindMembers(ctx context.Context, entityID *ttnpb.EntityIdentifiers) (map[*ttnpb.OrganizationOrUserIdentifiers]*ttnpb.Rights, error)
 	// Get direct member rights on an entity.
-	GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers) (*ttnpb.Rights, error)
+	GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers) (*ttnpb.Rights, error)
 	// Set direct member rights on an entity. Rights can be deleted by not passing any rights.
-	SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers, rights *ttnpb.Rights) error
+	SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers, rights *ttnpb.Rights) error
+	// Delete all member rights on an entity. Used for purging entities.
+	DeleteEntityMembers(ctx context.Context, entityID *ttnpb.EntityIdentifiers) error
+	// Delete all user rights for an entity.
+	DeleteAccountMembers(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers) error
 }
 
 // APIKeyStore interface for storing API keys for entities (applications,
 // clients, gateways, organizations or users).
 type APIKeyStore interface {
 	// Create a new API key for the given entity.
-	CreateAPIKey(ctx context.Context, entityID ttnpb.Identifiers, key *ttnpb.APIKey) error
+	CreateAPIKey(ctx context.Context, entityID *ttnpb.EntityIdentifiers, key *ttnpb.APIKey) (*ttnpb.APIKey, error)
 	// Find API keys of the given entity.
-	FindAPIKeys(ctx context.Context, entityID ttnpb.Identifiers) ([]*ttnpb.APIKey, error)
+	FindAPIKeys(ctx context.Context, entityID *ttnpb.EntityIdentifiers) ([]*ttnpb.APIKey, error)
 	// Get an API key by its ID.
-	GetAPIKey(ctx context.Context, id string) (ttnpb.Identifiers, *ttnpb.APIKey, error)
+	GetAPIKey(ctx context.Context, id string) (*ttnpb.EntityIdentifiers, *ttnpb.APIKey, error)
 	// Update key rights on an entity. Rights can be deleted by not passing any rights, in which case the returned API key will be nil.
-	UpdateAPIKey(ctx context.Context, entityID ttnpb.Identifiers, key *ttnpb.APIKey) (*ttnpb.APIKey, error)
+	UpdateAPIKey(ctx context.Context, entityID *ttnpb.EntityIdentifiers, key *ttnpb.APIKey, fieldMask *pbtypes.FieldMask) (*ttnpb.APIKey, error)
+	// Delete api keys deletes all api keys tied to an entity. Used when purging entities.
+	DeleteEntityAPIKeys(ctx context.Context, entityID *ttnpb.EntityIdentifiers) error
 }
 
 // OAuthStore interface for the OAuth server.
@@ -149,6 +167,8 @@ type OAuthStore interface {
 	GetAuthorization(ctx context.Context, userIDs *ttnpb.UserIdentifiers, clientIDs *ttnpb.ClientIdentifiers) (*ttnpb.OAuthClientAuthorization, error)
 	Authorize(ctx context.Context, req *ttnpb.OAuthClientAuthorization) (authorization *ttnpb.OAuthClientAuthorization, err error)
 	DeleteAuthorization(ctx context.Context, userIDs *ttnpb.UserIdentifiers, clientIDs *ttnpb.ClientIdentifiers) error
+	DeleteUserAuthorizations(ctx context.Context, userIDs *ttnpb.UserIdentifiers) error
+	DeleteClientAuthorizations(ctx context.Context, clientIDs *ttnpb.ClientIdentifiers) error
 
 	CreateAuthorizationCode(ctx context.Context, code *ttnpb.OAuthAuthorizationCode) error
 	GetAuthorizationCode(ctx context.Context, code string) (*ttnpb.OAuthAuthorizationCode, error)
@@ -169,19 +189,31 @@ type InvitationStore interface {
 	DeleteInvitation(ctx context.Context, email string) error
 }
 
+// LoginTokenStore interface for storing user login tokens.
+type LoginTokenStore interface {
+	FindActiveLoginTokens(ctx context.Context, userIDs *ttnpb.UserIdentifiers) ([]*ttnpb.LoginToken, error)
+	CreateLoginToken(ctx context.Context, token *ttnpb.LoginToken) (*ttnpb.LoginToken, error)
+	ConsumeLoginToken(ctx context.Context, token string) (*ttnpb.LoginToken, error)
+}
+
 // EntitySearch interface for searching entities.
 type EntitySearch interface {
-	FindEntities(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchEntitiesRequest, entityType string) ([]ttnpb.Identifiers, error)
+	FindApplications(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchApplicationsRequest) ([]*ttnpb.ApplicationIdentifiers, error)
+	FindClients(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchClientsRequest) ([]*ttnpb.ClientIdentifiers, error)
 	FindEndDevices(ctx context.Context, req *ttnpb.SearchEndDevicesRequest) ([]*ttnpb.EndDeviceIdentifiers, error)
+	FindGateways(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchGatewaysRequest) ([]*ttnpb.GatewayIdentifiers, error)
+	FindOrganizations(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchOrganizationsRequest) ([]*ttnpb.OrganizationIdentifiers, error)
+	FindUsers(ctx context.Context, member *ttnpb.OrganizationOrUserIdentifiers, req *ttnpb.SearchUsersRequest) ([]*ttnpb.UserIdentifiers, error)
 }
 
 // ContactInfoStore interface for contact info validation.
 type ContactInfoStore interface {
-	GetContactInfo(ctx context.Context, entityID ttnpb.Identifiers) ([]*ttnpb.ContactInfo, error)
-	SetContactInfo(ctx context.Context, entityID ttnpb.Identifiers, contactInfo []*ttnpb.ContactInfo) ([]*ttnpb.ContactInfo, error)
+	GetContactInfo(ctx context.Context, entityID ttnpb.IDStringer) ([]*ttnpb.ContactInfo, error)
+	SetContactInfo(ctx context.Context, entityID ttnpb.IDStringer, contactInfo []*ttnpb.ContactInfo) ([]*ttnpb.ContactInfo, error)
 	CreateValidation(ctx context.Context, validation *ttnpb.ContactInfoValidation) (*ttnpb.ContactInfoValidation, error)
 	// Confirm a validation. Only the ID and Token need to be set.
 	Validate(ctx context.Context, validation *ttnpb.ContactInfoValidation) error
+	DeleteEntityContactInfo(ctx context.Context, entityID ttnpb.IDStringer) error
 }
 
 // MigrationStore interface for migration history.
@@ -190,4 +222,10 @@ type MigrationStore interface {
 	FindMigrations(ctx context.Context) ([]*Migration, error)
 	GetMigration(ctx context.Context, id string) (*Migration, error)
 	DeleteMigration(ctx context.Context, id string) error
+}
+
+// EUIStore interface for assigning DevEUI blocks and addresses
+type EUIStore interface {
+	CreateEUIBlock(ctx context.Context, euiType string, block ttntypes.EUI64Prefix, initCounterValue int64) (err error)
+	IssueDevEUIForApplication(ctx context.Context, id *ttnpb.ApplicationIdentifiers, applicationLimit int) (*ttntypes.EUI64, error)
 }

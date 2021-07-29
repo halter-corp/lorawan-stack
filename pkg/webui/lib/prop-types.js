@@ -14,6 +14,7 @@
 
 import originalPropTypes from 'prop-types'
 
+import ONLINE_STATUS from '@ttn-lw/constants/online-status'
 import { components } from '@ttn-lw/constants/components'
 
 const PropTypes = { ...originalPropTypes }
@@ -64,6 +65,10 @@ PropTypes.link = PropTypes.shape({
   exact: PropTypes.bool,
   hidden: PropTypes.bool,
 })
+
+PropTypes.inputWidth = PropTypes.oneOf(['xxs', 'xs', 's', 'm', 'l', 'full'])
+
+PropTypes.onlineStatus = PropTypes.oneOf(Object.values(ONLINE_STATUS))
 
 // Entities and entity-related prop-types.
 
@@ -143,6 +148,12 @@ PropTypes.user = PropTypes.shape({
   }).isRequired,
 })
 
+PropTypes.profilePicture = PropTypes.shape({
+  sizes: PropTypes.shape({
+    0: PropTypes.string,
+  }),
+})
+
 PropTypes.stackComponent = PropTypes.shape({
   enabled: PropTypes.bool.isRequired,
   base_url: PropTypes.string,
@@ -193,6 +204,18 @@ PropTypes.device = PropTypes.shape({
   lorawan_version: PropTypes.string,
   supports_join: PropTypes.bool,
   frequency_plan_id: PropTypes.string,
+})
+
+PropTypes.deviceTemplate = PropTypes.shape({
+  end_device: PropTypes.shape({
+    supports_join: PropTypes.bool,
+    multicast: PropTypes.bool,
+    lorawan_version: PropTypes.string.isRequired,
+    lorawan_phy_version: PropTypes.string.isRequired,
+  }),
+  field_mask: PropTypes.shape({
+    paths: PropTypes.arrayOf(PropTypes.string).isRequired,
+  }).isRequired,
 })
 
 PropTypes.organization = PropTypes.shape({
@@ -259,21 +282,6 @@ PropTypes.webhookTemplate = PropTypes.shape({
 })
 PropTypes.webhookTemplates = PropTypes.arrayOf(PropTypes.webhookTemplate)
 
-PropTypes.applicationLink = PropTypes.shape({
-  network_server_address: PropTypes.string,
-  api_key: PropTypes.string.isRequired,
-  tls: PropTypes.bool,
-  skip_payload_crypto: PropTypes.bool,
-})
-
-PropTypes.applicationLinkStats = PropTypes.shape({
-  linked_at: PropTypes.string.isRequired,
-  last_up_received_at: PropTypes.string,
-  last_downlink_forwarded_at: PropTypes.string,
-  up_count: PropTypes.string,
-  downlink_count: PropTypes.string,
-})
-
 PropTypes.euiPrefix = PropTypes.shape({
   join_eui: PropTypes.string,
   length: PropTypes.number,
@@ -287,5 +295,20 @@ PropTypes.passwordRequirements = PropTypes.shape({
 })
 
 PropTypes.euiPrefixes = PropTypes.arrayOf(PropTypes.euiPrefix)
+
+PropTypes.routingPolicy = PropTypes.shape({
+  uplink: PropTypes.shape({
+    application_data: PropTypes.bool,
+    join_request: PropTypes.bool,
+    localization: PropTypes.bool,
+    mac_data: PropTypes.bool,
+    signal_quality: PropTypes.bool,
+  }),
+  downlink: PropTypes.shape({
+    application_data: PropTypes.bool,
+    join_accept: PropTypes.bool,
+    mac_data: PropTypes.bool,
+  }),
+})
 
 export default PropTypes

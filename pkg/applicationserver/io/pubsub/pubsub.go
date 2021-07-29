@@ -22,7 +22,6 @@ import (
 
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/provider"
-	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/errorcontext"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -42,16 +41,20 @@ type PubSub struct {
 	registry Registry
 
 	integrations sync.Map
+
+	providerStatuses ProviderStatuses
 }
 
 // New creates a new pusub frontend.
-func New(c *component.Component, server io.Server, registry Registry) (*PubSub, error) {
+func New(c *component.Component, server io.Server, registry Registry, providerStatuses ProviderStatuses) (*PubSub, error) {
 	ctx := log.NewContextWithField(c.Context(), "namespace", "applicationserver/io/pubsub")
 	ps := &PubSub{
 		Component: c,
 		ctx:       ctx,
 		server:    server,
 		registry:  registry,
+
+		providerStatuses: providerStatuses,
 	}
 	ps.RegisterTask(&component.TaskConfig{
 		Context: ctx,
@@ -75,7 +78,7 @@ func (ps *PubSub) startAll(ctx context.Context) error {
 func (ps *PubSub) startTask(ctx context.Context, ids ttnpb.ApplicationPubSubIdentifiers) {
 	ctx = log.NewContextWithFields(ctx, log.Fields(
 		"application_uid", unique.ID(ctx, ids.ApplicationIdentifiers),
-		"pub_sub_id", ids.PubSubID,
+		"pub_sub_id", ids.PubSubId,
 	))
 	ps.StartTask(&component.TaskConfig{
 		Context: ctx,
@@ -86,6 +89,11 @@ func (ps *PubSub) startTask(ctx context.Context, ids ttnpb.ApplicationPubSubIden
 				return err
 			} else if err != nil {
 				log.FromContext(ctx).WithError(err).Warn("Pub/Sub not found")
+				return nil
+			}
+
+			if err := ps.providerStatuses.Enabled(ctx, target.Provider); err != nil {
+				log.FromContext(ctx).WithError(err).Debug("Pub/Sub not enabled")
 				return nil
 			}
 
@@ -221,21 +229,14 @@ func (i *integration) startHandleDown(ctx context.Context) {
 
 func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err error) {
 	appUID := unique.ID(ctx, pb.ApplicationIdentifiers)
-	psUID := PubSubUID(appUID, pb.PubSubID)
+	psUID := PubSubUID(appUID, pb.PubSubId)
 
 	ctx = log.NewContextWithFields(ctx, log.Fields(
 		"application_uid", appUID,
-		"pub_sub_id", pb.PubSubID,
+		"pub_sub_id", pb.PubSubId,
 		"provider", fmt.Sprintf("%T", pb.Provider),
 	))
 	logger := log.FromContext(ctx)
-	ctx = rights.NewContext(ctx, rights.Rights{
-		ApplicationRights: map[string]*ttnpb.Rights{
-			appUID: {
-				Rights: []ttnpb.Right{ttnpb.RIGHT_APPLICATION_TRAFFIC_READ}, // Required by io.Subscribe.
-			},
-		},
-	})
 	ctx, cancel := errorcontext.New(ctx)
 	defer func() {
 		cancel(err)
@@ -266,7 +267,10 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 	if err != nil {
 		return err
 	}
-	i.conn, err = provider.OpenConnection(ctx, pb)
+	if err := ps.providerStatuses.Enabled(ctx, pb.GetProvider()); err != nil {
+		return err
+	}
+	i.conn, err = provider.OpenConnection(ctx, pb, ps.providerStatuses)
 	if err != nil {
 		return err
 	}
@@ -277,7 +281,7 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 			logger.Debug("Shutdown pub/sub connection success")
 		}
 	}()
-	i.sub, err = ps.server.Subscribe(ctx, "pubsub", pb.ApplicationIdentifiers)
+	i.sub, err = ps.server.Subscribe(ctx, "pubsub", &pb.ApplicationIdentifiers, false)
 	if err != nil {
 		return err
 	}
@@ -310,7 +314,7 @@ func (ps *PubSub) start(ctx context.Context, pb *ttnpb.ApplicationPubSub) (err e
 
 func (ps *PubSub) stop(ctx context.Context, ids ttnpb.ApplicationPubSubIdentifiers) error {
 	appUID := unique.ID(ctx, ids.ApplicationIdentifiers)
-	psUID := PubSubUID(appUID, ids.PubSubID)
+	psUID := PubSubUID(appUID, ids.PubSubId)
 	if val, ok := ps.integrations.Load(psUID); ok {
 		i := val.(*integration)
 		i.cancel(context.Canceled)

@@ -15,6 +15,7 @@
 import React, { useState, useCallback } from 'react'
 import { defineMessages } from 'react-intl'
 
+import Notification from '@ttn-lw/components/notification'
 import SubmitButton from '@ttn-lw/components/submit-button'
 import RadioButton from '@ttn-lw/components/radio-button'
 import Checkbox from '@ttn-lw/components/checkbox'
@@ -24,7 +25,6 @@ import toast from '@ttn-lw/components/toast'
 import Form from '@ttn-lw/components/form'
 
 import IntlHelmet from '@ttn-lw/lib/components/intl-helmet'
-import Message from '@ttn-lw/lib/components/message'
 
 import Yup from '@ttn-lw/lib/yup'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -34,20 +34,18 @@ import { hexToBase64 } from '@console/lib/bytes'
 
 const m = defineMessages({
   insertMode: 'Insert Mode',
-  insertModeDescription: 'Messages can either replace the downlink queue or append to it',
-  replace: 'Replace',
-  push: 'Push',
-  confirmation: 'Confirmation',
-  confirmed: 'Confirmed',
+  replace: 'Replace downlink queue',
+  push: 'Push to downlink queue (append)',
+  confirmedDownlink: 'Confirmed downlink',
   scheduleDownlink: 'Schedule downlink',
   downlinkSuccess: 'Downlink scheduled',
   payloadDescription: 'The desired payload bytes of the downlink message',
+  invalidSessionWarning:
+    'Downlinks can only be scheduled for end devices with a valid session. Please make sure your end device is properly connected to the network.',
 })
 
 const validationSchema = Yup.object({
-  _mode: Yup.string()
-    .oneOf(['replace', 'push'])
-    .required(sharedMessages.validateRequired),
+  _mode: Yup.string().oneOf(['replace', 'push']).required(sharedMessages.validateRequired),
   f_port: Yup.number()
     .min(1, Yup.passValues(sharedMessages.validateNumberGte))
     .max(223, Yup.passValues(sharedMessages.validateNumberLte))
@@ -60,7 +58,7 @@ const validationSchema = Yup.object({
   ),
 })
 
-const DownlinkForm = ({ appId, devId, downlinkQueue }) => {
+const DownlinkForm = ({ appId, devId, device, downlinkQueue, skipPayloadCrypto }) => {
   const [error, setError] = useState('')
   const handleSubmit = useCallback(
     async (vals, { setSubmitting, resetForm }) => {
@@ -89,31 +87,29 @@ const DownlinkForm = ({ appId, devId, downlinkQueue }) => {
     frm_payload: '',
   }
 
+  const validSession = device.session || device.pending_session
+  const payloadCryptoSkipped = device.skip_payload_crypto_override || skipPayloadCrypto
+  const deviceSimulationDisabled = !validSession || payloadCryptoSkipped
+
   return (
     <>
+      {payloadCryptoSkipped && (
+        <Notification content={sharedMessages.deviceSimulationDisabledWarning} warning small />
+      )}
+      {!validSession && <Notification content={m.invalidSessionWarning} warning small />}
       <IntlHelmet title={m.scheduleDownlink} />
       <Form
         error={error}
         onSubmit={handleSubmit}
         initialValues={initialValues}
         validationSchema={validationSchema}
+        disabled={deviceSimulationDisabled}
       >
-        <Message component="h4" content={m.scheduleDownlink} />
-        <Form.Field
-          name="_mode"
-          title={m.insertMode}
-          component={RadioButton.Group}
-          description={m.insertModeDescription}
-        >
+        <Form.SubTitle title={m.scheduleDownlink} />
+        <Form.Field name="_mode" title={m.insertMode} component={RadioButton.Group}>
           <RadioButton label={m.replace} value="replace" />
           <RadioButton label={m.push} value="push" />
         </Form.Field>
-        <Form.Field
-          title={m.confirmation}
-          label={m.confirmed}
-          name="confirmed"
-          component={Checkbox}
-        />
         <Form.Field
           title="FPort"
           name="f_port"
@@ -131,6 +127,7 @@ const DownlinkForm = ({ appId, devId, downlinkQueue }) => {
           type="byte"
           unbounded
         />
+        <Form.Field label={m.confirmedDownlink} name="confirmed" component={Checkbox} />
         <SubmitBar>
           <Form.Submit component={SubmitButton} message={m.scheduleDownlink} />
         </SubmitBar>
@@ -142,11 +139,13 @@ const DownlinkForm = ({ appId, devId, downlinkQueue }) => {
 DownlinkForm.propTypes = {
   appId: PropTypes.string.isRequired,
   devId: PropTypes.string.isRequired,
+  device: PropTypes.device.isRequired,
   downlinkQueue: PropTypes.shape({
     list: PropTypes.func.isRequired,
     push: PropTypes.func.isRequired,
     replace: PropTypes.func.isRequired,
   }).isRequired,
+  skipPayloadCrypto: PropTypes.bool.isRequired,
 }
 
 export default DownlinkForm

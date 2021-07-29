@@ -106,7 +106,7 @@ func TestAppendRecentDownlink(t *testing.T) {
 
 func TestGenerateDataDownlink(t *testing.T) {
 	const appIDString = "generate-data-downlink-test-app-id"
-	appID := ttnpb.ApplicationIdentifiers{ApplicationID: appIDString}
+	appID := ttnpb.ApplicationIdentifiers{ApplicationId: appIDString}
 	const devID = "generate-data-downlink-test-dev-id"
 
 	devAddr := types.DevAddr{0x42, 0xff, 0xff, 0xff}
@@ -155,11 +155,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -170,7 +170,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 					}},
 				},
 				Session:           ttnpb.NewPopulatedSession(test.Randy, false),
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Error: errNoDownlink,
@@ -180,14 +180,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACSettings: &ttnpb.MACSettings{
 					StatusCountPeriodicity: &pbtypes.UInt32Value{Value: 3},
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion:      ttnpb.MAC_V1_1,
+					LorawanVersion:      ttnpb.MAC_V1_1,
 					LastDevStatusFCntUp: 2,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
@@ -201,7 +201,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 				Session: &ttnpb.Session{
 					LastFCntUp: 4,
 				},
-				LoRaWANPHYVersion:       ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion:       ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:         band.EU_863_870,
 				LastDevStatusReceivedAt: TimePtr(time.Unix(42, 0)),
 			},
@@ -212,14 +212,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACSettings: &ttnpb.MACSettings{
 					StatusTimePeriodicity: DurationPtr(24 * time.Hour),
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -229,7 +229,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					}},
 				},
-				LoRaWANPHYVersion:       ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion:       ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:         band.EU_863_870,
 				LastDevStatusReceivedAt: TimePtr(time.Now()),
 				Session:                 ttnpb.NewPopulatedSession(test.Randy, false),
@@ -241,11 +241,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -261,6 +261,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 							},
 						},
 					}},
+					RecentDownlinks: []*ttnpb.DownlinkMessage{
+						MakeDataDownlink(DataDownlinkConfig{
+							DecodePayload: true,
+							MACVersion:    ttnpb.MAC_V1_1,
+						}),
+					},
 					RxWindowsAvailable: true,
 				},
 				Session: &ttnpb.Session{
@@ -275,7 +281,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -289,7 +295,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: true,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 						},
@@ -302,11 +308,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return assertions.New(t).So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						RecentUplinks: []*ttnpb.UplinkMessage{{
 							Payload: &ttnpb.Message{
 								MHDR: ttnpb.MHDR{
@@ -322,6 +328,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 								},
 							},
 						}},
+						RecentDownlinks: []*ttnpb.DownlinkMessage{
+							MakeDataDownlink(DataDownlinkConfig{
+								DecodePayload: true,
+								MACVersion:    ttnpb.MAC_V1_1,
+							}),
+						},
 						RxWindowsAvailable: true,
 					},
 					Session: &ttnpb.Session{
@@ -336,7 +348,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							},
 						},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -346,11 +358,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -380,7 +392,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -394,7 +406,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: false,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 						},
@@ -416,11 +428,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return assertions.New(t).So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						RecentUplinks: []*ttnpb.UplinkMessage{{
 							Payload: &ttnpb.Message{
 								MHDR: ttnpb.MHDR{
@@ -443,7 +455,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 						QueuedApplicationDownlinks: []*ttnpb.ApplicationDownlink{},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -453,11 +465,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -494,7 +506,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -508,7 +520,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: true,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 						},
@@ -531,11 +543,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return assertions.New(t).So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						RecentUplinks: []*ttnpb.UplinkMessage{{
 							Payload: &ttnpb.Message{
 								MHDR: ttnpb.MHDR{
@@ -565,7 +577,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 						QueuedApplicationDownlinks: []*ttnpb.ApplicationDownlink{},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -575,11 +587,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -608,7 +620,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -622,7 +634,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: false,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 						},
@@ -648,11 +660,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return a.So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						RecentUplinks: []*ttnpb.UplinkMessage{{
 							Payload: &ttnpb.Message{
 								MHDR: ttnpb.MHDR{
@@ -674,7 +686,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 						QueuedApplicationDownlinks: []*ttnpb.ApplicationDownlink{},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -684,11 +696,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -725,7 +737,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -739,7 +751,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: true,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 						},
@@ -766,11 +778,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return a.So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						RecentUplinks: []*ttnpb.UplinkMessage{{
 							Payload: &ttnpb.Message{
 								MHDR: ttnpb.MHDR{
@@ -800,7 +812,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 						QueuedApplicationDownlinks: []*ttnpb.ApplicationDownlink{},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -810,14 +822,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACSettings: &ttnpb.MACSettings{
 					StatusCountPeriodicity: &pbtypes.UInt32Value{Value: 3},
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion:      ttnpb.MAC_V1_1,
+					LorawanVersion:      ttnpb.MAC_V1_1,
 					LastDevStatusFCntUp: 4,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
@@ -827,6 +839,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 							Payload: &ttnpb.Message_MACPayload{MACPayload: &ttnpb.MACPayload{}},
 						},
 					}},
+					RecentDownlinks: []*ttnpb.DownlinkMessage{
+						MakeDataDownlink(DataDownlinkConfig{
+							DecodePayload: true,
+							MACVersion:    ttnpb.MAC_V1_1,
+						}),
+					},
 				},
 				Session: &ttnpb.Session{
 					DevAddr:       devAddr,
@@ -841,7 +859,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -855,11 +873,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: false,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 							FOpts: MustEncryptDownlink(nwkSEncKey, devAddr, 42, true, MakeDownlinkMACBuffer(
-								LoRaWANBands[band.EU_863_870][ttnpb.PHY_V1_1_REV_B],
+								LoRaWANBands[band.EU_863_870][ttnpb.RP001_V1_1_REV_B],
 								ttnpb.CID_DEV_STATUS,
 							)...),
 						},
@@ -875,14 +893,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return a.So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACSettings: &ttnpb.MACSettings{
 						StatusCountPeriodicity: &pbtypes.UInt32Value{Value: 3},
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion:      ttnpb.MAC_V1_1,
+						LorawanVersion:      ttnpb.MAC_V1_1,
 						LastDevStatusFCntUp: 4,
 						PendingRequests: []*ttnpb.MACCommand{
 							ttnpb.CID_DEV_STATUS.MACCommand(),
@@ -895,6 +913,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 								Payload: &ttnpb.Message_MACPayload{MACPayload: &ttnpb.MACPayload{}},
 							},
 						}},
+						RecentDownlinks: []*ttnpb.DownlinkMessage{
+							MakeDataDownlink(DataDownlinkConfig{
+								DecodePayload: true,
+								MACVersion:    ttnpb.MAC_V1_1,
+							}),
+						},
 					},
 					Session: &ttnpb.Session{
 						DevAddr:       devAddr,
@@ -909,7 +933,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							},
 						},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -919,14 +943,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: appID,
-					DeviceID:               devID,
+					DeviceId:               devID,
 					DevAddr:                &devAddr,
 				},
 				MACSettings: &ttnpb.MACSettings{
 					StatusTimePeriodicity: DurationPtr(time.Nanosecond),
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					RecentUplinks: []*ttnpb.UplinkMessage{{
 						Payload: &ttnpb.Message{
 							MHDR: ttnpb.MHDR{
@@ -935,6 +959,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 							Payload: &ttnpb.Message_MACPayload{MACPayload: &ttnpb.MACPayload{}},
 						},
 					}},
+					RecentDownlinks: []*ttnpb.DownlinkMessage{
+						MakeDataDownlink(DataDownlinkConfig{
+							DecodePayload: true,
+							MACVersion:    ttnpb.MAC_V1_1,
+						}),
+					},
 				},
 				Session: &ttnpb.Session{
 					DevAddr:       devAddr,
@@ -948,7 +978,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 						},
 					},
 				},
-				LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 				FrequencyPlanID:   band.EU_863_870,
 			},
 			Payload: &ttnpb.Message{
@@ -962,11 +992,11 @@ func TestGenerateDataDownlink(t *testing.T) {
 							DevAddr: devAddr,
 							FCtrl: ttnpb.FCtrl{
 								Ack: false,
-								ADR: true,
+								Adr: true,
 							},
 							FCnt: 42,
 							FOpts: MustEncryptDownlink(nwkSEncKey, devAddr, 42, true, MakeDownlinkMACBuffer(
-								LoRaWANBands[band.EU_863_870][ttnpb.PHY_V1_1_REV_B],
+								LoRaWANBands[band.EU_863_870][ttnpb.RP001_V1_1_REV_B],
 								ttnpb.CID_DEV_STATUS,
 							)...),
 						},
@@ -982,14 +1012,14 @@ func TestGenerateDataDownlink(t *testing.T) {
 				return a.So(dev, should.Resemble, &ttnpb.EndDevice{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: appID,
-						DeviceID:               devID,
+						DeviceId:               devID,
 						DevAddr:                &devAddr,
 					},
 					MACSettings: &ttnpb.MACSettings{
 						StatusTimePeriodicity: DurationPtr(time.Nanosecond),
 					},
 					MACState: &ttnpb.MACState{
-						LoRaWANVersion: ttnpb.MAC_V1_1,
+						LorawanVersion: ttnpb.MAC_V1_1,
 						PendingRequests: []*ttnpb.MACCommand{
 							ttnpb.CID_DEV_STATUS.MACCommand(),
 						},
@@ -1001,6 +1031,12 @@ func TestGenerateDataDownlink(t *testing.T) {
 								Payload: &ttnpb.Message_MACPayload{MACPayload: &ttnpb.MACPayload{}},
 							},
 						}},
+						RecentDownlinks: []*ttnpb.DownlinkMessage{
+							MakeDataDownlink(DataDownlinkConfig{
+								DecodePayload: true,
+								MACVersion:    ttnpb.MAC_V1_1,
+							}),
+						},
 					},
 					Session: &ttnpb.Session{
 						DevAddr:       devAddr,
@@ -1014,7 +1050,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 							},
 						},
 					},
-					LoRaWANPHYVersion: ttnpb.PHY_V1_1_REV_B,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
 					FrequencyPlanID:   band.EU_863_870,
 				})
 			},
@@ -1067,7 +1103,7 @@ func TestGenerateDataDownlink(t *testing.T) {
 					return
 				}
 
-				b := encodeMessage(tc.Payload, dev.MACState.LoRaWANVersion, tc.ConfFCnt)
+				b := encodeMessage(tc.Payload, dev.MACState.LorawanVersion, tc.ConfFCnt)
 				a.So(genDown.RawPayload, should.Resemble, b)
 				pld := CopyMessage(tc.Payload)
 				pld.MIC = b[len(b)-4:]

@@ -24,6 +24,20 @@ import (
 type GatewayConnectionStatsRegistry interface {
 	// Get returns connection stats for a gateway.
 	Get(ctx context.Context, ids ttnpb.GatewayIdentifiers) (*ttnpb.GatewayConnectionStats, error)
-	// Set sets or clears the connection stats for a gateway.
-	Set(ctx context.Context, ids ttnpb.GatewayIdentifiers, stats *ttnpb.GatewayConnectionStats) error
+	// Set sets, updates or clears the connection stats for a gateway. Only fields specified in the field mask paths are set.
+	Set(ctx context.Context, ids ttnpb.GatewayIdentifiers, stats *ttnpb.GatewayConnectionStats, paths []string) error
+}
+
+// EntityRegistry abstracts the Identity server gateway functions.
+type EntityRegistry interface {
+	// AssertGatewayRights checks whether the gateway authentication (provied in the context) contains the required rights.
+	AssertGatewayRights(ctx context.Context, ids ttnpb.GatewayIdentifiers, required ...ttnpb.Right) error
+	// Get the identifiers of the gateway that has the given EUI registered.
+	GetIdentifiersForEUI(ctx context.Context, in *ttnpb.GetGatewayIdentifiersForEUIRequest) (*ttnpb.GatewayIdentifiers, error)
+	// Get the gateway with the given identifiers, selecting the fields specified.
+	Get(ctx context.Context, in *ttnpb.GetGatewayRequest) (*ttnpb.Gateway, error)
+	// UpdateAntennas updates the gateway antennas.
+	UpdateAntennas(ctx context.Context, ids ttnpb.GatewayIdentifiers, antennas []ttnpb.GatewayAntenna) error
+	// ValidateGatewayID validates the ID of the gateway.
+	ValidateGatewayID(ctx context.Context, ids ttnpb.GatewayIdentifiers) error
 }

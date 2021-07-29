@@ -6,13 +6,6 @@ package ttnpb
 import (
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-	time "time"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -23,6 +16,12 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strconv "strconv"
+	strings "strings"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -38,21 +37,40 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type AsConfiguration_PubSub_Providers_Status int32
+
+const (
+	// No restrictions are in place.
+	AsConfiguration_PubSub_Providers_ENABLED AsConfiguration_PubSub_Providers_Status = 0
+	// Warnings are being emitted that the provider will be deprecated in the future.
+	AsConfiguration_PubSub_Providers_WARNING AsConfiguration_PubSub_Providers_Status = 1
+	// New integrations cannot be set up, and old ones do not start.
+	AsConfiguration_PubSub_Providers_DISABLED AsConfiguration_PubSub_Providers_Status = 2
+)
+
+var AsConfiguration_PubSub_Providers_Status_name = map[int32]string{
+	0: "ENABLED",
+	1: "WARNING",
+	2: "DISABLED",
+}
+
+var AsConfiguration_PubSub_Providers_Status_value = map[string]int32{
+	"ENABLED":  0,
+	"WARNING":  1,
+	"DISABLED": 2,
+}
+
+func (AsConfiguration_PubSub_Providers_Status) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{4, 0, 0, 0}
+}
+
 type ApplicationLink struct {
-	// The address of the external Network Server where to link to.
-	// The typical format of the address is "host:port". If the port is omitted,
-	// the normal port inference (with DNS lookup, otherwise defaults) is used.
-	// Leave empty when linking to a cluster Network Server.
-	NetworkServerAddress string `protobuf:"bytes,1,opt,name=network_server_address,json=networkServerAddress,proto3" json:"network_server_address,omitempty"`
-	// The API key to use to link the Application Server to Network Server.
-	// This API key needs to have RIGHT_APPLICATION_LINK.
-	APIKey string `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 	// Default message payload formatters to use when there are no formatters
 	// defined on the end device level.
 	DefaultFormatters *MessagePayloadFormatters `protobuf:"bytes,3,opt,name=default_formatters,json=defaultFormatters,proto3" json:"default_formatters,omitempty"`
 	// Enable TLS for linking to the external Network Server.
 	// For cluster-local Network Servers, the cluster's TLS setting is used.
-	TLS bool `protobuf:"varint,4,opt,name=tls,proto3" json:"tls,omitempty"`
+	Tls bool `protobuf:"varint,4,opt,name=tls,proto3" json:"tls,omitempty"`
 	// Skip decryption of uplink payloads and encryption of downlink payloads.
 	// Leave empty for the using the Application Server's default setting.
 	SkipPayloadCrypto    *types.BoolValue `protobuf:"bytes,5,opt,name=skip_payload_crypto,json=skipPayloadCrypto,proto3" json:"skip_payload_crypto,omitempty"`
@@ -66,45 +84,22 @@ func (*ApplicationLink) Descriptor() ([]byte, []int) {
 	return fileDescriptor_df9d75a19dc066e1, []int{0}
 }
 func (m *ApplicationLink) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ApplicationLink.Unmarshal(m, b)
 }
 func (m *ApplicationLink) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ApplicationLink.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ApplicationLink.Marshal(b, m, deterministic)
 }
 func (m *ApplicationLink) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ApplicationLink.Merge(m, src)
 }
 func (m *ApplicationLink) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ApplicationLink.Size(m)
 }
 func (m *ApplicationLink) XXX_DiscardUnknown() {
 	xxx_messageInfo_ApplicationLink.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ApplicationLink proto.InternalMessageInfo
-
-func (m *ApplicationLink) GetNetworkServerAddress() string {
-	if m != nil {
-		return m.NetworkServerAddress
-	}
-	return ""
-}
-
-func (m *ApplicationLink) GetAPIKey() string {
-	if m != nil {
-		return m.APIKey
-	}
-	return ""
-}
 
 func (m *ApplicationLink) GetDefaultFormatters() *MessagePayloadFormatters {
 	if m != nil {
@@ -113,9 +108,9 @@ func (m *ApplicationLink) GetDefaultFormatters() *MessagePayloadFormatters {
 	return nil
 }
 
-func (m *ApplicationLink) GetTLS() bool {
+func (m *ApplicationLink) GetTls() bool {
 	if m != nil {
-		return m.TLS
+		return m.Tls
 	}
 	return false
 }
@@ -129,9 +124,9 @@ func (m *ApplicationLink) GetSkipPayloadCrypto() *types.BoolValue {
 
 type GetApplicationLinkRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
-	FieldMask              types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
-	XXX_sizecache          int32           `json:"-"`
+	FieldMask              *types.FieldMask `protobuf:"bytes,2,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}         `json:"-"`
+	XXX_sizecache          int32            `json:"-"`
 }
 
 func (m *GetApplicationLinkRequest) Reset()      { *m = GetApplicationLinkRequest{} }
@@ -140,25 +135,16 @@ func (*GetApplicationLinkRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_df9d75a19dc066e1, []int{1}
 }
 func (m *GetApplicationLinkRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GetApplicationLinkRequest.Unmarshal(m, b)
 }
 func (m *GetApplicationLinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetApplicationLinkRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GetApplicationLinkRequest.Marshal(b, m, deterministic)
 }
 func (m *GetApplicationLinkRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetApplicationLinkRequest.Merge(m, src)
 }
 func (m *GetApplicationLinkRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GetApplicationLinkRequest.Size(m)
 }
 func (m *GetApplicationLinkRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetApplicationLinkRequest.DiscardUnknown(m)
@@ -166,19 +152,19 @@ func (m *GetApplicationLinkRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetApplicationLinkRequest proto.InternalMessageInfo
 
-func (m *GetApplicationLinkRequest) GetFieldMask() types.FieldMask {
+func (m *GetApplicationLinkRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 type SetApplicationLinkRequest struct {
 	ApplicationIdentifiers `protobuf:"bytes,1,opt,name=application_ids,json=applicationIds,proto3,embedded=application_ids" json:"application_ids"`
 	ApplicationLink        `protobuf:"bytes,2,opt,name=link,proto3,embedded=link" json:"link"`
-	FieldMask              types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask"`
-	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
-	XXX_sizecache          int32           `json:"-"`
+	FieldMask              *types.FieldMask `protobuf:"bytes,3,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}         `json:"-"`
+	XXX_sizecache          int32            `json:"-"`
 }
 
 func (m *SetApplicationLinkRequest) Reset()      { *m = SetApplicationLinkRequest{} }
@@ -187,25 +173,16 @@ func (*SetApplicationLinkRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_df9d75a19dc066e1, []int{2}
 }
 func (m *SetApplicationLinkRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_SetApplicationLinkRequest.Unmarshal(m, b)
 }
 func (m *SetApplicationLinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SetApplicationLinkRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_SetApplicationLinkRequest.Marshal(b, m, deterministic)
 }
 func (m *SetApplicationLinkRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SetApplicationLinkRequest.Merge(m, src)
 }
 func (m *SetApplicationLinkRequest) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_SetApplicationLinkRequest.Size(m)
 }
 func (m *SetApplicationLinkRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_SetApplicationLinkRequest.DiscardUnknown(m)
@@ -213,11 +190,11 @@ func (m *SetApplicationLinkRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetApplicationLinkRequest proto.InternalMessageInfo
 
-func (m *SetApplicationLinkRequest) GetFieldMask() types.FieldMask {
+func (m *SetApplicationLinkRequest) GetFieldMask() *types.FieldMask {
 	if m != nil {
 		return m.FieldMask
 	}
-	return types.FieldMask{}
+	return nil
 }
 
 // Link stats as monitored by the Application Server.
@@ -243,25 +220,16 @@ func (*ApplicationLinkStats) Descriptor() ([]byte, []int) {
 	return fileDescriptor_df9d75a19dc066e1, []int{3}
 }
 func (m *ApplicationLinkStats) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ApplicationLinkStats.Unmarshal(m, b)
 }
 func (m *ApplicationLinkStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ApplicationLinkStats.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ApplicationLinkStats.Marshal(b, m, deterministic)
 }
 func (m *ApplicationLinkStats) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ApplicationLinkStats.Merge(m, src)
 }
 func (m *ApplicationLinkStats) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ApplicationLinkStats.Size(m)
 }
 func (m *ApplicationLinkStats) XXX_DiscardUnknown() {
 	xxx_messageInfo_ApplicationLinkStats.DiscardUnknown(m)
@@ -311,7 +279,539 @@ func (m *ApplicationLinkStats) GetDownlinkCount() uint64 {
 	return 0
 }
 
+// Application Server configuration.
+type AsConfiguration struct {
+	Pubsub               *AsConfiguration_PubSub `protobuf:"bytes,1,opt,name=pubsub,proto3" json:"pubsub,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
+	XXX_sizecache        int32                   `json:"-"`
+}
+
+func (m *AsConfiguration) Reset()      { *m = AsConfiguration{} }
+func (*AsConfiguration) ProtoMessage() {}
+func (*AsConfiguration) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{4}
+}
+func (m *AsConfiguration) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AsConfiguration.Unmarshal(m, b)
+}
+func (m *AsConfiguration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AsConfiguration.Marshal(b, m, deterministic)
+}
+func (m *AsConfiguration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AsConfiguration.Merge(m, src)
+}
+func (m *AsConfiguration) XXX_Size() int {
+	return xxx_messageInfo_AsConfiguration.Size(m)
+}
+func (m *AsConfiguration) XXX_DiscardUnknown() {
+	xxx_messageInfo_AsConfiguration.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AsConfiguration proto.InternalMessageInfo
+
+func (m *AsConfiguration) GetPubsub() *AsConfiguration_PubSub {
+	if m != nil {
+		return m.Pubsub
+	}
+	return nil
+}
+
+type AsConfiguration_PubSub struct {
+	Providers            *AsConfiguration_PubSub_Providers `protobuf:"bytes,1,opt,name=providers,proto3" json:"providers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                          `json:"-"`
+	XXX_sizecache        int32                             `json:"-"`
+}
+
+func (m *AsConfiguration_PubSub) Reset()      { *m = AsConfiguration_PubSub{} }
+func (*AsConfiguration_PubSub) ProtoMessage() {}
+func (*AsConfiguration_PubSub) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{4, 0}
+}
+func (m *AsConfiguration_PubSub) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AsConfiguration_PubSub.Unmarshal(m, b)
+}
+func (m *AsConfiguration_PubSub) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AsConfiguration_PubSub.Marshal(b, m, deterministic)
+}
+func (m *AsConfiguration_PubSub) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AsConfiguration_PubSub.Merge(m, src)
+}
+func (m *AsConfiguration_PubSub) XXX_Size() int {
+	return xxx_messageInfo_AsConfiguration_PubSub.Size(m)
+}
+func (m *AsConfiguration_PubSub) XXX_DiscardUnknown() {
+	xxx_messageInfo_AsConfiguration_PubSub.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AsConfiguration_PubSub proto.InternalMessageInfo
+
+func (m *AsConfiguration_PubSub) GetProviders() *AsConfiguration_PubSub_Providers {
+	if m != nil {
+		return m.Providers
+	}
+	return nil
+}
+
+type AsConfiguration_PubSub_Providers struct {
+	Mqtt                 AsConfiguration_PubSub_Providers_Status `protobuf:"varint,1,opt,name=mqtt,proto3,enum=ttn.lorawan.v3.AsConfiguration_PubSub_Providers_Status" json:"mqtt,omitempty"`
+	Nats                 AsConfiguration_PubSub_Providers_Status `protobuf:"varint,2,opt,name=nats,proto3,enum=ttn.lorawan.v3.AsConfiguration_PubSub_Providers_Status" json:"nats,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                `json:"-"`
+	XXX_sizecache        int32                                   `json:"-"`
+}
+
+func (m *AsConfiguration_PubSub_Providers) Reset()      { *m = AsConfiguration_PubSub_Providers{} }
+func (*AsConfiguration_PubSub_Providers) ProtoMessage() {}
+func (*AsConfiguration_PubSub_Providers) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{4, 0, 0}
+}
+func (m *AsConfiguration_PubSub_Providers) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AsConfiguration_PubSub_Providers.Unmarshal(m, b)
+}
+func (m *AsConfiguration_PubSub_Providers) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AsConfiguration_PubSub_Providers.Marshal(b, m, deterministic)
+}
+func (m *AsConfiguration_PubSub_Providers) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AsConfiguration_PubSub_Providers.Merge(m, src)
+}
+func (m *AsConfiguration_PubSub_Providers) XXX_Size() int {
+	return xxx_messageInfo_AsConfiguration_PubSub_Providers.Size(m)
+}
+func (m *AsConfiguration_PubSub_Providers) XXX_DiscardUnknown() {
+	xxx_messageInfo_AsConfiguration_PubSub_Providers.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AsConfiguration_PubSub_Providers proto.InternalMessageInfo
+
+func (m *AsConfiguration_PubSub_Providers) GetMqtt() AsConfiguration_PubSub_Providers_Status {
+	if m != nil {
+		return m.Mqtt
+	}
+	return AsConfiguration_PubSub_Providers_ENABLED
+}
+
+func (m *AsConfiguration_PubSub_Providers) GetNats() AsConfiguration_PubSub_Providers_Status {
+	if m != nil {
+		return m.Nats
+	}
+	return AsConfiguration_PubSub_Providers_ENABLED
+}
+
+type GetAsConfigurationRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetAsConfigurationRequest) Reset()      { *m = GetAsConfigurationRequest{} }
+func (*GetAsConfigurationRequest) ProtoMessage() {}
+func (*GetAsConfigurationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{5}
+}
+func (m *GetAsConfigurationRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetAsConfigurationRequest.Unmarshal(m, b)
+}
+func (m *GetAsConfigurationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetAsConfigurationRequest.Marshal(b, m, deterministic)
+}
+func (m *GetAsConfigurationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAsConfigurationRequest.Merge(m, src)
+}
+func (m *GetAsConfigurationRequest) XXX_Size() int {
+	return xxx_messageInfo_GetAsConfigurationRequest.Size(m)
+}
+func (m *GetAsConfigurationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAsConfigurationRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAsConfigurationRequest proto.InternalMessageInfo
+
+type GetAsConfigurationResponse struct {
+	Configuration        *AsConfiguration `protobuf:"bytes,1,opt,name=configuration,proto3" json:"configuration,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *GetAsConfigurationResponse) Reset()      { *m = GetAsConfigurationResponse{} }
+func (*GetAsConfigurationResponse) ProtoMessage() {}
+func (*GetAsConfigurationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{6}
+}
+func (m *GetAsConfigurationResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetAsConfigurationResponse.Unmarshal(m, b)
+}
+func (m *GetAsConfigurationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetAsConfigurationResponse.Marshal(b, m, deterministic)
+}
+func (m *GetAsConfigurationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAsConfigurationResponse.Merge(m, src)
+}
+func (m *GetAsConfigurationResponse) XXX_Size() int {
+	return xxx_messageInfo_GetAsConfigurationResponse.Size(m)
+}
+func (m *GetAsConfigurationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAsConfigurationResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAsConfigurationResponse proto.InternalMessageInfo
+
+func (m *GetAsConfigurationResponse) GetConfiguration() *AsConfiguration {
+	if m != nil {
+		return m.Configuration
+	}
+	return nil
+}
+
+// Container for multiple Application uplink messages.
+type NsAsHandleUplinkRequest struct {
+	ApplicationUps       []*ApplicationUp `protobuf:"bytes,1,rep,name=application_ups,json=applicationUps,proto3" json:"application_ups,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *NsAsHandleUplinkRequest) Reset()      { *m = NsAsHandleUplinkRequest{} }
+func (*NsAsHandleUplinkRequest) ProtoMessage() {}
+func (*NsAsHandleUplinkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{7}
+}
+func (m *NsAsHandleUplinkRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NsAsHandleUplinkRequest.Unmarshal(m, b)
+}
+func (m *NsAsHandleUplinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NsAsHandleUplinkRequest.Marshal(b, m, deterministic)
+}
+func (m *NsAsHandleUplinkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NsAsHandleUplinkRequest.Merge(m, src)
+}
+func (m *NsAsHandleUplinkRequest) XXX_Size() int {
+	return xxx_messageInfo_NsAsHandleUplinkRequest.Size(m)
+}
+func (m *NsAsHandleUplinkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_NsAsHandleUplinkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NsAsHandleUplinkRequest proto.InternalMessageInfo
+
+func (m *NsAsHandleUplinkRequest) GetApplicationUps() []*ApplicationUp {
+	if m != nil {
+		return m.ApplicationUps
+	}
+	return nil
+}
+
+type EncodeDownlinkRequest struct {
+	EndDeviceIds         *EndDeviceIdentifiers        `protobuf:"bytes,1,opt,name=end_device_ids,json=endDeviceIds,proto3" json:"end_device_ids,omitempty"`
+	VersionIds           *EndDeviceVersionIdentifiers `protobuf:"bytes,2,opt,name=version_ids,json=versionIds,proto3" json:"version_ids,omitempty"`
+	Downlink             *ApplicationDownlink         `protobuf:"bytes,3,opt,name=downlink,proto3" json:"downlink,omitempty"`
+	Formatter            PayloadFormatter             `protobuf:"varint,4,opt,name=formatter,proto3,enum=ttn.lorawan.v3.PayloadFormatter" json:"formatter,omitempty"`
+	Parameter            string                       `protobuf:"bytes,5,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
+	XXX_sizecache        int32                        `json:"-"`
+}
+
+func (m *EncodeDownlinkRequest) Reset()      { *m = EncodeDownlinkRequest{} }
+func (*EncodeDownlinkRequest) ProtoMessage() {}
+func (*EncodeDownlinkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{8}
+}
+func (m *EncodeDownlinkRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EncodeDownlinkRequest.Unmarshal(m, b)
+}
+func (m *EncodeDownlinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EncodeDownlinkRequest.Marshal(b, m, deterministic)
+}
+func (m *EncodeDownlinkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EncodeDownlinkRequest.Merge(m, src)
+}
+func (m *EncodeDownlinkRequest) XXX_Size() int {
+	return xxx_messageInfo_EncodeDownlinkRequest.Size(m)
+}
+func (m *EncodeDownlinkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_EncodeDownlinkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EncodeDownlinkRequest proto.InternalMessageInfo
+
+func (m *EncodeDownlinkRequest) GetEndDeviceIds() *EndDeviceIdentifiers {
+	if m != nil {
+		return m.EndDeviceIds
+	}
+	return nil
+}
+
+func (m *EncodeDownlinkRequest) GetVersionIds() *EndDeviceVersionIdentifiers {
+	if m != nil {
+		return m.VersionIds
+	}
+	return nil
+}
+
+func (m *EncodeDownlinkRequest) GetDownlink() *ApplicationDownlink {
+	if m != nil {
+		return m.Downlink
+	}
+	return nil
+}
+
+func (m *EncodeDownlinkRequest) GetFormatter() PayloadFormatter {
+	if m != nil {
+		return m.Formatter
+	}
+	return PayloadFormatter_FORMATTER_NONE
+}
+
+func (m *EncodeDownlinkRequest) GetParameter() string {
+	if m != nil {
+		return m.Parameter
+	}
+	return ""
+}
+
+type EncodeDownlinkResponse struct {
+	Downlink             *ApplicationDownlink `protobuf:"bytes,1,opt,name=downlink,proto3" json:"downlink,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *EncodeDownlinkResponse) Reset()      { *m = EncodeDownlinkResponse{} }
+func (*EncodeDownlinkResponse) ProtoMessage() {}
+func (*EncodeDownlinkResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{9}
+}
+func (m *EncodeDownlinkResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EncodeDownlinkResponse.Unmarshal(m, b)
+}
+func (m *EncodeDownlinkResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EncodeDownlinkResponse.Marshal(b, m, deterministic)
+}
+func (m *EncodeDownlinkResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EncodeDownlinkResponse.Merge(m, src)
+}
+func (m *EncodeDownlinkResponse) XXX_Size() int {
+	return xxx_messageInfo_EncodeDownlinkResponse.Size(m)
+}
+func (m *EncodeDownlinkResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EncodeDownlinkResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EncodeDownlinkResponse proto.InternalMessageInfo
+
+func (m *EncodeDownlinkResponse) GetDownlink() *ApplicationDownlink {
+	if m != nil {
+		return m.Downlink
+	}
+	return nil
+}
+
+type DecodeUplinkRequest struct {
+	EndDeviceIds         *EndDeviceIdentifiers        `protobuf:"bytes,1,opt,name=end_device_ids,json=endDeviceIds,proto3" json:"end_device_ids,omitempty"`
+	VersionIds           *EndDeviceVersionIdentifiers `protobuf:"bytes,2,opt,name=version_ids,json=versionIds,proto3" json:"version_ids,omitempty"`
+	Uplink               *ApplicationUplink           `protobuf:"bytes,3,opt,name=uplink,proto3" json:"uplink,omitempty"`
+	Formatter            PayloadFormatter             `protobuf:"varint,4,opt,name=formatter,proto3,enum=ttn.lorawan.v3.PayloadFormatter" json:"formatter,omitempty"`
+	Parameter            string                       `protobuf:"bytes,5,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
+	XXX_sizecache        int32                        `json:"-"`
+}
+
+func (m *DecodeUplinkRequest) Reset()      { *m = DecodeUplinkRequest{} }
+func (*DecodeUplinkRequest) ProtoMessage() {}
+func (*DecodeUplinkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{10}
+}
+func (m *DecodeUplinkRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DecodeUplinkRequest.Unmarshal(m, b)
+}
+func (m *DecodeUplinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DecodeUplinkRequest.Marshal(b, m, deterministic)
+}
+func (m *DecodeUplinkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecodeUplinkRequest.Merge(m, src)
+}
+func (m *DecodeUplinkRequest) XXX_Size() int {
+	return xxx_messageInfo_DecodeUplinkRequest.Size(m)
+}
+func (m *DecodeUplinkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DecodeUplinkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DecodeUplinkRequest proto.InternalMessageInfo
+
+func (m *DecodeUplinkRequest) GetEndDeviceIds() *EndDeviceIdentifiers {
+	if m != nil {
+		return m.EndDeviceIds
+	}
+	return nil
+}
+
+func (m *DecodeUplinkRequest) GetVersionIds() *EndDeviceVersionIdentifiers {
+	if m != nil {
+		return m.VersionIds
+	}
+	return nil
+}
+
+func (m *DecodeUplinkRequest) GetUplink() *ApplicationUplink {
+	if m != nil {
+		return m.Uplink
+	}
+	return nil
+}
+
+func (m *DecodeUplinkRequest) GetFormatter() PayloadFormatter {
+	if m != nil {
+		return m.Formatter
+	}
+	return PayloadFormatter_FORMATTER_NONE
+}
+
+func (m *DecodeUplinkRequest) GetParameter() string {
+	if m != nil {
+		return m.Parameter
+	}
+	return ""
+}
+
+type DecodeUplinkResponse struct {
+	Uplink               *ApplicationUplink `protobuf:"bytes,1,opt,name=uplink,proto3" json:"uplink,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *DecodeUplinkResponse) Reset()      { *m = DecodeUplinkResponse{} }
+func (*DecodeUplinkResponse) ProtoMessage() {}
+func (*DecodeUplinkResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{11}
+}
+func (m *DecodeUplinkResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DecodeUplinkResponse.Unmarshal(m, b)
+}
+func (m *DecodeUplinkResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DecodeUplinkResponse.Marshal(b, m, deterministic)
+}
+func (m *DecodeUplinkResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecodeUplinkResponse.Merge(m, src)
+}
+func (m *DecodeUplinkResponse) XXX_Size() int {
+	return xxx_messageInfo_DecodeUplinkResponse.Size(m)
+}
+func (m *DecodeUplinkResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DecodeUplinkResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DecodeUplinkResponse proto.InternalMessageInfo
+
+func (m *DecodeUplinkResponse) GetUplink() *ApplicationUplink {
+	if m != nil {
+		return m.Uplink
+	}
+	return nil
+}
+
+type DecodeDownlinkRequest struct {
+	EndDeviceIds         *EndDeviceIdentifiers        `protobuf:"bytes,1,opt,name=end_device_ids,json=endDeviceIds,proto3" json:"end_device_ids,omitempty"`
+	VersionIds           *EndDeviceVersionIdentifiers `protobuf:"bytes,2,opt,name=version_ids,json=versionIds,proto3" json:"version_ids,omitempty"`
+	Downlink             *ApplicationDownlink         `protobuf:"bytes,3,opt,name=downlink,proto3" json:"downlink,omitempty"`
+	Formatter            PayloadFormatter             `protobuf:"varint,4,opt,name=formatter,proto3,enum=ttn.lorawan.v3.PayloadFormatter" json:"formatter,omitempty"`
+	Parameter            string                       `protobuf:"bytes,5,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
+	XXX_sizecache        int32                        `json:"-"`
+}
+
+func (m *DecodeDownlinkRequest) Reset()      { *m = DecodeDownlinkRequest{} }
+func (*DecodeDownlinkRequest) ProtoMessage() {}
+func (*DecodeDownlinkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{12}
+}
+func (m *DecodeDownlinkRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DecodeDownlinkRequest.Unmarshal(m, b)
+}
+func (m *DecodeDownlinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DecodeDownlinkRequest.Marshal(b, m, deterministic)
+}
+func (m *DecodeDownlinkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecodeDownlinkRequest.Merge(m, src)
+}
+func (m *DecodeDownlinkRequest) XXX_Size() int {
+	return xxx_messageInfo_DecodeDownlinkRequest.Size(m)
+}
+func (m *DecodeDownlinkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DecodeDownlinkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DecodeDownlinkRequest proto.InternalMessageInfo
+
+func (m *DecodeDownlinkRequest) GetEndDeviceIds() *EndDeviceIdentifiers {
+	if m != nil {
+		return m.EndDeviceIds
+	}
+	return nil
+}
+
+func (m *DecodeDownlinkRequest) GetVersionIds() *EndDeviceVersionIdentifiers {
+	if m != nil {
+		return m.VersionIds
+	}
+	return nil
+}
+
+func (m *DecodeDownlinkRequest) GetDownlink() *ApplicationDownlink {
+	if m != nil {
+		return m.Downlink
+	}
+	return nil
+}
+
+func (m *DecodeDownlinkRequest) GetFormatter() PayloadFormatter {
+	if m != nil {
+		return m.Formatter
+	}
+	return PayloadFormatter_FORMATTER_NONE
+}
+
+func (m *DecodeDownlinkRequest) GetParameter() string {
+	if m != nil {
+		return m.Parameter
+	}
+	return ""
+}
+
+type DecodeDownlinkResponse struct {
+	Downlink             *ApplicationDownlink `protobuf:"bytes,1,opt,name=downlink,proto3" json:"downlink,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *DecodeDownlinkResponse) Reset()      { *m = DecodeDownlinkResponse{} }
+func (*DecodeDownlinkResponse) ProtoMessage() {}
+func (*DecodeDownlinkResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df9d75a19dc066e1, []int{13}
+}
+func (m *DecodeDownlinkResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DecodeDownlinkResponse.Unmarshal(m, b)
+}
+func (m *DecodeDownlinkResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DecodeDownlinkResponse.Marshal(b, m, deterministic)
+}
+func (m *DecodeDownlinkResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecodeDownlinkResponse.Merge(m, src)
+}
+func (m *DecodeDownlinkResponse) XXX_Size() int {
+	return xxx_messageInfo_DecodeDownlinkResponse.Size(m)
+}
+func (m *DecodeDownlinkResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DecodeDownlinkResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DecodeDownlinkResponse proto.InternalMessageInfo
+
+func (m *DecodeDownlinkResponse) GetDownlink() *ApplicationDownlink {
+	if m != nil {
+		return m.Downlink
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterEnum("ttn.lorawan.v3.AsConfiguration_PubSub_Providers_Status", AsConfiguration_PubSub_Providers_Status_name, AsConfiguration_PubSub_Providers_Status_value)
+	golang_proto.RegisterEnum("ttn.lorawan.v3.AsConfiguration_PubSub_Providers_Status", AsConfiguration_PubSub_Providers_Status_name, AsConfiguration_PubSub_Providers_Status_value)
 	proto.RegisterType((*ApplicationLink)(nil), "ttn.lorawan.v3.ApplicationLink")
 	golang_proto.RegisterType((*ApplicationLink)(nil), "ttn.lorawan.v3.ApplicationLink")
 	proto.RegisterType((*GetApplicationLinkRequest)(nil), "ttn.lorawan.v3.GetApplicationLinkRequest")
@@ -320,6 +820,30 @@ func init() {
 	golang_proto.RegisterType((*SetApplicationLinkRequest)(nil), "ttn.lorawan.v3.SetApplicationLinkRequest")
 	proto.RegisterType((*ApplicationLinkStats)(nil), "ttn.lorawan.v3.ApplicationLinkStats")
 	golang_proto.RegisterType((*ApplicationLinkStats)(nil), "ttn.lorawan.v3.ApplicationLinkStats")
+	proto.RegisterType((*AsConfiguration)(nil), "ttn.lorawan.v3.AsConfiguration")
+	golang_proto.RegisterType((*AsConfiguration)(nil), "ttn.lorawan.v3.AsConfiguration")
+	proto.RegisterType((*AsConfiguration_PubSub)(nil), "ttn.lorawan.v3.AsConfiguration.PubSub")
+	golang_proto.RegisterType((*AsConfiguration_PubSub)(nil), "ttn.lorawan.v3.AsConfiguration.PubSub")
+	proto.RegisterType((*AsConfiguration_PubSub_Providers)(nil), "ttn.lorawan.v3.AsConfiguration.PubSub.Providers")
+	golang_proto.RegisterType((*AsConfiguration_PubSub_Providers)(nil), "ttn.lorawan.v3.AsConfiguration.PubSub.Providers")
+	proto.RegisterType((*GetAsConfigurationRequest)(nil), "ttn.lorawan.v3.GetAsConfigurationRequest")
+	golang_proto.RegisterType((*GetAsConfigurationRequest)(nil), "ttn.lorawan.v3.GetAsConfigurationRequest")
+	proto.RegisterType((*GetAsConfigurationResponse)(nil), "ttn.lorawan.v3.GetAsConfigurationResponse")
+	golang_proto.RegisterType((*GetAsConfigurationResponse)(nil), "ttn.lorawan.v3.GetAsConfigurationResponse")
+	proto.RegisterType((*NsAsHandleUplinkRequest)(nil), "ttn.lorawan.v3.NsAsHandleUplinkRequest")
+	golang_proto.RegisterType((*NsAsHandleUplinkRequest)(nil), "ttn.lorawan.v3.NsAsHandleUplinkRequest")
+	proto.RegisterType((*EncodeDownlinkRequest)(nil), "ttn.lorawan.v3.EncodeDownlinkRequest")
+	golang_proto.RegisterType((*EncodeDownlinkRequest)(nil), "ttn.lorawan.v3.EncodeDownlinkRequest")
+	proto.RegisterType((*EncodeDownlinkResponse)(nil), "ttn.lorawan.v3.EncodeDownlinkResponse")
+	golang_proto.RegisterType((*EncodeDownlinkResponse)(nil), "ttn.lorawan.v3.EncodeDownlinkResponse")
+	proto.RegisterType((*DecodeUplinkRequest)(nil), "ttn.lorawan.v3.DecodeUplinkRequest")
+	golang_proto.RegisterType((*DecodeUplinkRequest)(nil), "ttn.lorawan.v3.DecodeUplinkRequest")
+	proto.RegisterType((*DecodeUplinkResponse)(nil), "ttn.lorawan.v3.DecodeUplinkResponse")
+	golang_proto.RegisterType((*DecodeUplinkResponse)(nil), "ttn.lorawan.v3.DecodeUplinkResponse")
+	proto.RegisterType((*DecodeDownlinkRequest)(nil), "ttn.lorawan.v3.DecodeDownlinkRequest")
+	golang_proto.RegisterType((*DecodeDownlinkRequest)(nil), "ttn.lorawan.v3.DecodeDownlinkRequest")
+	proto.RegisterType((*DecodeDownlinkResponse)(nil), "ttn.lorawan.v3.DecodeDownlinkResponse")
+	golang_proto.RegisterType((*DecodeDownlinkResponse)(nil), "ttn.lorawan.v3.DecodeDownlinkResponse")
 }
 
 func init() {
@@ -330,99 +854,133 @@ func init() {
 }
 
 var fileDescriptor_df9d75a19dc066e1 = []byte{
-	// 1428 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x57, 0x4d, 0x6c, 0x13, 0x47,
-	0x1b, 0xde, 0xb1, 0x9d, 0xbf, 0xe1, 0xfb, 0x42, 0xb2, 0xf0, 0xf1, 0x25, 0x2e, 0x9d, 0x44, 0x86,
-	0x22, 0xc7, 0xc2, 0xbb, 0x34, 0xb4, 0x55, 0x9b, 0xaa, 0x8d, 0x6c, 0x08, 0x29, 0x90, 0xa8, 0x60,
-	0x87, 0x56, 0x0a, 0x3f, 0xd6, 0xc4, 0x3b, 0x71, 0x56, 0x5e, 0xef, 0x0e, 0x3b, 0xb3, 0x09, 0x06,
-	0x22, 0xa1, 0xaa, 0xa2, 0x88, 0x43, 0x8b, 0x5a, 0x21, 0x71, 0x6c, 0x55, 0x55, 0xe2, 0x88, 0xda,
-	0x43, 0x39, 0xb5, 0x48, 0x15, 0x12, 0x6a, 0x2f, 0x54, 0xbd, 0x70, 0x4a, 0xc9, 0xba, 0x07, 0xa4,
-	0x5e, 0x38, 0x22, 0x4e, 0xd5, 0xce, 0xae, 0x63, 0xc7, 0x4e, 0x82, 0xa1, 0x88, 0xaa, 0xb7, 0xd9,
-	0x9d, 0xf7, 0x7d, 0xde, 0xe7, 0x79, 0xe7, 0x79, 0xc7, 0x6b, 0x38, 0x64, 0x58, 0x36, 0x5e, 0xc0,
-	0x66, 0x92, 0x71, 0x9c, 0x2f, 0xaa, 0x98, 0xea, 0x2a, 0xa6, 0xd4, 0xd0, 0xf3, 0x98, 0xeb, 0x96,
-	0xc9, 0x88, 0x3d, 0x4f, 0x6c, 0x85, 0xda, 0x16, 0xb7, 0xe4, 0x6e, 0xce, 0x4d, 0x25, 0x08, 0x57,
-	0xe6, 0xf7, 0x46, 0x53, 0x05, 0x9d, 0xcf, 0x39, 0x33, 0x4a, 0xde, 0x2a, 0xa9, 0xc4, 0x9c, 0xb7,
-	0xca, 0xd4, 0xb6, 0xce, 0x94, 0x55, 0x11, 0x9c, 0x4f, 0x16, 0x88, 0x99, 0x9c, 0xc7, 0x86, 0xae,
-	0x61, 0x4e, 0xd4, 0xa6, 0x85, 0x0f, 0x19, 0x4d, 0xd6, 0x41, 0x14, 0xac, 0x82, 0xe5, 0x27, 0xcf,
-	0x38, 0xb3, 0xe2, 0x49, 0x3c, 0x88, 0x55, 0x10, 0xbe, 0xbd, 0x60, 0x59, 0x05, 0x83, 0xf8, 0x2c,
-	0x4d, 0xd3, 0xe2, 0x3e, 0xc9, 0x60, 0xf7, 0xa5, 0x60, 0x77, 0x05, 0x83, 0x94, 0x28, 0x2f, 0x07,
-	0x9b, 0x83, 0x8d, 0x9b, 0xb3, 0x3a, 0x31, 0xb4, 0x5c, 0x09, 0xb3, 0x62, 0x10, 0x31, 0xd0, 0x18,
-	0xc1, 0xf5, 0x12, 0x61, 0x1c, 0x97, 0x68, 0x10, 0x80, 0x1a, 0x03, 0x16, 0x6c, 0x4c, 0x29, 0xb1,
-	0xab, 0xf5, 0x63, 0xcd, 0xad, 0x24, 0xa6, 0x96, 0xd3, 0xc8, 0xbc, 0x9e, 0xaf, 0x0a, 0xde, 0xd1,
-	0x1c, 0xa3, 0x6b, 0xc4, 0xe4, 0xfa, 0xac, 0x5e, 0x03, 0x1a, 0x6c, 0x0e, 0x2a, 0x11, 0xc6, 0x70,
-	0x81, 0x54, 0x23, 0xb6, 0xaf, 0x11, 0x71, 0x9a, 0x73, 0x7f, 0x37, 0x76, 0x3b, 0x0c, 0x37, 0xa7,
-	0x6a, 0x87, 0x38, 0xa1, 0x9b, 0x45, 0xf9, 0x36, 0x80, 0xdb, 0x4c, 0xc2, 0x17, 0x2c, 0xbb, 0x98,
-	0xf3, 0x4f, 0x35, 0x87, 0x35, 0xcd, 0x26, 0x8c, 0xf5, 0x81, 0x41, 0x10, 0xef, 0x4a, 0x7f, 0x0a,
-	0x1e, 0xa7, 0x2f, 0x03, 0xfb, 0x13, 0x30, 0xfc, 0x31, 0x38, 0x15, 0x1f, 0x1d, 0x89, 0x8f, 0x8e,
-	0x1c, 0xc7, 0xc9, 0xb3, 0xa9, 0xe4, 0xf4, 0x9e, 0xe4, 0x5b, 0x27, 0xcf, 0xd7, 0xad, 0x6b, 0xcb,
-	0x13, 0xc9, 0x93, 0x89, 0xba, 0x8d, 0xa1, 0x13, 0xca, 0x50, 0xc2, 0xcb, 0x4b, 0x25, 0xa7, 0x71,
-	0xf2, 0xac, 0x9f, 0x57, 0x5b, 0xd7, 0x96, 0x22, 0xaf, 0xb6, 0x31, 0x14, 0x1f, 0x1d, 0x19, 0x39,
-	0xee, 0xad, 0xce, 0xbd, 0xba, 0xfb, 0xf5, 0xc5, 0xa1, 0xd1, 0x9d, 0xe7, 0x4f, 0xed, 0xcc, 0x6c,
-	0x0d, 0xe8, 0x66, 0x05, 0xdb, 0x94, 0x4f, 0x56, 0x4e, 0xc0, 0x0e, 0x4c, 0xf5, 0x5c, 0x91, 0x94,
-	0xfb, 0x42, 0x82, 0x77, 0xef, 0xe3, 0x74, 0xc4, 0x0e, 0xf5, 0x00, 0x77, 0x69, 0xa0, 0x3d, 0x75,
-	0xe4, 0xe0, 0x61, 0x52, 0xce, 0xb4, 0x63, 0xaa, 0x1f, 0x26, 0x65, 0xf9, 0x43, 0x28, 0x6b, 0x64,
-	0x16, 0x3b, 0x06, 0xcf, 0xcd, 0x5a, 0x76, 0x09, 0x73, 0x4e, 0x6c, 0xd6, 0x17, 0x1e, 0x04, 0xf1,
-	0x4d, 0xc3, 0x71, 0x65, 0xb5, 0x9b, 0x95, 0x49, 0xbf, 0xc3, 0x47, 0x70, 0xd9, 0xb0, 0xb0, 0x76,
-	0x60, 0x25, 0x3e, 0xd3, 0x1b, 0x60, 0xd4, 0x5e, 0xc9, 0xfd, 0x30, 0xcc, 0x0d, 0xd6, 0x17, 0x19,
-	0x04, 0xf1, 0xce, 0x74, 0x87, 0xbb, 0x34, 0x10, 0x9e, 0x9a, 0xc8, 0x66, 0xbc, 0x77, 0xf2, 0x21,
-	0xb8, 0x85, 0x15, 0x75, 0x9a, 0xa3, 0x3e, 0x4e, 0x2e, 0x6f, 0x97, 0x29, 0xb7, 0xfa, 0xda, 0x44,
-	0xd1, 0xa8, 0xe2, 0x5b, 0x48, 0xa9, 0x5a, 0x48, 0x49, 0x5b, 0x96, 0xf1, 0x01, 0x36, 0x1c, 0x92,
-	0xe9, 0xf5, 0xd2, 0x82, 0xea, 0xfb, 0x44, 0x52, 0xec, 0x47, 0x00, 0xfb, 0xc7, 0x09, 0x6f, 0x38,
-	0xca, 0x0c, 0x39, 0xed, 0x10, 0xc6, 0x65, 0x0c, 0x37, 0xd7, 0x4d, 0x6a, 0x4e, 0xd7, 0xfc, 0x93,
-	0xdc, 0x34, 0xbc, 0xab, 0x51, 0x5a, 0x1d, 0xc0, 0xc1, 0x9a, 0xd9, 0xd2, 0x3d, 0x8f, 0xd3, 0x6d,
-	0x97, 0x41, 0xa8, 0x07, 0xdc, 0x59, 0x1a, 0x90, 0xee, 0x2e, 0x0d, 0x80, 0x4c, 0x37, 0xae, 0x8f,
-	0x64, 0xf2, 0x28, 0x84, 0xb5, 0x31, 0x11, 0xfd, 0x5e, 0x4b, 0xc3, 0x01, 0x2f, 0x64, 0x12, 0xb3,
-	0x62, 0x3a, 0xe2, 0x21, 0x65, 0xba, 0x66, 0xab, 0x2f, 0x62, 0x17, 0x43, 0xb0, 0x3f, 0xfb, 0x4f,
-	0x2a, 0x18, 0x83, 0x11, 0x43, 0x37, 0xab, 0xdc, 0x07, 0x36, 0xc0, 0xf5, 0x88, 0xad, 0x01, 0x28,
-	0xd2, 0x1b, 0x1a, 0x11, 0x7e, 0xfa, 0x46, 0x7c, 0x16, 0x81, 0x5b, 0x1b, 0x8a, 0x65, 0x39, 0xe6,
-	0x4c, 0x7e, 0x07, 0x76, 0x79, 0x15, 0x88, 0x96, 0xc3, 0x3c, 0x50, 0xdf, 0x0c, 0x3c, 0x55, 0xbd,
-	0x89, 0xd2, 0x91, 0x2b, 0xbf, 0x0f, 0x80, 0x4c, 0xa7, 0x9f, 0x92, 0xe2, 0x1b, 0x8d, 0x75, 0xe8,
-	0xdf, 0x34, 0xd6, 0xef, 0xc3, 0x2d, 0x06, 0x66, 0x3c, 0xe7, 0xd0, 0x9c, 0x4d, 0xf2, 0x44, 0x9f,
-	0xf7, 0x1b, 0x12, 0x6e, 0xb1, 0x21, 0x3d, 0x5e, 0xf2, 0x31, 0x9a, 0x09, 0x52, 0x53, 0x5c, 0xee,
-	0x87, 0x9d, 0x0e, 0xcd, 0xe5, 0x2d, 0xc7, 0xe4, 0x62, 0x4e, 0x23, 0x99, 0x0e, 0x87, 0xee, 0xf3,
-	0x1e, 0xe5, 0x93, 0x30, 0x2a, 0x6a, 0x69, 0xd6, 0x82, 0xe9, 0x35, 0xd2, 0xbb, 0x1c, 0x16, 0xb0,
-	0xad, 0xf9, 0x25, 0xdb, 0x5a, 0x2c, 0xf9, 0x7f, 0x0f, 0x63, 0x7f, 0x00, 0x71, 0xa0, 0x8a, 0x90,
-	0xe2, 0xf2, 0x2b, 0xb0, 0x7b, 0x05, 0xd9, 0xaf, 0xdf, 0x2e, 0xea, 0xff, 0xb7, 0xfa, 0x56, 0xb0,
-	0x18, 0xfe, 0x39, 0x02, 0x43, 0x29, 0x26, 0x5f, 0x05, 0xb0, 0x63, 0x9c, 0x70, 0x71, 0x47, 0x0f,
-	0x35, 0xda, 0x73, 0xdd, 0xe1, 0x8f, 0x3e, 0xc9, 0xc9, 0xb1, 0x77, 0x3f, 0xfa, 0xed, 0x8f, 0x2f,
-	0x42, 0x6f, 0xca, 0x6f, 0xa8, 0x98, 0xad, 0xfa, 0x45, 0x57, 0xcf, 0x35, 0xcc, 0x9c, 0xb2, 0xfa,
-	0x79, 0x51, 0x15, 0x8e, 0xbf, 0x06, 0x60, 0x47, 0x76, 0x3d, 0x5e, 0xd9, 0x67, 0xe7, 0x95, 0x12,
-	0xbc, 0xde, 0x8e, 0x3e, 0x23, 0xaf, 0x11, 0x90, 0x90, 0xcf, 0x43, 0xb8, 0x9f, 0x18, 0x84, 0x13,
-	0x41, 0xae, 0xc5, 0xbb, 0x22, 0xba, 0xad, 0xe9, 0x44, 0xc7, 0xbc, 0xcf, 0x83, 0x98, 0x22, 0x08,
-	0xc5, 0x13, 0xbb, 0x9e, 0x44, 0x28, 0x68, 0xcc, 0xe7, 0x00, 0xfe, 0x27, 0x38, 0x30, 0x7f, 0x82,
-	0x5b, 0x25, 0xb0, 0xf3, 0x09, 0xad, 0x11, 0x68, 0xb1, 0xd7, 0x04, 0x1d, 0x45, 0xde, 0xdd, 0x1a,
-	0x1d, 0x95, 0x79, 0x59, 0xc3, 0x5f, 0x75, 0xc2, 0xb6, 0x14, 0xa5, 0x29, 0x26, 0x4f, 0xc1, 0xae,
-	0xac, 0x33, 0xc3, 0xf2, 0xb6, 0x3e, 0x43, 0x5a, 0xa6, 0xf6, 0xf2, 0x06, 0x71, 0xc7, 0xe8, 0x1e,
-	0x20, 0xff, 0x02, 0x60, 0x6f, 0xd5, 0xeb, 0x47, 0x1d, 0xe2, 0x90, 0x23, 0x0e, 0x9b, 0x93, 0x9b,
-	0x14, 0xad, 0x0a, 0xa9, 0x5a, 0x62, 0xbd, 0xc6, 0x9f, 0x11, 0x4a, 0xed, 0x58, 0xa9, 0x59, 0x69,
-	0xed, 0xb3, 0x69, 0x0d, 0x23, 0x34, 0x1b, 0xc3, 0x0f, 0x6d, 0xce, 0x5b, 0x59, 0x2e, 0xaa, 0xde,
-	0xec, 0xa9, 0xd4, 0x61, 0x73, 0x9e, 0x81, 0x7e, 0x05, 0x70, 0x6b, 0x03, 0x55, 0x6a, 0xe0, 0x3c,
-	0xf9, 0x9b, 0x82, 0xce, 0x09, 0x41, 0x4e, 0x8c, 0xbe, 0x30, 0x41, 0xb6, 0xcf, 0xdb, 0xd3, 0xf4,
-	0x5d, 0xe3, 0x09, 0x4d, 0xe8, 0x8c, 0x37, 0x0b, 0x1a, 0x33, 0xb5, 0xfd, 0x02, 0xa4, 0x55, 0x67,
-	0x56, 0x31, 0x59, 0x2c, 0x23, 0xe4, 0x4d, 0xc8, 0x87, 0x9e, 0x7e, 0x72, 0x57, 0xf4, 0x34, 0x08,
-	0x90, 0xbf, 0x06, 0xf0, 0x7f, 0xe3, 0x84, 0x4f, 0x1e, 0x9d, 0x9a, 0xda, 0x67, 0x99, 0x26, 0xc9,
-	0x0b, 0x67, 0x9a, 0xb3, 0x56, 0xcb, 0xd6, 0x8d, 0x35, 0x7d, 0xc7, 0x35, 0x61, 0xb5, 0x7e, 0x17,
-	0x2e, 0x8a, 0xaf, 0xe8, 0x64, 0x7e, 0x25, 0x3d, 0xa9, 0x7b, 0x5c, 0x7e, 0x02, 0xb0, 0x3b, 0xab,
-	0x97, 0x1c, 0x03, 0x73, 0x72, 0x8c, 0x8a, 0x5b, 0x60, 0xe3, 0x89, 0x59, 0xd7, 0x22, 0x67, 0x05,
-	0x13, 0x1e, 0xb3, 0x5e, 0x84, 0x45, 0x1c, 0xaa, 0xb2, 0x80, 0xf5, 0x08, 0x48, 0x0c, 0xff, 0x19,
-	0x81, 0x5b, 0x52, 0x6c, 0xc5, 0x00, 0x19, 0x52, 0xd0, 0x19, 0xb7, 0xcb, 0xf2, 0xb7, 0x00, 0x86,
-	0xc7, 0x09, 0x97, 0x77, 0xac, 0xf1, 0xeb, 0x53, 0x17, 0xed, 0x7b, 0xbf, 0x7f, 0x5d, 0x43, 0xc5,
-	0x8a, 0x42, 0x1b, 0x91, 0xf3, 0x2f, 0x40, 0x9b, 0x7c, 0x31, 0x04, 0xc3, 0xd9, 0xb5, 0x48, 0x67,
-	0x9f, 0x8e, 0xf4, 0x0f, 0x40, 0xb0, 0xfe, 0x1e, 0x44, 0x37, 0xa4, 0xad, 0x3c, 0x23, 0x6d, 0x65,
-	0x35, 0xed, 0x11, 0x90, 0x98, 0x9e, 0x8c, 0xbd, 0xf7, 0xbc, 0x2a, 0x79, 0x73, 0x7f, 0x15, 0xc0,
-	0x76, 0xff, 0xd7, 0xb0, 0xc5, 0x61, 0x5f, 0xcf, 0x9a, 0x93, 0xa2, 0x11, 0xe3, 0x89, 0xb1, 0xe7,
-	0x32, 0xde, 0xe9, 0x6f, 0xc0, 0x9d, 0x65, 0x04, 0xee, 0x2e, 0x23, 0x70, 0x6f, 0x19, 0x49, 0xf7,
-	0x97, 0x91, 0xf4, 0x60, 0x19, 0x49, 0x0f, 0x97, 0x91, 0xf4, 0x68, 0x19, 0x81, 0x0b, 0x2e, 0x02,
-	0x97, 0x5c, 0x24, 0x5d, 0x77, 0x11, 0xb8, 0xe1, 0x22, 0xe9, 0xa6, 0x8b, 0xa4, 0x5b, 0x2e, 0x92,
-	0xee, 0xb8, 0x08, 0xdc, 0x75, 0x11, 0xb8, 0xe7, 0x22, 0xe9, 0xbe, 0x8b, 0xc0, 0x03, 0x17, 0x49,
-	0x0f, 0x5d, 0x04, 0x1e, 0xb9, 0x48, 0xba, 0x50, 0x41, 0xd2, 0xa5, 0x0a, 0x02, 0x57, 0x2a, 0x48,
-	0xba, 0x56, 0x41, 0xe0, 0xcb, 0x0a, 0x92, 0xae, 0x57, 0x90, 0x74, 0xa3, 0x82, 0xc0, 0xcd, 0x0a,
-	0x02, 0xb7, 0x2a, 0x08, 0x4c, 0xab, 0x05, 0x4b, 0xe1, 0x73, 0x84, 0xcf, 0xe9, 0x66, 0x81, 0x29,
-	0xc1, 0xa7, 0xa6, 0xba, 0xfa, 0xdf, 0xf2, 0xfc, 0x5e, 0x95, 0x16, 0x0b, 0x2a, 0xe7, 0x26, 0x9d,
-	0x99, 0x69, 0x17, 0x6d, 0xd8, 0xfb, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x64, 0xe8, 0x0d, 0xc4,
-	0x08, 0x11, 0x00, 0x00,
+	// 1858 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x59, 0x4d, 0x6c, 0x1b, 0xc7,
+	0x15, 0xd6, 0x90, 0x94, 0x4c, 0x8e, 0x65, 0x99, 0x1e, 0x39, 0x8e, 0xc4, 0xb8, 0x94, 0xba, 0x71,
+	0x5c, 0x49, 0x0d, 0x97, 0x2e, 0xdd, 0x3f, 0xab, 0x68, 0x04, 0x52, 0x92, 0x65, 0xbb, 0x92, 0x22,
+	0x2f, 0xa5, 0x18, 0x75, 0xe2, 0x10, 0x43, 0xee, 0x88, 0x5a, 0x90, 0xdc, 0x9d, 0xec, 0xcc, 0x52,
+	0x91, 0x7f, 0x80, 0x20, 0x08, 0x5a, 0x20, 0x28, 0xda, 0x20, 0x45, 0x80, 0x1e, 0x0b, 0xf4, 0xd2,
+	0x73, 0x73, 0x68, 0x7b, 0x29, 0x0a, 0x14, 0x05, 0x0a, 0xf4, 0xd2, 0x20, 0x3d, 0x14, 0x28, 0x9a,
+	0xb6, 0x72, 0x51, 0x14, 0x28, 0x50, 0xf4, 0xec, 0x53, 0x31, 0xb3, 0xbb, 0x24, 0x77, 0x49, 0x4a,
+	0x94, 0x63, 0xc8, 0x28, 0x90, 0xdb, 0xec, 0xce, 0x7b, 0xdf, 0xfb, 0xde, 0xef, 0x3e, 0x51, 0x70,
+	0xb6, 0x6e, 0xd9, 0x78, 0x17, 0x9b, 0x19, 0xc6, 0x71, 0xa5, 0x96, 0xc5, 0xd4, 0xc8, 0x62, 0x4a,
+	0xeb, 0x46, 0x05, 0x73, 0xc3, 0x32, 0x19, 0xb1, 0x9b, 0xc4, 0x56, 0xa9, 0x6d, 0x71, 0x0b, 0x8d,
+	0x71, 0x6e, 0xaa, 0x9e, 0xb8, 0xda, 0xbc, 0x9c, 0xca, 0x57, 0x0d, 0xbe, 0xe3, 0x94, 0xd5, 0x8a,
+	0xd5, 0xc8, 0x12, 0xb3, 0x69, 0xed, 0x51, 0xdb, 0x7a, 0x73, 0x2f, 0x2b, 0x85, 0x2b, 0x99, 0x2a,
+	0x31, 0x33, 0x4d, 0x5c, 0x37, 0x74, 0xcc, 0x49, 0xb6, 0xeb, 0xe0, 0x42, 0xa6, 0x32, 0x1d, 0x10,
+	0x55, 0xab, 0x6a, 0xb9, 0xca, 0x65, 0x67, 0x5b, 0x3e, 0xc9, 0x07, 0x79, 0xf2, 0xc4, 0xcf, 0x57,
+	0x2d, 0xab, 0x5a, 0x27, 0x2e, 0x4b, 0xd3, 0xb4, 0xb8, 0x4b, 0xd2, 0xbb, 0x7d, 0xce, 0xbb, 0x6d,
+	0x61, 0x90, 0x06, 0xe5, 0x7b, 0xde, 0xe5, 0x74, 0xf8, 0x72, 0xdb, 0x20, 0x75, 0xbd, 0xd4, 0xc0,
+	0xac, 0xe6, 0x49, 0x4c, 0x85, 0x25, 0xb8, 0xd1, 0x20, 0x8c, 0xe3, 0x06, 0xf5, 0x04, 0xd2, 0x61,
+	0x81, 0x5d, 0x1b, 0x53, 0x4a, 0x6c, 0xdf, 0xbe, 0xd2, 0x1d, 0x4a, 0x62, 0xea, 0x25, 0x9d, 0x34,
+	0x8d, 0x8a, 0xef, 0xf0, 0xf3, 0xdd, 0x32, 0x86, 0x4e, 0x4c, 0x6e, 0x6c, 0x1b, 0x6d, 0xa0, 0xe9,
+	0x6e, 0xa1, 0x06, 0x61, 0x0c, 0x57, 0x89, 0x2f, 0x71, 0xbe, 0x87, 0xc4, 0x1b, 0x9c, 0xbb, 0xb7,
+	0xca, 0x1f, 0x01, 0x3c, 0x9d, 0x6f, 0x27, 0x71, 0xd5, 0x30, 0x6b, 0xe8, 0x16, 0x44, 0x3a, 0xd9,
+	0xc6, 0x4e, 0x9d, 0x97, 0xb6, 0x2d, 0xbb, 0x81, 0x39, 0x27, 0x36, 0x9b, 0x88, 0x4e, 0x83, 0x99,
+	0x93, 0xb9, 0x19, 0x35, 0x98, 0x59, 0x75, 0xcd, 0xb5, 0xb6, 0x81, 0xf7, 0xea, 0x16, 0xd6, 0xaf,
+	0xb6, 0xe4, 0xb5, 0x33, 0x1e, 0x46, 0xfb, 0x15, 0x4a, 0xc2, 0x28, 0xaf, 0xb3, 0x89, 0xd8, 0x34,
+	0x98, 0x89, 0x6b, 0xe2, 0x88, 0x6e, 0xc0, 0x71, 0x56, 0x33, 0x68, 0x89, 0xba, 0xea, 0xa5, 0x8a,
+	0xbd, 0x47, 0xb9, 0x35, 0x31, 0x2c, 0x6d, 0xa5, 0x54, 0x37, 0x8a, 0xaa, 0x1f, 0x45, 0xb5, 0x60,
+	0x59, 0xf5, 0x57, 0x70, 0xdd, 0x21, 0xda, 0x19, 0xa1, 0xe6, 0x19, 0x5d, 0x94, 0x4a, 0x37, 0x62,
+	0x71, 0x90, 0x8c, 0xdc, 0x88, 0xc5, 0x23, 0xc9, 0xa8, 0xf2, 0x4b, 0x00, 0x27, 0x57, 0x08, 0x0f,
+	0x79, 0xa6, 0x91, 0x37, 0x1c, 0xc2, 0x38, 0xc2, 0xf0, 0x74, 0x47, 0xe1, 0x96, 0x0c, 0x9d, 0x4d,
+	0x00, 0x69, 0xf1, 0x62, 0xd8, 0xbb, 0x0e, 0x80, 0xeb, 0xed, 0xd8, 0x17, 0x92, 0x8f, 0x0a, 0xc3,
+	0xef, 0x82, 0x48, 0x12, 0xfc, 0xee, 0x93, 0xa9, 0xa1, 0x3f, 0x7c, 0x32, 0x05, 0xb4, 0x31, 0xdc,
+	0x29, 0xc9, 0xd0, 0x15, 0x08, 0xdb, 0x55, 0x33, 0x11, 0xe9, 0xe3, 0xcf, 0x55, 0x21, 0xb2, 0x86,
+	0x59, 0x4d, 0x4b, 0x6c, 0xfb, 0x47, 0xe5, 0xad, 0x08, 0x9c, 0x2c, 0x3e, 0x4d, 0xee, 0xcb, 0x30,
+	0x56, 0x37, 0x4c, 0x9f, 0xf5, 0xd4, 0x01, 0xb8, 0x82, 0x58, 0x0f, 0x40, 0xa9, 0x1e, 0x0a, 0x41,
+	0xf4, 0x28, 0x21, 0xf8, 0x41, 0x0c, 0x9e, 0x0d, 0x99, 0x29, 0x72, 0xcc, 0x19, 0xfa, 0x26, 0x4c,
+	0x08, 0x6c, 0xa2, 0x97, 0x30, 0xf7, 0xfc, 0xee, 0x86, 0xdc, 0xf4, 0x9b, 0xb1, 0x10, 0x7b, 0xef,
+	0xaf, 0x53, 0x40, 0x8b, 0xbb, 0x2a, 0x79, 0x8e, 0x7e, 0x0b, 0xe0, 0x39, 0x93, 0xf0, 0x5d, 0xcb,
+	0xae, 0x95, 0xdc, 0x79, 0x55, 0xc2, 0xba, 0x6e, 0x13, 0xc6, 0xa4, 0xb3, 0x89, 0xc2, 0xf7, 0xc1,
+	0xa3, 0xc2, 0xbb, 0xc0, 0xfe, 0x2e, 0xc8, 0xbd, 0x03, 0x5e, 0x9f, 0x59, 0x98, 0x9f, 0x59, 0x98,
+	0x7f, 0x15, 0x67, 0xee, 0xe6, 0x33, 0xb7, 0x2f, 0x65, 0xae, 0xdc, 0xb9, 0xdf, 0x71, 0x6e, 0x1f,
+	0x5f, 0xcb, 0xdc, 0x99, 0xeb, 0xb8, 0x98, 0x7d, 0x4d, 0x9d, 0x9d, 0x13, 0x7a, 0xf9, 0xcc, 0x6d,
+	0x9c, 0xb9, 0xeb, 0xea, 0xb5, 0xcf, 0xed, 0xa3, 0xd4, 0x6b, 0x5f, 0xcc, 0xce, 0x2c, 0xcc, 0xcf,
+	0xbf, 0x2a, 0x4e, 0xf7, 0xbe, 0xf4, 0xe2, 0x57, 0x1e, 0xcc, 0x2e, 0x5c, 0xb8, 0xff, 0xfa, 0x05,
+	0xed, 0xac, 0x47, 0xb7, 0x28, 0xd9, 0xe6, 0x5d, 0xb2, 0xe8, 0x65, 0x38, 0x5e, 0xc7, 0x8c, 0x97,
+	0x1c, 0x5a, 0xb2, 0x49, 0x85, 0x18, 0x4d, 0x37, 0x20, 0xd1, 0x01, 0x03, 0x92, 0x14, 0xca, 0x5b,
+	0x54, 0xf3, 0x54, 0xf3, 0x1c, 0x4d, 0xc2, 0xb8, 0x43, 0x4b, 0x15, 0xcb, 0x31, 0xb9, 0x6c, 0xcf,
+	0x98, 0x76, 0xc2, 0xa1, 0x8b, 0xe2, 0x11, 0xdd, 0x81, 0x29, 0x69, 0x4b, 0xb7, 0x76, 0x4d, 0x11,
+	0x48, 0x31, 0x13, 0x76, 0xb1, 0xad, 0xbb, 0x26, 0x87, 0x07, 0x34, 0xf9, 0xac, 0xc0, 0x58, 0xf2,
+	0x20, 0xae, 0xfa, 0x08, 0x79, 0x8e, 0x5e, 0x80, 0x63, 0x2d, 0x64, 0xd7, 0xfe, 0x88, 0xb4, 0x7f,
+	0xca, 0x7f, 0x2b, 0x59, 0x28, 0xdf, 0x8b, 0xc2, 0xd3, 0x79, 0xb6, 0x68, 0x99, 0xdb, 0x46, 0xd5,
+	0xb1, 0x65, 0x55, 0xa0, 0x97, 0xe0, 0x08, 0x75, 0xca, 0xcc, 0x29, 0xf7, 0xed, 0x80, 0xa0, 0x82,
+	0xba, 0xe1, 0x94, 0x8b, 0x4e, 0x59, 0xf3, 0xb4, 0x52, 0xbf, 0x88, 0xc0, 0x11, 0xf7, 0x15, 0x5a,
+	0x87, 0x09, 0x6a, 0x5b, 0x4d, 0x43, 0x17, 0x93, 0xce, 0x45, 0xbb, 0x34, 0x18, 0x9a, 0xba, 0xe1,
+	0xeb, 0x69, 0x6d, 0x88, 0xd4, 0x5f, 0x00, 0x4c, 0xb4, 0x2e, 0xd0, 0xb7, 0x60, 0x4c, 0x8c, 0x5c,
+	0x09, 0x3c, 0x96, 0xfb, 0xda, 0x51, 0x81, 0x55, 0x51, 0xfb, 0x0e, 0xd3, 0x24, 0x88, 0x00, 0x33,
+	0x31, 0x77, 0x0b, 0xf6, 0xd3, 0x80, 0x09, 0x10, 0xe5, 0x12, 0x1c, 0x71, 0x9f, 0xd1, 0x49, 0x78,
+	0x62, 0x79, 0x3d, 0x5f, 0x58, 0x5d, 0x5e, 0x4a, 0x0e, 0x89, 0x87, 0x5b, 0x79, 0x6d, 0xfd, 0xfa,
+	0xfa, 0x4a, 0x12, 0xa0, 0x51, 0x18, 0x5f, 0xba, 0x5e, 0x74, 0xaf, 0xc4, 0x7c, 0x8d, 0x26, 0x63,
+	0xca, 0x73, 0xee, 0x78, 0x0d, 0xda, 0xf2, 0x46, 0x94, 0x52, 0x81, 0xa9, 0x5e, 0x97, 0x8c, 0x8a,
+	0x25, 0x01, 0x2d, 0xc3, 0x53, 0x95, 0xce, 0x0b, 0x2f, 0xdc, 0x53, 0x87, 0x38, 0xa2, 0x05, 0xb5,
+	0x94, 0x1a, 0x7c, 0x76, 0x9d, 0xe5, 0xd9, 0x35, 0x6c, 0xea, 0x75, 0xb2, 0x45, 0xeb, 0x1d, 0x23,
+	0x72, 0x23, 0x38, 0x22, 0x1d, 0x2a, 0x52, 0x1a, 0x9d, 0x39, 0x99, 0xfb, 0xdc, 0x01, 0xa3, 0x6c,
+	0x8b, 0x16, 0xe2, 0x8f, 0x0a, 0xc3, 0xef, 0x83, 0x48, 0x3c, 0x38, 0x11, 0xb7, 0x28, 0x53, 0xfe,
+	0x13, 0x81, 0xcf, 0x2c, 0x9b, 0x15, 0x4b, 0x27, 0x7e, 0x09, 0xfb, 0xb6, 0x36, 0xe1, 0x58, 0xfb,
+	0xc3, 0xdd, 0x31, 0x8d, 0x2f, 0x84, 0x4d, 0x2d, 0x9b, 0xfa, 0x92, 0x14, 0xea, 0x9c, 0xc5, 0x71,
+	0x7f, 0x74, 0x6a, 0xa3, 0xa4, 0x7d, 0xcf, 0xd0, 0x2a, 0x3c, 0xd9, 0x24, 0x36, 0xf3, 0x07, 0xbc,
+	0x3b, 0x88, 0xbf, 0xd8, 0x17, 0xf2, 0x15, 0x57, 0xb6, 0x03, 0x59, 0x83, 0x4d, 0xff, 0x1d, 0x43,
+	0xd7, 0x61, 0xdc, 0x6f, 0x26, 0x6f, 0x44, 0x3c, 0x7f, 0x40, 0x20, 0x7c, 0x0f, 0x3b, 0xc8, 0xb5,
+	0xd4, 0xd1, 0x35, 0x98, 0x68, 0xad, 0x04, 0x72, 0x50, 0x8c, 0xe5, 0xa6, 0xc3, 0x58, 0xe1, 0x55,
+	0x40, 0x02, 0xbd, 0x2d, 0x81, 0xda, 0xca, 0xe8, 0x3c, 0x4c, 0x50, 0x6c, 0xe3, 0x06, 0x11, 0x48,
+	0x62, 0x8a, 0x24, 0xb4, 0xf6, 0x0b, 0xe5, 0xdb, 0xf0, 0x5c, 0x38, 0xde, 0x5e, 0xf9, 0x2c, 0x74,
+	0x38, 0x03, 0x06, 0x76, 0xa6, 0xed, 0x82, 0xf2, 0xcf, 0x08, 0x1c, 0x5f, 0x22, 0x02, 0x3b, 0x58,
+	0x35, 0xff, 0x0f, 0x99, 0x5c, 0x84, 0x23, 0x0e, 0xed, 0xc8, 0xe3, 0xe7, 0x0f, 0x2c, 0xe8, 0x50,
+	0x16, 0x3d, 0xd5, 0x63, 0xcb, 0xe1, 0x4d, 0x78, 0x36, 0x18, 0x67, 0x2f, 0x83, 0x57, 0x5a, 0x4e,
+	0x80, 0x01, 0x9d, 0xf0, 0xa9, 0xcb, 0x3e, 0x74, 0x31, 0x3f, 0xeb, 0xc3, 0xe3, 0xea, 0xc3, 0x70,
+	0xbc, 0x9f, 0x50, 0x1f, 0xe6, 0x3e, 0x1a, 0x86, 0x91, 0x3c, 0x43, 0x1f, 0x00, 0x78, 0x62, 0x85,
+	0x70, 0xf9, 0x87, 0xc7, 0x6c, 0x18, 0xa1, 0xef, 0x0a, 0x9f, 0x3a, 0x6c, 0x2b, 0x55, 0x5e, 0x7a,
+	0xfb, 0xe3, 0x7f, 0xfc, 0x30, 0xf2, 0x75, 0xf4, 0xd5, 0x2c, 0x66, 0x81, 0x3f, 0x53, 0xb3, 0xf7,
+	0x42, 0xfb, 0xb3, 0x1a, 0x7c, 0x7e, 0x90, 0x95, 0x11, 0xfe, 0x11, 0x80, 0x27, 0x8a, 0xfd, 0x78,
+	0x15, 0x1f, 0x9f, 0x57, 0x5e, 0xf2, 0xfa, 0x46, 0xea, 0x31, 0x79, 0xcd, 0x83, 0x39, 0x74, 0x1f,
+	0xc2, 0x25, 0x52, 0x27, 0x9c, 0x48, 0x72, 0x03, 0xee, 0xfd, 0xa9, 0x73, 0x5d, 0x3b, 0xda, 0xb2,
+	0xf8, 0x9b, 0x57, 0x51, 0x25, 0xa1, 0x99, 0xb9, 0x8b, 0x87, 0x11, 0xf2, 0x02, 0xf3, 0x3e, 0x80,
+	0xa3, 0x5e, 0xc2, 0xdc, 0x9d, 0x7c, 0x50, 0x02, 0x17, 0x0e, 0x09, 0x8d, 0x44, 0x53, 0xbe, 0x2c,
+	0xe9, 0xa8, 0xe8, 0xc5, 0xc1, 0xe8, 0x64, 0x99, 0xe4, 0xf0, 0x0e, 0x80, 0xc9, 0x15, 0xc2, 0x83,
+	0xfb, 0x61, 0xcf, 0x72, 0xea, 0xb9, 0xb2, 0xa4, 0xe6, 0x06, 0x11, 0x75, 0x2b, 0x5f, 0x99, 0x94,
+	0x0c, 0xc7, 0xd1, 0x19, 0xc1, 0x30, 0xb0, 0x94, 0xe4, 0x6e, 0xc1, 0x98, 0x58, 0x4a, 0xd0, 0xcb,
+	0x70, 0xb4, 0x73, 0x31, 0x41, 0x5f, 0x08, 0xc3, 0xf7, 0x59, 0x5d, 0xfa, 0x25, 0x29, 0xf7, 0xe1,
+	0x29, 0x38, 0x9c, 0xa7, 0x34, 0xcf, 0xd0, 0x26, 0x4c, 0x14, 0x9d, 0x32, 0xab, 0xd8, 0x46, 0x99,
+	0x0c, 0x1c, 0xfa, 0x83, 0x17, 0x9f, 0x4b, 0x00, 0xfd, 0x1e, 0xc0, 0x33, 0x7e, 0x8f, 0xde, 0x74,
+	0x88, 0x43, 0x36, 0x1c, 0xb6, 0x83, 0xba, 0x32, 0x16, 0x10, 0x39, 0x84, 0xb3, 0xf2, 0xa6, 0x8c,
+	0x93, 0xad, 0x34, 0xba, 0x33, 0x19, 0x1c, 0xd5, 0xea, 0x61, 0x85, 0xef, 0x8a, 0x76, 0xeb, 0xb5,
+	0x8e, 0x0f, 0xb2, 0x62, 0xac, 0x64, 0xa9, 0xc3, 0x76, 0x44, 0x83, 0x7c, 0x04, 0xe0, 0xd9, 0x10,
+	0x55, 0x5a, 0xc7, 0x15, 0xf2, 0x29, 0x1d, 0xba, 0x27, 0x1d, 0x72, 0x14, 0x7a, 0x6c, 0x0e, 0xd9,
+	0x2e, 0x6f, 0xe1, 0xd3, 0x87, 0xe1, 0x0c, 0xad, 0x1a, 0x8c, 0xa3, 0x81, 0x3e, 0x6f, 0x07, 0x76,
+	0x9e, 0x8f, 0xc9, 0x14, 0x4d, 0xba, 0xb7, 0x8a, 0x6e, 0x1c, 0x7d, 0x32, 0xb5, 0xfc, 0x09, 0x39,
+	0x80, 0x7e, 0x02, 0xe0, 0x33, 0x2b, 0x84, 0xaf, 0xdd, 0xdc, 0xdc, 0x5c, 0xb4, 0x4c, 0x93, 0x54,
+	0x64, 0x65, 0x9a, 0xdb, 0xd6, 0xc0, 0xa5, 0xab, 0x74, 0xfd, 0xe0, 0xd4, 0x85, 0x35, 0xf8, 0xac,
+	0x7f, 0x20, 0x7f, 0xfa, 0xca, 0x54, 0x5a, 0xea, 0x19, 0x43, 0x70, 0xf9, 0x0d, 0x80, 0x63, 0x45,
+	0xa3, 0xe1, 0xd4, 0x31, 0xf7, 0x3b, 0xf6, 0xe0, 0x8e, 0xe9, 0x5b, 0x22, 0x77, 0x25, 0x13, 0xae,
+	0x58, 0xc7, 0x51, 0x22, 0x0e, 0xcd, 0x32, 0x8f, 0xb5, 0xa8, 0x90, 0x3f, 0x03, 0x38, 0x16, 0x5c,
+	0x9a, 0xd1, 0x0b, 0xdd, 0xe5, 0xd1, 0x63, 0x79, 0x4a, 0x5d, 0x3c, 0x4c, 0xcc, 0x9b, 0x7c, 0xc7,
+	0xea, 0x9d, 0x6c, 0x00, 0x22, 0x89, 0x08, 0xef, 0x3e, 0x06, 0x70, 0xb4, 0x73, 0x9d, 0x44, 0x5d,
+	0xeb, 0x46, 0x8f, 0xa5, 0xbe, 0xbb, 0xf2, 0x7b, 0x6d, 0xa4, 0xc7, 0x3b, 0xa9, 0x1c, 0x9a, 0xd5,
+	0x89, 0xef, 0x95, 0xc8, 0x59, 0x70, 0xc1, 0xea, 0xce, 0x59, 0xcf, 0x85, 0xb7, 0x3b, 0x67, 0xbd,
+	0xf7, 0xb4, 0xa7, 0x90, 0xb3, 0x96, 0x77, 0xb9, 0x7f, 0xc7, 0xe0, 0x78, 0x9e, 0xb5, 0x46, 0x92,
+	0x46, 0xaa, 0x06, 0xe3, 0xf6, 0x1e, 0xfa, 0x19, 0x80, 0xd1, 0x15, 0xc2, 0xbb, 0x53, 0xb8, 0x42,
+	0x78, 0x87, 0xb4, 0xeb, 0xe8, 0x64, 0xdf, 0x11, 0xa7, 0xd4, 0xa4, 0x6f, 0x04, 0x55, 0x8e, 0xc1,
+	0x37, 0xf4, 0x9d, 0x08, 0x8c, 0x16, 0x7b, 0x91, 0x2e, 0x1e, 0x8d, 0xf4, 0xaf, 0x80, 0x64, 0xfd,
+	0x73, 0x90, 0x3a, 0x90, 0xb6, 0xfa, 0x98, 0xb4, 0xd5, 0x20, 0xed, 0x79, 0x30, 0x77, 0x7b, 0x4d,
+	0xb9, 0xf6, 0xa4, 0x2c, 0x89, 0x9a, 0xfd, 0x00, 0xc0, 0x11, 0x77, 0xff, 0x1c, 0xf0, 0xf3, 0xd3,
+	0x6f, 0x58, 0xae, 0xc9, 0x40, 0xac, 0xcc, 0x2d, 0x3f, 0x91, 0x0f, 0x4e, 0x61, 0xeb, 0x4f, 0x7f,
+	0x4f, 0x0f, 0xbd, 0xb5, 0x9f, 0x06, 0x3f, 0xdd, 0x4f, 0x83, 0xbf, 0xed, 0xa7, 0xc1, 0xbf, 0xf6,
+	0xd3, 0x43, 0xff, 0xdd, 0x4f, 0x83, 0xf7, 0x1e, 0xa6, 0x87, 0x7e, 0xfc, 0x30, 0x3d, 0xf4, 0xeb,
+	0x87, 0x69, 0x70, 0x3b, 0x5b, 0xb5, 0x54, 0xbe, 0x43, 0xf8, 0x8e, 0x61, 0x56, 0x99, 0xea, 0xfd,
+	0xba, 0x9a, 0x0d, 0xfe, 0x8f, 0xa4, 0x79, 0x39, 0x4b, 0x6b, 0xd5, 0x2c, 0xe7, 0x26, 0x2d, 0x97,
+	0x47, 0x24, 0xeb, 0xcb, 0xff, 0x0b, 0x00, 0x00, 0xff, 0xff, 0xa2, 0xd1, 0x78, 0x9c, 0xfe, 0x1a,
+	0x00, 0x00,
 }
 
+func (x AsConfiguration_PubSub_Providers_Status) String() string {
+	s, ok := AsConfiguration_PubSub_Providers_Status_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
 func (this *ApplicationLink) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -442,16 +1000,10 @@ func (this *ApplicationLink) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.NetworkServerAddress != that1.NetworkServerAddress {
-		return false
-	}
-	if this.APIKey != that1.APIKey {
-		return false
-	}
 	if !this.DefaultFormatters.Equal(that1.DefaultFormatters) {
 		return false
 	}
-	if this.TLS != that1.TLS {
+	if this.Tls != that1.Tls {
 		return false
 	}
 	if !this.SkipPayloadCrypto.Equal(that1.SkipPayloadCrypto) {
@@ -481,7 +1033,7 @@ func (this *GetApplicationLinkRequest) Equal(that interface{}) bool {
 	if !this.ApplicationIdentifiers.Equal(&that1.ApplicationIdentifiers) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -511,7 +1063,7 @@ func (this *SetApplicationLinkRequest) Equal(that interface{}) bool {
 	if !this.ApplicationLink.Equal(&that1.ApplicationLink) {
 		return false
 	}
-	if !this.FieldMask.Equal(&that1.FieldMask) {
+	if !this.FieldMask.Equal(that1.FieldMask) {
 		return false
 	}
 	return true
@@ -567,6 +1119,335 @@ func (this *ApplicationLinkStats) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *AsConfiguration) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AsConfiguration)
+	if !ok {
+		that2, ok := that.(AsConfiguration)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Pubsub.Equal(that1.Pubsub) {
+		return false
+	}
+	return true
+}
+func (this *AsConfiguration_PubSub) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AsConfiguration_PubSub)
+	if !ok {
+		that2, ok := that.(AsConfiguration_PubSub)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Providers.Equal(that1.Providers) {
+		return false
+	}
+	return true
+}
+func (this *AsConfiguration_PubSub_Providers) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AsConfiguration_PubSub_Providers)
+	if !ok {
+		that2, ok := that.(AsConfiguration_PubSub_Providers)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Mqtt != that1.Mqtt {
+		return false
+	}
+	if this.Nats != that1.Nats {
+		return false
+	}
+	return true
+}
+func (this *GetAsConfigurationRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetAsConfigurationRequest)
+	if !ok {
+		that2, ok := that.(GetAsConfigurationRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *GetAsConfigurationResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetAsConfigurationResponse)
+	if !ok {
+		that2, ok := that.(GetAsConfigurationResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Configuration.Equal(that1.Configuration) {
+		return false
+	}
+	return true
+}
+func (this *NsAsHandleUplinkRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*NsAsHandleUplinkRequest)
+	if !ok {
+		that2, ok := that.(NsAsHandleUplinkRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.ApplicationUps) != len(that1.ApplicationUps) {
+		return false
+	}
+	for i := range this.ApplicationUps {
+		if !this.ApplicationUps[i].Equal(that1.ApplicationUps[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *EncodeDownlinkRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*EncodeDownlinkRequest)
+	if !ok {
+		that2, ok := that.(EncodeDownlinkRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.EndDeviceIds.Equal(that1.EndDeviceIds) {
+		return false
+	}
+	if !this.VersionIds.Equal(that1.VersionIds) {
+		return false
+	}
+	if !this.Downlink.Equal(that1.Downlink) {
+		return false
+	}
+	if this.Formatter != that1.Formatter {
+		return false
+	}
+	if this.Parameter != that1.Parameter {
+		return false
+	}
+	return true
+}
+func (this *EncodeDownlinkResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*EncodeDownlinkResponse)
+	if !ok {
+		that2, ok := that.(EncodeDownlinkResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Downlink.Equal(that1.Downlink) {
+		return false
+	}
+	return true
+}
+func (this *DecodeUplinkRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DecodeUplinkRequest)
+	if !ok {
+		that2, ok := that.(DecodeUplinkRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.EndDeviceIds.Equal(that1.EndDeviceIds) {
+		return false
+	}
+	if !this.VersionIds.Equal(that1.VersionIds) {
+		return false
+	}
+	if !this.Uplink.Equal(that1.Uplink) {
+		return false
+	}
+	if this.Formatter != that1.Formatter {
+		return false
+	}
+	if this.Parameter != that1.Parameter {
+		return false
+	}
+	return true
+}
+func (this *DecodeUplinkResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DecodeUplinkResponse)
+	if !ok {
+		that2, ok := that.(DecodeUplinkResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Uplink.Equal(that1.Uplink) {
+		return false
+	}
+	return true
+}
+func (this *DecodeDownlinkRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DecodeDownlinkRequest)
+	if !ok {
+		that2, ok := that.(DecodeDownlinkRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.EndDeviceIds.Equal(that1.EndDeviceIds) {
+		return false
+	}
+	if !this.VersionIds.Equal(that1.VersionIds) {
+		return false
+	}
+	if !this.Downlink.Equal(that1.Downlink) {
+		return false
+	}
+	if this.Formatter != that1.Formatter {
+		return false
+	}
+	if this.Parameter != that1.Parameter {
+		return false
+	}
+	return true
+}
+func (this *DecodeDownlinkResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DecodeDownlinkResponse)
+	if !ok {
+		that2, ok := that.(DecodeDownlinkResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Downlink.Equal(that1.Downlink) {
+		return false
+	}
+	return true
+}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -594,6 +1475,7 @@ type AsClient interface {
 	// This call returns a NotFound error code if there is no link for the given application identifiers.
 	// This call returns the error code of the link error if linking to a Network Server failed.
 	GetLinkStats(ctx context.Context, in *ApplicationIdentifiers, opts ...grpc.CallOption) (*ApplicationLinkStats, error)
+	GetConfiguration(ctx context.Context, in *GetAsConfigurationRequest, opts ...grpc.CallOption) (*GetAsConfigurationResponse, error)
 }
 
 type asClient struct {
@@ -640,6 +1522,15 @@ func (c *asClient) GetLinkStats(ctx context.Context, in *ApplicationIdentifiers,
 	return out, nil
 }
 
+func (c *asClient) GetConfiguration(ctx context.Context, in *GetAsConfigurationRequest, opts ...grpc.CallOption) (*GetAsConfigurationResponse, error) {
+	out := new(GetAsConfigurationResponse)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.As/GetConfiguration", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AsServer is the server API for As service.
 type AsServer interface {
 	// Get a link configuration from the Application Server to Network Server.
@@ -656,6 +1547,7 @@ type AsServer interface {
 	// This call returns a NotFound error code if there is no link for the given application identifiers.
 	// This call returns the error code of the link error if linking to a Network Server failed.
 	GetLinkStats(context.Context, *ApplicationIdentifiers) (*ApplicationLinkStats, error)
+	GetConfiguration(context.Context, *GetAsConfigurationRequest) (*GetAsConfigurationResponse, error)
 }
 
 // UnimplementedAsServer can be embedded to have forward compatible implementations.
@@ -673,6 +1565,9 @@ func (*UnimplementedAsServer) DeleteLink(ctx context.Context, req *ApplicationId
 }
 func (*UnimplementedAsServer) GetLinkStats(ctx context.Context, req *ApplicationIdentifiers) (*ApplicationLinkStats, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLinkStats not implemented")
+}
+func (*UnimplementedAsServer) GetConfiguration(ctx context.Context, req *GetAsConfigurationRequest) (*GetAsConfigurationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfiguration not implemented")
 }
 
 func RegisterAsServer(s *grpc.Server, srv AsServer) {
@@ -751,6 +1646,24 @@ func _As_GetLinkStats_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _As_GetConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAsConfigurationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AsServer).GetConfiguration(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.As/GetConfiguration",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AsServer).GetConfiguration(ctx, req.(*GetAsConfigurationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _As_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ttn.lorawan.v3.As",
 	HandlerType: (*AsServer)(nil),
@@ -770,6 +1683,84 @@ var _As_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLinkStats",
 			Handler:    _As_GetLinkStats_Handler,
+		},
+		{
+			MethodName: "GetConfiguration",
+			Handler:    _As_GetConfiguration_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "lorawan-stack/api/applicationserver.proto",
+}
+
+// NsAsClient is the client API for NsAs service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type NsAsClient interface {
+	// Handle Application uplink messages.
+	HandleUplink(ctx context.Context, in *NsAsHandleUplinkRequest, opts ...grpc.CallOption) (*types.Empty, error)
+}
+
+type nsAsClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewNsAsClient(cc *grpc.ClientConn) NsAsClient {
+	return &nsAsClient{cc}
+}
+
+func (c *nsAsClient) HandleUplink(ctx context.Context, in *NsAsHandleUplinkRequest, opts ...grpc.CallOption) (*types.Empty, error) {
+	out := new(types.Empty)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.NsAs/HandleUplink", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// NsAsServer is the server API for NsAs service.
+type NsAsServer interface {
+	// Handle Application uplink messages.
+	HandleUplink(context.Context, *NsAsHandleUplinkRequest) (*types.Empty, error)
+}
+
+// UnimplementedNsAsServer can be embedded to have forward compatible implementations.
+type UnimplementedNsAsServer struct {
+}
+
+func (*UnimplementedNsAsServer) HandleUplink(ctx context.Context, req *NsAsHandleUplinkRequest) (*types.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleUplink not implemented")
+}
+
+func RegisterNsAsServer(s *grpc.Server, srv NsAsServer) {
+	s.RegisterService(&_NsAs_serviceDesc, srv)
+}
+
+func _NsAs_HandleUplink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NsAsHandleUplinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NsAsServer).HandleUplink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.NsAs/HandleUplink",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NsAsServer).HandleUplink(ctx, req.(*NsAsHandleUplinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _NsAs_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "ttn.lorawan.v3.NsAs",
+	HandlerType: (*NsAsServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "HandleUplink",
+			Handler:    _NsAs_HandleUplink_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -793,6 +1784,9 @@ type AppAsClient interface {
 	GetMQTTConnectionInfo(ctx context.Context, in *ApplicationIdentifiers, opts ...grpc.CallOption) (*MQTTConnectionInfo, error)
 	// Simulate an upstream message. This can be used to test integrations.
 	SimulateUplink(ctx context.Context, in *ApplicationUp, opts ...grpc.CallOption) (*types.Empty, error)
+	EncodeDownlink(ctx context.Context, in *EncodeDownlinkRequest, opts ...grpc.CallOption) (*EncodeDownlinkResponse, error)
+	DecodeUplink(ctx context.Context, in *DecodeUplinkRequest, opts ...grpc.CallOption) (*DecodeUplinkResponse, error)
+	DecodeDownlink(ctx context.Context, in *DecodeDownlinkRequest, opts ...grpc.CallOption) (*DecodeDownlinkResponse, error)
 }
 
 type appAsClient struct {
@@ -880,6 +1874,33 @@ func (c *appAsClient) SimulateUplink(ctx context.Context, in *ApplicationUp, opt
 	return out, nil
 }
 
+func (c *appAsClient) EncodeDownlink(ctx context.Context, in *EncodeDownlinkRequest, opts ...grpc.CallOption) (*EncodeDownlinkResponse, error) {
+	out := new(EncodeDownlinkResponse)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.AppAs/EncodeDownlink", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appAsClient) DecodeUplink(ctx context.Context, in *DecodeUplinkRequest, opts ...grpc.CallOption) (*DecodeUplinkResponse, error) {
+	out := new(DecodeUplinkResponse)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.AppAs/DecodeUplink", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appAsClient) DecodeDownlink(ctx context.Context, in *DecodeDownlinkRequest, opts ...grpc.CallOption) (*DecodeDownlinkResponse, error) {
+	out := new(DecodeDownlinkResponse)
+	err := c.cc.Invoke(ctx, "/ttn.lorawan.v3.AppAs/DecodeDownlink", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppAsServer is the server API for AppAs service.
 type AppAsServer interface {
 	// Subscribe to upstream messages.
@@ -895,6 +1916,9 @@ type AppAsServer interface {
 	GetMQTTConnectionInfo(context.Context, *ApplicationIdentifiers) (*MQTTConnectionInfo, error)
 	// Simulate an upstream message. This can be used to test integrations.
 	SimulateUplink(context.Context, *ApplicationUp) (*types.Empty, error)
+	EncodeDownlink(context.Context, *EncodeDownlinkRequest) (*EncodeDownlinkResponse, error)
+	DecodeUplink(context.Context, *DecodeUplinkRequest) (*DecodeUplinkResponse, error)
+	DecodeDownlink(context.Context, *DecodeDownlinkRequest) (*DecodeDownlinkResponse, error)
 }
 
 // UnimplementedAppAsServer can be embedded to have forward compatible implementations.
@@ -918,6 +1942,15 @@ func (*UnimplementedAppAsServer) GetMQTTConnectionInfo(ctx context.Context, req 
 }
 func (*UnimplementedAppAsServer) SimulateUplink(ctx context.Context, req *ApplicationUp) (*types.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SimulateUplink not implemented")
+}
+func (*UnimplementedAppAsServer) EncodeDownlink(ctx context.Context, req *EncodeDownlinkRequest) (*EncodeDownlinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EncodeDownlink not implemented")
+}
+func (*UnimplementedAppAsServer) DecodeUplink(ctx context.Context, req *DecodeUplinkRequest) (*DecodeUplinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DecodeUplink not implemented")
+}
+func (*UnimplementedAppAsServer) DecodeDownlink(ctx context.Context, req *DecodeDownlinkRequest) (*DecodeDownlinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DecodeDownlink not implemented")
 }
 
 func RegisterAppAsServer(s *grpc.Server, srv AppAsServer) {
@@ -1035,6 +2068,60 @@ func _AppAs_SimulateUplink_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AppAs_EncodeDownlink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EncodeDownlinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppAsServer).EncodeDownlink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.AppAs/EncodeDownlink",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppAsServer).EncodeDownlink(ctx, req.(*EncodeDownlinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppAs_DecodeUplink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DecodeUplinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppAsServer).DecodeUplink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.AppAs/DecodeUplink",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppAsServer).DecodeUplink(ctx, req.(*DecodeUplinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppAs_DecodeDownlink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DecodeDownlinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppAsServer).DecodeDownlink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ttn.lorawan.v3.AppAs/DecodeDownlink",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppAsServer).DecodeDownlink(ctx, req.(*DecodeDownlinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _AppAs_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ttn.lorawan.v3.AppAs",
 	HandlerType: (*AppAsServer)(nil),
@@ -1058,6 +2145,18 @@ var _AppAs_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SimulateUplink",
 			Handler:    _AppAs_SimulateUplink_Handler,
+		},
+		{
+			MethodName: "EncodeDownlink",
+			Handler:    _AppAs_EncodeDownlink_Handler,
+		},
+		{
+			MethodName: "DecodeUplink",
+			Handler:    _AppAs_DecodeUplink_Handler,
+		},
+		{
+			MethodName: "DecodeDownlink",
+			Handler:    _AppAs_DecodeDownlink_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -1224,404 +2323,17 @@ var _AsEndDeviceRegistry_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/applicationserver.proto",
 }
 
-func (m *ApplicationLink) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ApplicationLink) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ApplicationLink) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.SkipPayloadCrypto != nil {
-		{
-			size, err := m.SkipPayloadCrypto.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.TLS {
-		i--
-		if m.TLS {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.DefaultFormatters != nil {
-		{
-			size, err := m.DefaultFormatters.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.APIKey) > 0 {
-		i -= len(m.APIKey)
-		copy(dAtA[i:], m.APIKey)
-		i = encodeVarintApplicationserver(dAtA, i, uint64(len(m.APIKey)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.NetworkServerAddress) > 0 {
-		i -= len(m.NetworkServerAddress)
-		copy(dAtA[i:], m.NetworkServerAddress)
-		i = encodeVarintApplicationserver(dAtA, i, uint64(len(m.NetworkServerAddress)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetApplicationLinkRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetApplicationLinkRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetApplicationLinkRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *SetApplicationLinkRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SetApplicationLinkRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SetApplicationLinkRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.FieldMask.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x1a
-	{
-		size, err := m.ApplicationLink.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.ApplicationIdentifiers.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintApplicationserver(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ApplicationLinkStats) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ApplicationLinkStats) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ApplicationLinkStats) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.DownlinkCount != 0 {
-		i = encodeVarintApplicationserver(dAtA, i, m.DownlinkCount)
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.LastDownlinkForwardedAt != nil {
-		n8, err8 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.LastDownlinkForwardedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.LastDownlinkForwardedAt):])
-		if err8 != nil {
-			return 0, err8
-		}
-		i -= n8
-		i = encodeVarintApplicationserver(dAtA, i, uint64(n8))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.UpCount != 0 {
-		i = encodeVarintApplicationserver(dAtA, i, m.UpCount)
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.LastUpReceivedAt != nil {
-		n9, err9 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.LastUpReceivedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.LastUpReceivedAt):])
-		if err9 != nil {
-			return 0, err9
-		}
-		i -= n9
-		i = encodeVarintApplicationserver(dAtA, i, uint64(n9))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.NetworkServerAddress) > 0 {
-		i -= len(m.NetworkServerAddress)
-		copy(dAtA[i:], m.NetworkServerAddress)
-		i = encodeVarintApplicationserver(dAtA, i, uint64(len(m.NetworkServerAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.LinkedAt != nil {
-		n10, err10 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.LinkedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.LinkedAt):])
-		if err10 != nil {
-			return 0, err10
-		}
-		i -= n10
-		i = encodeVarintApplicationserver(dAtA, i, uint64(n10))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintApplicationserver(dAtA []byte, offset int, v uint64) int {
-	offset -= sovApplicationserver(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func NewPopulatedApplicationLink(r randyApplicationserver, easy bool) *ApplicationLink {
-	this := &ApplicationLink{}
-	this.NetworkServerAddress = randStringApplicationserver(r)
-	this.APIKey = randStringApplicationserver(r)
-	if r.Intn(5) != 0 {
-		this.DefaultFormatters = NewPopulatedMessagePayloadFormatters(r, easy)
-	}
-	this.TLS = bool(r.Intn(2) == 0)
-	if r.Intn(5) != 0 {
-		this.SkipPayloadCrypto = types.NewPopulatedBoolValue(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGetApplicationLinkRequest(r randyApplicationserver, easy bool) *GetApplicationLinkRequest {
-	this := &GetApplicationLinkRequest{}
-	v1 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v1
-	v2 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v2
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedSetApplicationLinkRequest(r randyApplicationserver, easy bool) *SetApplicationLinkRequest {
-	this := &SetApplicationLinkRequest{}
-	v3 := NewPopulatedApplicationIdentifiers(r, easy)
-	this.ApplicationIdentifiers = *v3
-	v4 := NewPopulatedApplicationLink(r, easy)
-	this.ApplicationLink = *v4
-	v5 := types.NewPopulatedFieldMask(r, easy)
-	this.FieldMask = *v5
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedApplicationLinkStats(r randyApplicationserver, easy bool) *ApplicationLinkStats {
-	this := &ApplicationLinkStats{}
-	if r.Intn(5) != 0 {
-		this.LinkedAt = github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
-	}
-	this.NetworkServerAddress = randStringApplicationserver(r)
-	if r.Intn(5) != 0 {
-		this.LastUpReceivedAt = github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
-	}
-	this.UpCount = uint64(r.Uint32())
-	if r.Intn(5) != 0 {
-		this.LastDownlinkForwardedAt = github_com_gogo_protobuf_types.NewPopulatedStdTime(r, easy)
-	}
-	this.DownlinkCount = uint64(r.Uint32())
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-type randyApplicationserver interface {
-	Float32() float32
-	Float64() float64
-	Int63() int64
-	Int31() int32
-	Uint32() uint32
-	Intn(n int) int
-}
-
-func randUTF8RuneApplicationserver(r randyApplicationserver) rune {
-	ru := r.Intn(62)
-	if ru < 10 {
-		return rune(ru + 48)
-	} else if ru < 36 {
-		return rune(ru + 55)
-	}
-	return rune(ru + 61)
-}
-func randStringApplicationserver(r randyApplicationserver) string {
-	v6 := r.Intn(100)
-	tmps := make([]rune, v6)
-	for i := 0; i < v6; i++ {
-		tmps[i] = randUTF8RuneApplicationserver(r)
-	}
-	return string(tmps)
-}
-func randUnrecognizedApplicationserver(r randyApplicationserver, maxFieldNumber int) (dAtA []byte) {
-	l := r.Intn(5)
-	for i := 0; i < l; i++ {
-		wire := r.Intn(4)
-		if wire == 3 {
-			wire = 5
-		}
-		fieldNumber := maxFieldNumber + r.Intn(100)
-		dAtA = randFieldApplicationserver(dAtA, r, fieldNumber, wire)
-	}
-	return dAtA
-}
-func randFieldApplicationserver(dAtA []byte, r randyApplicationserver, fieldNumber int, wire int) []byte {
-	key := uint32(fieldNumber)<<3 | uint32(wire)
-	switch wire {
-	case 0:
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(key))
-		v7 := r.Int63()
-		if r.Intn(2) == 0 {
-			v7 *= -1
-		}
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(v7))
-	case 1:
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	case 2:
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(key))
-		ll := r.Intn(100)
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(ll))
-		for j := 0; j < ll; j++ {
-			dAtA = append(dAtA, byte(r.Intn(256)))
-		}
-	default:
-		dAtA = encodeVarintPopulateApplicationserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	}
-	return dAtA
-}
-func encodeVarintPopulateApplicationserver(dAtA []byte, v uint64) []byte {
-	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
-		v >>= 7
-	}
-	dAtA = append(dAtA, uint8(v))
-	return dAtA
-}
 func (m *ApplicationLink) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.NetworkServerAddress)
-	if l > 0 {
-		n += 1 + l + sovApplicationserver(uint64(l))
-	}
-	l = len(m.APIKey)
-	if l > 0 {
-		n += 1 + l + sovApplicationserver(uint64(l))
-	}
 	if m.DefaultFormatters != nil {
 		l = m.DefaultFormatters.Size()
 		n += 1 + l + sovApplicationserver(uint64(l))
 	}
-	if m.TLS {
+	if m.Tls {
 		n += 2
 	}
 	if m.SkipPayloadCrypto != nil {
@@ -1639,8 +2351,10 @@ func (m *GetApplicationLinkRequest) Size() (n int) {
 	_ = l
 	l = m.ApplicationIdentifiers.Size()
 	n += 1 + l + sovApplicationserver(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovApplicationserver(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
 	return n
 }
 
@@ -1654,8 +2368,10 @@ func (m *SetApplicationLinkRequest) Size() (n int) {
 	n += 1 + l + sovApplicationserver(uint64(l))
 	l = m.ApplicationLink.Size()
 	n += 1 + l + sovApplicationserver(uint64(l))
-	l = m.FieldMask.Size()
-	n += 1 + l + sovApplicationserver(uint64(l))
+	if m.FieldMask != nil {
+		l = m.FieldMask.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
 	return n
 }
 
@@ -1678,14 +2394,215 @@ func (m *ApplicationLinkStats) Size() (n int) {
 		n += 1 + l + sovApplicationserver(uint64(l))
 	}
 	if m.UpCount != 0 {
-		n += 1 + sovApplicationserver(m.UpCount)
+		n += 1 + sovApplicationserver(uint64(m.UpCount))
 	}
 	if m.LastDownlinkForwardedAt != nil {
 		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.LastDownlinkForwardedAt)
 		n += 1 + l + sovApplicationserver(uint64(l))
 	}
 	if m.DownlinkCount != 0 {
-		n += 1 + sovApplicationserver(m.DownlinkCount)
+		n += 1 + sovApplicationserver(uint64(m.DownlinkCount))
+	}
+	return n
+}
+
+func (m *AsConfiguration) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pubsub != nil {
+		l = m.Pubsub.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *AsConfiguration_PubSub) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Providers != nil {
+		l = m.Providers.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *AsConfiguration_PubSub_Providers) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Mqtt != 0 {
+		n += 1 + sovApplicationserver(uint64(m.Mqtt))
+	}
+	if m.Nats != 0 {
+		n += 1 + sovApplicationserver(uint64(m.Nats))
+	}
+	return n
+}
+
+func (m *GetAsConfigurationRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetAsConfigurationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Configuration != nil {
+		l = m.Configuration.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *NsAsHandleUplinkRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ApplicationUps) > 0 {
+		for _, e := range m.ApplicationUps {
+			l = e.Size()
+			n += 1 + l + sovApplicationserver(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *EncodeDownlinkRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.EndDeviceIds != nil {
+		l = m.EndDeviceIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.VersionIds != nil {
+		l = m.VersionIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Downlink != nil {
+		l = m.Downlink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Formatter != 0 {
+		n += 1 + sovApplicationserver(uint64(m.Formatter))
+	}
+	l = len(m.Parameter)
+	if l > 0 {
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *EncodeDownlinkResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Downlink != nil {
+		l = m.Downlink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *DecodeUplinkRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.EndDeviceIds != nil {
+		l = m.EndDeviceIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.VersionIds != nil {
+		l = m.VersionIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Uplink != nil {
+		l = m.Uplink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Formatter != 0 {
+		n += 1 + sovApplicationserver(uint64(m.Formatter))
+	}
+	l = len(m.Parameter)
+	if l > 0 {
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *DecodeUplinkResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Uplink != nil {
+		l = m.Uplink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *DecodeDownlinkRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.EndDeviceIds != nil {
+		l = m.EndDeviceIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.VersionIds != nil {
+		l = m.VersionIds.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Downlink != nil {
+		l = m.Downlink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	if m.Formatter != 0 {
+		n += 1 + sovApplicationserver(uint64(m.Formatter))
+	}
+	l = len(m.Parameter)
+	if l > 0 {
+		n += 1 + l + sovApplicationserver(uint64(l))
+	}
+	return n
+}
+
+func (m *DecodeDownlinkResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Downlink != nil {
+		l = m.Downlink.Size()
+		n += 1 + l + sovApplicationserver(uint64(l))
 	}
 	return n
 }
@@ -1694,17 +2611,15 @@ func sovApplicationserver(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozApplicationserver(x uint64) (n int) {
-	return sovApplicationserver((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovApplicationserver(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *ApplicationLink) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ApplicationLink{`,
-		`NetworkServerAddress:` + fmt.Sprintf("%v", this.NetworkServerAddress) + `,`,
-		`APIKey:` + fmt.Sprintf("%v", this.APIKey) + `,`,
 		`DefaultFormatters:` + strings.Replace(fmt.Sprintf("%v", this.DefaultFormatters), "MessagePayloadFormatters", "MessagePayloadFormatters", 1) + `,`,
-		`TLS:` + fmt.Sprintf("%v", this.TLS) + `,`,
+		`Tls:` + fmt.Sprintf("%v", this.Tls) + `,`,
 		`SkipPayloadCrypto:` + strings.Replace(fmt.Sprintf("%v", this.SkipPayloadCrypto), "BoolValue", "types.BoolValue", 1) + `,`,
 		`}`,
 	}, "")
@@ -1716,7 +2631,7 @@ func (this *GetApplicationLinkRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetApplicationLinkRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1728,7 +2643,7 @@ func (this *SetApplicationLinkRequest) String() string {
 	s := strings.Join([]string{`&SetApplicationLinkRequest{`,
 		`ApplicationIdentifiers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ApplicationIdentifiers), "ApplicationIdentifiers", "ApplicationIdentifiers", 1), `&`, ``, 1) + `,`,
 		`ApplicationLink:` + strings.Replace(strings.Replace(this.ApplicationLink.String(), "ApplicationLink", "ApplicationLink", 1), `&`, ``, 1) + `,`,
-		`FieldMask:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1), `&`, ``, 1) + `,`,
+		`FieldMask:` + strings.Replace(fmt.Sprintf("%v", this.FieldMask), "FieldMask", "types.FieldMask", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1748,6 +2663,143 @@ func (this *ApplicationLinkStats) String() string {
 	}, "")
 	return s
 }
+func (this *AsConfiguration) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AsConfiguration{`,
+		`Pubsub:` + strings.Replace(fmt.Sprintf("%v", this.Pubsub), "AsConfiguration_PubSub", "AsConfiguration_PubSub", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AsConfiguration_PubSub) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AsConfiguration_PubSub{`,
+		`Providers:` + strings.Replace(fmt.Sprintf("%v", this.Providers), "AsConfiguration_PubSub_Providers", "AsConfiguration_PubSub_Providers", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AsConfiguration_PubSub_Providers) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AsConfiguration_PubSub_Providers{`,
+		`Mqtt:` + fmt.Sprintf("%v", this.Mqtt) + `,`,
+		`Nats:` + fmt.Sprintf("%v", this.Nats) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAsConfigurationRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAsConfigurationRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAsConfigurationResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAsConfigurationResponse{`,
+		`Configuration:` + strings.Replace(this.Configuration.String(), "AsConfiguration", "AsConfiguration", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NsAsHandleUplinkRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForApplicationUps := "[]*ApplicationUp{"
+	for _, f := range this.ApplicationUps {
+		repeatedStringForApplicationUps += strings.Replace(fmt.Sprintf("%v", f), "ApplicationUp", "ApplicationUp", 1) + ","
+	}
+	repeatedStringForApplicationUps += "}"
+	s := strings.Join([]string{`&NsAsHandleUplinkRequest{`,
+		`ApplicationUps:` + repeatedStringForApplicationUps + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EncodeDownlinkRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EncodeDownlinkRequest{`,
+		`EndDeviceIds:` + strings.Replace(fmt.Sprintf("%v", this.EndDeviceIds), "EndDeviceIdentifiers", "EndDeviceIdentifiers", 1) + `,`,
+		`VersionIds:` + strings.Replace(fmt.Sprintf("%v", this.VersionIds), "EndDeviceVersionIdentifiers", "EndDeviceVersionIdentifiers", 1) + `,`,
+		`Downlink:` + strings.Replace(fmt.Sprintf("%v", this.Downlink), "ApplicationDownlink", "ApplicationDownlink", 1) + `,`,
+		`Formatter:` + fmt.Sprintf("%v", this.Formatter) + `,`,
+		`Parameter:` + fmt.Sprintf("%v", this.Parameter) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EncodeDownlinkResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EncodeDownlinkResponse{`,
+		`Downlink:` + strings.Replace(fmt.Sprintf("%v", this.Downlink), "ApplicationDownlink", "ApplicationDownlink", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DecodeUplinkRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DecodeUplinkRequest{`,
+		`EndDeviceIds:` + strings.Replace(fmt.Sprintf("%v", this.EndDeviceIds), "EndDeviceIdentifiers", "EndDeviceIdentifiers", 1) + `,`,
+		`VersionIds:` + strings.Replace(fmt.Sprintf("%v", this.VersionIds), "EndDeviceVersionIdentifiers", "EndDeviceVersionIdentifiers", 1) + `,`,
+		`Uplink:` + strings.Replace(fmt.Sprintf("%v", this.Uplink), "ApplicationUplink", "ApplicationUplink", 1) + `,`,
+		`Formatter:` + fmt.Sprintf("%v", this.Formatter) + `,`,
+		`Parameter:` + fmt.Sprintf("%v", this.Parameter) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DecodeUplinkResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DecodeUplinkResponse{`,
+		`Uplink:` + strings.Replace(fmt.Sprintf("%v", this.Uplink), "ApplicationUplink", "ApplicationUplink", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DecodeDownlinkRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DecodeDownlinkRequest{`,
+		`EndDeviceIds:` + strings.Replace(fmt.Sprintf("%v", this.EndDeviceIds), "EndDeviceIdentifiers", "EndDeviceIdentifiers", 1) + `,`,
+		`VersionIds:` + strings.Replace(fmt.Sprintf("%v", this.VersionIds), "EndDeviceVersionIdentifiers", "EndDeviceVersionIdentifiers", 1) + `,`,
+		`Downlink:` + strings.Replace(fmt.Sprintf("%v", this.Downlink), "ApplicationDownlink", "ApplicationDownlink", 1) + `,`,
+		`Formatter:` + fmt.Sprintf("%v", this.Formatter) + `,`,
+		`Parameter:` + fmt.Sprintf("%v", this.Parameter) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DecodeDownlinkResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DecodeDownlinkResponse{`,
+		`Downlink:` + strings.Replace(fmt.Sprintf("%v", this.Downlink), "ApplicationDownlink", "ApplicationDownlink", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func valueToStringApplicationserver(v interface{}) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1756,798 +2808,3 @@ func valueToStringApplicationserver(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ApplicationLink) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplicationserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ApplicationLink: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ApplicationLink: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NetworkServerAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.NetworkServerAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field APIKey", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.APIKey = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DefaultFormatters", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DefaultFormatters == nil {
-				m.DefaultFormatters = &MessagePayloadFormatters{}
-			}
-			if err := m.DefaultFormatters.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TLS", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.TLS = bool(v != 0)
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SkipPayloadCrypto", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.SkipPayloadCrypto == nil {
-				m.SkipPayloadCrypto = &types.BoolValue{}
-			}
-			if err := m.SkipPayloadCrypto.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplicationserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetApplicationLinkRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplicationserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetApplicationLinkRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetApplicationLinkRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplicationserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *SetApplicationLinkRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplicationserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SetApplicationLinkRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SetApplicationLinkRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationIdentifiers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationIdentifiers.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationLink", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ApplicationLink.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FieldMask", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FieldMask.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplicationserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ApplicationLinkStats) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowApplicationserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ApplicationLinkStats: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ApplicationLinkStats: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LinkedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.LinkedAt == nil {
-				m.LinkedAt = new(time.Time)
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.LinkedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NetworkServerAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.NetworkServerAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpReceivedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.LastUpReceivedAt == nil {
-				m.LastUpReceivedAt = new(time.Time)
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.LastUpReceivedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UpCount", wireType)
-			}
-			m.UpCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.UpCount |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastDownlinkForwardedAt", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.LastDownlinkForwardedAt == nil {
-				m.LastDownlinkForwardedAt = new(time.Time)
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.LastDownlinkForwardedAt, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DownlinkCount", wireType)
-			}
-			m.DownlinkCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.DownlinkCount |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipApplicationserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthApplicationserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipApplicationserver(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowApplicationserver
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowApplicationserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthApplicationserver
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupApplicationserver
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthApplicationserver
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthApplicationserver        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowApplicationserver          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupApplicationserver = fmt.Errorf("proto: unexpected end of group")
-)

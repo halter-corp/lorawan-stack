@@ -18,9 +18,9 @@ import { connect } from 'react-redux'
 
 import Status from '@ttn-lw/components/status'
 
-import Message from '@ttn-lw/lib/components/message'
+import FetchTable from '@ttn-lw/containers/fetch-table'
 
-import FetchTable from '@console/containers/fetch-table'
+import Message from '@ttn-lw/lib/components/message'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
@@ -71,7 +71,7 @@ const headers = [
     name: 'status',
     width: 18,
     displayName: sharedMessages.status,
-    render(status) {
+    render: status => {
       let indicator = 'unknown'
       let label = sharedMessages.unknown
 
@@ -85,7 +85,7 @@ const headers = [
         indicator = 'unknown'
         label = sharedMessages.otherCluster
       } else if (status === 'unknown') {
-        indicator = 'unknown'
+        indicator = 'mediocre'
         label = sharedMessages.unknown
       }
 

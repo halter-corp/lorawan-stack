@@ -15,7 +15,9 @@
 package io
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -28,6 +30,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/frequencyplans"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayserver/scheduling"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -62,6 +65,12 @@ type Server interface {
 	ClaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error
 	// UnclaimDownlink releases the claim of the downlink path for the given gateway.
 	UnclaimDownlink(ctx context.Context, ids ttnpb.GatewayIdentifiers) error
+	// FromRequestContext decouples the lifetime of the provided context from the values found in the context.
+	FromRequestContext(ctx context.Context) context.Context
+	// RateLimiter returns the rate limiter instance.
+	RateLimiter() ratelimit.Interface
+	// ValidateGatewayID validates the ID of the gateway.
+	ValidateGatewayID(ctx context.Context, ids ttnpb.GatewayIdentifiers) error
 }
 
 // Connection is a connection to a gateway managed by a frontend.
@@ -94,6 +103,15 @@ type Connection struct {
 
 	statsChangedCh chan struct{}
 	locCh          chan struct{}
+
+	lastUplink            *uplinkMessage
+	lastRepeatUpEventTime time.Time
+}
+
+type uplinkMessage struct {
+	payload   []byte
+	frequency uint64
+	antennas  []uint32
 }
 
 var (
@@ -178,8 +196,15 @@ func (c *Connection) Gateway() *ttnpb.Gateway { return c.gateway }
 
 var errBufferFull = errors.DefineInternal("buffer_full", "buffer is full")
 
+// Interval between emitting consecutive gs.up.repeat events for the same gateway connection.
+const consecutiveRepeatUpEventsInterval = time.Minute
+
 // HandleUp updates the uplink stats and sends the message to the upstream channel.
 func (c *Connection) HandleUp(up *ttnpb.UplinkMessage) error {
+	if c.discardRepeatedUplink(up) {
+		return nil
+	}
+
 	var ct scheduling.ConcentratorTime
 	if up.Settings.Time != nil {
 		ct = c.scheduler.SyncWithGatewayAbsolute(up.Settings.Timestamp, up.ReceivedAt, *up.Settings.Time)
@@ -214,8 +239,8 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage) error {
 
 		if c.gateway.LocationPublic && len(c.gateway.Antennas) > int(md.AntennaIndex) {
 			location := c.gateway.Antennas[md.AntennaIndex].Location
-			if location.Source != ttnpb.SOURCE_UNKNOWN {
-				md.Location = &location
+			if location != nil && location.Source != ttnpb.SOURCE_UNKNOWN {
+				md.Location = location
 			}
 		} else if !c.gateway.LocationPublic {
 			md.Location = nil
@@ -342,21 +367,20 @@ var (
 
 // ScheduleDown schedules and sends a downlink message by using the given path and updates the downlink stats.
 // This method returns an error if the downlink message is not a Tx request.
-func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkMessage) (time.Duration, error) {
+func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkMessage) (rx1, rx2 bool, delay time.Duration, err error) {
 	if c.gateway.DownlinkPathConstraint == ttnpb.DOWNLINK_PATH_CONSTRAINT_NEVER {
-		return 0, errNotAllowed.New()
+		return false, false, 0, errNotAllowed.New()
 	}
 	request := msg.GetRequest()
 	if request == nil {
-		return 0, errNotTxRequest.New()
+		return false, false, 0, errNotTxRequest.New()
 	}
-	var delay time.Duration
 
 	logger := log.FromContext(c.ctx).WithField("class", request.Class)
 	logger.Debug("Attempt to schedule downlink on gateway")
 	ids, uplinkToken, err := getDownlinkPath(path, request.Class)
 	if err != nil {
-		return 0, err
+		return false, false, 0, err
 	}
 
 	var fp *frequencyplans.FrequencyPlan
@@ -367,26 +391,37 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			// The requested frequency plan is not configured for the gateway. Load the plan and enforce that it's in the same band.
 			fp, err = c.fps.GetByID(fpID)
 			if err != nil {
-				return 0, errFrequencyPlanNotConfigured.WithCause(err).WithAttributes("id", request.FrequencyPlanID)
+				return false, false, 0, errFrequencyPlanNotConfigured.WithCause(err).WithAttributes("id", request.FrequencyPlanID)
 			}
 			if fp.BandID != c.bandID {
-				return 0, errFrequencyPlansNotFromSameBand.New()
+				return false, false, 0, errFrequencyPlansNotFromSameBand.New()
 			}
 		}
 	} else {
 		// Backwards compatibility. If there's no FrequencyPlanID in the TxRequest, then there must be only one Frequency Plan configured.
 		if len(c.gatewayFPs) != 1 {
-			return 0, errNoFrequencyPlanIDInTxRequest.New()
+			return false, false, 0, errNoFrequencyPlanIDInTxRequest.New()
 		}
 		for _, v := range c.gatewayFPs {
 			fp = v
 			break
 		}
 	}
+
 	phy, err := band.GetByID(fp.BandID)
 	if err != nil {
-		return 0, err
+		return false, false, 0, err
 	}
+
+	lwPhyVersion := request.GetLorawanPhyVersion()
+	// Backwards compatibility. If there's no LoRaWANPhyVersion defined, assume that the band is already versioned.
+	if lwPhyVersion != ttnpb.PHY_UNKNOWN {
+		phy, err = phy.Version(request.GetLorawanPhyVersion())
+		if err != nil {
+			return false, false, 0, err
+		}
+	}
+
 	var rxErrs []errors.ErrorDetails
 	for i, rx := range []struct {
 		dataRateIndex ttnpb.DataRateIndex
@@ -416,12 +451,12 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 		logger.Debug("Attempt to schedule downlink in receive window")
 		dr, ok := phy.DataRates[rx.dataRateIndex]
 		if !ok {
-			return 0, errDataRate.WithAttributes("index", rx.dataRateIndex)
+			return false, false, 0, errDataRate.WithAttributes("index", rx.dataRateIndex)
 		}
 		// The maximum payload size is MACPayload only; for PHYPayload take MHDR (1 byte) and MIC (4 bytes) into account.
 		maxPHYLength := dr.MaxMACPayloadSize(fp.DwellTime.GetDownlinks()) + 5
 		if len(msg.RawPayload) > int(maxPHYLength) {
-			return 0, errTooLong.WithAttributes(
+			return false, false, 0, errTooLong.WithAttributes(
 				"payload_length", len(msg.RawPayload),
 				"maximum_length", maxPHYLength,
 				"data_rate_index", rx.dataRateIndex,
@@ -438,6 +473,7 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			eirp = *sb.MaxEIRP
 		}
 		settings := ttnpb.TxSettings{
+			DataRate:      dr.Rate,
 			DataRateIndex: rx.dataRateIndex,
 			Frequency:     rx.frequency,
 			Downlink: &ttnpb.TxSettings_Downlink{
@@ -448,8 +484,7 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 		if int(ids.AntennaIndex) < len(c.gateway.Antennas) {
 			settings.Downlink.TxPower -= c.gateway.Antennas[ids.AntennaIndex].Gain
 		}
-		settings.DataRate = dr.Rate
-		if lora := dr.Rate.GetLoRa(); lora != nil {
+		if lora := dr.Rate.GetLora(); lora != nil {
 			settings.CodingRate = phy.LoRaCodingRate
 			settings.Downlink.InvertPolarization = true
 		}
@@ -458,12 +493,12 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 		case ttnpb.CLASS_A:
 			f = c.scheduler.ScheduleAt
 			if request.Rx1Delay == ttnpb.RX_DELAY_0 {
-				return 0, errNoRxDelay.New()
+				return false, false, 0, errNoRxDelay.New()
 			}
 			settings.Timestamp = uplinkToken.Timestamp + uint32((time.Duration(request.Rx1Delay)*time.Second+rx.delay)/time.Microsecond)
 		case ttnpb.CLASS_B:
 			if request.AbsoluteTime == nil {
-				return 0, errNoAbsoluteTime.New()
+				return false, false, 0, errNoAbsoluteTime.New()
 			}
 			if !c.scheduler.IsGatewayTimeSynced() {
 				rxErrs = append(rxErrs, errNoGPSSync)
@@ -502,12 +537,15 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 		msg.Settings = &ttnpb.DownlinkMessage_Scheduled{
 			Scheduled: &settings,
 		}
+		rx1 = i == 0
+		rx2 = i == 1
 		rxErrs = nil
 		if now, ok := c.scheduler.Now(); ok {
 			logger = logger.WithField("now", now)
 			delay = time.Duration(em.Starts() - now)
 		}
 		logger.WithFields(log.Fields(
+			"rx_window", i+1,
 			"starts", em.Starts(),
 			"duration", em.Duration(),
 		)).Debug("Scheduled downlink")
@@ -518,15 +556,15 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 		for _, rxErr := range rxErrs {
 			protoErrs = append(protoErrs, ttnpb.ErrorDetailsToProto(rxErr))
 		}
-		return 0, errTxSchedule.WithDetails(&ttnpb.ScheduleDownlinkErrorDetails{
+		return false, false, 0, errTxSchedule.WithDetails(&ttnpb.ScheduleDownlinkErrorDetails{
 			PathErrors: protoErrs,
 		})
 	}
 	err = c.SendDown(msg)
 	if err != nil {
-		return 0, err
+		return false, false, 0, err
 	}
-	return delay, nil
+	return
 }
 
 // Status returns the status channel.
@@ -593,23 +631,35 @@ func (c *Connection) RTTStats(percentile int, t time.Time) (min, max, median, np
 	return c.rtts.Stats(percentile, t)
 }
 
-// Stats collects and returns the gateway connection statistics.
-func (c *Connection) Stats() *ttnpb.GatewayConnectionStats {
-	stats := &ttnpb.GatewayConnectionStats{}
+// Stats collects and returns the gateway connection statistics and the field mask paths.
+func (c *Connection) Stats() (*ttnpb.GatewayConnectionStats, []string) {
 	ct := c.ConnectTime()
-	stats.ConnectedAt = &ct
-	stats.Protocol = c.Frontend().Protocol()
+	stats := &ttnpb.GatewayConnectionStats{
+		ConnectedAt: &ct,
+		Protocol:    c.Frontend().Protocol(),
+	}
+	paths := make([]string, 0, len(ttnpb.GatewayConnectionStatsFieldPathsTopLevel))
+	paths = append(paths, "connected_at", "protocol")
+
 	if s, t, ok := c.StatusStats(); ok {
 		stats.LastStatusReceivedAt = &t
 		stats.LastStatus = s
+		paths = append(paths, "last_status_received_at", "last_status")
 	}
-	if c, t, ok := c.UpStats(); ok {
+	if count, t, ok := c.UpStats(); ok {
 		stats.LastUplinkReceivedAt = &t
-		stats.UplinkCount = c
+		stats.UplinkCount = count
+		paths = append(paths, "last_uplink_received_at", "uplink_count")
 	}
-	if c, t, ok := c.DownStats(); ok {
+	if count, t, ok := c.DownStats(); ok {
 		stats.LastDownlinkReceivedAt = &t
-		stats.DownlinkCount = c
+		stats.DownlinkCount = count
+		paths = append(paths, "last_downlink_received_at", "downlink_count")
+		if c.scheduler != nil {
+			// Usage statistics are only available for downlink.
+			stats.SubBands = c.scheduler.SubBandStats()
+			paths = append(paths, "sub_bands")
+		}
 	}
 	if min, max, median, _, count := c.RTTStats(100, time.Now()); count > 0 {
 		stats.RoundTripTimes = &ttnpb.GatewayConnectionStats_RoundTripTimes{
@@ -618,12 +668,9 @@ func (c *Connection) Stats() *ttnpb.GatewayConnectionStats {
 			Median: median,
 			Count:  uint32(count),
 		}
+		paths = append(paths, "round_trip_times")
 	}
-	if c.scheduler != nil {
-		stats.SubBands = c.scheduler.SubBandStats()
-	}
-
-	return stats
+	return stats, paths
 }
 
 // FrequencyPlans returns the frequency plans for the gateway.
@@ -653,4 +700,86 @@ func (c *Connection) notifyStatsChanged() {
 	case c.statsChangedCh <- struct{}{}:
 	default:
 	}
+}
+
+func uplinkMessageFromProto(pb *ttnpb.UplinkMessage) *uplinkMessage {
+	up := &uplinkMessage{
+		payload:   pb.GetRawPayload(),
+		frequency: pb.GetSettings().Frequency,
+		antennas:  make([]uint32, 0, len(pb.GetRxMetadata())),
+	}
+	for _, md := range pb.GetRxMetadata() {
+		up.antennas = append(up.antennas, md.GetAntennaIndex())
+	}
+	return up
+}
+
+func isRepeatedUplink(this *uplinkMessage, that *uplinkMessage) bool {
+	if this == nil || that == nil || this.frequency != that.frequency || len(this.antennas) != len(that.antennas) || !bytes.Equal(this.payload, that.payload) {
+		return false
+	}
+	for idx, antenna := range this.antennas {
+		if that.antennas[idx] != antenna {
+			return false
+		}
+	}
+	return true
+}
+
+// discardRepeatedUplink will discard repeated uplinks from faulty gateway
+// implementations. It returns true if the uplink message is the same as the
+// last uplink message that was received by the connection.
+//
+// discardRepeatedUplink is not goroutine safe.
+func (c *Connection) discardRepeatedUplink(up *ttnpb.UplinkMessage) bool {
+	uplink := uplinkMessageFromProto(up)
+	shouldDiscard := isRepeatedUplink(c.lastUplink, uplink)
+	c.lastUplink = uplink
+	if shouldDiscard {
+		shouldEmitEvent := false
+		if time.Since(c.lastRepeatUpEventTime) >= consecutiveRepeatUpEventsInterval {
+			log.FromContext(c.ctx).Debug("Dropped repeated gateway uplink")
+			shouldEmitEvent = true
+			c.lastRepeatUpEventTime = time.Now()
+		}
+		registerRepeatUp(c.ctx, shouldEmitEvent, c.gateway, c.frontend.Protocol())
+	}
+	return shouldDiscard
+}
+
+type rssiAndIndex struct {
+	rssi  float32
+	index int
+}
+
+// UniqueUplinkMessagesByRSSI returns the given list of gateway uplink messages after discarding
+// duplicates by RSSI. Two gateway uplink messages are considered duplicates if the RawPayload
+// is identical, and the RSSI values differ. In these cases, only the gateway uplink message
+// with the highest RSSI will be included in the result.
+//
+// UniqueUplinkMessagesByRSSI will allocate a new list of uplink messages, but will not copy the uplink
+// messages themselves.
+func UniqueUplinkMessagesByRSSI(uplinks []*ttnpb.UplinkMessage) []*ttnpb.UplinkMessage {
+	if len(uplinks) < 2 {
+		return uplinks
+	}
+
+	maxRSSI := make(map[string]rssiAndIndex, len(uplinks))
+	deduplicated := make([]*ttnpb.UplinkMessage, 0, len(uplinks))
+	for _, uplink := range uplinks {
+		md := uplink.GetRxMetadata()
+		if len(md) == 0 {
+			deduplicated = append(deduplicated, uplink)
+			continue
+		}
+		key := base64.StdEncoding.EncodeToString(uplink.GetRawPayload())
+		if s, ok := maxRSSI[key]; ok && s.rssi < md[0].RSSI {
+			deduplicated[s.index] = uplink
+			maxRSSI[key] = rssiAndIndex{md[0].RSSI, s.index}
+		} else if !ok {
+			deduplicated = append(deduplicated, uplink)
+			maxRSSI[key] = rssiAndIndex{md[0].RSSI, len(deduplicated) - 1}
+		}
+	}
+	return deduplicated
 }

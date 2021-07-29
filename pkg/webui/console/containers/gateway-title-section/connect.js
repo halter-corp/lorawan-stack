@@ -41,7 +41,7 @@ const mapStateToProps = (state, props) => {
   const apiKeysTotalCount = selectApiKeysTotalCount(state)
   const apiKeysFetching = selectApiKeysFetching(state)
   const apiKeysError = selectApiKeysError(state)
-  const collaboratorsTotalCount = selectCollaboratorsTotalCount(state, { id: props.appId })
+  const collaboratorsTotalCount = selectCollaboratorsTotalCount(state)
   const collaboratorsFetching = selectCollaboratorsFetching(state)
   const collaboratorsError = selectCollaboratorsError(state)
 
@@ -60,7 +60,7 @@ const mapStateToProps = (state, props) => {
 }
 
 const mapDispatchToProps = dispatch => ({
-  loadData(mayViewCollaborators, mayViewApiKeys, gtwId) {
+  loadData: (mayViewCollaborators, mayViewApiKeys, gtwId) => {
     if (mayViewCollaborators) {
       dispatch(getCollaboratorsList('gateway', gtwId))
     }
@@ -88,4 +88,9 @@ export default TitleSection =>
     mapStateToProps,
     mapDispatchToProps,
     mergeProps,
-  )(withRequest(({ loadData }) => loadData(), () => false)(TitleSection))
+  )(
+    withRequest(
+      ({ loadData }) => loadData(),
+      () => false,
+    )(TitleSection),
+  )

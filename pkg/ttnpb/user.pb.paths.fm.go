@@ -7,6 +7,7 @@ var UserFieldPathsNested = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
 	"ids",
 	"ids.email",
@@ -23,6 +24,7 @@ var UserFieldPathsNested = []string{
 	"profile_picture.sizes",
 	"require_password_update",
 	"state",
+	"state_description",
 	"temporary_password",
 	"temporary_password_created_at",
 	"temporary_password_expires_at",
@@ -34,6 +36,7 @@ var UserFieldPathsTopLevel = []string{
 	"attributes",
 	"contact_info",
 	"created_at",
+	"deleted_at",
 	"description",
 	"ids",
 	"name",
@@ -44,6 +47,7 @@ var UserFieldPathsTopLevel = []string{
 	"profile_picture",
 	"require_password_update",
 	"state",
+	"state_description",
 	"temporary_password",
 	"temporary_password_created_at",
 	"temporary_password_expires_at",
@@ -68,6 +72,7 @@ var GetUserRequestFieldPathsTopLevel = []string{
 	"user_ids",
 }
 var ListUsersRequestFieldPathsNested = []string{
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -75,6 +80,7 @@ var ListUsersRequestFieldPathsNested = []string{
 }
 
 var ListUsersRequestFieldPathsTopLevel = []string{
+	"deleted",
 	"field_mask",
 	"limit",
 	"order",
@@ -87,6 +93,7 @@ var CreateUserRequestFieldPathsNested = []string{
 	"user.attributes",
 	"user.contact_info",
 	"user.created_at",
+	"user.deleted_at",
 	"user.description",
 	"user.ids",
 	"user.ids.email",
@@ -103,6 +110,7 @@ var CreateUserRequestFieldPathsNested = []string{
 	"user.profile_picture.sizes",
 	"user.require_password_update",
 	"user.state",
+	"user.state_description",
 	"user.temporary_password",
 	"user.temporary_password_created_at",
 	"user.temporary_password_expires_at",
@@ -120,6 +128,7 @@ var UpdateUserRequestFieldPathsNested = []string{
 	"user.attributes",
 	"user.contact_info",
 	"user.created_at",
+	"user.deleted_at",
 	"user.description",
 	"user.ids",
 	"user.ids.email",
@@ -136,6 +145,7 @@ var UpdateUserRequestFieldPathsNested = []string{
 	"user.profile_picture.sizes",
 	"user.require_password_update",
 	"user.state",
+	"user.state_description",
 	"user.temporary_password",
 	"user.temporary_password_created_at",
 	"user.temporary_password_expires_at",
@@ -195,6 +205,7 @@ var GetUserAPIKeyRequestFieldPathsTopLevel = []string{
 	"user_ids",
 }
 var CreateUserAPIKeyRequestFieldPathsNested = []string{
+	"expires_at",
 	"name",
 	"rights",
 	"user_ids",
@@ -203,16 +214,21 @@ var CreateUserAPIKeyRequestFieldPathsNested = []string{
 }
 
 var CreateUserAPIKeyRequestFieldPathsTopLevel = []string{
+	"expires_at",
 	"name",
 	"rights",
 	"user_ids",
 }
 var UpdateUserAPIKeyRequestFieldPathsNested = []string{
 	"api_key",
+	"api_key.created_at",
+	"api_key.expires_at",
 	"api_key.id",
 	"api_key.key",
 	"api_key.name",
 	"api_key.rights",
+	"api_key.updated_at",
+	"field_mask",
 	"user_ids",
 	"user_ids.email",
 	"user_ids.user_id",
@@ -220,6 +236,7 @@ var UpdateUserAPIKeyRequestFieldPathsNested = []string{
 
 var UpdateUserAPIKeyRequestFieldPathsTopLevel = []string{
 	"api_key",
+	"field_mask",
 	"user_ids",
 }
 var InvitationFieldPathsNested = []string{
@@ -324,4 +341,41 @@ var ListUserSessionsRequestFieldPathsTopLevel = []string{
 	"order",
 	"page",
 	"user_ids",
+}
+var LoginTokenFieldPathsNested = []string{
+	"created_at",
+	"expires_at",
+	"token",
+	"updated_at",
+	"used",
+	"user_ids",
+	"user_ids.email",
+	"user_ids.user_id",
+}
+
+var LoginTokenFieldPathsTopLevel = []string{
+	"created_at",
+	"expires_at",
+	"token",
+	"updated_at",
+	"used",
+	"user_ids",
+}
+var CreateLoginTokenRequestFieldPathsNested = []string{
+	"skip_email",
+	"user_ids",
+	"user_ids.email",
+	"user_ids.user_id",
+}
+
+var CreateLoginTokenRequestFieldPathsTopLevel = []string{
+	"skip_email",
+	"user_ids",
+}
+var CreateLoginTokenResponseFieldPathsNested = []string{
+	"token",
+}
+
+var CreateLoginTokenResponseFieldPathsTopLevel = []string{
+	"token",
 }

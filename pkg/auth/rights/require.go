@@ -24,6 +24,19 @@ import (
 
 // Errors for no/insufficient rights.
 var (
+	ErrNoUniversalRights = errors.DefinePermissionDenied(
+		"no_universal_rights",
+		"no universal rights",
+	)
+	ErrInsufficientUniversalRights = errors.DefinePermissionDenied(
+		"insufficient_universal_rights",
+		"insufficient universal rights",
+		"missing",
+	)
+	ErrNoAdmin = errors.DefinePermissionDenied(
+		"no_admin",
+		"no admin",
+	)
 	ErrNoApplicationRights = errors.DefinePermissionDenied(
 		"no_application_rights",
 		"no rights for application `{uid}`",
@@ -31,6 +44,7 @@ var (
 	ErrInsufficientApplicationRights = errors.DefinePermissionDenied(
 		"insufficient_application_rights",
 		"insufficient rights for application `{uid}`",
+		"missing",
 	)
 	ErrNoClientRights = errors.DefinePermissionDenied(
 		"no_client_rights",
@@ -39,6 +53,7 @@ var (
 	ErrInsufficientClientRights = errors.DefinePermissionDenied(
 		"insufficient_client_rights",
 		"insufficient rights for client `{uid}`",
+		"missing",
 	)
 	ErrNoGatewayRights = errors.DefinePermissionDenied(
 		"no_gateway_rights",
@@ -47,6 +62,7 @@ var (
 	ErrInsufficientGatewayRights = errors.DefinePermissionDenied(
 		"insufficient_gateway_rights",
 		"insufficient rights for gateway `{uid}`",
+		"missing",
 	)
 	ErrNoOrganizationRights = errors.DefinePermissionDenied(
 		"no_organization_rights",
@@ -55,6 +71,7 @@ var (
 	ErrInsufficientOrganizationRights = errors.DefinePermissionDenied(
 		"insufficient_organization_rights",
 		"insufficient rights for organization `{uid}`",
+		"missing",
 	)
 	ErrNoUserRights = errors.DefinePermissionDenied(
 		"no_user_rights",
@@ -63,12 +80,47 @@ var (
 	ErrInsufficientUserRights = errors.DefinePermissionDenied(
 		"insufficient_user_rights",
 		"insufficient rights for user `{uid}`",
+		"missing",
 	)
 )
 
+func rightsNames(rights ...ttnpb.Right) []string {
+	names := make([]string, len(rights))
+	for i, right := range rights {
+		names[i] = right.String()
+	}
+	return names
+}
+
+// RequireUniversal checks that the context contains the required universal rights.
+func RequireUniversal(ctx context.Context, required ...ttnpb.Right) error {
+	authInfo, err := AuthInfo(ctx)
+	if err != nil {
+		return err
+	}
+	if rights := authInfo.GetUniversalRights(); len(rights.GetRights()) == 0 {
+		return ErrNoUniversalRights.New()
+	} else if missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights(); len(missing) > 0 {
+		return ErrInsufficientUniversalRights.WithAttributes("missing", rightsNames(missing...))
+	}
+	return nil
+}
+
+// RequireIsAdmin checks that the context is authenticated as admin.
+func RequireIsAdmin(ctx context.Context) error {
+	authInfo, err := AuthInfo(ctx)
+	if err != nil {
+		return err
+	}
+	if !authInfo.GetIsAdmin() {
+		return ErrNoAdmin.New()
+	}
+	return nil
+}
+
 // RequireApplication checks that context contains the required rights for the
 // given application ID.
-func RequireApplication(ctx context.Context, id ttnpb.ApplicationIdentifiers, required ...ttnpb.Right) (err error) {
+func RequireApplication(ctx context.Context, id ttnpb.ApplicationIdentifiers, required ...ttnpb.Right) error {
 	uid := unique.ID(ctx, id)
 	rights, err := ListApplication(ctx, id)
 	if err != nil {
@@ -79,7 +131,7 @@ func RequireApplication(ctx context.Context, id ttnpb.ApplicationIdentifiers, re
 	}
 	missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights()
 	if len(missing) > 0 {
-		return ErrInsufficientApplicationRights.WithAttributes("uid", uid, "missing", missing)
+		return ErrInsufficientApplicationRights.WithAttributes("uid", uid, "missing", rightsNames(missing...))
 	}
 	return nil
 }
@@ -97,7 +149,7 @@ func RequireClient(ctx context.Context, id ttnpb.ClientIdentifiers, required ...
 	}
 	missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights()
 	if len(missing) > 0 {
-		return ErrInsufficientClientRights.WithAttributes("uid", uid, "missing", missing)
+		return ErrInsufficientClientRights.WithAttributes("uid", uid, "missing", rightsNames(missing...))
 	}
 	return nil
 }
@@ -115,7 +167,7 @@ func RequireGateway(ctx context.Context, id ttnpb.GatewayIdentifiers, required .
 	}
 	missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights()
 	if len(missing) > 0 {
-		return ErrInsufficientGatewayRights.WithAttributes("uid", uid, "missing", missing)
+		return ErrInsufficientGatewayRights.WithAttributes("uid", uid, "missing", rightsNames(missing...))
 	}
 	return nil
 }
@@ -133,7 +185,7 @@ func RequireOrganization(ctx context.Context, id ttnpb.OrganizationIdentifiers, 
 	}
 	missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights()
 	if len(missing) > 0 {
-		return ErrInsufficientOrganizationRights.WithAttributes("uid", uid, "missing", missing)
+		return ErrInsufficientOrganizationRights.WithAttributes("uid", uid, "missing", rightsNames(missing...))
 	}
 	return nil
 }
@@ -151,7 +203,7 @@ func RequireUser(ctx context.Context, id ttnpb.UserIdentifiers, required ...ttnp
 	}
 	missing := ttnpb.RightsFrom(required...).Sub(rights).GetRights()
 	if len(missing) > 0 {
-		return ErrInsufficientUserRights.WithAttributes("uid", uid, "missing", missing)
+		return ErrInsufficientUserRights.WithAttributes("uid", uid, "missing", rightsNames(missing...))
 	}
 	return nil
 }
@@ -160,54 +212,54 @@ func RequireUser(ctx context.Context, id ttnpb.UserIdentifiers, required ...ttnp
 // the given entity identifiers.
 func RequireAny(ctx context.Context, ids ...*ttnpb.EntityIdentifiers) error {
 	for _, entityIDs := range ids {
-		switch ids := entityIDs.Identifiers().(type) {
-		case *ttnpb.ApplicationIdentifiers:
-			list, err := ListApplication(ctx, *ids)
+		switch ids := entityIDs.GetIds().(type) {
+		case *ttnpb.EntityIdentifiers_ApplicationIds:
+			list, err := ListApplication(ctx, *ids.ApplicationIds)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoApplicationRights.WithAttributes("uid", unique.ID(ctx, ids))
+				return ErrNoApplicationRights.WithAttributes("uid", unique.ID(ctx, ids.ApplicationIds))
 			}
-		case *ttnpb.ClientIdentifiers:
-			list, err := ListClient(ctx, *ids)
+		case *ttnpb.EntityIdentifiers_ClientIds:
+			list, err := ListClient(ctx, *ids.ClientIds)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoClientRights.WithAttributes("uid", unique.ID(ctx, ids))
+				return ErrNoClientRights.WithAttributes("uid", unique.ID(ctx, ids.ClientIds))
 			}
-		case *ttnpb.EndDeviceIdentifiers:
-			list, err := ListApplication(ctx, ids.ApplicationIdentifiers)
+		case *ttnpb.EntityIdentifiers_DeviceIds:
+			list, err := ListApplication(ctx, ids.DeviceIds.ApplicationIdentifiers)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoApplicationRights.WithAttributes("uid", unique.ID(ctx, ids.ApplicationIdentifiers))
+				return ErrNoApplicationRights.WithAttributes("uid", unique.ID(ctx, ids.DeviceIds.ApplicationIdentifiers))
 			}
-		case *ttnpb.GatewayIdentifiers:
-			list, err := ListGateway(ctx, *ids)
+		case *ttnpb.EntityIdentifiers_GatewayIds:
+			list, err := ListGateway(ctx, *ids.GatewayIds)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoGatewayRights.WithAttributes("uid", unique.ID(ctx, ids))
+				return ErrNoGatewayRights.WithAttributes("uid", unique.ID(ctx, ids.GatewayIds))
 			}
-		case *ttnpb.OrganizationIdentifiers:
-			list, err := ListOrganization(ctx, *ids)
+		case *ttnpb.EntityIdentifiers_OrganizationIds:
+			list, err := ListOrganization(ctx, *ids.OrganizationIds)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoOrganizationRights.WithAttributes("uid", unique.ID(ctx, ids))
+				return ErrNoOrganizationRights.WithAttributes("uid", unique.ID(ctx, ids.OrganizationIds))
 			}
-		case *ttnpb.UserIdentifiers:
-			list, err := ListUser(ctx, *ids)
+		case *ttnpb.EntityIdentifiers_UserIds:
+			list, err := ListUser(ctx, *ids.UserIds)
 			if err != nil {
 				return err
 			}
 			if len(list.GetRights()) == 0 {
-				return ErrNoUserRights.WithAttributes("uid", unique.ID(ctx, ids))
+				return ErrNoUserRights.WithAttributes("uid", unique.ID(ctx, ids.UserIds))
 			}
 		}
 	}

@@ -52,6 +52,10 @@ export const mayCreateOrganizations = {
   rightsSelector: selectUserRights,
   check: rights => rights.includes('RIGHT_USER_ORGANIZATIONS_CREATE'),
 }
+export const mayViewOrEditApiKeys = {
+  rightsSelector: selectUserRights,
+  check: rights => rights.includes('RIGHT_USER_SETTINGS_API_KEYS'),
+}
 
 // Application related feature checks.
 export const mayViewApplicationInfo = {
@@ -62,13 +66,9 @@ export const mayEditBasicApplicationInfo = {
   rightsSelector: selectApplicationRights,
   check: rights => rights.includes('RIGHT_APPLICATION_SETTINGS_BASIC'),
 }
-export const mayLinkApplication = {
-  rightsSelector: selectApplicationRights,
-  check: rights => rights.includes('RIGHT_APPLICATION_LINK') && asEnabled,
-}
 export const maySetApplicationPayloadFormatters = {
   rightsSelector: selectApplicationRights,
-  check: mayLinkApplication.check,
+  check: rights => rights.includes('RIGHT_APPLICATION_LINK') && asEnabled,
 }
 export const mayViewApplicationEvents = {
   rightsSelector: selectApplicationRights,
@@ -164,6 +164,14 @@ export const mayViewGatewayConfJson = {
   rightsSelector: selectGatewayRights,
   check: rights => rights.includes('RIGHT_GATEWAY_INFO') && gcsEnabled,
 }
+export const mayViewGatewaySecrets = {
+  rightsSelector: selectGatewayRights,
+  check: rights => rights.includes('RIGHT_GATEWAY_READ_SECRETS'),
+}
+export const mayEditGatewaySecrets = {
+  rightsSelector: selectGatewayRights,
+  check: rights => rights.includes('RIGHT_GATEWAY_WRITE_SECRETS'),
+}
 
 // Organization related feature checks.
 export const mayViewOrganizationInformation = {
@@ -213,10 +221,9 @@ export const mayPerformAdminActions = {
   check: isAdmin => isAdmin,
 }
 
-export const mayManageUsers = {
-  rightsSelector: selectUserIsAdmin,
-  check: mayPerformAdminActions.check,
-}
+export const mayManageUsers = mayPerformAdminActions
+export const mayPurgeEntities = mayPerformAdminActions
+export const mayConfigurePacketBroker = mayPerformAdminActions
 
 // Composite feature checks.
 export const mayViewApplications = {

@@ -18,6 +18,7 @@ package commands
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/spf13/cobra"
@@ -36,12 +37,15 @@ var errMissingFlag = errors.DefineInvalidArgument("missing_flag", "missing CLI f
 
 var (
 	ctx    = context.Background()
-	logger *log.Logger
+	logger log.Stack
 	name   = "ttn-lw-stack"
 	mgr    = conf.InitializeWithDefaults(name, "ttn_lw", DefaultConfig,
 		conf.WithDeprecatedFlag("interop.sender-client-cas", "use interop.sender-client-ca sub-fields instead"),
 	)
 	config = new(Config)
+
+	versionUpdate       chan pkgversion.Update
+	versionCheckTimeout = 500 * time.Millisecond
 
 	// Root command is the entrypoint of the program
 	Root = &cobra.Command{
@@ -67,17 +71,18 @@ var (
 			}
 
 			// create logger
-			logger = log.NewLogger(
-				log.WithLevel(config.Base.Log.Level),
-				log.WithHandler(log.NewCLI(os.Stdout)),
-			)
+			logger, err = shared.InitializeLogger(&config.Log)
+			if err != nil {
+				return err
+			}
 
 			logger.Use(logobservability.New())
 
 			if config.Sentry.DSN != "" {
 				opts := sentry.ClientOptions{
-					Dsn:     config.Sentry.DSN,
-					Release: pkgversion.String(),
+					Dsn:         config.Sentry.DSN,
+					Release:     pkgversion.String(),
+					Environment: config.Sentry.Environment,
 				}
 				if hostname, err := os.Hostname(); err == nil {
 					opts.ServerName = hostname
@@ -91,6 +96,36 @@ var (
 
 			ctx = log.NewContext(ctx, logger)
 
+			// check version in background
+			versionUpdate = make(chan pkgversion.Update)
+			if config.SkipVersionCheck {
+				close(versionUpdate)
+			} else {
+				go func(ctx context.Context) {
+					defer close(versionUpdate)
+					update, err := pkgversion.CheckUpdate(ctx)
+					if err != nil {
+						log.FromContext(ctx).WithError(err).Warn("Failed to check version update")
+					} else if update != nil {
+						versionUpdate <- *update
+					} else {
+						log.FromContext(ctx).Debug("No new version available")
+					}
+				}(ctx)
+			}
+
+			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			select {
+			case <-ctx.Done():
+			case <-time.After(versionCheckTimeout):
+				logger.Warn("Version check timed out")
+			case versionUpdate, ok := <-versionUpdate:
+				if ok {
+					pkgversion.LogUpdate(ctx, &versionUpdate)
+				}
+			}
 			return nil
 		},
 	}

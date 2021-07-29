@@ -26,6 +26,7 @@ import (
 
 	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/smartystreets/assertions"
+	mappingpb "go.packetbroker.org/api/mapping/v2"
 	packetbroker "go.packetbroker.org/api/v3"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
@@ -40,11 +41,12 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
+	"google.golang.org/grpc"
 	"gopkg.in/square/go-jose.v2"
 )
 
 var (
-	timeout     = (1 << 5) * test.Delay
+	timeout     = (1 << 7) * test.Delay
 	testOptions []Option
 )
 
@@ -53,7 +55,9 @@ func TestComponent(t *testing.T) {
 
 	c := componenttest.NewComponent(t, &component.Config{})
 
-	test.Must(New(c, &Config{}, testOptions...))
+	test.Must(New(c, &Config{
+		AuthenticationMode: "oauth2",
+	}, testOptions...))
 	componenttest.StartComponent(t, c)
 	defer c.Close()
 
@@ -74,7 +78,10 @@ func TestForwarder(t *testing.T) {
 			},
 		},
 	})
-	dp, addr := mustServePBDataPlane(ctx)
+	c.FrequencyPlans = test.FrequencyPlanStore
+
+	dp, dpAddr := mustServePBDataPlane(ctx, t)
+	mp, mpAddr := mustServePBMapper(ctx, t)
 
 	gs := test.Must(mock.NewGatewayServer(c)).(*mock.GatewayServer)
 	tokenKey := bytes.Repeat([]byte{0x42}, 16)
@@ -83,10 +90,12 @@ func TestForwarder(t *testing.T) {
 		Key:       tokenKey,
 	}, nil)).(jose.Encrypter)
 	test.Must(New(c, &Config{
-		DataPlaneAddress: fmt.Sprintf("localhost:%d", addr.(*net.TCPAddr).Port),
-		NetID:            types.NetID{0x0, 0x0, 0x13},
-		TenantID:         "foo-tenant",
-		ClusterID:        "test",
+		DataPlaneAddress:   fmt.Sprintf("localhost:%d", dpAddr.(*net.TCPAddr).Port),
+		MapperAddress:      fmt.Sprintf("localhost:%d", mpAddr.(*net.TCPAddr).Port),
+		NetID:              types.NetID{0x0, 0x0, 0x13},
+		TenantID:           "foo-tenant",
+		ClusterID:          "test",
+		AuthenticationMode: "tls",
 		TLS: tlsconfig.ClientAuth{
 			Source:      "file",
 			Certificate: "testdata/clientcert.pem",
@@ -97,8 +106,12 @@ func TestForwarder(t *testing.T) {
 			WorkerPool: WorkerPoolConfig{
 				Limit: 1,
 			},
-			TokenKey:       tokenKey,
-			TokenEncrypter: tokenEncrypter,
+			TokenKey:          tokenKey,
+			TokenEncrypter:    tokenEncrypter,
+			IncludeGatewayEUI: true,
+			IncludeGatewayID:  true,
+			HashGatewayID:     true,
+			GatewayOnlineTTL:  10 * time.Minute,
 		},
 	}, testOptions...))
 	componenttest.StartComponent(t, c)
@@ -118,10 +131,13 @@ func TestForwarder(t *testing.T) {
 						ReceivedAt: time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC),
 						RxMetadata: []*ttnpb.RxMetadata{
 							{
-								GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"},
-								ChannelRSSI:        -42,
-								RSSI:               -42,
-								SNR:                10.5,
+								GatewayIdentifiers: ttnpb.GatewayIdentifiers{
+									GatewayId: "foo-gateway",
+									Eui:       eui64Ptr(types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}),
+								},
+								ChannelRSSI: -42,
+								RSSI:        -42,
+								SNR:         10.5,
 								Location: &ttnpb.Location{
 									Latitude:  52.5,
 									Longitude: 4.8,
@@ -133,8 +149,8 @@ func TestForwarder(t *testing.T) {
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{
-									LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{
+									Lora: &ttnpb.LoRaDataRate{
 										SpreadingFactor: 7,
 										Bandwidth:       125000,
 									},
@@ -148,10 +164,22 @@ func TestForwarder(t *testing.T) {
 					BandID: "EU_863_870",
 				},
 				RoutedUplinkMessage: &packetbroker.RoutedUplinkMessage{
+					ForwarderNetId:     0x000013,
+					ForwarderTenantId:  "foo-tenant",
+					ForwarderClusterId: "test",
 					Message: &packetbroker.UplinkMessage{
+						GatewayId: &packetbroker.GatewayIdentifier{
+							Eui: &pbtypes.UInt64Value{
+								Value: 0x1122334455667788,
+							},
+							Id: &packetbroker.GatewayIdentifier_Hash{
+								Hash: []byte{0xc7, 0x4a, 0x72, 0x7c, 0xe5, 0x01, 0xe9, 0xc1, 0x20, 0x6b, 0xb2, 0x81, 0x82, 0xeb, 0x06, 0x91, 0x7f, 0x94, 0x43, 0x54, 0x30, 0x90, 0x78, 0x0f, 0x3a, 0x39, 0x3d, 0xeb, 0xad, 0x91, 0xad, 0x96},
+							},
+						},
 						ForwarderReceiveTime: test.Must(pbtypes.TimestampProto(time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC))).(*pbtypes.Timestamp),
 						DataRateIndex:        5,
 						Frequency:            869525000,
+						CodingRate:           "4/5",
 						GatewayMetadata: &packetbroker.UplinkMessage_GatewayMetadata{
 							Teaser: &packetbroker.GatewayMetadataTeaser{
 								Value: &packetbroker.GatewayMetadataTeaser_Terrestrial_{
@@ -228,18 +256,21 @@ func TestForwarder(t *testing.T) {
 						ReceivedAt: time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC),
 						RxMetadata: []*ttnpb.RxMetadata{
 							{
-								GatewayIdentifiers: ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"},
-								ChannelRSSI:        4.2,
-								RSSI:               4.2,
-								SNR:                -5.5,
-								UplinkToken:        []byte("test-token"),
-								Timestamp:          123456,
+								GatewayIdentifiers: ttnpb.GatewayIdentifiers{
+									GatewayId: "foo-gateway",
+									Eui:       eui64Ptr(types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}),
+								},
+								ChannelRSSI: 4.2,
+								RSSI:        4.2,
+								SNR:         -5.5,
+								UplinkToken: []byte("test-token"),
+								Timestamp:   123456,
 							},
 						},
 						Settings: ttnpb.TxSettings{
 							DataRate: ttnpb.DataRate{
-								Modulation: &ttnpb.DataRate_LoRa{
-									LoRa: &ttnpb.LoRaDataRate{
+								Modulation: &ttnpb.DataRate_Lora{
+									Lora: &ttnpb.LoRaDataRate{
 										SpreadingFactor: 9,
 										Bandwidth:       125000,
 									},
@@ -253,10 +284,22 @@ func TestForwarder(t *testing.T) {
 					BandID: "EU_863_870",
 				},
 				RoutedUplinkMessage: &packetbroker.RoutedUplinkMessage{
+					ForwarderNetId:     0x000013,
+					ForwarderTenantId:  "foo-tenant",
+					ForwarderClusterId: "test",
 					Message: &packetbroker.UplinkMessage{
+						GatewayId: &packetbroker.GatewayIdentifier{
+							Eui: &pbtypes.UInt64Value{
+								Value: 0x1122334455667788,
+							},
+							Id: &packetbroker.GatewayIdentifier_Hash{
+								Hash: []byte{0xc7, 0x4a, 0x72, 0x7c, 0xe5, 0x01, 0xe9, 0xc1, 0x20, 0x6b, 0xb2, 0x81, 0x82, 0xeb, 0x06, 0x91, 0x7f, 0x94, 0x43, 0x54, 0x30, 0x90, 0x78, 0x0f, 0x3a, 0x39, 0x3d, 0xeb, 0xad, 0x91, 0xad, 0x96},
+							},
+						},
 						ForwarderReceiveTime: test.Must(pbtypes.TimestampProto(time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC))).(*pbtypes.Timestamp),
 						DataRateIndex:        3,
 						Frequency:            868300000,
+						CodingRate:           "4/5",
 						GatewayMetadata: &packetbroker.UplinkMessage_GatewayMetadata{
 							Teaser: &packetbroker.GatewayMetadataTeaser{
 								Value: &packetbroker.GatewayMetadataTeaser_Terrestrial_{
@@ -312,9 +355,8 @@ func TestForwarder(t *testing.T) {
 				select {
 				case pbMsg = <-dp.ForwarderUp:
 				case <-time.After(timeout):
-					t.Fatal("Expected uplink message from Forwarder")
+					t.Fatal("Expected uplink message from Home Network")
 				}
-
 				pbMsg.Message.GatewayUplinkToken = nil // JWE, tested by TestWrapGatewayUplinkToken
 				a.So(pbMsg, should.Resemble, tc.RoutedUplinkMessage)
 			})
@@ -325,7 +367,7 @@ func TestForwarder(t *testing.T) {
 		a := assertions.New(t)
 
 		token := test.Must(json.Marshal(GatewayUplinkToken{
-			GatewayUID: unique.ID(ctx, ttnpb.GatewayIdentifiers{GatewayID: "test-gateway"}),
+			GatewayUID: unique.ID(ctx, ttnpb.GatewayIdentifiers{GatewayId: "test-gateway"}),
 			Token:      []byte{0x1, 0x2, 0x3, 0x4},
 		})).([]byte)
 		tokenObj := test.Must(tokenEncrypter.Encrypt(token)).(*jose.JSONWebEncryption)
@@ -334,14 +376,17 @@ func TestForwarder(t *testing.T) {
 		dp.ForwarderDown <- &packetbroker.RoutedDownlinkMessage{
 			ForwarderNetId:      0x000013,
 			ForwarderTenantId:   "foo-tenant",
-			ForwarderId:         "test",
+			ForwarderClusterId:  "test",
 			HomeNetworkNetId:    0x000042,
 			HomeNetworkTenantId: "foo-tenant",
 			Id:                  "test",
 			Message: &packetbroker.DownlinkMessage{
 				PhyPayload: []byte{0x60, 0x44, 0x33, 0x22, 0x11, 0x01, 0x01, 0x00, 0x42, 0x1, 0x42, 0x1, 0x2, 0x3, 0x4},
-				Class:      packetbroker.DownlinkMessageClass_CLASS_A,
-				Priority:   packetbroker.DownlinkMessagePriority_NORMAL,
+				RegionalParametersVersion: &packetbroker.RegionalParametersVersionValue{
+					Value: packetbroker.RegionalParametersVersion_RP001_V1_0_2_B,
+				},
+				Class:    packetbroker.DownlinkMessageClass_CLASS_A,
+				Priority: packetbroker.DownlinkMessagePriority_NORMAL,
 				Rx1: &packetbroker.DownlinkMessage_RXSettings{
 					Frequency:     868100000,
 					DataRateIndex: 5,
@@ -359,14 +404,15 @@ func TestForwarder(t *testing.T) {
 		select {
 		case gtwMsg = <-gs.Downlink:
 		case <-time.After(timeout):
-			t.Fatal("Expected downlink message from Forwarder")
+			t.Fatal("Expected downlink message from Home Network")
 		}
 		a.So(gtwMsg, should.Resemble, &ttnpb.DownlinkMessage{
 			RawPayload:     []byte{0x60, 0x44, 0x33, 0x22, 0x11, 0x01, 0x01, 0x00, 0x42, 0x1, 0x42, 0x1, 0x2, 0x3, 0x4},
 			CorrelationIDs: gtwMsg.CorrelationIDs,
 			Settings: &ttnpb.DownlinkMessage_Request{
 				Request: &ttnpb.TxRequest{
-					Class: ttnpb.CLASS_A,
+					LorawanPhyVersion: ttnpb.RP001_V1_0_2_REV_B,
+					Class:             ttnpb.CLASS_A,
 					DownlinkPaths: []*ttnpb.DownlinkPath{
 						{
 							Path: &ttnpb.DownlinkPath_UplinkToken{
@@ -383,6 +429,84 @@ func TestForwarder(t *testing.T) {
 				},
 			},
 		})
+
+		var stateChange *packetbroker.DownlinkMessageDeliveryStateChange
+		select {
+		case stateChange = <-dp.ForwarderDownStateChange:
+		case <-time.After(timeout):
+			t.Fatal("Expected downlink message delivery state change from Home Network")
+		}
+		a.So(stateChange.GetSuccess(), should.NotBeNil)
+	})
+
+	t.Run("Update gateway", func(t *testing.T) {
+		a := assertions.New(t)
+
+		updateCh := make(chan *mappingpb.UpdateGatewayRequest, 1)
+		mp.UpdateGatewayHandler = func(ctx context.Context, req *mappingpb.UpdateGatewayRequest, opts ...grpc.CallOption) (*pbtypes.Empty, error) {
+			updateCh <- req
+			return ttnpb.Empty, nil
+		}
+
+		res, err := gs.UpdateGateway(ctx, &ttnpb.UpdatePacketBrokerGatewayRequest{
+			Gateway: &ttnpb.PacketBrokerGateway{
+				Ids: &ttnpb.PacketBrokerGateway_GatewayIdentifiers{
+					GatewayId: "foo-gateway",
+					Eui:       eui64Ptr(types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}),
+				},
+				ContactInfo: []*ttnpb.ContactInfo{
+					{
+						ContactType:   ttnpb.CONTACT_TYPE_OTHER,
+						ContactMethod: ttnpb.CONTACT_METHOD_EMAIL,
+						Value:         "admin@example.com",
+					},
+					{
+						ContactType:   ttnpb.CONTACT_TYPE_TECHNICAL,
+						ContactMethod: ttnpb.CONTACT_METHOD_EMAIL,
+						Value:         "tech@example.com",
+					},
+				},
+				FrequencyPlanIds: []string{"EU_863_870"},
+				Antennas: []*ttnpb.GatewayAntenna{
+					{
+						Location: &ttnpb.Location{
+							Latitude:  4.85464,
+							Longitude: 52.34562,
+							Altitude:  16,
+							Accuracy:  10,
+							Source:    ttnpb.SOURCE_REGISTRY,
+						},
+					},
+				},
+				StatusPublic:   true,
+				LocationPublic: true,
+				Online:         true,
+			},
+			FieldMask: &pbtypes.FieldMask{
+				Paths: []string{
+					"antennas",
+					"contact_info",
+					"frequency_plan_ids",
+					"ids",
+					"location_public",
+					"online",
+					"status_public",
+				},
+			},
+		})
+		a.So(err, should.BeNil)
+		a.So(test.Must(pbtypes.DurationFromProto(res.OnlineTtl)).(time.Duration), should.NotBeZeroValue)
+
+		select {
+		case update := <-updateCh:
+			a.So(update.AdministrativeContact.GetValue().GetEmail(), should.Equal, "admin@example.com")
+			a.So(update.TechnicalContact.GetValue().GetEmail(), should.Equal, "tech@example.com")
+			a.So(update.FrequencyPlan.GetLoraMultiSfChannels(), should.HaveLength, 8)
+			a.So(update.Online.GetValue(), should.BeTrue)
+			a.So(update.GatewayLocation.GetLocation().GetTerrestrial().GetAntennaCount().GetValue(), should.Equal, 1)
+		case <-time.After(timeout):
+			t.Fatal("Expected gateway update timeout")
+		}
 	})
 }
 
@@ -400,14 +524,15 @@ func TestHomeNetwork(t *testing.T) {
 			},
 		},
 	})
-	dp, addr := mustServePBDataPlane(ctx)
+	dp, addr := mustServePBDataPlane(ctx, t)
 
 	ns := test.Must(mock.NewNetworkServer(c)).(*mock.NetworkServer)
 	test.Must(New(c, &Config{
-		DataPlaneAddress: fmt.Sprintf("localhost:%d", addr.(*net.TCPAddr).Port),
-		NetID:            types.NetID{0x0, 0x0, 0x13},
-		TenantID:         "foo-tenant",
-		ClusterID:        "test",
+		DataPlaneAddress:   fmt.Sprintf("localhost:%d", addr.(*net.TCPAddr).Port),
+		NetID:              types.NetID{0x0, 0x0, 0x13},
+		TenantID:           "foo-tenant",
+		ClusterID:          "test",
+		AuthenticationMode: "tls",
 		TLS: tlsconfig.ClientAuth{
 			Source:      "file",
 			Certificate: "testdata/clientcert.pem",
@@ -432,16 +557,26 @@ func TestHomeNetwork(t *testing.T) {
 		}{
 			{
 				RoutedUplinkMessage: &packetbroker.RoutedUplinkMessage{
-					ForwarderNetId:      0x000042,
-					ForwarderId:         "test",
-					ForwarderTenantId:   "foo-tenant",
-					HomeNetworkNetId:    0x000013,
-					HomeNetworkTenantId: "foo-tenant",
-					Id:                  "test",
+					ForwarderNetId:       0x000042,
+					ForwarderClusterId:   "test",
+					ForwarderTenantId:    "foo-tenant",
+					HomeNetworkNetId:     0x000013,
+					HomeNetworkTenantId:  "foo-tenant",
+					HomeNetworkClusterId: "test",
+					Id:                   "test",
 					Message: &packetbroker.UplinkMessage{
+						GatewayId: &packetbroker.GatewayIdentifier{
+							Eui: &pbtypes.UInt64Value{
+								Value: 0x1122334455667788,
+							},
+							Id: &packetbroker.GatewayIdentifier_Plain{
+								Plain: "foo-gateway",
+							},
+						},
 						DataRateIndex:        5,
 						ForwarderReceiveTime: test.Must(pbtypes.TimestampProto(time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC))).(*pbtypes.Timestamp),
 						Frequency:            869525000,
+						CodingRate:           "4/5",
 						GatewayMetadata: &packetbroker.UplinkMessage_GatewayMetadata{
 							Teaser: &packetbroker.GatewayMetadataTeaser{
 								Value: &packetbroker.GatewayMetadataTeaser_Terrestrial_{
@@ -517,12 +652,17 @@ func TestHomeNetwork(t *testing.T) {
 						{
 							GatewayIdentifiers: cluster.PacketBrokerGatewayID,
 							PacketBroker: &ttnpb.PacketBrokerMetadata{
-								MessageID:           "test",
-								ForwarderNetID:      [3]byte{0x0, 0x0, 0x42},
-								ForwarderTenantID:   "foo-tenant",
-								ForwarderID:         "test",
-								HomeNetworkNetID:    [3]byte{0x0, 0x0, 0x13},
-								HomeNetworkTenantID: "foo-tenant",
+								MessageId:           "test",
+								ForwarderNetId:      [3]byte{0x0, 0x0, 0x42},
+								ForwarderTenantId:   "foo-tenant",
+								ForwarderClusterId:  "test",
+								ForwarderGatewayEui: eui64Ptr(types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}),
+								ForwarderGatewayId: &pbtypes.StringValue{
+									Value: "foo-gateway",
+								},
+								HomeNetworkNetId:     [3]byte{0x0, 0x0, 0x13},
+								HomeNetworkTenantId:  "foo-tenant",
+								HomeNetworkClusterId: "test",
 							},
 							ChannelRSSI: -42,
 							RSSI:        -42,
@@ -533,16 +673,16 @@ func TestHomeNetwork(t *testing.T) {
 								Altitude:  2,
 							},
 							UplinkToken: test.Must(WrapUplinkTokens([]byte("test-token"), nil, &AgentUplinkToken{
-								ForwarderNetID:    [3]byte{0x0, 0x0, 0x42},
-								ForwarderID:       "test",
-								ForwarderTenantID: "foo-tenant",
+								ForwarderNetID:     [3]byte{0x0, 0x0, 0x42},
+								ForwarderTenantID:  "foo-tenant",
+								ForwarderClusterID: "test",
 							})).([]byte),
 						},
 					},
 					Settings: ttnpb.TxSettings{
 						DataRate: ttnpb.DataRate{
-							Modulation: &ttnpb.DataRate_LoRa{
-								LoRa: &ttnpb.LoRaDataRate{
+							Modulation: &ttnpb.DataRate_Lora{
+								Lora: &ttnpb.LoRaDataRate{
 									SpreadingFactor: 7,
 									Bandwidth:       125000,
 								},
@@ -550,21 +690,32 @@ func TestHomeNetwork(t *testing.T) {
 						},
 						DataRateIndex: 5,
 						Frequency:     869525000,
+						CodingRate:    "4/5",
 					},
 				},
 			},
 			{
 				RoutedUplinkMessage: &packetbroker.RoutedUplinkMessage{
-					ForwarderNetId:      0x000042,
-					ForwarderId:         "test",
-					ForwarderTenantId:   "foo-tenant",
-					HomeNetworkNetId:    0x000013,
-					HomeNetworkTenantId: "foo-tenant",
-					Id:                  "test",
+					ForwarderNetId:       0x000042,
+					ForwarderTenantId:    "foo-tenant",
+					ForwarderClusterId:   "test",
+					HomeNetworkNetId:     0x000013,
+					HomeNetworkTenantId:  "foo-tenant",
+					HomeNetworkClusterId: "test",
+					Id:                   "test",
 					Message: &packetbroker.UplinkMessage{
+						GatewayId: &packetbroker.GatewayIdentifier{
+							Eui: &pbtypes.UInt64Value{
+								Value: 0x1122334455667788,
+							},
+							Id: &packetbroker.GatewayIdentifier_Plain{
+								Plain: "foo-gateway",
+							},
+						},
 						DataRateIndex:        3,
 						ForwarderReceiveTime: test.Must(pbtypes.TimestampProto(time.Date(2020, time.March, 24, 12, 0, 0, 0, time.UTC))).(*pbtypes.Timestamp),
 						Frequency:            869525000,
+						CodingRate:           "4/5",
 						GatewayMetadata: &packetbroker.UplinkMessage_GatewayMetadata{
 							Teaser: &packetbroker.GatewayMetadataTeaser{
 								Value: &packetbroker.GatewayMetadataTeaser_Terrestrial_{
@@ -617,27 +768,32 @@ func TestHomeNetwork(t *testing.T) {
 						{
 							GatewayIdentifiers: cluster.PacketBrokerGatewayID,
 							PacketBroker: &ttnpb.PacketBrokerMetadata{
-								MessageID:           "test",
-								ForwarderNetID:      [3]byte{0x0, 0x0, 0x42},
-								ForwarderTenantID:   "foo-tenant",
-								ForwarderID:         "test",
-								HomeNetworkNetID:    [3]byte{0x0, 0x0, 0x13},
-								HomeNetworkTenantID: "foo-tenant",
+								MessageId:           "test",
+								ForwarderNetId:      [3]byte{0x0, 0x0, 0x42},
+								ForwarderTenantId:   "foo-tenant",
+								ForwarderClusterId:  "test",
+								ForwarderGatewayEui: eui64Ptr(types.EUI64{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}),
+								ForwarderGatewayId: &pbtypes.StringValue{
+									Value: "foo-gateway",
+								},
+								HomeNetworkNetId:     [3]byte{0x0, 0x0, 0x13},
+								HomeNetworkTenantId:  "foo-tenant",
+								HomeNetworkClusterId: "test",
 							},
 							ChannelRSSI: 4.2,
 							RSSI:        4.2,
 							SNR:         -5.5,
 							UplinkToken: test.Must(WrapUplinkTokens([]byte("test-token"), nil, &AgentUplinkToken{
-								ForwarderNetID:    [3]byte{0x0, 0x0, 0x42},
-								ForwarderID:       "test",
-								ForwarderTenantID: "foo-tenant",
+								ForwarderNetID:     [3]byte{0x0, 0x0, 0x42},
+								ForwarderTenantID:  "foo-tenant",
+								ForwarderClusterID: "test",
 							})).([]byte),
 						},
 					},
 					Settings: ttnpb.TxSettings{
 						DataRate: ttnpb.DataRate{
-							Modulation: &ttnpb.DataRate_LoRa{
-								LoRa: &ttnpb.LoRaDataRate{
+							Modulation: &ttnpb.DataRate_Lora{
+								Lora: &ttnpb.LoRaDataRate{
 									SpreadingFactor: 9,
 									Bandwidth:       125000,
 								},
@@ -645,6 +801,7 @@ func TestHomeNetwork(t *testing.T) {
 						},
 						DataRateIndex: 3,
 						Frequency:     869525000,
+						CodingRate:    "4/5",
 					},
 				},
 			},
@@ -661,13 +818,19 @@ func TestHomeNetwork(t *testing.T) {
 				case <-time.After(timeout):
 					t.Fatal("Expected uplink message from Forwarder")
 				}
-
 				a.So(nsMsg.CorrelationIDs, should.HaveLength, 2)
 				nsMsg.CorrelationIDs = nil
 				a.So(nsMsg.ReceivedAt, should.HappenBetween, before, time.Now()) // Packet Broker Agent sets local time on receive.
 				nsMsg.ReceivedAt = time.Time{}
-
 				a.So(nsMsg, should.Resemble, tc.UplinkMessage)
+
+				var stateChange *packetbroker.UplinkMessageDeliveryStateChange
+				select {
+				case stateChange = <-dp.HomeNetworkUpStateChange:
+				case <-time.After(timeout):
+					t.Fatal("Expected uplink message delivery state change from Forwarder")
+				}
+				a.So(stateChange.Error, should.BeNil)
 			})
 		}
 	})
@@ -679,14 +842,15 @@ func TestHomeNetwork(t *testing.T) {
 			RawPayload: []byte{0x60, 0x44, 0x33, 0x22, 0x11, 0x01, 0x01, 0x00, 0x42, 0x1, 0x42, 0x1, 0x2, 0x3, 0x4},
 			Settings: &ttnpb.DownlinkMessage_Request{
 				Request: &ttnpb.TxRequest{
-					Class: ttnpb.CLASS_A,
+					LorawanPhyVersion: ttnpb.RP001_V1_1_REV_B,
+					Class:             ttnpb.CLASS_A,
 					DownlinkPaths: []*ttnpb.DownlinkPath{
 						{
 							Path: &ttnpb.DownlinkPath_UplinkToken{
 								UplinkToken: test.Must(WrapUplinkTokens([]byte("test-token"), nil, &AgentUplinkToken{
-									ForwarderNetID:    [3]byte{0x0, 0x0, 0x42},
-									ForwarderID:       "test",
-									ForwarderTenantID: "foo-tenant",
+									ForwarderNetID:     [3]byte{0x0, 0x0, 0x42},
+									ForwarderTenantID:  "foo-tenant",
+									ForwarderClusterID: "test",
 								})).([]byte),
 							},
 						},
@@ -713,10 +877,16 @@ func TestHomeNetwork(t *testing.T) {
 		}
 
 		a.So(pbMsg, should.Resemble, &packetbroker.RoutedDownlinkMessage{
-			ForwarderNetId:    0x000042,
-			ForwarderId:       "test",
-			ForwarderTenantId: "foo-tenant",
+			ForwarderNetId:       0x000042,
+			ForwarderClusterId:   "test",
+			ForwarderTenantId:    "foo-tenant",
+			HomeNetworkNetId:     0x000013,
+			HomeNetworkTenantId:  "foo-tenant",
+			HomeNetworkClusterId: "test",
 			Message: &packetbroker.DownlinkMessage{
+				RegionalParametersVersion: &packetbroker.RegionalParametersVersionValue{
+					Value: packetbroker.RegionalParametersVersion_RP001_V1_1_B,
+				},
 				PhyPayload: []byte{0x60, 0x44, 0x33, 0x22, 0x11, 0x01, 0x01, 0x00, 0x42, 0x1, 0x42, 0x1, 0x2, 0x3, 0x4},
 				Class:      packetbroker.DownlinkMessageClass_CLASS_A,
 				Priority:   packetbroker.DownlinkMessagePriority_NORMAL,

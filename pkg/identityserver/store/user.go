@@ -17,7 +17,7 @@ package store
 import (
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -44,7 +44,8 @@ type User struct {
 	PasswordUpdatedAt     time.Time `gorm:"not null"`
 	RequirePasswordUpdate bool      `gorm:"not null"`
 
-	State int `gorm:"not null"`
+	State            int    `gorm:"not null"`
+	StateDescription string `gorm:"type:VARCHAR"`
 
 	Admin bool `gorm:"not null"`
 
@@ -76,6 +77,7 @@ var userPBSetters = map[string]func(*ttnpb.User, *User){
 	},
 	requirePasswordUpdateField: func(pb *ttnpb.User, usr *User) { pb.RequirePasswordUpdate = usr.RequirePasswordUpdate },
 	stateField:                 func(pb *ttnpb.User, usr *User) { pb.State = ttnpb.State(usr.State) },
+	stateDescriptionField:      func(pb *ttnpb.User, usr *User) { pb.StateDescription = usr.StateDescription },
 	adminField:                 func(pb *ttnpb.User, usr *User) { pb.Admin = usr.Admin },
 	temporaryPasswordField: func(pb *ttnpb.User, usr *User) {
 		pb.TemporaryPassword = usr.TemporaryPassword
@@ -116,6 +118,7 @@ var userModelSetters = map[string]func(*User, *ttnpb.User){
 	},
 	requirePasswordUpdateField: func(usr *User, pb *ttnpb.User) { usr.RequirePasswordUpdate = pb.RequirePasswordUpdate },
 	stateField:                 func(usr *User, pb *ttnpb.User) { usr.State = int(pb.State) },
+	stateDescriptionField:      func(usr *User, pb *ttnpb.User) { usr.StateDescription = pb.StateDescription },
 	adminField:                 func(usr *User, pb *ttnpb.User) { usr.Admin = pb.Admin },
 	temporaryPasswordField: func(usr *User, pb *ttnpb.User) {
 		usr.TemporaryPassword = pb.TemporaryPassword
@@ -136,7 +139,7 @@ var userModelSetters = map[string]func(*User, *ttnpb.User){
 }
 
 // fieldMask to use if a nil or empty fieldmask is passed.
-var defaultUserFieldMask = &types.FieldMask{}
+var defaultUserFieldMask = &pbtypes.FieldMask{}
 
 func init() {
 	paths := make([]string, 0, len(userPBSetters))
@@ -160,17 +163,19 @@ var userColumnNames = map[string][]string{
 	passwordUpdatedAtField:              {passwordUpdatedAtField},
 	requirePasswordUpdateField:          {requirePasswordUpdateField},
 	stateField:                          {stateField},
+	stateDescriptionField:               {stateDescriptionField},
 	adminField:                          {adminField},
 	temporaryPasswordField:              {temporaryPasswordField},
 	temporaryPasswordCreatedAtField:     {temporaryPasswordCreatedAtField},
 	temporaryPasswordExpiresAtField:     {temporaryPasswordExpiresAtField},
 }
 
-func (usr User) toPB(pb *ttnpb.User, fieldMask *types.FieldMask) {
-	pb.UserIdentifiers.UserID = usr.Account.UID
+func (usr User) toPB(pb *ttnpb.User, fieldMask *pbtypes.FieldMask) {
+	pb.UserIdentifiers.UserId = usr.Account.UID
 	pb.CreatedAt = cleanTime(usr.CreatedAt)
 	pb.UpdatedAt = cleanTime(usr.UpdatedAt)
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+	pb.DeletedAt = cleanTimePtr(usr.DeletedAt)
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultUserFieldMask
 	}
 	for _, path := range fieldMask.Paths {
@@ -180,8 +185,8 @@ func (usr User) toPB(pb *ttnpb.User, fieldMask *types.FieldMask) {
 	}
 }
 
-func (usr *User) fromPB(pb *ttnpb.User, fieldMask *types.FieldMask) (columns []string) {
-	if fieldMask == nil || len(fieldMask.Paths) == 0 {
+func (usr *User) fromPB(pb *ttnpb.User, fieldMask *pbtypes.FieldMask) (columns []string) {
+	if len(fieldMask.GetPaths()) == 0 {
 		fieldMask = defaultUserFieldMask
 	}
 	for _, path := range fieldMask.Paths {
@@ -203,7 +208,7 @@ type userWithUID struct {
 
 func (userWithUID) TableName() string { return "users" }
 
-func (u userWithUID) toPB(pb *ttnpb.User, fieldMask *types.FieldMask) {
+func (u userWithUID) toPB(pb *ttnpb.User, fieldMask *pbtypes.FieldMask) {
 	u.User.Account.UID = u.UID
 	u.User.toPB(pb, fieldMask)
 }

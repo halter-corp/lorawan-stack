@@ -36,9 +36,9 @@ func TestJSONUpstream(t *testing.T) {
 			Message: &ttnpb.ApplicationUp{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "foo-app",
+						ApplicationId: "foo-app",
 					},
-					DeviceID: "foo-device",
+					DeviceId: "foo-device",
 				},
 				Up: &ttnpb.ApplicationUp_UplinkMessage{
 					UplinkMessage: &ttnpb.ApplicationUplink{
@@ -64,9 +64,9 @@ func TestJSONUpstream(t *testing.T) {
 			Message: &ttnpb.ApplicationUp{
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 					ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-						ApplicationID: "foo-app",
+						ApplicationId: "foo-app",
 					},
-					DeviceID: "foo-device",
+					DeviceId: "foo-device",
 				},
 				Up: &ttnpb.ApplicationUp_JoinAccept{
 					JoinAccept: &ttnpb.ApplicationJoinAccept{
@@ -150,9 +150,9 @@ func TestJSONDownstream(t *testing.T) {
 				Request: &ttnpb.DownlinkQueueRequest{
 					EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
 						ApplicationIdentifiers: ttnpb.ApplicationIdentifiers{
-							ApplicationID: "foo-app",
+							ApplicationId: "foo-app",
 						},
-						DeviceID: "foo-device",
+						DeviceId: "foo-device",
 					},
 					Downlinks: []*ttnpb.ApplicationDownlink{
 						{

@@ -15,6 +15,7 @@
 package oauth
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -28,6 +29,7 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
 	"go.thethings.network/lorawan-stack/v3/pkg/jsonpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 )
 
@@ -75,7 +77,7 @@ func (s *server) Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc {
 		if req.Method != http.MethodGet && req.Method != http.MethodPost {
 			return c.NoContent(http.StatusMethodNotAllowed)
 		}
-		session, err := s.getSession(c)
+		session, err := s.session.Get(c)
 		if err != nil {
 			return err
 		}
@@ -137,7 +139,7 @@ func (s *server) Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc {
 			case http.MethodGet:
 				safeClient := client.PublicSafe()
 				clientJSON, _ := jsonpb.TTN().Marshal(safeClient)
-				user, err := s.getUser(c)
+				user, err := s.session.GetUser(c)
 				if err != nil {
 					return err
 				}
@@ -154,7 +156,7 @@ func (s *server) Authorize(authorizePage echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 		if ar.Authorized {
-			events.Publish(evtAuthorize.NewWithIdentifiersAndData(req.Context(), ttnpb.CombineIdentifiers(session.UserIdentifiers, client.ClientIdentifiers), nil))
+			events.Publish(evtAuthorize.New(req.Context(), events.WithIdentifiers(&session.UserIdentifiers, &client.ClientIdentifiers)))
 		}
 		oauth2.FinishAuthorizeRequest(resp, req, ar)
 		return s.output(c, resp)
@@ -168,6 +170,47 @@ type tokenRequest struct {
 	RedirectURI  string `json:"redirect_uri" form:"redirect_uri"`
 	ClientID     string `json:"client_id" form:"client_id"`
 	ClientSecret string `json:"client_secret" form:"client_secret"`
+}
+
+var (
+	errMissingGrantType         = errors.DefineInvalidArgument("missing_grant_type", "missing grant type")
+	errInvalidGrantType         = errors.DefineInvalidArgument("invalid_grant_type", "invalid grant type `{grant_type}`")
+	errMissingAuthorizationCode = errors.DefineInvalidArgument("missing_authorization_code", "missing authorization code")
+	errMissingRefreshToken      = errors.DefineInvalidArgument("missing_refresh_token", "missing refresh token")
+	errMissingClientID          = errors.DefineInvalidArgument("missing_client_id", "missing client id")
+	errMissingClientSecret      = errors.DefineInvalidArgument("missing_client_secret", "missing client secret")
+)
+
+// ValidateContext validates the token request.
+func (req *tokenRequest) ValidateContext(ctx context.Context) error {
+	if strings.TrimSpace(req.GrantType) == "" {
+		return errMissingGrantType.New()
+	}
+	switch req.GrantType {
+	case "authorization_code":
+		if strings.TrimSpace(req.Code) == "" {
+			return errMissingAuthorizationCode.New()
+		}
+	case "refresh_token":
+		if strings.TrimSpace(req.RefreshToken) == "" {
+			return errMissingRefreshToken.New()
+		}
+	default:
+		return errInvalidGrantType.WithAttributes("grant_type", req.GrantType)
+	}
+	if strings.TrimSpace(req.ClientID) == "" {
+		return errMissingClientID.New()
+	}
+	if strings.TrimSpace(req.ClientSecret) == "" &&
+		req.ClientID != "cli" { // NOTE: Compatibility: The CLI does not have a client secret.
+		return errMissingClientSecret.New()
+	}
+	if err := (&ttnpb.ClientIdentifiers{
+		ClientId: req.ClientID,
+	}).ValidateFields("client_id"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r tokenRequest) Values() (values url.Values) {
@@ -197,6 +240,18 @@ func (s *server) Token(c echo.Context) error {
 	if err := c.Bind(&tokenRequest); err != nil {
 		return err
 	}
+	if username, password, ok := req.BasicAuth(); ok {
+		tokenRequest.ClientID, tokenRequest.ClientSecret = username, password
+	}
+	if err := tokenRequest.ValidateContext(req.Context()); err != nil {
+		return err
+	}
+
+	req = req.WithContext(
+		log.NewContextWithField(req.Context(), "oauth_client_id", tokenRequest.ClientID),
+	)
+	c.SetRequest(req)
+
 	req.Form = tokenRequest.Values()
 	req.PostForm = req.Form
 
@@ -218,14 +273,14 @@ func (s *server) Token(c echo.Context) error {
 		ar.Authorized = clientHasGrant(&client, ttnpb.GRANT_REFRESH_TOKEN)
 	case osin.PASSWORD:
 		if clientHasGrant(&client, ttnpb.GRANT_PASSWORD) {
-			if err := s.doLogin(req.Context(), ar.Username, ar.Password); err != nil {
+			if err := s.session.DoLogin(req.Context(), ar.Username, ar.Password); err != nil {
 				return err
 			}
 			ar.Authorized = true
 		}
 	}
 	if ar.Authorized {
-		events.Publish(evtTokenExchange.NewWithIdentifiersAndData(req.Context(), ttnpb.CombineIdentifiers(userIDs, client.ClientIdentifiers), nil))
+		events.Publish(evtTokenExchange.New(req.Context(), events.WithIdentifiers(&userIDs, &client.ClientIdentifiers)))
 	}
 	oauth2.FinishAccessRequest(resp, req, ar)
 	delete(resp.Output, "scope")

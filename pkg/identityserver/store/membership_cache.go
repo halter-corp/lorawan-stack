@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/log"
 	"go.thethings.network/lorawan-stack/v3/pkg/redis"
@@ -44,13 +45,13 @@ func GetMembershipCache(store MembershipStore, redis *redis.Client, ttl time.Dur
 
 // TODO: Add FindIndirectMemberships (https://github.com/TheThingsNetwork/lorawan-stack/issues/443).
 
-func (c *membershipCache) cacheKey(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers) string {
+func (c *membershipCache) cacheKey(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers) string {
 	return c.redis.Key("membership", id.EntityType(), unique.ID(ctx, id), entityID.EntityType(), unique.ID(ctx, entityID))
 }
 
-func (c *membershipCache) GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers) (*ttnpb.Rights, error) {
+func (c *membershipCache) GetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers) (*ttnpb.Rights, error) {
 	cacheKey := c.cacheKey(ctx, id, entityID)
-	if cached, err := c.redis.Get(cacheKey).Bytes(); err == nil {
+	if cached, err := c.redis.Get(ctx, cacheKey).Bytes(); err == nil {
 		if len(cached) == 0 {
 			return nil, errMembershipNotFound.WithAttributes(
 				"account_id", id.IDString(),
@@ -59,35 +60,35 @@ func (c *membershipCache) GetMember(ctx context.Context, id *ttnpb.OrganizationO
 			)
 		}
 		var rights ttnpb.Rights
-		if err = rights.Unmarshal(cached); err == nil {
+		if err = proto.Unmarshal(cached, &rights); err == nil {
 			return &rights, nil
 		}
 	}
 	rights, err := c.MembershipStore.GetMember(ctx, id, entityID)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if cacheErr := c.redis.Set(cacheKey, "", c.ttl).Err(); cacheErr != nil {
+			if cacheErr := c.redis.Set(ctx, cacheKey, "", c.ttl).Err(); cacheErr != nil {
 				log.FromContext(ctx).WithError(cacheErr).Error("Failed to set membership cache")
 			}
 		}
 		return nil, err
 	}
-	if cache, err := rights.Marshal(); err == nil {
-		if cacheErr := c.redis.Set(cacheKey, cache, c.ttl).Err(); cacheErr != nil {
+	if cache, err := proto.Marshal(rights); err == nil {
+		if cacheErr := c.redis.Set(ctx, cacheKey, cache, c.ttl).Err(); cacheErr != nil {
 			log.FromContext(ctx).WithError(cacheErr).Error("Failed to set membership cache")
 		}
 	}
 	return rights, err
 }
 
-func (c *membershipCache) SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID ttnpb.Identifiers, rights *ttnpb.Rights) error {
+func (c *membershipCache) SetMember(ctx context.Context, id *ttnpb.OrganizationOrUserIdentifiers, entityID *ttnpb.EntityIdentifiers, rights *ttnpb.Rights) error {
 	err := c.MembershipStore.SetMember(ctx, id, entityID, rights)
 	if err != nil {
 		return err
 	}
 	// NOTE: Only invalidate. We can't set the new rights, since we don't know if
 	// the transaction will succeed.
-	if cacheErr := c.redis.Del(c.cacheKey(ctx, id, entityID)).Err(); cacheErr != nil {
+	if cacheErr := c.redis.Del(ctx, c.cacheKey(ctx, id, entityID)).Err(); cacheErr != nil {
 		log.FromContext(ctx).WithError(cacheErr).Error("Failed to invalidate membership cache")
 	}
 	return nil

@@ -17,7 +17,7 @@ package identityserver
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
+	pbtypes "github.com/gogo/protobuf/types"
 	"github.com/jinzhu/gorm"
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/email"
@@ -69,7 +69,7 @@ func (is *IdentityServer) getClientCollaborator(ctx context.Context, req *ttnpb.
 		rights, err := is.getMembershipStore(ctx, db).GetMember(
 			ctx,
 			&req.OrganizationOrUserIdentifiers,
-			req.ClientIdentifiers,
+			req.ClientIdentifiers.GetEntityIdentifiers(),
 		)
 		if err != nil {
 			return err
@@ -83,7 +83,7 @@ func (is *IdentityServer) getClientCollaborator(ctx context.Context, req *ttnpb.
 	return res, nil
 }
 
-func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.SetClientCollaboratorRequest) (*types.Empty, error) {
+func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.SetClientCollaboratorRequest) (*pbtypes.Empty, error) {
 	// Require that caller has rights to manage collaborators.
 	if err := rights.RequireClient(ctx, req.ClientIdentifiers, ttnpb.RIGHT_CLIENT_ALL); err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.
 			existingRights, err := store.GetMember(
 				ctx,
 				&req.Collaborator.OrganizationOrUserIdentifiers,
-				req.ClientIdentifiers,
+				req.ClientIdentifiers.GetEntityIdentifiers(),
 			)
 
 			if err != nil && !errors.IsNotFound(err) {
@@ -116,7 +116,7 @@ func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.
 		return store.SetMember(
 			ctx,
 			&req.Collaborator.OrganizationOrUserIdentifiers,
-			req.ClientIdentifiers,
+			req.ClientIdentifiers.GetEntityIdentifiers(),
 			ttnpb.RightsFrom(req.Collaborator.Rights...),
 		)
 	})
@@ -124,23 +124,26 @@ func (is *IdentityServer) setClientCollaborator(ctx context.Context, req *ttnpb.
 		return nil, err
 	}
 	if len(req.Collaborator.Rights) > 0 {
-		events.Publish(evtUpdateClientCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
-		err = is.SendContactsEmail(ctx, req.EntityIdentifiers(), func(data emails.Data) email.MessageData {
-			data.SetEntity(req.EntityIdentifiers())
+		events.Publish(evtUpdateClientCollaborator.New(ctx, events.WithIdentifiers(&req.ClientIdentifiers, &req.Collaborator.OrganizationOrUserIdentifiers)))
+		err = is.SendContactsEmail(ctx, req, func(data emails.Data) email.MessageData {
+			data.SetEntity(req)
 			return &emails.CollaboratorChanged{Data: data, Collaborator: req.Collaborator}
 		})
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("Could not send collaborator updated notification email")
 		}
 	} else {
-		events.Publish(evtDeleteClientCollaborator.NewWithIdentifiersAndData(ctx, ttnpb.CombineIdentifiers(req.ClientIdentifiers, req.Collaborator), nil))
+		events.Publish(evtDeleteClientCollaborator.New(ctx, events.WithIdentifiers(&req.ClientIdentifiers, &req.Collaborator.OrganizationOrUserIdentifiers)))
 	}
 	return ttnpb.Empty, nil
 }
 
 func (is *IdentityServer) listClientCollaborators(ctx context.Context, req *ttnpb.ListClientCollaboratorsRequest) (collaborators *ttnpb.Collaborators, err error) {
-	if err = is.RequireAuthenticated(ctx); err != nil { // Client collaborators can be seen by all authenticated users.
+	if err = is.RequireAuthenticated(ctx); err != nil {
 		return nil, err
+	}
+	if err = rights.RequireClient(ctx, req.ClientIdentifiers, ttnpb.RIGHT_CLIENT_ALL); err != nil {
+		defer func() { collaborators = collaborators.PublicSafe() }()
 	}
 	var total uint64
 	ctx = store.WithPagination(ctx, req.Limit, req.Page, &total)
@@ -150,7 +153,7 @@ func (is *IdentityServer) listClientCollaborators(ctx context.Context, req *ttnp
 		}
 	}()
 	err = is.withDatabase(ctx, func(db *gorm.DB) error {
-		memberRights, err := is.getMembershipStore(ctx, db).FindMembers(ctx, req.ClientIdentifiers)
+		memberRights, err := is.getMembershipStore(ctx, db).FindMembers(ctx, req.ClientIdentifiers.GetEntityIdentifiers())
 		if err != nil {
 			return err
 		}
@@ -181,7 +184,7 @@ func (ca *clientAccess) GetCollaborator(ctx context.Context, req *ttnpb.GetClien
 	return ca.getClientCollaborator(ctx, req)
 }
 
-func (ca *clientAccess) SetCollaborator(ctx context.Context, req *ttnpb.SetClientCollaboratorRequest) (*types.Empty, error) {
+func (ca *clientAccess) SetCollaborator(ctx context.Context, req *ttnpb.SetClientCollaboratorRequest) (*pbtypes.Empty, error) {
 	return ca.setClientCollaborator(ctx, req)
 }
 

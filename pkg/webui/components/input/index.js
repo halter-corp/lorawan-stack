@@ -21,6 +21,7 @@ import Icon from '@ttn-lw/components/icon'
 import Spinner from '@ttn-lw/components/spinner'
 import Button from '@ttn-lw/components/button'
 
+import combineRefs from '@ttn-lw/lib/combine-refs'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import ByteInput from './byte'
@@ -34,6 +35,7 @@ class Input extends React.Component {
     action: PropTypes.shape({
       ...Button.propTypes,
     }),
+    actionDisable: PropTypes.bool,
     autoComplete: PropTypes.oneOf([
       'current-password',
       'email',
@@ -44,25 +46,29 @@ class Input extends React.Component {
       'url',
       'username',
     ]),
+    children: PropTypes.node,
     className: PropTypes.string,
     code: PropTypes.bool,
     component: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     disabled: PropTypes.bool,
     error: PropTypes.bool,
-    forwardedRef: PropTypes.shape({}),
-    horizontal: PropTypes.bool,
+    forwardedRef: PropTypes.shape({ current: PropTypes.shape({}) }),
     icon: PropTypes.string,
+    inputRef: PropTypes.shape({ current: PropTypes.shape({}) }),
+    inputWidth: PropTypes.inputWidth,
     intl: PropTypes.shape({
       formatMessage: PropTypes.func,
     }).isRequired,
     label: PropTypes.string,
     loading: PropTypes.bool,
+    max: PropTypes.number,
     onBlur: PropTypes.func,
     onChange: PropTypes.func,
     onEnter: PropTypes.func,
     onFocus: PropTypes.func,
     placeholder: PropTypes.message,
     readOnly: PropTypes.bool,
+    showPerChar: PropTypes.bool,
     title: PropTypes.message,
     type: PropTypes.string,
     valid: PropTypes.bool,
@@ -72,35 +78,41 @@ class Input extends React.Component {
 
   static defaultProps = {
     action: undefined,
+    actionDisable: false,
     autoComplete: 'off',
+    children: undefined,
     className: undefined,
     code: false,
     component: 'input',
     disabled: false,
     error: false,
+    /** Default `inputWidth` value is set programmatically based on input type. */
+    inputWidth: undefined,
     icon: undefined,
     label: undefined,
     loading: false,
+    max: undefined,
     onFocus: () => null,
     onBlur: () => null,
     onChange: () => null,
     onEnter: () => null,
     placeholder: undefined,
     readOnly: false,
+    showPerChar: false,
     title: undefined,
     type: 'text',
     valid: false,
     value: '',
     warning: false,
+    inputRef: null,
     forwardedRef: null,
-    horizontal: true,
   }
 
   state = {
     focus: false,
   }
 
-  input = React.createRef()
+  input = React.createRef(null)
 
   focus() {
     if (this.input.current) {
@@ -138,20 +150,31 @@ class Input extends React.Component {
       component,
       loading,
       title,
+      inputWidth,
       intl,
-      horizontal,
       code,
       action,
-      forwardedRef,
       autoComplete,
+      showPerChar,
+      forwardedRef,
+      inputRef,
+      actionDisable,
+      children,
       ...rest
     } = this.props
 
     const { focus } = this.state
+    const inputWidthValue = inputWidth || (type === 'byte' ? undefined : 'm')
 
     let Component = component
+    let inputStyle
     if (type === 'byte') {
       Component = ByteInput
+      const { max } = this.props
+      if (!inputWidthValue && max) {
+        const maxValue = showPerChar ? Math.ceil(max / 2) : max
+        inputStyle = { maxWidth: maxValue === 16 ? '30rem' : `${maxValue * 1.8 + 0.65}rem` }
+      }
     } else if (type === 'textarea') {
       Component = 'textarea'
     }
@@ -170,6 +193,7 @@ class Input extends React.Component {
     const hasAction = Boolean(action)
 
     const inputCls = classnames(style.inputBox, {
+      [style[`input-width-${inputWidthValue}`]]: inputWidthValue,
       [style.focus]: focus,
       [style.error]: error,
       [style.readOnly]: readOnly,
@@ -180,12 +204,17 @@ class Input extends React.Component {
       [style.textarea]: type === 'textarea',
     })
 
+    const passedProps = {
+      ...rest,
+      ...(type === 'byte' ? { showPerChar } : {}),
+      ref: inputRef ? combineRefs([this.input, inputRef]) : this.input,
+    }
+
     return (
       <div className={classnames(className, style.container)}>
-        <div className={inputCls}>
+        <div className={inputCls} style={inputStyle}>
           {icon && <Icon className={style.icon} icon={icon} />}
           <Component
-            ref={this.input}
             key="i"
             className={style.input}
             type={type}
@@ -199,16 +228,17 @@ class Input extends React.Component {
             readOnly={readOnly}
             title={inputTitle}
             autoComplete={autoComplete}
-            {...rest}
+            {...passedProps}
           />
           {v && <Valid show={v} />}
           {loading && <Spinner className={style.spinner} small />}
         </div>
         {hasAction && (
           <div className={style.actions}>
-            <Button className={style.button} disabled={disabled} {...action} />
+            <Button className={style.button} {...action} disabled={disabled || actionDisable} />
           </div>
         )}
+        {children}
       </div>
     )
   }
@@ -245,7 +275,7 @@ class Input extends React.Component {
   }
 }
 
-const Valid = function(props) {
+const Valid = props => {
   const classname = classnames(style.valid, {
     [style.show]: props.show,
   })

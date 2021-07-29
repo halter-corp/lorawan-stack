@@ -37,9 +37,10 @@ type RxPacket struct {
 	Chan uint8        `json:"chan"`           // Concentrator "IF" channel used for Rx (unsigned integer)
 	RFCh uint8        `json:"rfch"`           // Concentrator "RF chain" used for Rx (unsigned integer)
 	Stat int8         `json:"stat"`           // CRC status: 1 = OK, -1 = fail, 0 = no CRC
-	Modu string       `json:"modu"`           // Modulation identifier "LORA" or "FSK"
-	DatR datarate.DR  `json:"datr"`           // LoRa datarate or FSK datarate
-	CodR string       `json:"codr"`           // LoRa ECC coding rate identifier
+	Modu string       `json:"modu"`           // Modulation identifier "LORA", "FSK" or "LR-FHSS"
+	DatR datarate.DR  `json:"datr"`           // LoRa datarate, FSK datarate or LR-FHSS datarate
+	CodR string       `json:"codr"`           // LoRa or LR-FHSS ECC coding rate identifier
+	Hpw  uint32       `json:"hpw,omitempty"`  // Hopping width; a number describing the number of steps of the LR-FHSS grid
 	RSSI int16        `json:"rssi"`           // RSSI in dBm (signed integer, 1 dB precision)
 	LSNR float64      `json:"lsnr"`           // Lora SNR ratio in dB (signed float, 0.1 dB precision)
 	Size uint16       `json:"size"`           // RF packet payload size in bytes (unsigned integer)
@@ -56,10 +57,11 @@ type RSig struct {
 	RSSIC  int     `json:"rssic"`  // RSSI in dBm of the channel (signed integer, 1 dB precision)
 	RSSIS  *int    `json:"rssis"`  // RSSI in dBm of the signal (signed integer, 1 dB precision) (Optional)
 	RSSISD *uint   `json:"rssisd"` // Standard deviation of RSSI during preamble (unsigned integer) (Optional)
-	LSNR   float64 `json:"lsnr"`   // Lora SNR ratio in dB (signed float, 0.1 dB precision)
+	LSNR   float64 `json:"lsnr"`   // Lora SNR ratio in dB (signed float, 0.1 dB precision), TBD for LR-FHSS
 	ETime  string  `json:"etime"`  // Encrypted fine timestamp, ns precision [0..999999999] (Optional)
 	FTime  *uint32 `json:"ftime"`  // Fine timestamp, ns precision [0..999999999] (Optional)
 	FOff   int32   `json:"foff"`   // Frequency offset in Hz [-125kHz..+125Khz] (Optional)
+	Fdri   int32   `json:"fdri"`   // Frequency drift in Hz between start and end of a LR-FHSS packet (signed)
 }
 
 // TxPacket contains a Tx message
@@ -115,7 +117,7 @@ type Stat struct {
 	LMST *uint32       `json:"lmst,omitempty"` // Sequence number of the first packet received from link testing mote (unsigned integer)
 	LMNW *uint32       `json:"lmnw,omitempty"` // Sequence number of the last packet received from link testing mote (unsigned integer)
 	LPPS *uint32       `json:"lpps,omitempty"` // Number of lost PPS pulses (unsigned integer)
-	Temp *int32        `json:"temp,omitempty"` // Temperature of the Gateway (signed integer)
+	Temp *float32      `json:"temp,omitempty"` // Temperature of the Gateway (signed float)
 	FPGA *uint32       `json:"fpga,omitempty"` // Version of Gateway FPGA (unsigned integer)
 	DSP  *uint32       `json:"dsp,omitempty"`  // Version of Gateway DSP software (unsigned interger)
 	HAL  *string       `json:"hal,omitempty"`  // Version of Gateway driver (format X.X.X)

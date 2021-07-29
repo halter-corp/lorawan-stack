@@ -16,6 +16,7 @@ package web_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/gogo/protobuf/types"
@@ -35,8 +36,7 @@ import (
 )
 
 func TestWebhookRegistryRPC(t *testing.T) {
-	a := assertions.New(t)
-	ctx := test.Context()
+	a, ctx := test.New(t)
 
 	is, isAddr := startMockIS(ctx)
 	is.add(ctx, registeredApplicationID, registeredApplicationKey)
@@ -52,7 +52,7 @@ func TestWebhookRegistryRPC(t *testing.T) {
 			},
 		},
 	})
-	redisClient, flush := test.NewRedis(t, "applicationserver_test")
+	redisClient, flush := test.NewRedis(ctx, "applicationserver_test")
 	defer flush()
 	defer redisClient.Close()
 	webhookReg := &redis.WebhookRegistry{Redis: redisClient}
@@ -84,7 +84,7 @@ func TestWebhookRegistryRPC(t *testing.T) {
 	{
 		res, err := client.List(ctx, &ttnpb.ListApplicationWebhooksRequest{
 			ApplicationIdentifiers: registeredApplicationID,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"base_url"},
 			},
 		}, creds)
@@ -98,11 +98,11 @@ func TestWebhookRegistryRPC(t *testing.T) {
 			ApplicationWebhook: ttnpb.ApplicationWebhook{
 				ApplicationWebhookIdentifiers: ttnpb.ApplicationWebhookIdentifiers{
 					ApplicationIdentifiers: registeredApplicationID,
-					WebhookID:              registeredWebhookID,
+					WebhookId:              registeredWebhookID,
 				},
-				BaseURL: "http://localhost/test",
+				BaseUrl: "http://localhost/test",
 			},
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"base_url"},
 			},
 		}, creds)
@@ -113,13 +113,13 @@ func TestWebhookRegistryRPC(t *testing.T) {
 	{
 		res, err := client.List(ctx, &ttnpb.ListApplicationWebhooksRequest{
 			ApplicationIdentifiers: registeredApplicationID,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"base_url"},
 			},
 		}, creds)
 		a.So(err, should.BeNil)
 		a.So(res.Webhooks, should.HaveLength, 1)
-		a.So(res.Webhooks[0].BaseURL, should.Equal, "http://localhost/test")
+		a.So(res.Webhooks[0].BaseUrl, should.Equal, "http://localhost/test")
 	}
 
 	// Get.
@@ -127,21 +127,21 @@ func TestWebhookRegistryRPC(t *testing.T) {
 		res, err := client.Get(ctx, &ttnpb.GetApplicationWebhookRequest{
 			ApplicationWebhookIdentifiers: ttnpb.ApplicationWebhookIdentifiers{
 				ApplicationIdentifiers: registeredApplicationID,
-				WebhookID:              registeredWebhookID,
+				WebhookId:              registeredWebhookID,
 			},
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"base_url"},
 			},
 		}, creds)
 		a.So(err, should.BeNil)
-		a.So(res.BaseURL, should.Equal, "http://localhost/test")
+		a.So(res.BaseUrl, should.Equal, "http://localhost/test")
 	}
 
 	// Delete.
 	{
 		_, err := client.Delete(ctx, &ttnpb.ApplicationWebhookIdentifiers{
 			ApplicationIdentifiers: registeredApplicationID,
-			WebhookID:              registeredWebhookID,
+			WebhookId:              registeredWebhookID,
 		}, creds)
 		a.So(err, should.BeNil)
 	}
@@ -150,7 +150,7 @@ func TestWebhookRegistryRPC(t *testing.T) {
 	{
 		res, err := client.List(ctx, &ttnpb.ListApplicationWebhooksRequest{
 			ApplicationIdentifiers: registeredApplicationID,
-			FieldMask: pbtypes.FieldMask{
+			FieldMask: &pbtypes.FieldMask{
 				Paths: []string{"base_url"},
 			},
 		}, creds)
@@ -229,7 +229,8 @@ description: Bar`),
 			a := assertions.New(t)
 
 			config := web.TemplatesConfig{
-				Static: tc.contents,
+				Static:     tc.contents,
+				HTTPClient: http.DefaultClient,
 			}
 			store, err := config.NewTemplateStore()
 			a.So(err, should.BeNil)
@@ -243,13 +244,13 @@ description: Bar`),
 
 			getRes, err := client.GetTemplate(ctx, &ttnpb.GetApplicationWebhookTemplateRequest{
 				ApplicationWebhookTemplateIdentifiers: ttnpb.ApplicationWebhookTemplateIdentifiers{
-					TemplateID: "foo",
+					TemplateId: "foo",
 				},
 			})
 			tc.assertGet(a, getRes, err)
 
 			listRes, err := client.ListTemplates(ctx, &ttnpb.ListApplicationWebhookTemplatesRequest{
-				FieldMask: types.FieldMask{
+				FieldMask: &types.FieldMask{
 					Paths: []string{
 						"name",
 						"description",

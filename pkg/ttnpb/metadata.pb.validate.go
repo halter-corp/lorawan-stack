@@ -150,6 +150,10 @@ func (m *RxMetadata) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "hopping_width":
+			// no validation rules for HoppingWidth
+		case "frequency_drift":
+			// no validation rules for FrequencyDrift
 		case "advanced":
 
 			if v, ok := interface{}(m.GetAdvanced()).(interface{ ValidateFields(...string) error }); ok {
@@ -352,17 +356,33 @@ func (m *PacketBrokerMetadata) ValidateFields(paths ...string) error {
 		_ = subs
 		switch name {
 		case "message_id":
-			// no validation rules for MessageID
+			// no validation rules for MessageId
 		case "forwarder_net_id":
-			// no validation rules for ForwarderNetID
+			// no validation rules for ForwarderNetId
 		case "forwarder_tenant_id":
-			// no validation rules for ForwarderTenantID
-		case "forwarder_id":
-			// no validation rules for ForwarderID
+			// no validation rules for ForwarderTenantId
+		case "forwarder_cluster_id":
+			// no validation rules for ForwarderClusterId
+		case "forwarder_gateway_eui":
+			// no validation rules for ForwarderGatewayEui
+		case "forwarder_gateway_id":
+
+			if v, ok := interface{}(m.GetForwarderGatewayId()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return PacketBrokerMetadataValidationError{
+						field:  "forwarder_gateway_id",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		case "home_network_net_id":
-			// no validation rules for HomeNetworkNetID
+			// no validation rules for HomeNetworkNetId
 		case "home_network_tenant_id":
-			// no validation rules for HomeNetworkTenantID
+			// no validation rules for HomeNetworkTenantId
+		case "home_network_cluster_id":
+			// no validation rules for HomeNetworkClusterId
 		case "hops":
 
 			for idx, item := range m.GetHops() {

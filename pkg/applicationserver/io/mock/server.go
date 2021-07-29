@@ -19,8 +19,8 @@ import (
 	"sync"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io"
-	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
+	"go.thethings.network/lorawan-stack/v3/pkg/ratelimit"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/unique"
 )
@@ -28,11 +28,13 @@ import (
 type server struct {
 	*component.Component
 	subscriptionsMu sync.RWMutex
-	subscriptions   map[string][]*io.Subscription
+	appSubs         map[string][]*io.Subscription
+	bcastSubs       []*io.Subscription
 	subscriptionsCh chan *io.Subscription
 	downlinkQueueMu sync.RWMutex
 	downlinkQueue   map[string][]*ttnpb.ApplicationDownlink
 	subscribeError  error
+	applicationUps  map[string][]*ttnpb.ApplicationUplink
 }
 
 // Server represents a mock io.Server.
@@ -41,13 +43,15 @@ type Server interface {
 
 	SetSubscribeError(error)
 	Subscriptions() <-chan *io.Subscription
+
+	SetUplinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, ups ...*ttnpb.ApplicationUplink)
 }
 
 // NewServer instantiates a new Server.
 func NewServer(c *component.Component) Server {
 	return &server{
 		Component:       c,
-		subscriptions:   make(map[string][]*io.Subscription),
+		appSubs:         make(map[string][]*io.Subscription),
 		subscriptionsCh: make(chan *io.Subscription, 10),
 		downlinkQueue:   make(map[string][]*ttnpb.ApplicationDownlink),
 	}
@@ -58,11 +62,16 @@ func (s *server) FillContext(ctx context.Context) context.Context {
 	return s.Component.FillContext(ctx)
 }
 
-func (s *server) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
+func (s *server) Publish(ctx context.Context, up *ttnpb.ApplicationUp) error {
 	s.subscriptionsMu.RLock()
 	defer s.subscriptionsMu.RUnlock()
-	for _, sub := range s.subscriptions[unique.ID(ctx, up.ApplicationIdentifiers)] {
-		if err := sub.SendUp(ctx, up); err != nil {
+	for _, sub := range s.appSubs[unique.ID(ctx, up.ApplicationIdentifiers)] {
+		if err := sub.Publish(ctx, up); err != nil {
+			return err
+		}
+	}
+	for _, sub := range s.bcastSubs {
+		if err := sub.Publish(ctx, up); err != nil {
 			return err
 		}
 	}
@@ -70,19 +79,20 @@ func (s *server) SendUp(ctx context.Context, up *ttnpb.ApplicationUp) error {
 }
 
 // Subscribe implements io.Server.
-func (s *server) Subscribe(ctx context.Context, protocol string, ids ttnpb.ApplicationIdentifiers) (*io.Subscription, error) {
+func (s *server) Subscribe(ctx context.Context, protocol string, ids *ttnpb.ApplicationIdentifiers, global bool) (*io.Subscription, error) {
 	s.subscriptionsMu.RLock()
 	err := s.subscribeError
 	s.subscriptionsMu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
-	if err := rights.RequireApplication(ctx, ids, ttnpb.RIGHT_APPLICATION_TRAFFIC_READ); err != nil {
-		return nil, err
-	}
-	sub := io.NewSubscription(ctx, protocol, &ids)
+	sub := io.NewSubscription(ctx, protocol, ids)
 	s.subscriptionsMu.Lock()
-	s.subscriptions[unique.ID(ctx, ids)] = append(s.subscriptions[unique.ID(ctx, ids)], sub)
+	if ids != nil {
+		s.appSubs[unique.ID(ctx, ids)] = append(s.appSubs[unique.ID(ctx, ids)], sub)
+	} else {
+		s.bcastSubs = append(s.bcastSubs, sub)
+	}
 	s.subscriptionsMu.Unlock()
 	select {
 	case s.subscriptionsCh <- sub:
@@ -123,4 +133,25 @@ func (s *server) SetSubscribeError(err error) {
 
 func (s *server) Subscriptions() <-chan *io.Subscription {
 	return s.subscriptionsCh
+}
+
+func (s *server) RateLimiter() ratelimit.Interface {
+	return &ratelimit.NoopRateLimiter{}
+}
+
+func (s *server) SetUplinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, ups ...*ttnpb.ApplicationUplink) {
+	s.applicationUps[unique.ID(ctx, ids)] = ups
+}
+
+func (s *server) RangeUplinks(ctx context.Context, ids ttnpb.EndDeviceIdentifiers, paths []string, f func(ctx context.Context, up *ttnpb.ApplicationUplink) bool) error {
+	for _, up := range s.applicationUps[unique.ID(ctx, ids)] {
+		dst := &ttnpb.ApplicationUplink{}
+		if err := dst.SetFields(up, paths...); err != nil {
+			return err
+		}
+		if !f(ctx, dst) {
+			break
+		}
+	}
+	return nil
 }

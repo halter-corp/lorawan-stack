@@ -33,7 +33,7 @@ type contactInfoStore struct {
 	*store
 }
 
-func (s *contactInfoStore) GetContactInfo(ctx context.Context, entityID ttnpb.Identifiers) ([]*ttnpb.ContactInfo, error) {
+func (s *contactInfoStore) GetContactInfo(ctx context.Context, entityID ttnpb.IDStringer) ([]*ttnpb.ContactInfo, error) {
 	defer trace.StartRegion(ctx, "get contact info").End()
 	entity, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *contactInfoStore) GetContactInfo(ctx context.Context, entityID ttnpb.Id
 	return pb, nil
 }
 
-func (s *contactInfoStore) SetContactInfo(ctx context.Context, entityID ttnpb.Identifiers, pb []*ttnpb.ContactInfo) ([]*ttnpb.ContactInfo, error) {
+func (s *contactInfoStore) SetContactInfo(ctx context.Context, entityID ttnpb.IDStringer, pb []*ttnpb.ContactInfo) ([]*ttnpb.ContactInfo, error) {
 	defer trace.StartRegion(ctx, "update contact info").End()
 	entity, err := s.findEntity(ctx, entityID, "id")
 	if err != nil {
@@ -144,6 +144,8 @@ func (s *contactInfoStore) SetContactInfo(ctx context.Context, entityID ttnpb.Id
 	return pb, nil
 }
 
+var errValidationAlreadyExists = errors.DefineAlreadyExists("validation_already_exists", "contact info validation already exists")
+
 func (s *contactInfoStore) CreateValidation(ctx context.Context, validation *ttnpb.ContactInfoValidation) (*ttnpb.ContactInfoValidation, error) {
 	defer trace.StartRegion(ctx, "create contact info validation").End()
 	var (
@@ -171,6 +173,21 @@ func (s *contactInfoStore) CreateValidation(ctx context.Context, validation *ttn
 	model.ContactMethod = int(contactMethod)
 	model.Value = value
 
+	var existing ContactInfoValidation
+	err = s.query(ctx, ContactInfoValidation{}).Where(ContactInfoValidation{
+		EntityID:      model.EntityID,
+		EntityType:    model.EntityType,
+		ContactMethod: model.ContactMethod,
+		Value:         model.Value,
+	}).Where("expires_at > ?", cleanTime(time.Now())).First(&existing).Error
+	switch {
+	case err == nil:
+		return nil, errValidationAlreadyExists.New()
+	case gorm.IsRecordNotFoundError(err):
+	default:
+		return nil, err
+	}
+
 	if err = s.createEntity(ctx, &model); err != nil {
 		return nil, err
 	}
@@ -183,6 +200,7 @@ func (s *contactInfoStore) CreateValidation(ctx context.Context, validation *ttn
 
 var (
 	errValidationTokenNotFound = errors.DefineNotFound("validation_token", "validation token not found")
+	errValidationTokenUsed     = errors.DefineAlreadyExists("validation_token_used", "validation token already used")
 	errValidationTokenExpired  = errors.DefineNotFound("validation_token_expired", "validation token expired")
 )
 
@@ -200,6 +218,10 @@ func (s *contactInfoStore) Validate(ctx context.Context, validation *ttnpb.Conta
 			return errValidationTokenNotFound.New()
 		}
 		return err
+	}
+
+	if model.Used {
+		return errValidationTokenUsed.New()
 	}
 
 	if model.ExpiresAt.Before(time.Now()) {
@@ -231,5 +253,35 @@ func (s *contactInfoStore) Validate(ctx context.Context, validation *ttnpb.Conta
 		}
 	}
 
-	return s.query(ctx, ContactInfoValidation{}).Delete(&model).Error
+	err = s.query(ctx, ContactInfoValidation{}).Where(ContactInfoValidation{
+		Reference: validation.ID,
+		Token:     validation.Token,
+	}).Update(ContactInfoValidation{
+		ExpiresAt: now,
+		Used:      true,
+	}).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *contactInfoStore) DeleteEntityContactInfo(ctx context.Context, entityID ttnpb.IDStringer) error {
+	defer trace.StartRegion(ctx, "delete entity contact info").End()
+	entity, err := s.findDeletedEntity(ctx, entityID, "id")
+	if err != nil {
+		return err
+	}
+	err = s.query(ctx, ContactInfoValidation{}).Where(ContactInfoValidation{
+		EntityID:   entity.PrimaryKey(),
+		EntityType: entityTypeForID(entityID),
+	}).Delete(&ContactInfoValidation{}).Error
+	if err != nil {
+		return err
+	}
+	return s.query(ctx, ContactInfo{}).Where(&ContactInfo{
+		EntityID:   entity.PrimaryKey(),
+		EntityType: entityTypeForID(entityID),
+	}).Delete(&ContactInfo{}).Error
 }

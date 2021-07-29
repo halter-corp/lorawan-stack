@@ -21,7 +21,6 @@ import (
 	"github.com/smartystreets/assertions"
 	"go.thethings.network/lorawan-stack/v3/pkg/events"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal"
-	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/test"
 	. "go.thethings.network/lorawan-stack/v3/pkg/networkserver/mac"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	"go.thethings.network/lorawan-stack/v3/pkg/types"
@@ -52,28 +51,28 @@ func TestHandleRekeyInd(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				PendingSession: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				PendingMACState: &ttnpb.MACState{},
 				MACState: &ttnpb.MACState{
-					PendingJoinRequest: &ttnpb.JoinRequest{},
+					PendingJoinRequest: &ttnpb.MACState_JoinRequest{},
 					QueuedResponses:    []*ttnpb.MACCommand{},
 				},
 			},
 			Expected: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					QueuedResponses: []*ttnpb.MACCommand{
 						(&ttnpb.MACCommand_RekeyConf{
 							MinorVersion: 1,
@@ -98,10 +97,10 @@ func TestHandleRekeyInd(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
@@ -112,22 +111,22 @@ func TestHandleRekeyInd(t *testing.T) {
 				},
 				PendingMACState: &ttnpb.MACState{},
 				MACState: &ttnpb.MACState{
-					PendingJoinRequest: &ttnpb.JoinRequest{},
+					PendingJoinRequest: &ttnpb.MACState_JoinRequest{},
 					QueuedResponses:    []*ttnpb.MACCommand{},
 				},
 			},
 			Expected: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					QueuedResponses: []*ttnpb.MACCommand{
 						(&ttnpb.MACCommand_RekeyConf{
 							MinorVersion: 1,
@@ -152,10 +151,10 @@ func TestHandleRekeyInd(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
@@ -164,15 +163,15 @@ func TestHandleRekeyInd(t *testing.T) {
 			Expected: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					QueuedResponses: []*ttnpb.MACCommand{
 						(&ttnpb.MACCommand_RekeyConf{
 							MinorVersion: 1,
@@ -197,13 +196,13 @@ func TestHandleRekeyInd(t *testing.T) {
 			Device: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				PendingSession: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				PendingMACState: &ttnpb.MACState{},
 				MACState: &ttnpb.MACState{
-					PendingJoinRequest: &ttnpb.JoinRequest{},
+					PendingJoinRequest: &ttnpb.MACState_JoinRequest{},
 					QueuedResponses: []*ttnpb.MACCommand{
 						{},
 						{},
@@ -214,15 +213,15 @@ func TestHandleRekeyInd(t *testing.T) {
 			Expected: &ttnpb.EndDevice{
 				SupportsJoin: true,
 				EndDeviceIdentifiers: ttnpb.EndDeviceIdentifiers{
-					DevAddr: &DevAddr,
+					DevAddr: &test.DefaultDevAddr,
 				},
 				Session: &ttnpb.Session{
-					DevAddr:       DevAddr,
+					DevAddr:       test.DefaultDevAddr,
 					LastFCntUp:    42,
 					LastNFCntDown: 43,
 				},
 				MACState: &ttnpb.MACState{
-					LoRaWANVersion: ttnpb.MAC_V1_1,
+					LorawanVersion: ttnpb.MAC_V1_1,
 					QueuedResponses: []*ttnpb.MACCommand{
 						{},
 						{},
@@ -253,7 +252,7 @@ func TestHandleRekeyInd(t *testing.T) {
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 				dev := CopyEndDevice(tc.Device)
 
-				evs, err := HandleRekeyInd(ctx, dev, tc.Payload, DevAddr)
+				evs, err := HandleRekeyInd(ctx, dev, tc.Payload, test.DefaultDevAddr)
 				if tc.Error != nil && !a.So(err, should.EqualErrorOrDefinition, tc.Error) ||
 					tc.Error == nil && !a.So(err, should.BeNil) {
 					t.FailNow()

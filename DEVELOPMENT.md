@@ -4,7 +4,7 @@ The Things Stack components are primarily built in Go, we use React for web fron
 
 ## Development Environment
 
-The Things Network's development tooling uses [Mage](https://magefile.org/). Under the hood, `mage` calls other tools such as `git`, `go`, `yarn`, `docker` etc. Recent versions are supported; Node v12.x and Go v1.14x.
+The Things Network's development tooling uses [Mage](https://magefile.org/). Under the hood, `mage` calls other tools such as `git`, `go`, `yarn`, `docker` etc. Recent versions are supported; Node v12.x and Go v1.16x.
 
 - Follow [Go's installation guide](https://golang.org/doc/install) to install Go.
 - Download Node.js [from their website](https://nodejs.org) and install it.
@@ -17,13 +17,13 @@ If you are unfamiliar with forking projects on GitHub or cloning them locally, p
 
 ## Getting Started
 
-As most of the tasks will be managed by `make` and `mage` we will first initialize the tooling:
+The first step to get started is to initialize tooling and some dependencies:
 
 ```bash
 $ make init
 ```
 
-You may want to run this commands from time to time.
+You may want to run this commands from time to time to stay up-to-date with changes to tooling and dependencies.
 
 ## Running a development build of The Things Stack
 
@@ -71,8 +71,9 @@ $ tools/bin/mage dev:initStack
 ```
 
 This creates a database, migrates tables and creates a user `admin` with password `admin`.
+- An API Key for the admin user with `RIGHTS_ALL` is also created and stored in `.env/admin_api_key.txt`.
 
-4. Start an development instance of The Things Stack
+4. Start a development instance of The Things Stack
 
 ```bash
 $ go run ./cmd/ttn-lw-stack -c ./config/stack/ttn-lw-stack.yml start
@@ -139,16 +140,22 @@ You can use `go run ./cmd/ttn-lw-stack start` to start The Things Stack.
 
 Most data is stored as base64-encoded protocol buffers. For debugging purposes it is often useful to inspect or update the stored database models - you can use Redis codec tool located at `./pkg/redis/codec` to decode/encode them to/from JSON.
 
-##### Example
+##### Examples
 
-###### Get and decode
-```
-redis-cli get "ttn:v3:ns:devices:uid:test-app:test-dev" | go run ./pkg/redis/codec -type 'ttnpb.EndDevice'
+###### Get and Decode
+
+```bash
+$ redis-cli get "ttn:v3:ns:devices:uid:test-app:test-dev" | go run ./pkg/redis/codec -type 'ttnpb.EndDevice'
 ```
 
-###### Get, decode, modify, encode and set
+###### Get, Decode, Modify, Encode and Set
+
 ```
-redis-cli get "ttn:v3:ns:devices:uid:test-app.test-dev" | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' | jq '.supports_join = false' | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' -encode | redis-cli -x set "ttn:v3:ns:devices:uid:test-app.test-dev"
+$ redis-cli get "ttn:v3:ns:devices:uid:test-app.test-dev" \
+  | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' \
+  | jq '.supports_join = false' \
+  | go run ./pkg/redis/codec -type 'ttnpb.EndDevice' -encode \
+  | redis-cli -x set "ttn:v3:ns:devices:uid:test-app.test-dev"
 ```
 
 ## Project Structure
@@ -175,6 +182,7 @@ The folder structure of the project looks as follows:
 │   ├── ttn-lw-cli      the command-line-interface for The Things Stack for LoRaWAN
 │   └── ttn-lw-stack    bundles the server binaries that form The Things Stack for LoRaWAN
 ├── config              configuration for our JavaScript SDK and frontend
+├── data                data from external repositories, such as devices, frequency plans and webhook templates
 ├── doc                 detailed documentation on the workings of The Things Stack for LoRaWAN
 ├── pkg                 contains all libraries used in The Things Stack for LoRaWAN
 │   ├── component       contains the base component; all other components extend this component
@@ -253,7 +261,7 @@ In order to set up The Things Stack to support running the frontend via `webpack
 ```bash
 NODE_ENV="development"
 TTN_LW_LOG_LEVEL="debug"
-TTN_LW_IS_OAUTH_UI_JS_FILE="libs.bundle.js oauth.js"
+TTN_LW_IS_OAUTH_UI_JS_FILE="libs.bundle.js account.js"
 TTN_LW_CONSOLE_UI_JS_FILE="libs.bundle.js console.js"
 TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
 TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="http://localhost:8080/oauth/authorize"
@@ -1036,9 +1044,27 @@ It is also possible to use `go build`, or release snapshots, as described below.
 
 ## Releasing
 
-You can build a release snapshot with `cd tools && go run github.com/goreleaser/goreleaser --snapshot`.
+The Things Stack uses [GoReleaser](https://goreleaser.com/) for releases. If you want to build a release (snapshot), you first need to install GoReleaser:
 
-> Note: You will at least need to have [`rpm`](http://rpm5.org/) and [`snapcraft`](https://snapcraft.io/) in your `PATH`.
+```bash
+$ go install github.com/goreleaser/goreleaser@v0.161.1
+```
+
+The command for building a release snapshot is:
+
+```bash
+$ goreleaser --snapshot -f .goreleaser.snapshot.yml --rm-dist
+```
+
+The command for building a full release is:
+
+```bash
+$ goreleaser -f .goreleaser.release.yml --rm-dist
+```
+
+> Note: Goreleaser is configured to sign binaries, as per GitHub Action in `.github/workflows/release-*.yml`. If you're doing a release locally, you will need key's passphrase, or need to skip the signing step.
+
+> Note: You will at least need to have [`rpm`](http://rpm5.org/) and [`snapcraft`](https://snapcraft.io/) in your `PATH` if you want to build a full release.
 
 This will compile binaries for all supported platforms, `deb`, `rpm` and Snapcraft packages, release archives in `dist`, as well as Docker images.
 

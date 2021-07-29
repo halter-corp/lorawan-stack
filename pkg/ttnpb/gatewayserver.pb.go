@@ -6,13 +6,6 @@ package ttnpb
 import (
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
-	time "time"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -23,6 +16,11 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -44,7 +42,7 @@ type GatewayUp struct {
 	UplinkMessages []*UplinkMessage `protobuf:"bytes,1,rep,name=uplink_messages,json=uplinkMessages,proto3" json:"uplink_messages,omitempty"`
 	// Gateway status produced by the gateway.
 	GatewayStatus *GatewayStatus `protobuf:"bytes,2,opt,name=gateway_status,json=gatewayStatus,proto3" json:"gateway_status,omitempty"`
-	// A transmission acknowledgement or error.
+	// A Tx acknowledgment or error.
 	TxAcknowledgment     *TxAcknowledgment `protobuf:"bytes,3,opt,name=tx_acknowledgment,json=txAcknowledgment,proto3" json:"tx_acknowledgment,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -56,25 +54,16 @@ func (*GatewayUp) Descriptor() ([]byte, []int) {
 	return fileDescriptor_62b07a36420f2d6d, []int{0}
 }
 func (m *GatewayUp) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GatewayUp.Unmarshal(m, b)
 }
 func (m *GatewayUp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GatewayUp.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GatewayUp.Marshal(b, m, deterministic)
 }
 func (m *GatewayUp) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GatewayUp.Merge(m, src)
 }
 func (m *GatewayUp) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GatewayUp.Size(m)
 }
 func (m *GatewayUp) XXX_DiscardUnknown() {
 	xxx_messageInfo_GatewayUp.DiscardUnknown(m)
@@ -117,25 +106,16 @@ func (*GatewayDown) Descriptor() ([]byte, []int) {
 	return fileDescriptor_62b07a36420f2d6d, []int{1}
 }
 func (m *GatewayDown) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_GatewayDown.Unmarshal(m, b)
 }
 func (m *GatewayDown) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GatewayDown.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_GatewayDown.Marshal(b, m, deterministic)
 }
 func (m *GatewayDown) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GatewayDown.Merge(m, src)
 }
 func (m *GatewayDown) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_GatewayDown.Size(m)
 }
 func (m *GatewayDown) XXX_DiscardUnknown() {
 	xxx_messageInfo_GatewayDown.DiscardUnknown(m)
@@ -152,9 +132,17 @@ func (m *GatewayDown) GetDownlinkMessage() *DownlinkMessage {
 
 type ScheduleDownlinkResponse struct {
 	// The amount of time between the message has been scheduled and it will be transmitted by the gateway.
-	Delay                time.Duration `protobuf:"bytes,1,opt,name=delay,proto3,stdduration" json:"delay"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	Delay time.Duration `protobuf:"bytes,1,opt,name=delay,proto3,stdduration" json:"delay"`
+	// Downlink path chosen by the Gateway Server.
+	DownlinkPath *DownlinkPath `protobuf:"bytes,2,opt,name=downlink_path,json=downlinkPath,proto3" json:"downlink_path,omitempty"`
+	// Whether RX1 has been chosen for the downlink message.
+	// Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+	Rx1 bool `protobuf:"varint,3,opt,name=rx1,proto3" json:"rx1,omitempty"`
+	// Whether RX2 has been chosen for the downlink message.
+	// Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+	Rx2                  bool     `protobuf:"varint,4,opt,name=rx2,proto3" json:"rx2,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *ScheduleDownlinkResponse) Reset()      { *m = ScheduleDownlinkResponse{} }
@@ -163,25 +151,16 @@ func (*ScheduleDownlinkResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_62b07a36420f2d6d, []int{2}
 }
 func (m *ScheduleDownlinkResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ScheduleDownlinkResponse.Unmarshal(m, b)
 }
 func (m *ScheduleDownlinkResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ScheduleDownlinkResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ScheduleDownlinkResponse.Marshal(b, m, deterministic)
 }
 func (m *ScheduleDownlinkResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ScheduleDownlinkResponse.Merge(m, src)
 }
 func (m *ScheduleDownlinkResponse) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ScheduleDownlinkResponse.Size(m)
 }
 func (m *ScheduleDownlinkResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_ScheduleDownlinkResponse.DiscardUnknown(m)
@@ -194,6 +173,27 @@ func (m *ScheduleDownlinkResponse) GetDelay() time.Duration {
 		return m.Delay
 	}
 	return 0
+}
+
+func (m *ScheduleDownlinkResponse) GetDownlinkPath() *DownlinkPath {
+	if m != nil {
+		return m.DownlinkPath
+	}
+	return nil
+}
+
+func (m *ScheduleDownlinkResponse) GetRx1() bool {
+	if m != nil {
+		return m.Rx1
+	}
+	return false
+}
+
+func (m *ScheduleDownlinkResponse) GetRx2() bool {
+	if m != nil {
+		return m.Rx2
+	}
+	return false
 }
 
 type ScheduleDownlinkErrorDetails struct {
@@ -209,25 +209,16 @@ func (*ScheduleDownlinkErrorDetails) Descriptor() ([]byte, []int) {
 	return fileDescriptor_62b07a36420f2d6d, []int{3}
 }
 func (m *ScheduleDownlinkErrorDetails) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
+	return xxx_messageInfo_ScheduleDownlinkErrorDetails.Unmarshal(m, b)
 }
 func (m *ScheduleDownlinkErrorDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ScheduleDownlinkErrorDetails.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
+	return xxx_messageInfo_ScheduleDownlinkErrorDetails.Marshal(b, m, deterministic)
 }
 func (m *ScheduleDownlinkErrorDetails) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ScheduleDownlinkErrorDetails.Merge(m, src)
 }
 func (m *ScheduleDownlinkErrorDetails) XXX_Size() int {
-	return m.Size()
+	return xxx_messageInfo_ScheduleDownlinkErrorDetails.Size(m)
 }
 func (m *ScheduleDownlinkErrorDetails) XXX_DiscardUnknown() {
 	xxx_messageInfo_ScheduleDownlinkErrorDetails.DiscardUnknown(m)
@@ -261,61 +252,59 @@ func init() {
 }
 
 var fileDescriptor_62b07a36420f2d6d = []byte{
-	// 856 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x41, 0x68, 0x24, 0x45,
-	0x14, 0xad, 0x4a, 0x8c, 0x68, 0x05, 0xb3, 0xb1, 0x40, 0x9d, 0xcc, 0x66, 0x2b, 0x61, 0x44, 0x09,
-	0xe2, 0x74, 0x87, 0x09, 0x88, 0x17, 0x0f, 0x49, 0x66, 0x1d, 0x22, 0x46, 0x70, 0x92, 0x08, 0x0a,
-	0x21, 0x54, 0xa6, 0x2b, 0x35, 0xcd, 0x74, 0xaa, 0xda, 0xae, 0x9a, 0x99, 0x0c, 0x22, 0x2c, 0x9e,
-	0xf6, 0x28, 0x78, 0x70, 0xc1, 0x8b, 0x08, 0xc2, 0xe2, 0x69, 0x8f, 0x7b, 0xdc, 0x63, 0x8e, 0x0b,
-	0x5e, 0xf6, 0xe4, 0xee, 0x74, 0x7b, 0xc8, 0x71, 0x8f, 0x8b, 0x27, 0xe9, 0x9a, 0xea, 0x64, 0xa6,
-	0x27, 0xad, 0x5e, 0xbc, 0x75, 0xf5, 0x7f, 0xff, 0xfd, 0xf7, 0x5f, 0xfd, 0x5f, 0xe8, 0x9d, 0x40,
-	0x46, 0xb4, 0x4f, 0x45, 0x55, 0x69, 0xda, 0xea, 0xb8, 0x34, 0xf4, 0x5d, 0x4e, 0x35, 0xeb, 0xd3,
-	0x81, 0x62, 0x51, 0x8f, 0x45, 0x4e, 0x18, 0x49, 0x2d, 0xf1, 0x82, 0xd6, 0xc2, 0xb1, 0x50, 0xa7,
-	0xb7, 0x51, 0xde, 0xe4, 0xbe, 0x6e, 0x77, 0x8f, 0x9d, 0x96, 0x3c, 0x75, 0x99, 0xe8, 0xc9, 0x41,
-	0x18, 0xc9, 0xb3, 0x81, 0x6b, 0xc0, 0xad, 0x2a, 0x67, 0xa2, 0xda, 0xa3, 0x81, 0xef, 0x51, 0xcd,
-	0xdc, 0xa9, 0x8f, 0x11, 0x65, 0xb9, 0x3a, 0x46, 0xc1, 0x25, 0x97, 0xa3, 0xe4, 0xe3, 0xee, 0x89,
-	0x39, 0x99, 0x83, 0xf9, 0xb2, 0xf0, 0x65, 0x2e, 0x25, 0x0f, 0x98, 0x51, 0x48, 0x85, 0x90, 0x9a,
-	0x6a, 0x5f, 0x0a, 0x65, 0xa3, 0xc4, 0x46, 0x2f, 0x39, 0xbc, 0x6e, 0x64, 0x00, 0x36, 0x7e, 0x33,
-	0x1f, 0x67, 0xa7, 0xa1, 0x1e, 0xd8, 0xe0, 0xad, 0x69, 0x0f, 0x58, 0x14, 0x49, 0xdb, 0x7b, 0x79,
-	0xa5, 0xd0, 0x22, 0x0b, 0x78, 0x7b, 0x1a, 0xe0, 0x7b, 0x4c, 0x68, 0xff, 0xc4, 0x67, 0x51, 0xa6,
-	0x70, 0x75, 0x1a, 0x74, 0xca, 0x94, 0xa2, 0x9c, 0x65, 0x88, 0xe5, 0x6b, 0x10, 0x5f, 0x6b, 0x5d,
-	0x9c, 0x1f, 0x31, 0xee, 0x4b, 0x41, 0x83, 0x11, 0xa2, 0x72, 0x01, 0xd1, 0xab, 0x8d, 0x91, 0xb0,
-	0x83, 0x10, 0x7f, 0x8c, 0x6e, 0x74, 0xc3, 0xc0, 0x17, 0x9d, 0xa3, 0xac, 0x4c, 0x09, 0xae, 0xce,
-	0xae, 0xcd, 0xd7, 0x6e, 0x39, 0x93, 0x77, 0xe9, 0x1c, 0x18, 0xd8, 0xee, 0x08, 0xd5, 0x5c, 0xe8,
-	0x8e, 0x1f, 0x15, 0xae, 0xa3, 0x05, 0xdb, 0xed, 0x91, 0xd2, 0x54, 0x77, 0x55, 0x69, 0x66, 0x15,
-	0x5e, 0x47, 0x63, 0x4b, 0xef, 0x19, 0x50, 0xf3, 0x35, 0x3e, 0x7e, 0xc4, 0xbb, 0xe8, 0x75, 0x7d,
-	0x76, 0x44, 0x5b, 0x1d, 0x21, 0xfb, 0x01, 0xf3, 0xf8, 0x29, 0x13, 0xba, 0x34, 0x6b, 0x88, 0x56,
-	0xf3, 0x44, 0xfb, 0x67, 0x9b, 0x13, 0xb8, 0xe6, 0xa2, 0xce, 0xfd, 0xa9, 0x7c, 0x89, 0xe6, 0x6d,
-	0xb9, 0xba, 0xec, 0x0b, 0xfc, 0x09, 0x5a, 0xf4, 0x64, 0x5f, 0x8c, 0x77, 0x5b, 0x82, 0x86, 0x7c,
-	0x25, 0x4f, 0x5e, 0xb7, 0xb8, 0xac, 0xdd, 0x1b, 0xde, 0xe4, 0x8f, 0xca, 0x21, 0x2a, 0xed, 0xb5,
-	0xda, 0xcc, 0xeb, 0x06, 0x2c, 0xc3, 0x36, 0x99, 0x0a, 0xa5, 0x50, 0x0c, 0x6f, 0xa2, 0x39, 0x8f,
-	0x05, 0x74, 0x60, 0xc9, 0x97, 0x9c, 0xd1, 0x54, 0x39, 0xd9, 0x54, 0x39, 0x75, 0x3b, 0x75, 0x5b,
-	0x8b, 0x7f, 0x6d, 0xcd, 0xfd, 0x06, 0x67, 0x5e, 0x81, 0xe7, 0x7f, 0xac, 0x80, 0x7b, 0x4f, 0x57,
-	0x60, 0x73, 0x94, 0x59, 0x39, 0x44, 0xcb, 0x79, 0xfa, 0xdb, 0xe9, 0xac, 0xd5, 0x99, 0xa6, 0x7e,
-	0xa0, 0xf0, 0x47, 0x68, 0x3e, 0xa4, 0xba, 0x7d, 0x64, 0x06, 0x30, 0xbb, 0xb2, 0xe5, 0x7c, 0x17,
-	0xe3, 0x29, 0x4d, 0x94, 0x26, 0x98, 0x3f, 0xaa, 0xf6, 0x74, 0x16, 0xcd, 0x35, 0x74, 0xbf, 0xa1,
-	0xf0, 0x0e, 0x9a, 0xff, 0xd4, 0x17, 0x1d, 0x6b, 0x13, 0x5e, 0x2a, 0xb8, 0xae, 0x83, 0xb0, 0x7c,
-	0xb3, 0x20, 0x94, 0xea, 0x5b, 0x83, 0xeb, 0x10, 0xef, 0xa1, 0x37, 0x1a, 0x4c, 0x6f, 0x4b, 0xd1,
-	0x62, 0x42, 0x47, 0x54, 0xcb, 0x68, 0x5b, 0x8a, 0x13, 0x9f, 0xe3, 0x37, 0xa7, 0x0c, 0xb8, 0x9d,
-	0xae, 0x55, 0xb9, 0x92, 0x67, 0xbc, 0x26, 0xf7, 0x47, 0x68, 0x58, 0x77, 0x3f, 0xdf, 0xdf, 0xdf,
-	0x96, 0x42, 0xb0, 0x56, 0xea, 0xdb, 0x8e, 0x38, 0x91, 0xb8, 0x52, 0xa0, 0x67, 0xe7, 0x6a, 0xa7,
-	0xa6, 0x2b, 0x4c, 0xf3, 0x54, 0x3e, 0xf8, 0xee, 0xf7, 0x3f, 0x7f, 0x98, 0x59, 0xc7, 0x8e, 0xcb,
-	0xd5, 0xe5, 0xa3, 0xe6, 0x7e, 0x93, 0x4d, 0xb3, 0xef, 0x7d, 0x6b, 0xf6, 0xab, 0xda, 0xba, 0x4c,
-	0xab, 0xfa, 0x69, 0xfd, 0x9f, 0x20, 0x7a, 0xcb, 0x2a, 0xfb, 0xa2, 0xf6, 0x3f, 0x69, 0xfb, 0xd0,
-	0x68, 0xab, 0xe1, 0xf5, 0x7f, 0xd6, 0xd6, 0xab, 0xe5, 0xd5, 0xd5, 0x18, 0x7a, 0xe9, 0x33, 0xd5,
-	0x50, 0xf8, 0x10, 0x2d, 0xe6, 0x07, 0x09, 0xff, 0xdb, 0xb4, 0x97, 0xd7, 0xf2, 0x80, 0xa2, 0x51,
-	0xaf, 0xfd, 0x02, 0xd1, 0x4c, 0x43, 0xa5, 0x5e, 0x2c, 0x35, 0x98, 0xb6, 0x5d, 0x5e, 0x35, 0x91,
-	0xae, 0xb5, 0xfa, 0x4f, 0x6e, 0xbc, 0x5b, 0x80, 0xc9, 0x71, 0x55, 0x6a, 0xc6, 0x91, 0xf7, 0xf1,
-	0x7b, 0xc5, 0x8e, 0x5c, 0x59, 0xe1, 0xa6, 0x4f, 0x91, 0xda, 0xfa, 0x15, 0x9e, 0x0f, 0x09, 0x7c,
-	0x3c, 0x24, 0xf0, 0xc9, 0x90, 0x80, 0x67, 0x43, 0x02, 0x2e, 0x86, 0x04, 0x3c, 0x1f, 0x12, 0xf0,
-	0x62, 0x48, 0xe0, 0x9d, 0x98, 0xc0, 0xbb, 0x31, 0x01, 0xf7, 0x63, 0x02, 0x1f, 0xc4, 0x04, 0x3c,
-	0x8c, 0x09, 0x78, 0x14, 0x13, 0x70, 0x1e, 0x13, 0xf8, 0x38, 0x26, 0xf0, 0x49, 0x4c, 0xc0, 0xb3,
-	0x98, 0xc0, 0x8b, 0x98, 0x80, 0xe7, 0x31, 0x81, 0x2f, 0x62, 0x02, 0xee, 0x24, 0x04, 0xdc, 0x4d,
-	0x08, 0xfc, 0x3e, 0x21, 0xe0, 0x5e, 0x42, 0xe0, 0xcf, 0x09, 0x01, 0xf7, 0x13, 0x02, 0x1e, 0x24,
-	0x04, 0x3e, 0x4c, 0x08, 0x7c, 0x94, 0x10, 0xf8, 0x95, 0xcb, 0xa5, 0xa3, 0xdb, 0x4c, 0xb7, 0x7d,
-	0xc1, 0x95, 0x23, 0x98, 0xee, 0xcb, 0xa8, 0xe3, 0x4e, 0xbe, 0xcf, 0xbd, 0x0d, 0x37, 0xec, 0x70,
-	0x57, 0x6b, 0x11, 0x1e, 0x1f, 0xbf, 0x6c, 0xf6, 0x63, 0xe3, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0x90, 0xb7, 0x04, 0xec, 0x6d, 0x07, 0x00, 0x00,
+	// 827 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0xcf, 0x6f, 0xe3, 0x44,
+	0x14, 0xce, 0xb4, 0x5b, 0xb4, 0x4c, 0xd9, 0x6e, 0x18, 0x09, 0x48, 0xb3, 0x5d, 0xb7, 0x32, 0x02,
+	0x55, 0x88, 0xd8, 0xc5, 0x95, 0x10, 0x17, 0x0e, 0x69, 0xb3, 0x44, 0x45, 0x14, 0x81, 0xdb, 0x20,
+	0x81, 0xb4, 0x8a, 0x26, 0xf6, 0x64, 0x62, 0xc5, 0x99, 0x31, 0x9e, 0xc9, 0x2f, 0x21, 0x24, 0xc4,
+	0x5f, 0x80, 0xc4, 0x01, 0x24, 0x2e, 0x88, 0x13, 0xe2, 0xaf, 0xe0, 0xc0, 0x81, 0x3b, 0x17, 0x4e,
+	0x2c, 0xa4, 0x1c, 0xf6, 0xc8, 0x99, 0x13, 0xf2, 0x78, 0x9c, 0x26, 0x76, 0x0d, 0x5c, 0xf6, 0xe6,
+	0x99, 0xf7, 0xbd, 0xef, 0x7d, 0xef, 0xf3, 0x7b, 0x03, 0x5f, 0x0a, 0x79, 0x8c, 0xa7, 0x98, 0x35,
+	0x84, 0xc4, 0xde, 0xd0, 0xc6, 0x51, 0x60, 0x53, 0x2c, 0xc9, 0x14, 0xcf, 0x05, 0x89, 0x27, 0x24,
+	0xb6, 0xa2, 0x98, 0x4b, 0x8e, 0x76, 0xa4, 0x64, 0x96, 0x86, 0x5a, 0x93, 0xe3, 0x7a, 0x93, 0x06,
+	0x72, 0x30, 0xee, 0x59, 0x1e, 0x1f, 0xd9, 0x84, 0x4d, 0xf8, 0x3c, 0x8a, 0xf9, 0x6c, 0x6e, 0x2b,
+	0xb0, 0xd7, 0xa0, 0x84, 0x35, 0x26, 0x38, 0x0c, 0x7c, 0x2c, 0x89, 0x5d, 0xf8, 0x48, 0x29, 0xeb,
+	0x8d, 0x15, 0x0a, 0xca, 0x29, 0x4f, 0x93, 0x7b, 0xe3, 0xbe, 0x3a, 0xa9, 0x83, 0xfa, 0xd2, 0xf0,
+	0x3d, 0xca, 0x39, 0x0d, 0x89, 0x52, 0x88, 0x19, 0xe3, 0x12, 0xcb, 0x80, 0x33, 0xa1, 0xa3, 0x86,
+	0x8e, 0x2e, 0x39, 0xfc, 0x71, 0xac, 0x00, 0x3a, 0x7e, 0x2f, 0x1f, 0x27, 0xa3, 0x48, 0xce, 0x75,
+	0xf0, 0x7e, 0xd1, 0x03, 0x12, 0xc7, 0x5c, 0xf7, 0x5e, 0xdf, 0x2f, 0xb5, 0x48, 0x03, 0x5e, 0x2c,
+	0x02, 0x02, 0x9f, 0x30, 0x19, 0xf4, 0x03, 0x12, 0x8b, 0x72, 0x96, 0xcc, 0xcf, 0x14, 0x70, 0x50,
+	0x04, 0x8c, 0x88, 0x10, 0x98, 0x92, 0x8c, 0x62, 0xef, 0x06, 0xc4, 0xc7, 0x52, 0x96, 0xe7, 0xc7,
+	0x84, 0x06, 0x9c, 0xe1, 0x30, 0x45, 0x98, 0x8f, 0x01, 0x7c, 0xba, 0x9d, 0x2a, 0xef, 0x44, 0xe8,
+	0x2d, 0x78, 0x77, 0x1c, 0x85, 0x01, 0x1b, 0x76, 0xb3, 0x32, 0x35, 0x70, 0xb0, 0x79, 0xb8, 0xed,
+	0xdc, 0xb7, 0xd6, 0x7f, 0xb6, 0xd5, 0x51, 0xb0, 0xf3, 0x14, 0xe5, 0xee, 0x8c, 0x57, 0x8f, 0x02,
+	0xb5, 0xe0, 0x8e, 0xb6, 0xa3, 0x2b, 0x24, 0x96, 0x63, 0x51, 0xdb, 0x38, 0x00, 0x37, 0xd1, 0xe8,
+	0xd2, 0x17, 0x0a, 0xe4, 0xde, 0xa1, 0xab, 0x47, 0x74, 0x0e, 0x9f, 0x95, 0xb3, 0x2e, 0xf6, 0x86,
+	0x8c, 0x4f, 0x43, 0xe2, 0xd3, 0x11, 0x61, 0xb2, 0xb6, 0xa9, 0x88, 0x0e, 0xf2, 0x44, 0x97, 0xb3,
+	0xe6, 0x1a, 0xce, 0xad, 0xca, 0xdc, 0x8d, 0xf9, 0x21, 0xdc, 0xd6, 0xe5, 0x5a, 0x7c, 0xca, 0xd0,
+	0xdb, 0xb0, 0xea, 0xf3, 0x29, 0x5b, 0xed, 0xb6, 0x06, 0x14, 0xf9, 0x7e, 0x9e, 0xbc, 0xa5, 0x71,
+	0x59, 0xbb, 0x77, 0xfd, 0xf5, 0x0b, 0xf3, 0x27, 0x00, 0x6b, 0x17, 0xde, 0x80, 0xf8, 0xe3, 0x90,
+	0x64, 0x60, 0x97, 0x88, 0x88, 0x33, 0x41, 0x50, 0x13, 0x6e, 0xf9, 0x24, 0xc4, 0x73, 0xcd, 0xbe,
+	0x6b, 0xa5, 0x73, 0x67, 0x65, 0x73, 0x67, 0xb5, 0xf4, 0x5c, 0x9e, 0x54, 0xff, 0x3e, 0xd9, 0xfa,
+	0x01, 0x6c, 0xdc, 0x06, 0x3f, 0xff, 0xb6, 0x5f, 0xf9, 0xfa, 0xd1, 0x3e, 0x70, 0xd3, 0x4c, 0xd4,
+	0x84, 0x77, 0x96, 0x5a, 0x23, 0x2c, 0x07, 0xda, 0xce, 0xbd, 0x32, 0xa1, 0xef, 0x61, 0x39, 0x70,
+	0x9f, 0xf1, 0x57, 0x4e, 0xa8, 0x0a, 0x37, 0xe3, 0xd9, 0x6b, 0xca, 0xbe, 0xdb, 0x6e, 0xf2, 0x99,
+	0xde, 0x38, 0xb5, 0x5b, 0xd9, 0x8d, 0x63, 0x3e, 0x84, 0x7b, 0xf9, 0x2e, 0x1e, 0x24, 0x43, 0xdf,
+	0x22, 0x12, 0x07, 0xa1, 0x40, 0x6f, 0xc2, 0xed, 0xa4, 0x7a, 0x57, 0x6d, 0x42, 0x36, 0x1a, 0x05,
+	0x11, 0xab, 0x29, 0x2e, 0x4c, 0x12, 0xd4, 0x8d, 0x70, 0x1e, 0x6d, 0xc2, 0xad, 0xb6, 0x9c, 0xb6,
+	0x05, 0x3a, 0x83, 0xdb, 0xef, 0x04, 0x6c, 0xa8, 0x7f, 0x07, 0xda, 0x2d, 0x19, 0x8b, 0x4e, 0x54,
+	0xbf, 0x57, 0x12, 0x4a, 0xf4, 0x1d, 0x82, 0x23, 0x80, 0x2e, 0xe0, 0x73, 0x6d, 0x22, 0x4f, 0x39,
+	0xf3, 0x08, 0x93, 0x31, 0x96, 0x3c, 0x3e, 0xe5, 0xac, 0x1f, 0x50, 0xf4, 0x7c, 0xc1, 0xe7, 0x07,
+	0xc9, 0x7e, 0xd7, 0xcd, 0x3c, 0xe3, 0x0d, 0xb9, 0x5f, 0x01, 0xc5, 0x7a, 0xfe, 0xfe, 0xe5, 0xe5,
+	0x29, 0x67, 0x8c, 0x78, 0xc9, 0xef, 0x39, 0x63, 0x7d, 0x8e, 0xcc, 0x12, 0x3d, 0x67, 0xd7, 0xcb,
+	0x5d, 0xac, 0x50, 0xe4, 0x31, 0x5f, 0xff, 0xfc, 0x97, 0x3f, 0xbf, 0xdc, 0x38, 0x42, 0x96, 0x4d,
+	0xc5, 0xf2, 0x75, 0xb5, 0x3f, 0xc9, 0xb6, 0x26, 0xf0, 0x3f, 0x55, 0x7b, 0xdc, 0xf0, 0x96, 0x69,
+	0x8d, 0x20, 0xa9, 0xff, 0x0d, 0x80, 0x2f, 0x68, 0x65, 0x1f, 0x38, 0x4f, 0x48, 0xdb, 0x1b, 0x4a,
+	0x9b, 0x83, 0x8e, 0xfe, 0x5d, 0xdb, 0xc4, 0xc9, 0xab, 0x73, 0x08, 0xbc, 0xf5, 0xae, 0x68, 0x0b,
+	0xf4, 0x10, 0x56, 0xf3, 0x83, 0x84, 0xfe, 0x6b, 0xab, 0xea, 0x87, 0x79, 0x40, 0xd9, 0x46, 0x39,
+	0xdf, 0x01, 0xb8, 0xd1, 0x16, 0x89, 0x17, 0xbb, 0x6d, 0x22, 0x75, 0x97, 0xd7, 0x4d, 0x24, 0xcf,
+	0x87, 0xf8, 0x5f, 0x6e, 0xbc, 0x5c, 0x82, 0xc9, 0x71, 0x99, 0x8e, 0x72, 0xe4, 0x55, 0xf4, 0x4a,
+	0xb9, 0x23, 0xd7, 0x56, 0xd8, 0xc9, 0x93, 0x27, 0x4e, 0x3a, 0xbf, 0xfe, 0x61, 0x54, 0x3e, 0x5b,
+	0x18, 0xe0, 0xfb, 0x85, 0x01, 0x7e, 0x5f, 0x18, 0xe0, 0xf1, 0xc2, 0xa8, 0xfc, 0xb5, 0x30, 0xc0,
+	0x17, 0x57, 0x46, 0xe5, 0xdb, 0x2b, 0xa3, 0xf2, 0xe3, 0x95, 0x01, 0x3e, 0xb2, 0x29, 0xb7, 0xe4,
+	0x80, 0xc8, 0x41, 0xc0, 0xa8, 0xb0, 0x18, 0x91, 0x53, 0x1e, 0x0f, 0xed, 0xf5, 0x67, 0x7b, 0x72,
+	0x6c, 0x47, 0x43, 0x6a, 0x4b, 0xc9, 0xa2, 0x5e, 0xef, 0x29, 0x35, 0xce, 0xc7, 0xff, 0x04, 0x00,
+	0x00, 0xff, 0xff, 0xbd, 0xa0, 0x89, 0x0e, 0xa5, 0x07, 0x00, 0x00,
 }
 
 func (this *GatewayUp) Equal(that interface{}) bool {
@@ -397,6 +386,15 @@ func (this *ScheduleDownlinkResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Delay != that1.Delay {
+		return false
+	}
+	if !this.DownlinkPath.Equal(that1.DownlinkPath) {
+		return false
+	}
+	if this.Rx1 != that1.Rx1 {
+		return false
+	}
+	if this.Rx2 != that1.Rx2 {
 		return false
 	}
 	return true
@@ -814,306 +812,6 @@ var _Gs_serviceDesc = grpc.ServiceDesc{
 	Metadata: "lorawan-stack/api/gatewayserver.proto",
 }
 
-func (m *GatewayUp) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GatewayUp) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GatewayUp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.TxAcknowledgment != nil {
-		{
-			size, err := m.TxAcknowledgment.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGatewayserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.GatewayStatus != nil {
-		{
-			size, err := m.GatewayStatus.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGatewayserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.UplinkMessages) > 0 {
-		for iNdEx := len(m.UplinkMessages) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.UplinkMessages[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGatewayserver(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GatewayDown) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GatewayDown) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GatewayDown) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.DownlinkMessage != nil {
-		{
-			size, err := m.DownlinkMessage.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGatewayserver(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ScheduleDownlinkResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ScheduleDownlinkResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ScheduleDownlinkResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	n4, err4 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.Delay, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.Delay):])
-	if err4 != nil {
-		return 0, err4
-	}
-	i -= n4
-	i = encodeVarintGatewayserver(dAtA, i, uint64(n4))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ScheduleDownlinkErrorDetails) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ScheduleDownlinkErrorDetails) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ScheduleDownlinkErrorDetails) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.PathErrors) > 0 {
-		for iNdEx := len(m.PathErrors) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PathErrors[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGatewayserver(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func encodeVarintGatewayserver(dAtA []byte, offset int, v uint64) int {
-	offset -= sovGatewayserver(v)
-	base := offset
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return base
-}
-func NewPopulatedGatewayUp(r randyGatewayserver, easy bool) *GatewayUp {
-	this := &GatewayUp{}
-	if r.Intn(5) != 0 {
-		v1 := r.Intn(5)
-		this.UplinkMessages = make([]*UplinkMessage, v1)
-		for i := 0; i < v1; i++ {
-			this.UplinkMessages[i] = NewPopulatedUplinkMessage(r, easy)
-		}
-	}
-	if r.Intn(5) != 0 {
-		this.GatewayStatus = NewPopulatedGatewayStatus(r, easy)
-	}
-	if r.Intn(5) != 0 {
-		this.TxAcknowledgment = NewPopulatedTxAcknowledgment(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedGatewayDown(r randyGatewayserver, easy bool) *GatewayDown {
-	this := &GatewayDown{}
-	if r.Intn(5) != 0 {
-		this.DownlinkMessage = NewPopulatedDownlinkMessage(r, easy)
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedScheduleDownlinkResponse(r randyGatewayserver, easy bool) *ScheduleDownlinkResponse {
-	this := &ScheduleDownlinkResponse{}
-	v2 := github_com_gogo_protobuf_types.NewPopulatedStdDuration(r, easy)
-	this.Delay = *v2
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-func NewPopulatedScheduleDownlinkErrorDetails(r randyGatewayserver, easy bool) *ScheduleDownlinkErrorDetails {
-	this := &ScheduleDownlinkErrorDetails{}
-	if r.Intn(5) == 0 {
-		v3 := r.Intn(5)
-		this.PathErrors = make([]*ErrorDetails, v3)
-		for i := 0; i < v3; i++ {
-			this.PathErrors[i] = NewPopulatedErrorDetails(r, easy)
-		}
-	}
-	if !easy && r.Intn(10) != 0 {
-	}
-	return this
-}
-
-type randyGatewayserver interface {
-	Float32() float32
-	Float64() float64
-	Int63() int64
-	Int31() int32
-	Uint32() uint32
-	Intn(n int) int
-}
-
-func randUTF8RuneGatewayserver(r randyGatewayserver) rune {
-	ru := r.Intn(62)
-	if ru < 10 {
-		return rune(ru + 48)
-	} else if ru < 36 {
-		return rune(ru + 55)
-	}
-	return rune(ru + 61)
-}
-func randStringGatewayserver(r randyGatewayserver) string {
-	v4 := r.Intn(100)
-	tmps := make([]rune, v4)
-	for i := 0; i < v4; i++ {
-		tmps[i] = randUTF8RuneGatewayserver(r)
-	}
-	return string(tmps)
-}
-func randUnrecognizedGatewayserver(r randyGatewayserver, maxFieldNumber int) (dAtA []byte) {
-	l := r.Intn(5)
-	for i := 0; i < l; i++ {
-		wire := r.Intn(4)
-		if wire == 3 {
-			wire = 5
-		}
-		fieldNumber := maxFieldNumber + r.Intn(100)
-		dAtA = randFieldGatewayserver(dAtA, r, fieldNumber, wire)
-	}
-	return dAtA
-}
-func randFieldGatewayserver(dAtA []byte, r randyGatewayserver, fieldNumber int, wire int) []byte {
-	key := uint32(fieldNumber)<<3 | uint32(wire)
-	switch wire {
-	case 0:
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(key))
-		v5 := r.Int63()
-		if r.Intn(2) == 0 {
-			v5 *= -1
-		}
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(v5))
-	case 1:
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	case 2:
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(key))
-		ll := r.Intn(100)
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(ll))
-		for j := 0; j < ll; j++ {
-			dAtA = append(dAtA, byte(r.Intn(256)))
-		}
-	default:
-		dAtA = encodeVarintPopulateGatewayserver(dAtA, uint64(key))
-		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
-	}
-	return dAtA
-}
-func encodeVarintPopulateGatewayserver(dAtA []byte, v uint64) []byte {
-	for v >= 1<<7 {
-		dAtA = append(dAtA, uint8(v&0x7f|0x80))
-		v >>= 7
-	}
-	dAtA = append(dAtA, uint8(v))
-	return dAtA
-}
 func (m *GatewayUp) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1158,6 +856,16 @@ func (m *ScheduleDownlinkResponse) Size() (n int) {
 	_ = l
 	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.Delay)
 	n += 1 + l + sovGatewayserver(uint64(l))
+	if m.DownlinkPath != nil {
+		l = m.DownlinkPath.Size()
+		n += 1 + l + sovGatewayserver(uint64(l))
+	}
+	if m.Rx1 {
+		n += 2
+	}
+	if m.Rx2 {
+		n += 2
+	}
 	return n
 }
 
@@ -1180,7 +888,7 @@ func sovGatewayserver(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozGatewayserver(x uint64) (n int) {
-	return sovGatewayserver((x << 1) ^ uint64((int64(x) >> 63)))
+	return sovGatewayserver(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (this *GatewayUp) String() string {
 	if this == nil {
@@ -1215,6 +923,9 @@ func (this *ScheduleDownlinkResponse) String() string {
 	}
 	s := strings.Join([]string{`&ScheduleDownlinkResponse{`,
 		`Delay:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Delay), "Duration", "types.Duration", 1), `&`, ``, 1) + `,`,
+		`DownlinkPath:` + strings.Replace(fmt.Sprintf("%v", this.DownlinkPath), "DownlinkPath", "DownlinkPath", 1) + `,`,
+		`Rx1:` + fmt.Sprintf("%v", this.Rx1) + `,`,
+		`Rx2:` + fmt.Sprintf("%v", this.Rx2) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1242,508 +953,3 @@ func valueToStringGatewayserver(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *GatewayUp) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGatewayserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GatewayUp: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GatewayUp: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UplinkMessages", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UplinkMessages = append(m.UplinkMessages, &UplinkMessage{})
-			if err := m.UplinkMessages[len(m.UplinkMessages)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GatewayStatus", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.GatewayStatus == nil {
-				m.GatewayStatus = &GatewayStatus{}
-			}
-			if err := m.GatewayStatus.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TxAcknowledgment", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TxAcknowledgment == nil {
-				m.TxAcknowledgment = &TxAcknowledgment{}
-			}
-			if err := m.TxAcknowledgment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGatewayserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GatewayDown) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGatewayserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GatewayDown: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GatewayDown: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DownlinkMessage", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DownlinkMessage == nil {
-				m.DownlinkMessage = &DownlinkMessage{}
-			}
-			if err := m.DownlinkMessage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGatewayserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ScheduleDownlinkResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGatewayserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ScheduleDownlinkResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ScheduleDownlinkResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Delay", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.Delay, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGatewayserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ScheduleDownlinkErrorDetails) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowGatewayserver
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ScheduleDownlinkErrorDetails: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ScheduleDownlinkErrorDetails: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PathErrors", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PathErrors = append(m.PathErrors, &ErrorDetails{})
-			if err := m.PathErrors[len(m.PathErrors)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipGatewayserver(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthGatewayserver
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipGatewayserver(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	depth := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowGatewayserver
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-		case 1:
-			iNdEx += 8
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowGatewayserver
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if length < 0 {
-				return 0, ErrInvalidLengthGatewayserver
-			}
-			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupGatewayserver
-			}
-			depth--
-		case 5:
-			iNdEx += 4
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthGatewayserver
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
-	}
-	return 0, io.ErrUnexpectedEOF
-}
-
-var (
-	ErrInvalidLengthGatewayserver        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowGatewayserver          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupGatewayserver = fmt.Errorf("proto: unexpected end of group")
-)
