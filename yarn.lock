@@ -12167,10 +12167,10 @@ react-focus-lock@^2.1.0:
     use-callback-ref "^1.2.1"
     use-sidecar "^1.0.1"
 
-react-grid-system@^7.1.1:
-  version "7.1.2"
-  resolved "https://registry.yarnpkg.com/react-grid-system/-/react-grid-system-7.1.2.tgz#5fa8e17a61f2f3ec0380402918c129c968e1e947"
-  integrity sha512-5XKVkevZWDITlpivmK8iQcmdfj7cuIzPlcejOmhRK9FGdNsFsRHXO2H7zaKfssJ2CymQXOTvU0ZN8TX9BPBr+g==
+react-grid-system@^7.3.1:
+  version "7.3.1"
+  resolved "https://registry.yarnpkg.com/react-grid-system/-/react-grid-system-7.3.1.tgz#034ad701ec894ba7a7eb0a4bd715d83be08c598b"
+  integrity sha512-q5dTeKURLZ2lAFLTjMKdjgubhibIu+EvdT838bcki/rQ8ftJGm+afzZHT2Da6BASWYpXo9+OSIS9M7VFp4/gbQ==
   dependencies:
     prop-types "^15.7.2"
 
