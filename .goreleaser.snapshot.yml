@@ -77,18 +77,18 @@ dockers:
       - data
       - public
 
-signs:
-  - artifacts: checksum
-    args:
-      - '--pinentry-mode=loopback'
-      - '--no-tty'
-      - '--passphrase-fd'
-      - '0'
-      - '--batch'
-      - '--output'
-      - '${signature}'
-      - '--detach-sign'
-      - '-u'
-      - '{{ .Env.SIGN_KEY_NAME }}'
-      - '${artifact}'
-    stdin_file: /tmp/gpg_passphrase
+# signs:
+#   - artifacts: checksum
+#     args:
+#       - '--pinentry-mode=loopback'
+#       - '--no-tty'
+#       - '--passphrase-fd'
+#       - '0'
+#       - '--batch'
+#       - '--output'
+#       - '${signature}'
+#       - '--detach-sign'
+#       - '-u'
+#       - '{{ .Env.SIGN_KEY_NAME }}'
+#       - '${artifact}'
+#     stdin_file: /tmp/gpg_passphrase
