@@ -56,6 +56,13 @@ if xs then
   end
 end
 
+local call_in_chunks = function (key, members)
+  local step = 1000
+  for i = 1, #members, step do
+    redis.call('zrem', key, unpack(members, i, math.min(i + step - 1, #members)))
+  end
+end
+
 local zs = redis.call('zrangebyscore', KEYS[3], '-inf', ARGV[3], 'withscores')
 if #zs > 0 then
   local members = {}
@@ -64,7 +71,7 @@ if #zs > 0 then
     members[#members+1] = member
     redis.call('xadd', KEYS[1], 'maxlen', '~', ARGV[4],'*', 'payload', member, 'start_at', zs[i+1])
   end
-  redis.call('zrem', KEYS[3], unpack(members))
+  call_in_chunks(KEYS[3], members)
   return format_ready(redis.call('xreadgroup', 'group', ARGV[1], ARGV[2], 'count', 1, 'streams', KEYS[1], '>'))
 end
 
