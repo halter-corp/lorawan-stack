@@ -405,6 +405,12 @@ func (s *Scheduler) ScheduleAnytime(ctx context.Context, opts Options) (res Emis
 		if delta := minScheduleTime - time.Duration(starts-now); delta > 0 {
 			starts += ConcentratorTime(delta)
 			opts.Timestamp += uint32(delta / time.Microsecond)
+		} else {
+			log.FromContext(ctx).WithFields(log.Fields(
+				"now", now,
+				"starts", starts,
+				"delta", delta,
+			)).Debug("Computed downlink start timestamp")
 		}
 	}
 	sb, err := s.findSubBand(opts.Frequency)
