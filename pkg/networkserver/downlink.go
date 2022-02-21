@@ -972,7 +972,7 @@ func (ns *NetworkServer) scheduleDownlinkByPaths(ctx context.Context, req *sched
 			"transmission_delay", delay,
 			"transmit_at", transmitAt,
 			"absolute_time", ttnpb.StdTime(req.TxRequest.AbsoluteTime),
-		)).Debug("Scheduled downlink")
+		)).Info("Scheduled downlink")
 		queuedEvents = append(queuedEvents, events.Builders(append([]events.Builder{
 			successEvent.With(
 				events.WithData(&ttnpb.ScheduleDownlinkResponse{

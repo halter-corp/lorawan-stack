@@ -302,7 +302,7 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 	log.FromContext(ctx).WithFields(log.Fields(
 		"median_rtt", medianRTT,
 		"min_schedule_time", minScheduleTime,
-	)).Debug("Computed scheduling delays")
+	)).Info("Computed scheduling delays")
 	var starts ConcentratorTime
 	now, ok := s.clock.FromServerTime(s.timeSource.Now())
 	if !ok {
@@ -330,7 +330,7 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 		log.FromContext(ctx).WithFields(log.Fields(
 			"toa", toa,
 			"time", opts.Time,
-		)).Debug("Computed downlink time-on-air")
+		)).Info("Computed downlink time-on-air")
 		starts -= ConcentratorTime(toa)
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)
@@ -410,7 +410,7 @@ func (s *Scheduler) ScheduleAnytime(ctx context.Context, opts Options) (res Emis
 				"now", now,
 				"starts", starts,
 				"delta", delta,
-			)).Debug("Computed downlink start timestamp")
+			)).Info("Computed downlink start timestamp")
 		}
 	}
 	sb, err := s.findSubBand(opts.Frequency)
