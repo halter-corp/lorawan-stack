@@ -618,7 +618,7 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			"starts", em.Starts(),
 			"duration", em.Duration(),
 			"delay", delay,
-		)).Debug("Scheduled downlink")
+		)).Info("Scheduled downlink")
 		break
 	}
 	if len(rxErrs) > 0 {
