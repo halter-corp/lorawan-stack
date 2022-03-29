@@ -236,7 +236,7 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage, frontendSync *FrontendClo
 			"concentrator_time", frontendSync.ConcentratorTime,
 			"server_time", frontendSync.ServerTime,
 			"gateway_time", frontendSync.GatewayTime,
-		)).Debug("Gateway clocks have been synchronized by the frontend")
+		)).Info("Gateway clocks have been synchronized by the frontend")
 	case up.Settings.Time != nil:
 		serverTime := *ttnpb.StdTime(up.ReceivedAt)
 		gatewayTime := *ttnpb.StdTime(up.Settings.Time)
@@ -246,7 +246,7 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage, frontendSync *FrontendClo
 			"concentrator_time", ct,
 			"server_time", serverTime,
 			"gateway_time", gatewayTime,
-		)).Debug("Synchronized server and gateway absolute time")
+		)).Info("Synchronized server and gateway absolute time")
 	case up.Settings.Time == nil:
 		serverTime := *ttnpb.StdTime(up.ReceivedAt)
 		ct = c.scheduler.Sync(up.Settings.Timestamp, serverTime)
@@ -254,7 +254,7 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage, frontendSync *FrontendClo
 			"timestamp", up.Settings.Timestamp,
 			"concentrator_time", ct,
 			"server_time", serverTime,
-		)).Debug("Synchronized server absolute time only")
+		)).Info("Synchronized server absolute time only")
 	default:
 		panic("unreachable")
 	}
@@ -619,7 +619,7 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			"duration", em.Duration(),
 			"now", now,
 			"delay", delay,
-		)).Debug("Scheduled downlink")
+		)).Info("Scheduled downlink")
 		break
 	}
 	if len(rxErrs) > 0 {
