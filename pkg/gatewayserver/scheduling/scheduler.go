@@ -346,7 +346,7 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 		"now", now,
 		"starts", starts,
 		"delay", delay,
-	)).Debug("Computed downlink start timestamp")
+	)).Info("Computed downlink start timestamp")
 	sb, err := s.findSubBand(opts.Frequency)
 	if err != nil {
 		return Emission{}, 0, err
