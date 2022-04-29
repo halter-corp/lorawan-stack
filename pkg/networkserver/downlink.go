@@ -1445,21 +1445,26 @@ func (ns *NetworkServer) attemptNetworkInitiatedDataDownlink(ctx context.Context
 		}
 	}
 
-	var paths []downlinkPath
+	downlinkPathCount := 0
+	groupedDownlinkPaths := make(map[uint32][]downlinkPath)
 	if fixedPaths := genState.ApplicationDownlink.GetClassBC().GetGateways(); len(fixedPaths) > 0 {
-		paths = make([]downlinkPath, 0, len(fixedPaths))
+		downlinkPathCount = len(fixedPaths)
 		for i := range fixedPaths {
-			paths = append(paths, downlinkPath{
+			groupIndex := fixedPaths[i].GroupIndex
+			groupedDownlinkPaths[groupIndex] = append(groupedDownlinkPaths[groupIndex], downlinkPath{
 				GatewayIdentifiers: fixedPaths[i].GatewayIds,
 				DownlinkPath: &ttnpb.DownlinkPath{
 					Path: &ttnpb.DownlinkPath_Fixed{
-						Fixed: fixedPaths[i],
+						Fixed: &ttnpb.GatewayAntennaIdentifiers{
+							GatewayIds:   fixedPaths[i].GatewayIds,
+							AntennaIndex: fixedPaths[i].AntennaIndex,
+						},
 					},
 				},
 			})
 		}
 	} else {
-		paths = downlinkPathsFromRecentUplinks(ctx, dev.MacState.RecentUplinks...)
+		paths := downlinkPathsFromRecentUplinks(ctx, dev.MacState.RecentUplinks...)
 		if len(paths) == 0 {
 			log.FromContext(ctx).Error("No downlink path available, skip class B/C downlink slot")
 			if genState.ApplicationDownlink != nil && ttnpb.HasAnyField(sets, "session.queued_application_downlinks") {
@@ -1471,77 +1476,81 @@ func (ns *NetworkServer) attemptNetworkInitiatedDataDownlink(ctx context.Context
 				QueuedApplicationUplinks:   genState.appendApplicationUplinks(nil, false),
 			}
 		}
+		downlinkPathCount = len(paths)
+		groupedDownlinkPaths[0] = paths
 	}
 
-	req := &ttnpb.TxRequest{
-		Class:           slot.Class,
-		Priority:        genDown.Priority,
-		FrequencyPlanId: dev.FrequencyPlanId,
-		Rx2DataRate:     dr.Rate,
-		Rx2Frequency:    freq,
-		AbsoluteTime:    absTime,
-	}
-	down, queuedEvents, err := ns.scheduleDownlinkByPaths(
-		log.NewContext(ctx, loggerWithTxRequestFields(log.FromContext(ctx), req, false, true)),
-		&scheduleRequest{
+	logger := log.FromContext(ctx)
+	allQueuedEvents := make([]events.Event, 0, downlinkPathCount)
+	allScheduledDownlinks := make([]*scheduledDownlink, 0, len(groupedDownlinkPaths))
+	allQueuedApplicationUplinks := make([]*ttnpb.ApplicationUp, 0, len(genState.baseApplicationUps)+len(groupedDownlinkPaths))
+	allGatewayServerFailureCount := 0
+
+	for _, paths := range groupedDownlinkPaths {
+		req := &ttnpb.TxRequest{
+			Class:           slot.Class,
+			Priority:        genDown.Priority,
+			FrequencyPlanId: dev.FrequencyPlanId,
+			Rx2DataRate:     dr.Rate,
+			Rx2Frequency:    freq,
+			AbsoluteTime:    absTime,
+		}
+		scheduleRequest := &scheduleRequest{
 			TxRequest:            req,
 			EndDeviceIdentifiers: dev.Ids,
 			Payload:              genDown.Payload,
 			RawPayload:           genDown.RawPayload,
 			DownlinkEvents:       genState.EventBuilders,
 			SessionKeyID:         dev.GetSession().GetKeys().GetSessionKeyId(),
-		},
-		paths...,
-	)
-	if err != nil {
-		logger := log.FromContext(ctx)
-		schedErr, ok := err.(downlinkSchedulingError)
-		if ok {
-			logger = loggerWithDownlinkSchedulingErrorFields(logger, schedErr)
-		} else {
-			logger = logger.WithError(err)
 		}
-		if ok && genState.ApplicationDownlink != nil {
-			pathErrs, ok := schedErr.pathErrors()
+		down, queuedEvents, err := ns.scheduleDownlinkByPaths(
+			log.NewContext(ctx, loggerWithTxRequestFields(log.FromContext(ctx), req, false, true)),
+			scheduleRequest,
+			paths...,
+		)
+		allQueuedEvents = append(allQueuedEvents, queuedEvents...)
+		if err != nil {
+			schedErr, ok := err.(downlinkSchedulingError)
 			if ok {
-				if genState.ApplicationDownlink.GetClassBC().GetAbsoluteTime() != nil &&
-					allErrors(nonRetryableAbsoluteTimeGatewayError, pathErrs...) {
-					logger.Warn("Absolute time invalid, fail application downlink")
-					return downlinkAttemptResult{
-						SetPaths: ttnpb.AddFields(sets, "session.queued_application_downlinks"),
-						QueuedApplicationUplinks: append(genState.appendApplicationUplinks(nil, false), &ttnpb.ApplicationUp{
-							EndDeviceIds:   dev.Ids,
-							CorrelationIds: events.CorrelationIDsFromContext(ctx),
-							Up: &ttnpb.ApplicationUp_DownlinkFailed{
-								DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{
-									Downlink: genState.ApplicationDownlink,
-									Error:    ttnpb.ErrorDetailsToProto(errInvalidAbsoluteTime),
-								},
-							},
-						}),
-						QueuedEvents: queuedEvents,
+				logger = loggerWithDownlinkSchedulingErrorFields(logger, schedErr)
+			} else {
+				logger = logger.WithError(err)
+			}
+			if ok && genState.ApplicationDownlink != nil {
+				pathErrs, ok := schedErr.pathErrors()
+				if ok {
+					var errorDetails *ttnpb.ErrorDetails
+					if genState.ApplicationDownlink.GetClassBC().GetAbsoluteTime() != nil &&
+						allErrors(nonRetryableAbsoluteTimeGatewayError, pathErrs...) {
+						logger.Warn("Absolute time invalid, fail application downlink")
+						errorDetails = ttnpb.ErrorDetailsToProto(errInvalidAbsoluteTime)
+					} else if len(genState.ApplicationDownlink.GetClassBC().GetGateways()) > 0 &&
+						allErrors(nonRetryableFixedPathGatewayError, pathErrs...) {
+						logger.Warn("Fixed paths invalid, fail application downlink")
+						errorDetails = ttnpb.ErrorDetailsToProto(errInvalidFixedPaths)
 					}
-				}
-				if len(genState.ApplicationDownlink.GetClassBC().GetGateways()) > 0 &&
-					allErrors(nonRetryableFixedPathGatewayError, pathErrs...) {
-					logger.Warn("Fixed paths invalid, fail application downlink")
-					return downlinkAttemptResult{
-						SetPaths: ttnpb.AddFields(sets, "session.queued_application_downlinks"),
-						QueuedApplicationUplinks: append(genState.appendApplicationUplinks(nil, false), &ttnpb.ApplicationUp{
+					if errorDetails != nil {
+						ups := append(genState.appendApplicationUplinks(nil, false), &ttnpb.ApplicationUp{
 							EndDeviceIds:   dev.Ids,
 							CorrelationIds: events.CorrelationIDsFromContext(ctx),
 							Up: &ttnpb.ApplicationUp_DownlinkFailed{
 								DownlinkFailed: &ttnpb.ApplicationDownlinkFailed{
 									Downlink: genState.ApplicationDownlink,
-									Error:    ttnpb.ErrorDetailsToProto(errInvalidFixedPaths),
+									Error:    errorDetails,
 								},
 							},
-						}),
-						QueuedEvents: queuedEvents,
+						})
+						allQueuedApplicationUplinks = append(allQueuedApplicationUplinks, ups...)
+						continue
 					}
 				}
 			}
+			allGatewayServerFailureCount += 1
 		}
+		allScheduledDownlinks = append(allScheduledDownlinks, down)
+	}
+
+	if allGatewayServerFailureCount == len(groupedDownlinkPaths) {
 		logger.Warn("All Gateway Servers failed to schedule downlink, retry attempt")
 		if genState.NeedsDownlinkQueueUpdate {
 			dev.Session.QueuedApplicationDownlinks = append([]*ttnpb.ApplicationDownlink{genState.ApplicationDownlink}, dev.Session.QueuedApplicationDownlinks...)
@@ -1549,13 +1558,15 @@ func (ns *NetworkServer) attemptNetworkInitiatedDataDownlink(ctx context.Context
 		return downlinkAttemptResult{
 			SetPaths:                   sets,
 			QueuedApplicationUplinks:   genState.appendApplicationUplinks(nil, false),
-			QueuedEvents:               queuedEvents,
+			QueuedEvents:               allQueuedEvents,
 			DownlinkTaskUpdateStrategy: retryDownlinkTask,
 		}
 	}
 
-	recordDataDownlink(dev, genState, genDown.NeedsMACAnswer, down, ns.defaultMACSettings)
-	if genState.ApplicationDownlink != nil || genState.EvictDownlinkQueueIfScheduled {
+	for _, down := range allScheduledDownlinks {
+		recordDataDownlink(dev, genState, genDown.NeedsMACAnswer, down, ns.defaultMACSettings)
+	}
+	if genState.ApplicationDownlink != nil || genState.EvictDownlinkQueueIfScheduled || len(allQueuedApplicationUplinks) > 0 {
 		sets = ttnpb.AddFields(sets, "session.queued_application_downlinks")
 	}
 	if genState.EvictDownlinkQueueIfScheduled {
@@ -1574,7 +1585,7 @@ func (ns *NetworkServer) attemptNetworkInitiatedDataDownlink(ctx context.Context
 			"session",
 		),
 		QueuedApplicationUplinks: genState.appendApplicationUplinks(nil, true),
-		QueuedEvents:             queuedEvents,
+		QueuedEvents:             allQueuedEvents,
 	}
 }
 
