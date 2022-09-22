@@ -88,6 +88,10 @@ func generateLinkADRReq(ctx context.Context, dev *ttnpb.EndDevice, phy *band.Ban
 		desiredChs[i] = isEnabled
 	}
 
+	if dev.MacSettings.GetUseAdr() != nil && !dev.MacSettings.GetUseAdr().GetValue() {
+		return linkADRReqParameters{}, false, nil
+	}
+
 	switch {
 	case !band.EqualChMasks(currentChs, desiredChs):
 		// NOTE: LinkADRReq is scheduled regardless of ADR settings if channel mask is required, which often is the case with ABP devices or when ChMask CFList is not supported/used.
