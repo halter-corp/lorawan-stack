@@ -26,13 +26,13 @@ import (
 
 const (
 	// defaultWorkerIdleTimeout is the duration after which an idle worker stops to save resources.
-	defaultWorkerIdleTimeout = 1 * time.Second
+	defaultWorkerIdleTimeout = 30 * time.Second
 	// defaultQueueSize is the default queue size for the worker pool.
-	defaultQueueSize = 32
+	defaultQueueSize = 128
 	// defaultMinWorkers is the default number of minimum workers kept in the pool.
-	defaultMinWorkers = 4
+	defaultMinWorkers = 32
 	// defaultMaxWorkers is the default number of maximum workers kept in the pool.
-	defaultMaxWorkers = 1024
+	defaultMaxWorkers = 4096
 )
 
 // Component contains a minimal component.Component definition.
