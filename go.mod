@@ -56,7 +56,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/nats-io/nats-server/v2 v2.9.20
+	github.com/nats-io/nats-server/v2 v2.9.22
 	github.com/nats-io/nats.go v1.28.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
@@ -216,7 +216,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
-	github.com/nats-io/jwt/v2 v2.4.1 // indirect
+	github.com/nats-io/jwt/v2 v2.5.0 // indirect
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
