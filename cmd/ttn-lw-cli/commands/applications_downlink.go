@@ -37,7 +37,7 @@ var (
 				return err
 			}
 			var downlink ttnpb.ApplicationDownlink
-			paths, err := downlink.SetFromFlags(cmd.Flags(), "")
+			_, err = downlink.SetFromFlags(cmd.Flags(), "")
 			if err != nil {
 				return err
 			}
@@ -45,8 +45,12 @@ var (
 			if err != nil {
 				return err
 			}
-			if len(antennas) > 0 {
-				paths = append(paths, "class-b-c.gateways")
+			for i, antenna := range antennas {
+				gateway := ttnpb.ClassBCGatewayIdentifiers{
+					GatewayIds: antenna.GatewayIds,
+					GroupIndex: uint32(i),
+				}
+				downlink.ClassBC.Gateways = append(downlink.ClassBC.Gateways, &gateway)
 			}
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
@@ -73,7 +77,7 @@ var (
 			}
 
 			var downlink ttnpb.ApplicationDownlink
-			paths, err := downlink.SetFromFlags(cmd.Flags(), "")
+			_, err = downlink.SetFromFlags(cmd.Flags(), "")
 			if err != nil {
 				return err
 			}
@@ -81,8 +85,12 @@ var (
 			if err != nil {
 				return err
 			}
-			if len(antennas) > 0 {
-				paths = append(paths, "class-b-c.gateways")
+			for i, antenna := range antennas {
+				gateway := ttnpb.ClassBCGatewayIdentifiers{
+					GatewayIds: antenna.GatewayIds,
+					GroupIndex: uint32(i),
+				}
+				downlink.ClassBC.Gateways = append(downlink.ClassBC.Gateways, &gateway)
 			}
 			as, err := api.Dial(ctx, config.ApplicationServerGRPCAddress)
 			if err != nil {
