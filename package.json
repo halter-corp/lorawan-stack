@@ -114,7 +114,7 @@
     "react-paginate": "^8.2.0",
     "react-redux": "^8.1.2",
     "react-remove-scroll": "^2.5.6",
-    "react-router-dom": "^6.14.1",
+    "react-router-dom": "^6.16.0",
     "react-select": "^5.7.3",
     "react-string-replace": "^1.1.1",
     "react-switch": "^7.0.0",
