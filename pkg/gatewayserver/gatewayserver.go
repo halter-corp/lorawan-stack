@@ -877,7 +877,7 @@ func (gs *GatewayServer) handleUpstream(ctx context.Context, conn connectionEntr
 			Name:       fmt.Sprintf("upstream_handlers_%v", name),
 			Handler:    host.handlePacket,
 			MinWorkers: -1,
-			MaxWorkers: 32,
+			MaxWorkers: 1024,
 			QueueSize:  -1,
 		})
 		defer wp.Wait()
