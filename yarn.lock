@@ -2115,6 +2115,14 @@
     "@formatjs/intl-localematcher" "0.4.1"
     tslib "^2.4.0"
 
+"@formatjs/ecma402-abstract@1.17.4":
+  version "1.17.4"
+  resolved "https://registry.yarnpkg.com/@formatjs/ecma402-abstract/-/ecma402-abstract-1.17.4.tgz#8c353102021065debcbd872a0d378d762034fbc5"
+  integrity sha512-mLxTq+UrMoOoafVxG5HdmrfPpjv0uINQw1d0ADKfQMqhDaR4SDXdw3olXkOP05DGSAsVvSxzfKEuVKcLB15b9A==
+  dependencies:
+    "@formatjs/intl-localematcher" "0.5.1"
+    tslib "^2.4.0"
+
 "@formatjs/fast-memoize@2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@formatjs/fast-memoize/-/fast-memoize-2.2.0.tgz#33bd616d2e486c3e8ef4e68c99648c196887802b"
@@ -2204,6 +2212,13 @@
   dependencies:
     tslib "^2.4.0"
 
+"@formatjs/intl-localematcher@0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@formatjs/intl-localematcher/-/intl-localematcher-0.5.1.tgz#46bb119bc19fb4e4a98c49e1165c039a6136801f"
+  integrity sha512-An6EtxT0txJI8dQwOmLqs4lC3/+Dl9YuTGDWdxxtAT/9sx0r9DupnC3/k6F87Tb5gqXdR/ACdB7bmR+Zo2eu+g==
+  dependencies:
+    tslib "^2.4.0"
+
 "@formatjs/intl-numberformat@^8.7.0":
   version "8.7.0"
   resolved "https://registry.yarnpkg.com/@formatjs/intl-numberformat/-/intl-numberformat-8.7.0.tgz#981bf87c13a08fcf72616f024805c6ecf6f54fd2"
@@ -2213,13 +2228,13 @@
     "@formatjs/intl-localematcher" "0.4.0"
     tslib "^2.4.0"
 
-"@formatjs/intl-pluralrules@^5.2.4":
-  version "5.2.4"
-  resolved "https://registry.yarnpkg.com/@formatjs/intl-pluralrules/-/intl-pluralrules-5.2.4.tgz#b417aa503186c2cbb4715f47114ed65211b4ada9"
-  integrity sha512-6meo376d8I4zikRFSUxATLnqzGwezmc57SmToP4z1/NQwTHXGe0yIG/ABPbO3QMx7IUkofH/ROP3A4DhtPTpnA==
+"@formatjs/intl-pluralrules@^5.2.9":
+  version "5.2.9"
+  resolved "https://registry.yarnpkg.com/@formatjs/intl-pluralrules/-/intl-pluralrules-5.2.9.tgz#8e7493644b53aa8dfef5fbb81177f91e70ae5007"
+  integrity sha512-6Dt8UgYH8HHND4YPuaJQuMcUo9hqw4jm9LhQTFbAvU+bmb1o46wNRYNffzwznbzrD3XHgdzAPyhNi69Mcwf6eQ==
   dependencies:
-    "@formatjs/ecma402-abstract" "1.17.0"
-    "@formatjs/intl-localematcher" "0.4.0"
+    "@formatjs/ecma402-abstract" "1.17.4"
+    "@formatjs/intl-localematcher" "0.5.1"
     tslib "^2.4.0"
 
 "@formatjs/intl-relativetimeformat@^11.2.4":
@@ -12396,7 +12411,7 @@ tsutils@^3.21.0:
     tslib "^1.8.1"
 
 "ttn-lw@file:sdk/js":
-  version "3.27.2"
+  version "3.28.0"
   dependencies:
     arraybuffer-to-string "^1.0.2"
     auto-bind "^5.0.1"
