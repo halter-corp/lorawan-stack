@@ -85,7 +85,7 @@ func (gs *GatewayServer) ScheduleDownlink(ctx context.Context, down *ttnpb.Downl
 
 		rx1, rx2, delay, err := conn.ScheduleDown(path, connDown)
 		if err != nil {
-			logger.WithField("gateway_uid", uid).WithError(err).Debug("Failed to schedule on path")
+			logger.WithField("gateway_uid", uid).Info("Failed to schedule on path")
 			pathErrs = append(pathErrs, errSchedulePath.WithCause(err).WithAttributes("gateway_uid", uid))
 			registerScheduleDownlinkFail(ctx, conn.Gateway(), err, conn.Frontend().Protocol())
 			continue
