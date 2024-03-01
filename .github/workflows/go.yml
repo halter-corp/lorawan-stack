@@ -40,7 +40,7 @@ jobs:
       - name: Check for diff
         run: tools/bin/mage git:diff
       - name: Lint code
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: v1.52.2
           only-new-issues: true
