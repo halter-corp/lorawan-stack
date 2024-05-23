@@ -29,11 +29,10 @@ import (
 )
 
 const (
-	gpsTimeDelta = 5 * time.Second // for validating tmms/GPS time
-	delta        = 0.001           // For GPS comparisons
-	lora         = "LORA"
-	fsk          = "FSK"
-	lrfhss       = "LR-FHSS"
+	delta  = 0.001 // For GPS comparisons
+	lora   = "LORA"
+	fsk    = "FSK"
+	lrfhss = "LR-FHSS"
 
 	// eirpDelta is the delta between EIRP and ERP.
 	eirpDelta = 2.15
@@ -202,15 +201,8 @@ func convertUplink(rx RxPacket, md UpstreamMetadata) (*ttnpb.UplinkMessage, erro
 	var goTime, goGpsTime time.Time
 	switch {
 	case rx.Tmms != nil:
-
-		ggt := gpstime.Parse(time.Duration(*rx.Tmms) * time.Millisecond)
-		currentUTC := time.Now().UTC()
-		diff := ggt.Sub(currentUTC).Abs().Seconds()
-		if diff < gpsTimeDelta.Seconds() {
-			goGpsTime = ggt
-			goTime = goGpsTime
-		}
-
+		goGpsTime = gpstime.Parse(time.Duration(*rx.Tmms) * time.Millisecond)
+		goTime = goGpsTime
 	case rx.Time != nil:
 		goTime = time.Time(*rx.Time)
 	}
