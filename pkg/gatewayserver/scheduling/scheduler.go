@@ -296,7 +296,7 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 	if opts.UplinkToken != nil {
 		s.syncWithUplinkToken(opts.UplinkToken)
 	}
-	if !s.clock.IsSynced() {
+	if !s.clock.IsAbsoluteSynced() {
 		return Emission{}, 0, errNoClockSync.New()
 	}
 	minScheduleTime := ScheduleTimeShort
@@ -477,7 +477,7 @@ func (s *Scheduler) SyncWithGatewayConcentrator(timestamp uint32, server time.Ti
 func (s *Scheduler) IsGatewayTimeSynced() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.clock.IsSynced() && s.clock.gateway != nil
+	return s.clock.IsAbsoluteSynced() && s.clock.gateway != nil
 }
 
 // Now returns an indication of the current concentrator time.

@@ -655,6 +655,11 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			settings.Time = request.AbsoluteTime
 		case ttnpb.Class_CLASS_C:
 			if request.AbsoluteTime != nil {
+				if !c.scheduler.IsGatewayTimeSynced() {
+					rxErrs = append(rxErrs, errNoGPSSync.New())
+					continue
+				}
+
 				f = c.scheduler.ScheduleAt
 				settings.Time = request.AbsoluteTime
 			} else {

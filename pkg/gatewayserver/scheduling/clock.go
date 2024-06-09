@@ -38,15 +38,18 @@ type Clock interface {
 
 // RolloverClock is a Clock that takes roll-over of a uint32 microsecond concentrator time into account.
 type RolloverClock struct {
-	synced   bool
-	relative uint32
-	absolute ConcentratorTime
-	server   *time.Time
-	gateway  *time.Time
+	synced         bool
+	relative       uint32
+	absolute       ConcentratorTime
+	server         *time.Time
+	gateway        *time.Time
+	absoluteSynced bool
 }
 
 // IsSynced implements Clock.
 func (c *RolloverClock) IsSynced() bool { return c.synced }
+
+func (c *RolloverClock) IsAbsoluteSynced() bool { return c.absoluteSynced }
 
 // SyncTime implements Clock.
 func (c *RolloverClock) SyncTime() (time.Time, bool) {
@@ -82,6 +85,7 @@ func (c *RolloverClock) Sync(timestamp uint32, server time.Time) ConcentratorTim
 func (c *RolloverClock) SyncWithGatewayAbsolute(timestamp uint32, server, gateway time.Time) ConcentratorTime {
 	ct := c.Sync(timestamp, server)
 	c.gateway = &gateway
+	c.absoluteSynced = true
 	return ct
 }
 
