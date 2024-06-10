@@ -316,18 +316,22 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 	if !ok {
 		panic("clock is synced without server time")
 	}
+	// Bryan: opts.time is absolute time and only set for Class B and C
+	// Bryan: check gatewayserver/io ScheduleDown
 	if opts.Time != nil {
 		var ok bool
 		starts, ok = s.clock.FromGatewayTime(*ttnpb.StdTime(opts.Time))
 		if !ok {
-			if medianRTT == nil {
-				return Emission{}, 0, errNoAbsoluteGatewayTime.New()
-			}
-			serverTime, ok := s.clock.FromServerTime(*ttnpb.StdTime(opts.Time))
-			if !ok {
-				return Emission{}, 0, errNoServerTime.New()
-			}
-			starts = serverTime - ConcentratorTime(*medianRTT/2)
+			// Bryan: we can simply fail here to block all Class B and C transmission when gateway gps time is nil in clock.go
+			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
+			// if medianRTT == nil {
+			// 	return Emission{}, 0, errNoAbsoluteGatewayTime.New()
+			// }
+			// serverTime, ok := s.clock.FromServerTime(*ttnpb.StdTime(opts.Time))
+			// if !ok {
+			// 	return Emission{}, 0, errNoServerTime.New()
+			// }
+			// starts = serverTime - ConcentratorTime(*medianRTT/2)
 		}
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)
@@ -459,6 +463,7 @@ func (s *Scheduler) Sync(v uint32, server time.Time) ConcentratorTime {
 
 // SyncWithGatewayAbsolute synchronizes the clock with the given concentrator timestamp, the server time and the
 // absolute gateway time that corresponds to the given timestamp.
+// Bryan: this function still syncs with tmst but caching gateway gps time
 func (s *Scheduler) SyncWithGatewayAbsolute(timestamp uint32, server, gateway time.Time) ConcentratorTime {
 	s.mu.Lock()
 	defer s.mu.Unlock()
