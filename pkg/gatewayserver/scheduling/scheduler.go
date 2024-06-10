@@ -455,7 +455,7 @@ func (s *Scheduler) Sync(v uint32, server time.Time) ConcentratorTime {
 
 // SyncWithGatewayAbsolute synchronizes the clock with the given concentrator timestamp, the server time and the
 // absolute gateway time that corresponds to the given timestamp.
-// Bryan: this function still syncs with tmst but caching gateway gps time
+// Bryan: this function still syncs with tmst but caching gateway gps time.
 func (s *Scheduler) SyncWithGatewayAbsolute(timestamp uint32, server, gateway time.Time) ConcentratorTime {
 	s.mu.Lock()
 	defer s.mu.Unlock()
