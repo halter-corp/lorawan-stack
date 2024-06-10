@@ -72,6 +72,7 @@ func (c *RolloverClock) Sync(timestamp uint32, server time.Time) ConcentratorTim
 	c.absolute = (ConcentratorTime(rollovers<<32) + ConcentratorTime(timestamp)) * ConcentratorTime(time.Microsecond)
 	c.relative = timestamp
 	c.server = &server
+	// Bryan: when gateway gps time is not set or invalid, this sync function will clear gateway gps time.
 	c.gateway = nil
 	c.synced = true
 	return c.absolute
@@ -79,6 +80,7 @@ func (c *RolloverClock) Sync(timestamp uint32, server time.Time) ConcentratorTim
 
 // SyncWithGatewayAbsolute synchronizes the clock with the given concentrator timestamp, the server time and the
 // absolute gateway time that corresponds to the given timestamp.
+// Bryan: this function still syncs with tmst but caching gateway gps time.
 func (c *RolloverClock) SyncWithGatewayAbsolute(timestamp uint32, server, gateway time.Time) ConcentratorTime {
 	ct := c.Sync(timestamp, server)
 	c.gateway = &gateway
