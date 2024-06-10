@@ -284,6 +284,7 @@ type Options struct {
 	RTTs        RTTs
 	Priority    ttnpb.TxSchedulePriority
 	UplinkToken *ttnpb.UplinkToken
+	GatewayID   string
 }
 
 // ScheduleAt attempts to schedule the given Tx settings with the given priority.
@@ -323,6 +324,9 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 		if !ok {
 			// Bryan: we can simply fail here to block all Class B and C transmission
 			// when gateway gps time is nil in clock.go.
+			log.FromContext(ctx).WithFields(log.Fields(
+				"id", opts.GatewayID,
+			)).Info("Bryan here is the failed one")
 			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
 		}
 	} else {
