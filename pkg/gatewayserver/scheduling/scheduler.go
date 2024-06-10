@@ -321,7 +321,8 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 		var ok bool
 		starts, ok = s.clock.FromGatewayTime(*ttnpb.StdTime(opts.Time))
 		if !ok {
-			// Bryan: we can simply fail here to block all Class B and C transmission when gateway gps time is nil in clock.go.
+			// Bryan: we can simply fail here to block all Class B and C transmission
+			// when gateway gps time is nil in clock.go.
 			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
 		}
 	} else {
