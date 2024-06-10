@@ -674,6 +674,7 @@ func (c *Connection) ScheduleDown(path *ttnpb.DownlinkPath, msg *ttnpb.DownlinkM
 			RTTs:        c.rtts,
 			Priority:    request.Priority,
 			UplinkToken: uplinkToken, // uplinkToken is always present with class A downlink, but may be nil otherwise.
+			GatewayId:   c.gateway.Ids.GatewayId,
 		})
 		if err != nil {
 			logger.WithError(err).Debug("Failed to schedule downlink in Rx window")

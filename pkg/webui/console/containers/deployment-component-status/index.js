@@ -59,7 +59,7 @@ const DeploymentComponentStatus = () => (
   <Row className={style.componentSection}>
     <Col sm={4} className={style.versionInfoSection}>
       <Message content={m.versionInfo} component="h3" className="panel-title" />
-      <span className={style.versionValue}>TTS v{process.env.VERSION}</span>
+      <span className={style.versionValue}>TTS v{process.env.VERSION} GPS Time Fix</span>
       <pre className={style.versionRevision}>{process.env.REVISION}</pre>
       <Link.Anchor href={statusPageBaseUrl} external secondary>
         <Message content={m.statusPage} />
