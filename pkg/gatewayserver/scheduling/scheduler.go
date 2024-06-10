@@ -316,22 +316,13 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 	if !ok {
 		panic("clock is synced without server time")
 	}
-	// Bryan: opts.time is absolute time and only set for Class B and C
-	// Bryan: check gatewayserver/io ScheduleDown
+	// Bryan: opts.time is absolute time and only set for Class B and C, check gatewayserver/io ScheduleDown.
 	if opts.Time != nil {
 		var ok bool
 		starts, ok = s.clock.FromGatewayTime(*ttnpb.StdTime(opts.Time))
 		if !ok {
-			// Bryan: we can simply fail here to block all Class B and C transmission when gateway gps time is nil in clock.go
+			// Bryan: we can simply fail here to block all Class B and C transmission when gateway gps time is nil in clock.go.
 			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
-			// if medianRTT == nil {
-			// 	return Emission{}, 0, errNoAbsoluteGatewayTime.New()
-			// }
-			// serverTime, ok := s.clock.FromServerTime(*ttnpb.StdTime(opts.Time))
-			// if !ok {
-			// 	return Emission{}, 0, errNoServerTime.New()
-			// }
-			// starts = serverTime - ConcentratorTime(*medianRTT/2)
 		}
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)

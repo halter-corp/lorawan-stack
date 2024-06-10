@@ -310,7 +310,7 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage, frontendSync *FrontendClo
 
 	case gpsTime != nil:
 		gatewayTime := *ttnpb.StdTime(gpsTime)
-		// Bryan: up.Settings.Timestamp is tmst, check udp/translation.go v1Metadata and v2Metadata
+		// Bryan: up.Settings.Timestamp is tmst, check udp/translation.go v1Metadata and v2Metadata.
 		ct = c.scheduler.SyncWithGatewayAbsolute(up.Settings.Timestamp, receivedAt, gatewayTime)
 		log.FromContext(c.ctx).WithFields(log.Fields(
 			"timestamp", up.Settings.Timestamp,
@@ -319,11 +319,9 @@ func (c *Connection) HandleUp(up *ttnpb.UplinkMessage, frontendSync *FrontendClo
 			"gateway_time", gatewayTime,
 		)).Debug("Synchronized server and gateway absolute time")
 
-	// Bryan: gpsTime will be nil if
-	// Bryan: * tmms is not provided
-	// Bryan: * tmms is invalid (check where gpsTimeDelta is used)
+	// Bryan: gpsTime will be nil when tmms is not provided, or tmms is invalid (check where gpsTimeDelta is used).
 	case gpsTime == nil:
-		// Bryan: up.Settings.Timestamp is tmst, check udp/translation.go v1Metadata and v2Metadata
+		// Bryan: up.Settings.Timestamp is tmst, check udp/translation.go v1Metadata and v2Metadata.
 		ct = c.scheduler.Sync(up.Settings.Timestamp, receivedAt)
 		log.FromContext(c.ctx).WithFields(log.Fields(
 			"timestamp", up.Settings.Timestamp,
