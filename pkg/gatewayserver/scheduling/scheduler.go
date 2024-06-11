@@ -16,6 +16,7 @@ package scheduling
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"runtime/trace"
 	"sync"
@@ -327,7 +328,8 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 			log.FromContext(ctx).WithFields(log.Fields(
 				"id", opts.GatewayID,
 			)).Info("Bryan here is the failed one")
-			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
+			errorDetails := errors.DefineAborted("no_absolute_gateway_time", fmt.Sprintf("no absolute gateway time - %s", opts.GatewayID))
+			return Emission{}, 0, errorDetails
 		}
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)
