@@ -328,7 +328,8 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 			log.FromContext(ctx).WithFields(log.Fields(
 				"id", opts.GatewayID,
 			)).Info("Bryan here is the failed one")
-			errorDetails := errors.DefineAborted("no_absolute_gateway_time", fmt.Sprintf("no absolute gateway time - %s", opts.GatewayID))
+			errorDetails := errNoAbsoluteGatewayTime.New()
+			errorDetails.SetMessageFormat(fmt.Sprintf("no absolute gateway time - %s", opts.GatewayID))
 			return Emission{}, 0, errorDetails
 		}
 	} else {

@@ -89,6 +89,13 @@ func (d *Definition) MessageFormat() string {
 	return d.messageFormat
 }
 
+// Set MessageFormat of the error.
+func (d *Definition) SetMessageFormat(message string) string {
+	d.messageFormat = message
+
+	return d.messageFormat
+}
+
 // Code of the error.
 // This code is consistent with google.golang.org/genproto/googleapis/rpc/code and google.golang.org/grpc/codes.
 func (d *Definition) Code() uint32 {

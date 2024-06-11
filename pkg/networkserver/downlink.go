@@ -1752,7 +1752,8 @@ func (ns *NetworkServer) attemptNetworkInitiatedDataDownlink(ctx context.Context
 				if genState.ApplicationDownlink.GetClassBC().GetAbsoluteTime() != nil &&
 					allErrors(nonRetryableAbsoluteTimeGatewayError, pathErrs...) {
 					logger.Warn("Absolute time invalid, fail application downlink")
-					errorDetails := errors.DefineInvalidArgument("absolute_time", fmt.Sprintf("%+v", pathErrs))
+					errorDetails := errInvalidAbsoluteTime.New()
+					errorDetails.SetMessageFormat(fmt.Sprintf("invalid absolute time set in application downlink - %+v", pathErrs))
 					return downlinkAttemptResult{
 						SetPaths: ttnpb.AddFields(sets, "session.queued_application_downlinks"),
 						QueuedApplicationUplinks: append(genState.appendApplicationUplinks(nil, false), &ttnpb.ApplicationUp{
