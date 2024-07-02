@@ -15,7 +15,7 @@
 import autoBind from 'auto-bind'
 
 import Marshaler from '../util/marshaler'
-import combineStreams from '../util/combine-streams'
+import subscribeToWebSocketStreams from '../api/stream/subscribeToWebSocketStreams'
 import { STACK_COMPONENTS_MAP } from '../util/constants'
 
 import ApiKeys from './api-keys'
@@ -221,6 +221,14 @@ class Gateways {
     return Marshaler.payloadSingleResponse(response)
   }
 
+  async getBatchStatistics(gatewayIds) {
+    const response = await this._api.Gs.BatchGetGatewayConnectionStats(undefined, {
+      gateway_ids: gatewayIds,
+    })
+
+    return Marshaler.payloadSingleResponse(response)
+  }
+
   async getRightsById(gatewayId) {
     const result = await this._api.GatewayAccess.ListRights({
       routeParams: { gateway_id: gatewayId },
@@ -231,7 +239,7 @@ class Gateways {
 
   // Events Stream
 
-  async openStream(identifiers, names, tail, after) {
+  async openStream(identifiers, names, tail, after, listeners) {
     const payload = {
       identifiers: identifiers.map(id => ({
         gateway_ids: { gateway_id: id },
@@ -249,12 +257,11 @@ class Gateways {
       STACK_COMPONENTS_MAP.gs,
     ])
 
-    const streams = distinctComponents.map(component =>
-      this._api.Events.Stream({ component }, payload),
+    const baseUrls = new Set(
+      distinctComponents.map(component => this._stackConfig.getComponentUrlByName(component)),
     )
-
     // Combine all stream sources to one subscription generator.
-    return combineStreams(streams)
+    return subscribeToWebSocketStreams(payload, [...baseUrls], listeners)
   }
 
   // Gateway Configuration Server.
@@ -265,7 +272,7 @@ class Gateways {
     // https://github.com/TheThingsNetwork/lorawan-stack/issues/3280
     const endpoint = `/gcs/gateways/${gatewayId}/semtechudp/global_conf.json`
 
-    const response = await this._api._connector.handleRequest('get', endpoint, 'gcs', false)
+    const response = await this._api._connector.handleRequest('get', endpoint, 'gcs')
 
     return Marshaler.payloadSingleResponse(response.data)
   }

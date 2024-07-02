@@ -7,6 +7,57 @@ with the exception that this project **does not** follow Semantic Versioning.
 
 For details about compatibility between different releases, see the **Commitments and Releases** section of our README.
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [3.28.2] - 2023-12-20
+
+### Added
+
+- Rate limiting classes for individual HTTP paths.
+- Rate limiting keys for HTTP endpoints now contain the caller API key ID when available. The caller IP is still available as a fallback.
+- Allow users to set multiple frequency plans only in the same band in the Console.
+
+### Changed
+
+- Server side events replaced with single socket connection using the native WebSocket API.
+- Gateways now disconnect if the Gateway Server address has changed.
+  - This enables CUPS-enabled gateways to change their LNS before the periodic CUPS lookup occurs.
+- The LoRa Basics Station discovery endpoint now verifies the authorization credentials of the caller.
+  - This enables the gateways to migrate to another instance gracefully while using CUPS.
+
+### Fixed
+
+- Batch gateway rights assertions when multiple membership chains are available (for example, both via a user and an organization).
+
+## [3.28.1] - 2023-11-27
+
+### Added
+
+- The `http.client.transport.compression` experimental flag. It controls whether the HTTP clients used by the stack support gzip and zstd decompression of server responses. It is enabled by default.
+- The `http.server.transport.compression` experimental flag. It controls whether the HTTP servers used by the stack support gzip compression of the server response. It is enabled by default.
+
+### Changed
+
+- The Things Stack is now built with Go 1.21.
+- Statistics for gateways are now fetched in a single request.
+
+### Fixed
+
+- Resolve scroll jumps when selecting different tabs of a table in the Console.
+- `BatchGetGatewayConnectionStats` RPC rights check in certain cases.
+
 ## [3.28.0] - 2023-10-31
 
 ### Added
@@ -2690,7 +2741,9 @@ For details about compatibility between different releases, see the **Commitment
 NOTE: These links should respect backports. See https://github.com/TheThingsNetwork/lorawan-stack/pull/1444/files#r333379706.
 -->
 
-[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.28.0...v3.28
+[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.28.2...v3.28
+[3.28.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.28.1...v3.28.2
+[3.28.1]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.28.0...v3.28.1
 [3.28.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.27.2...v3.28.0
 [3.27.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.27.1...v3.27.2
 [3.27.1]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.27.0...v3.27.1

@@ -19,7 +19,7 @@ import traverse from 'traverse'
 
 import { notify, EVENTS } from '../../api/stream/shared'
 import Marshaler from '../../util/marshaler'
-import combineStreams from '../../util/combine-streams'
+import subscribeToWebSocketStreams from '../../api/stream/subscribeToWebSocketStreams'
 import deviceEntityMap from '../../../generated/device-entity-map.json'
 import DownlinkQueue from '../downlink-queue'
 import { STACK_COMPONENTS_MAP } from '../../util/constants'
@@ -29,8 +29,7 @@ import Repository from './repository'
 import { splitSetPaths, splitGetPaths, makeRequests } from './split'
 import mergeDevice from './merge'
 
-const { is: IS, ns: NS, as: AS, js: JS, dtc: DTC } = STACK_COMPONENTS_MAP
-
+const { is: IS, ns: NS, as: AS, js: JS, gs: GS } = STACK_COMPONENTS_MAP
 /**
  * Devices Class provides an abstraction on all devices and manages data
  * handling from different sources. It exposes an API to easily work with
@@ -645,7 +644,7 @@ class Devices {
 
           const result = await this.create(applicationId, end_device, paths)
 
-          notify(listeners[EVENTS.CHUNK], result)
+          notify(listeners[EVENTS.MESSAGE], result)
           finishedCount++
         } catch (error) {
           notify(listeners[EVENTS.ERROR], error)
@@ -664,7 +663,7 @@ class Devices {
       on(eventName, callback) {
         if (listeners[eventName] === undefined) {
           throw new Error(
-            `${eventName} event is not supported. Should be one of: start, error, chunk or close`,
+            `${eventName} event is not supported. Should be one of: open, error, message or close`,
           )
         }
 
@@ -680,7 +679,7 @@ class Devices {
 
   // Events Stream
 
-  async openStream(identifiers, names, tail, after) {
+  async openStream(identifiers, names, tail, after, listeners) {
     const payload = {
       identifiers: identifiers.map(ids => ({
         device_ids: ids,
@@ -693,20 +692,13 @@ class Devices {
     // Event streams can come from multiple stack components. It is necessary to
     // check for stack components on different hosts and open distinct stream
     // connections for any distinct host if need be.
-    const distinctComponents = this._stackConfig.getComponentsWithDistinctBaseUrls([
-      IS,
-      JS,
-      NS,
-      AS,
-      DTC,
-    ])
+    const distinctComponents = this._stackConfig.getComponentsWithDistinctBaseUrls([IS, GS])
 
-    const streams = distinctComponents.map(component =>
-      this._api.Events.Stream({ component }, payload),
+    const baseUrls = new Set(
+      distinctComponents.map(component => this._stackConfig.getComponentUrlByName(component)),
     )
-
     // Combine all stream sources to one subscription generator.
-    return combineStreams(streams)
+    return subscribeToWebSocketStreams(payload, [...baseUrls], listeners)
   }
 
   async simulateUplink(applicationId, deviceId, uplink) {

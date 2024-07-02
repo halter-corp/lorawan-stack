@@ -19,8 +19,46 @@ export const notify = (listener, ...args) => {
 }
 
 export const EVENTS = Object.freeze({
-  START: 'start',
-  CHUNK: 'chunk',
+  MESSAGE: 'message',
   ERROR: 'error',
   CLOSE: 'close',
 })
+
+export const MESSAGE_TYPES = Object.freeze({
+  SUBSCRIBE: 'subscribe',
+  UNSUBSCRIBE: 'unsubscribe',
+  PUBLISH: 'publish',
+  ERROR: 'error',
+})
+
+export const INITIAL_LISTENERS = Object.freeze(
+  Object.values(EVENTS).reduce((acc, curr) => ({ ...acc, [curr]: {} }), {}),
+)
+
+export const newQueuedListeners = listeners => {
+  const queue = []
+  let open = false
+  const queuedListeners = Object.values(EVENTS).reduce(
+    (acc, curr) => ({
+      ...acc,
+      [curr]: (...args) => {
+        if (open) {
+          notify(listeners[curr], ...args)
+        } else {
+          queue.push([curr, args])
+        }
+      },
+    }),
+    {},
+  )
+  return [
+    () => {
+      open = true
+      for (const [event, args] of queue) {
+        notify(listeners[event], ...args)
+      }
+      queue.splice(0, queue.length)
+    },
+    queuedListeners,
+  ]
+}
