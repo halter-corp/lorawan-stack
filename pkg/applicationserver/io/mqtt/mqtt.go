@@ -283,6 +283,6 @@ func (c *connection) deliver(pkt *packet.PublishPacket) {
 		"count", len(items.Downlinks),
 	)).Debug("Handle downlink messages")
 	if err := op(c.server, c.io.Context(), ids, items.Downlinks); err != nil {
-		logger.WithError(err).Warn("Failed to handle downlink messages")
+		logger.WithError(err).Info("Failed to handle downlink messages")
 	}
 }
