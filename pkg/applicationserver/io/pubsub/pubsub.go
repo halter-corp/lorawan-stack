@@ -214,7 +214,7 @@ func (i *integration) handleDown(
 			"count", len(operation.Downlinks),
 		)).Debug("Handle downlink messages")
 		if err := op(i.server, ctx, operation.EndDeviceIds, operation.Downlinks); err != nil {
-			logger.WithError(err).Warn("Failed to handle downlink messages")
+			logger.WithError(err).Info("Failed to handle downlink messages")
 		}
 	}
 }
