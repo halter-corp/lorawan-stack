@@ -235,6 +235,11 @@ func (st *StoreTest) TestUserStoreCRUD(t *T) {
 					Seen: []ttnpb.Tutorial{ttnpb.Tutorial_TUTORIAL_LIVE_DATA_SPLIT_VIEW},
 				},
 			},
+			EmailNotificationPreferences: &ttnpb.EmailNotificationPreferences{
+				Types: []ttnpb.NotificationType{
+					ttnpb.NotificationType_API_KEY_CREATED,
+				},
+			},
 		}, mask)
 		if a.So(err, should.BeNil) && a.So(updated, should.NotBeNil) {
 			a.So(updated.GetIds().GetUserId(), should.Equal, "foo")
