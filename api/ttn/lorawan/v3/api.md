@@ -267,6 +267,7 @@
   - [Message `MACParameters`](#ttn.lorawan.v3.MACParameters)
   - [Message `MACParameters.Channel`](#ttn.lorawan.v3.MACParameters.Channel)
   - [Message `MACSettings`](#ttn.lorawan.v3.MACSettings)
+  - [Message `MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile)
   - [Message `MACState`](#ttn.lorawan.v3.MACState)
   - [Message `MACState.DataRateRange`](#ttn.lorawan.v3.MACState.DataRateRange)
   - [Message `MACState.DataRateRanges`](#ttn.lorawan.v3.MACState.DataRateRanges)
@@ -417,6 +418,7 @@
   - [Message `GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers)
   - [Message `GatewayIdentifiersList`](#ttn.lorawan.v3.GatewayIdentifiersList)
   - [Message `LoRaAllianceProfileIdentifiers`](#ttn.lorawan.v3.LoRaAllianceProfileIdentifiers)
+  - [Message `MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers)
   - [Message `NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers)
   - [Message `OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers)
   - [Message `OrganizationOrUserIdentifiers`](#ttn.lorawan.v3.OrganizationOrUserIdentifiers)
@@ -4338,6 +4340,20 @@ This is used internally by the Network Server.
 | ----- | ----------- |
 | `factory_preset_frequencies` | <p>`repeated.max_items`: `96`</p> |
 
+### <a name="ttn.lorawan.v3.MACSettingsProfile">Message `MACSettingsProfile`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | Profile identifiers. |
+| `mac_settings` | [`MACSettings`](#ttn.lorawan.v3.MACSettings) |  | MAC settings. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `ids` | <p>`message.required`: `true`</p> |
+| `mac_settings` | <p>`message.required`: `true`</p> |
+
 ### <a name="ttn.lorawan.v3.MACState">Message `MACState`</a>
 
 MACState represents the state of MAC layer of the device.
@@ -6345,6 +6361,20 @@ EntityIdentifiers contains one of the possible entity identifiers.
 | ----- | ---- | ----- | ----------- |
 | `vendor_id` | [`uint32`](#uint32) |  | VendorID managed by the LoRa Alliance, as defined in TR005. |
 | `vendor_profile_id` | [`uint32`](#uint32) |  | ID of the LoRaWAN end device profile assigned by the vendor. |
+
+### <a name="ttn.lorawan.v3.MACSettingsProfileIdentifiers">Message `MACSettingsProfileIdentifiers`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application IDs. |
+| `profile_id` | [`string`](#string) |  | Profile ID. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `application_ids` | <p>`message.required`: `true`</p> |
+| `profile_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 
 ### <a name="ttn.lorawan.v3.NetworkIdentifiers">Message `NetworkIdentifiers`</a>
 
