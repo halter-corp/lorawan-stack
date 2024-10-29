@@ -210,6 +210,10 @@
       "description": "Manage batches of end devices on The Things Stack Network Server."
     },
     {
+      "name": "NsMACSettingsProfileRegistry",
+      "description": "Manage MAC settings profiles on The Things Stack Network Server."
+    },
+    {
       "name": "NsRelayConfigurationService",
       "description": "Manage configuration of LoRaWAN® relay devices."
     },
@@ -10217,6 +10221,67 @@
         ]
       }
     },
+    "/ns/applications/{application_ids.application_id}/mac_settings_profiles": {
+      "get": {
+        "summary": "List lists the MAC settings profiles.",
+        "operationId": "NsMACSettingsProfileRegistry_List",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3ListMACSettingsProfilesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "field_mask",
+            "description": "The names of the fields that should be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "order",
+            "description": "Order the results by this field path (must be present in the field mask).\nDefault ordering is by ID. Prepend with a minus (-) to reverse the order.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Limit the number of results per page.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "description": "Page number for pagination. 0 is interpreted as 1.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "NsMACSettingsProfileRegistry"
+        ]
+      }
+    },
     "/ns/applications/{end_device.ids.application_ids.application_id}/devices": {
       "post": {
         "summary": "Set creates or updates the device.",
@@ -10923,6 +10988,170 @@
         ],
         "tags": [
           "NsRelayConfigurationService"
+        ]
+      }
+    },
+    "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles": {
+      "post": {
+        "summary": "Create creates a new MAC settings profile.",
+        "operationId": "NsMACSettingsProfileRegistry_Create",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3CreateMACSettingsProfileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "mac_settings_profile_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3NsMACSettingsProfileRegistryCreateBody"
+            }
+          }
+        ],
+        "tags": [
+          "NsMACSettingsProfileRegistry"
+        ]
+      }
+    },
+    "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}": {
+      "get": {
+        "summary": "Get returns the MAC settings profile that matches the given identifiers.",
+        "operationId": "NsMACSettingsProfileRegistry_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3GetMACSettingsProfileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "mac_settings_profile_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "mac_settings_profile_ids.profile_id",
+            "description": "Profile ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "field_mask",
+            "description": "The names of the fields that should be returned.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "NsMACSettingsProfileRegistry"
+        ]
+      },
+      "delete": {
+        "summary": "Delete deletes the MAC settings profile that matches the given identifiers.",
+        "operationId": "NsMACSettingsProfileRegistry_Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3DeleteMACSettingsProfileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "mac_settings_profile_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "mac_settings_profile_ids.profile_id",
+            "description": "Profile ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "NsMACSettingsProfileRegistry"
+        ]
+      },
+      "put": {
+        "summary": "Update updates the MAC settings profile that matches the given identifiers.",
+        "operationId": "NsMACSettingsProfileRegistry_Update",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v3UpdateMACSettingsProfileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "mac_settings_profile_ids.application_ids.application_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "mac_settings_profile_ids.profile_id",
+            "description": "Profile ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v3NsMACSettingsProfileRegistryUpdateBody"
+            }
+          }
+        ],
+        "tags": [
+          "NsMACSettingsProfileRegistry"
         ]
       }
     },
@@ -22427,6 +22656,15 @@
         }
       }
     },
+    "v3CreateMACSettingsProfileResponse": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profile": {
+          "$ref": "#/definitions/v3MACSettingsProfile",
+          "description": "The MAC settings profile."
+        }
+      }
+    },
     "v3CreateNotificationResponse": {
       "type": "object",
       "properties": {
@@ -22627,6 +22865,9 @@
           }
         }
       }
+    },
+    "v3DeleteMACSettingsProfileResponse": {
+      "type": "object"
     },
     "v3DeleteRelayResponse": {
       "type": "object"
@@ -24988,6 +25229,15 @@
         }
       }
     },
+    "v3GetMACSettingsProfileResponse": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profile": {
+          "$ref": "#/definitions/v3MACSettingsProfile",
+          "description": "The MAC settings profile."
+        }
+      }
+    },
     "v3GetNetIDResponse": {
       "type": "object",
       "properties": {
@@ -25650,6 +25900,24 @@
       },
       "description": "Filter gateways by fields."
     },
+    "v3ListMACSettingsProfilesResponse": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v3MACSettingsProfile"
+          },
+          "description": "The MAC settings profiles."
+        },
+        "total_count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The total number of MAC settings profiles that match the request."
+        }
+      }
+    },
     "v3ListNotificationsResponse": {
       "type": "object",
       "properties": {
@@ -26182,6 +26450,32 @@
         "desired_relay": {
           "$ref": "#/definitions/v3RelaySettings",
           "description": "The relay settings the Network Server should configure device to use via MAC commands.\nIf unset, the default value from Network Server configuration or regional parameters specification will be used."
+        }
+      }
+    },
+    "v3MACSettingsProfile": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+          "description": "Profile identifiers."
+        },
+        "mac_settings": {
+          "$ref": "#/definitions/v3MACSettings",
+          "description": "MAC settings."
+        }
+      }
+    },
+    "v3MACSettingsProfileIdentifiers": {
+      "type": "object",
+      "properties": {
+        "application_ids": {
+          "$ref": "#/definitions/v3ApplicationIdentifiers",
+          "description": "Application IDs."
+        },
+        "profile_id": {
+          "type": "string",
+          "description": "Profile ID."
         }
       }
     },
@@ -27454,6 +27748,56 @@
         "field_mask": {
           "type": "string",
           "description": "The names of the end device fields that should be updated.\nSee the API reference for which fields can be set on the different services."
+        }
+      }
+    },
+    "v3NsMACSettingsProfileRegistryCreateBody": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profile_ids": {
+          "type": "object",
+          "properties": {
+            "application_ids": {
+              "type": "object",
+              "description": "Application IDs.",
+              "title": "Application IDs."
+            },
+            "profile_id": {
+              "type": "string",
+              "description": "Profile ID."
+            }
+          },
+          "description": "The identifiers of the MAC settings profile.",
+          "title": "The identifiers of the MAC settings profile."
+        },
+        "mac_settings_profile": {
+          "$ref": "#/definitions/v3MACSettingsProfile",
+          "description": "The MAC settings profile to create."
+        }
+      }
+    },
+    "v3NsMACSettingsProfileRegistryUpdateBody": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profile_ids": {
+          "type": "object",
+          "properties": {
+            "application_ids": {
+              "type": "object",
+              "description": "Application IDs.",
+              "title": "Application IDs."
+            }
+          },
+          "description": "The identifiers of the MAC settings profile.",
+          "title": "The identifiers of the MAC settings profile."
+        },
+        "mac_settings_profile": {
+          "$ref": "#/definitions/v3MACSettingsProfile",
+          "description": "The MAC settings profile to update."
+        },
+        "field_mask": {
+          "type": "string",
+          "description": "The names of the fields that should be updated."
         }
       }
     },
@@ -29173,6 +29517,15 @@
         "HIGHEST"
       ],
       "default": "LOWEST"
+    },
+    "v3UpdateMACSettingsProfileResponse": {
+      "type": "object",
+      "properties": {
+        "mac_settings_profile": {
+          "$ref": "#/definitions/v3MACSettingsProfile",
+          "description": "The MAC settings profile."
+        }
+      }
     },
     "v3UpdatePacketBrokerGatewayResponse": {
       "type": "object",

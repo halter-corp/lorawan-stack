@@ -6214,6 +6214,73 @@
       ]
     }
   },
+  "NsMACSettingsProfileRegistry": {
+    "Create": {
+      "file": "ttn/lorawan/v3/networkserver_mac_settings_profile.proto",
+      "http": [
+        {
+          "method": "post",
+          "pattern": "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles",
+          "body": "*",
+          "parameters": [
+            "mac_settings_profile_ids.application_ids.application_id"
+          ]
+        }
+      ]
+    },
+    "Get": {
+      "file": "ttn/lorawan/v3/networkserver_mac_settings_profile.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}",
+          "parameters": [
+            "mac_settings_profile_ids.application_ids.application_id",
+            "mac_settings_profile_ids.profile_id"
+          ]
+        }
+      ]
+    },
+    "Update": {
+      "file": "ttn/lorawan/v3/networkserver_mac_settings_profile.proto",
+      "http": [
+        {
+          "method": "put",
+          "pattern": "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}",
+          "body": "*",
+          "parameters": [
+            "mac_settings_profile_ids.application_ids.application_id",
+            "mac_settings_profile_ids.profile_id"
+          ]
+        }
+      ]
+    },
+    "Delete": {
+      "file": "ttn/lorawan/v3/networkserver_mac_settings_profile.proto",
+      "http": [
+        {
+          "method": "delete",
+          "pattern": "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}",
+          "parameters": [
+            "mac_settings_profile_ids.application_ids.application_id",
+            "mac_settings_profile_ids.profile_id"
+          ]
+        }
+      ]
+    },
+    "List": {
+      "file": "ttn/lorawan/v3/networkserver_mac_settings_profile.proto",
+      "http": [
+        {
+          "method": "get",
+          "pattern": "/ns/applications/{application_ids.application_id}/mac_settings_profiles",
+          "parameters": [
+            "application_ids.application_id"
+          ]
+        }
+      ]
+    }
+  },
   "NsRelayConfigurationService": {
     "CreateRelay": {
       "file": "ttn/lorawan/v3/networkserver_relay.proto",
