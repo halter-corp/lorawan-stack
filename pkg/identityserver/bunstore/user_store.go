@@ -609,8 +609,7 @@ func (s *userStore) updateUserModel( //nolint:gocyclo
 			consolePreferences.Tutorials = pb.ConsolePreferences.GetTutorials()
 		case "universal_rights":
 			columns = append(columns, "universal_rights")
-		case "email_notification_preferences":
-		case "email_notification_preferences.types":
+		case "email_notification_preferences", "email_notification_preferences.types":
 			model.EmailNotificationPreferences = convertIntSlice[ttnpb.NotificationType, int](pb.EmailNotificationPreferences.Types) // nolint:lll
 			columns = append(columns, "email_notification_preferences")
 		}
