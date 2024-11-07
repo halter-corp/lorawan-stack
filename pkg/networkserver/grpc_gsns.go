@@ -1035,7 +1035,13 @@ func (ns *NetworkServer) handleDataUplink(ctx context.Context, up *ttnpb.UplinkM
 			paths := ttnpb.AddFields(matched.SetPaths,
 				"mac_state.recent_uplinks",
 			)
-			stored.MacState.RecentUplinks = appendRecentUplink(stored.MacState.RecentUplinks, up, recentUplinkCount)
+
+			// HALTER - if this is data mode uplink (not class A, no corresponding Rx1/Rx2 window), don't schedule a downlink, do this by not adding the uplink to the recent uplinks list
+			const nonClassADataUplinkPort = 222
+			if up.Payload.GetMacPayload().FPort != nonClassADataUplinkPort {
+				stored.MacState.RecentUplinks = appendRecentUplink(stored.MacState.RecentUplinks, up, recentUplinkCount)
+			}
+			// HALTER - end
 
 			if matched.DataRateIndex < stored.MacState.CurrentParameters.AdrDataRateIndex {
 				// Device lowers TX power index before lowering data rate index according to the spec.
@@ -1410,6 +1416,8 @@ func (ns *NetworkServer) HandleUplink(ctx context.Context, up *ttnpb.UplinkMessa
 	if err := clusterauth.Authorized(ctx); err != nil {
 		return nil, err
 	}
+
+	// AB here is where uplink is processed, probably?
 
 	ctx = events.ContextWithCorrelationID(ctx, up.CorrelationIds...)
 	ctx = appendUplinkCorrelationID(ctx)
