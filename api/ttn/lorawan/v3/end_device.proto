@@ -691,8 +691,18 @@ message MACSettings {
 }
 
 message MACSettingsProfile {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
   // Profile identifiers.
-  MACSettingsProfileIdentifiers ids = 1 [(validate.rules).message.required = true];
+  MACSettingsProfileIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
   // MAC settings.
   MACSettings mac_settings = 2 [(validate.rules).message.required = true];
 }

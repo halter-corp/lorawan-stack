@@ -210,15 +210,10 @@ var CreateMACSettingsProfileRequestFieldPathsNested = []string{
 	"mac_settings_profile.mac_settings.uplink_dwell_time.value",
 	"mac_settings_profile.mac_settings.use_adr",
 	"mac_settings_profile.mac_settings.use_adr.value",
-	"mac_settings_profile_ids",
-	"mac_settings_profile_ids.application_ids",
-	"mac_settings_profile_ids.application_ids.application_id",
-	"mac_settings_profile_ids.profile_id",
 }
 
 var CreateMACSettingsProfileRequestFieldPathsTopLevel = []string{
 	"mac_settings_profile",
-	"mac_settings_profile_ids",
 }
 var CreateMACSettingsProfileResponseFieldPathsNested = []string{
 	"mac_settings_profile",

@@ -46,14 +46,14 @@ func request_NsMACSettingsProfileRegistry_Create_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["mac_settings_profile_ids.application_ids.application_id"]
+	val, ok = pathParams["mac_settings_profile.ids.application_ids.application_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "mac_settings_profile_ids.application_ids.application_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "mac_settings_profile.ids.application_ids.application_id")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "mac_settings_profile_ids.application_ids.application_id", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "mac_settings_profile.ids.application_ids.application_id", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "mac_settings_profile_ids.application_ids.application_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "mac_settings_profile.ids.application_ids.application_id", err)
 	}
 
 	msg, err := client.Create(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -76,14 +76,14 @@ func local_request_NsMACSettingsProfileRegistry_Create_0(ctx context.Context, ma
 		_   = err
 	)
 
-	val, ok = pathParams["mac_settings_profile_ids.application_ids.application_id"]
+	val, ok = pathParams["mac_settings_profile.ids.application_ids.application_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "mac_settings_profile_ids.application_ids.application_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "mac_settings_profile.ids.application_ids.application_id")
 	}
 
-	err = runtime.PopulateFieldFromPath(&protoReq, "mac_settings_profile_ids.application_ids.application_id", val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "mac_settings_profile.ids.application_ids.application_id", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "mac_settings_profile_ids.application_ids.application_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "mac_settings_profile.ids.application_ids.application_id", err)
 	}
 
 	msg, err := server.Create(ctx, &protoReq)
@@ -435,7 +435,7 @@ func RegisterNsMACSettingsProfileRegistryHandlerServer(ctx context.Context, mux 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/ttn.lorawan.v3.NsMACSettingsProfileRegistry/Create", runtime.WithHTTPPathPattern("/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/ttn.lorawan.v3.NsMACSettingsProfileRegistry/Create", runtime.WithHTTPPathPattern("/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -599,7 +599,7 @@ func RegisterNsMACSettingsProfileRegistryHandlerClient(ctx context.Context, mux 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/ttn.lorawan.v3.NsMACSettingsProfileRegistry/Create", runtime.WithHTTPPathPattern("/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/ttn.lorawan.v3.NsMACSettingsProfileRegistry/Create", runtime.WithHTTPPathPattern("/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -707,7 +707,7 @@ func RegisterNsMACSettingsProfileRegistryHandlerClient(ctx context.Context, mux 
 }
 
 var (
-	pattern_NsMACSettingsProfileRegistry_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"ns", "applications", "mac_settings_profile_ids.application_ids.application_id", "mac_settings_profiles"}, ""))
+	pattern_NsMACSettingsProfileRegistry_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"ns", "applications", "mac_settings_profile.ids.application_ids.application_id", "mac_settings_profiles"}, ""))
 
 	pattern_NsMACSettingsProfileRegistry_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"ns", "applications", "mac_settings_profile_ids.application_ids.application_id", "mac_settings_profiles", "mac_settings_profile_ids.profile_id"}, ""))
 

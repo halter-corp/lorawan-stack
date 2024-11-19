@@ -41907,26 +41907,6 @@
           "extensions": [],
           "fields": [
             {
-              "name": "mac_settings_profile_ids",
-              "description": "The identifiers of the MAC settings profile.",
-              "label": "",
-              "type": "MACSettingsProfileIdentifiers",
-              "longType": "MACSettingsProfileIdentifiers",
-              "fullType": "ttn.lorawan.v3.MACSettingsProfileIdentifiers",
-              "ismap": false,
-              "isoneof": false,
-              "oneofdecl": "",
-              "defaultValue": "",
-              "options": {
-                "validate.rules": [
-                  {
-                    "name": "message.required",
-                    "value": true
-                  }
-                ]
-              }
-            },
-            {
               "name": "mac_settings_profile",
               "description": "The MAC settings profile to create.",
               "label": "",
@@ -42158,10 +42138,8 @@
                     "name": "string.in",
                     "value": [
                       "",
-                      "created_at",
-                      "-created_at",
-                      "updated_at",
-                      "-updated_at"
+                      "ids.profile_id",
+                      "-ids.profile_id"
                     ]
                   }
                 ]
@@ -42357,7 +42335,7 @@
                   "rules": [
                     {
                       "method": "POST",
-                      "pattern": "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles",
+                      "pattern": "/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles",
                       "body": "*"
                     }
                   ]

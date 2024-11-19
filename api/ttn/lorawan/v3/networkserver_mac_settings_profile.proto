@@ -19,6 +19,7 @@ package ttn.lorawan.v3;
 import "google/api/annotations.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
 import "ttn/lorawan/v3/end_device.proto";
 import "ttn/lorawan/v3/identifiers.proto";
 import "validate/validate.proto";
@@ -26,10 +27,8 @@ import "validate/validate.proto";
 option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
 
 message CreateMACSettingsProfileRequest {
-  // The identifiers of the MAC settings profile.
-  MACSettingsProfileIdentifiers mac_settings_profile_ids = 1 [(validate.rules).message.required = true];
   // The MAC settings profile to create.
-  MACSettingsProfile mac_settings_profile = 2 [(validate.rules).message.required = true];
+  MACSettingsProfile mac_settings_profile = 1 [(validate.rules).message.required = true];
 }
 
 message CreateMACSettingsProfileResponse {
@@ -71,6 +70,10 @@ message DeleteMACSettingsProfileRequest {
 message DeleteMACSettingsProfileResponse {}
 
 message ListMACSettingsProfilesRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
   // The identifiers of the application.
   ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
   // The names of the fields that should be returned.
@@ -80,10 +83,8 @@ message ListMACSettingsProfilesRequest {
   string order = 3 [(validate.rules).string = {
     in: [
       "",
-      "created_at",
-      "-created_at",
-      "updated_at",
-      "-updated_at"
+      "ids.profile_id",
+      "-ids.profile_id"
     ]
   }];
   // Limit the number of results per page.
@@ -106,7 +107,7 @@ service NsMACSettingsProfileRegistry {
   // Create creates a new MAC settings profile.
   rpc Create(CreateMACSettingsProfileRequest) returns (CreateMACSettingsProfileResponse) {
     option (google.api.http) = {
-      post: "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles"
+      post: "/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles"
       body: "*"
     };
   }

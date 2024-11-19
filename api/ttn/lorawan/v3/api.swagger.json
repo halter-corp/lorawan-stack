@@ -10991,7 +10991,7 @@
         ]
       }
     },
-    "/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles": {
+    "/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles": {
       "post": {
         "summary": "Create creates a new MAC settings profile.",
         "operationId": "NsMACSettingsProfileRegistry_Create",
@@ -11011,7 +11011,7 @@
         },
         "parameters": [
           {
-            "name": "mac_settings_profile_ids.application_ids.application_id",
+            "name": "mac_settings_profile.ids.application_ids.application_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -27754,25 +27754,32 @@
     "v3NsMACSettingsProfileRegistryCreateBody": {
       "type": "object",
       "properties": {
-        "mac_settings_profile_ids": {
+        "mac_settings_profile": {
           "type": "object",
           "properties": {
-            "application_ids": {
+            "ids": {
               "type": "object",
-              "description": "Application IDs.",
-              "title": "Application IDs."
+              "properties": {
+                "application_ids": {
+                  "type": "object",
+                  "description": "Application IDs.",
+                  "title": "Application IDs."
+                },
+                "profile_id": {
+                  "type": "string",
+                  "description": "Profile ID."
+                }
+              },
+              "description": "Profile identifiers.",
+              "title": "Profile identifiers."
             },
-            "profile_id": {
-              "type": "string",
-              "description": "Profile ID."
+            "mac_settings": {
+              "$ref": "#/definitions/v3MACSettings",
+              "description": "MAC settings."
             }
           },
-          "description": "The identifiers of the MAC settings profile.",
-          "title": "The identifiers of the MAC settings profile."
-        },
-        "mac_settings_profile": {
-          "$ref": "#/definitions/v3MACSettingsProfile",
-          "description": "The MAC settings profile to create."
+          "description": "The MAC settings profile to create.",
+          "title": "The MAC settings profile to create."
         }
       }
     },

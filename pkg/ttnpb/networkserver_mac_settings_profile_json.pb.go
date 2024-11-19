@@ -19,12 +19,6 @@ func (x *CreateMACSettingsProfileRequest) MarshalProtoJSON(s *jsonplugin.Marshal
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if x.MacSettingsProfileIds != nil || s.HasField("mac_settings_profile_ids") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("mac_settings_profile_ids")
-		// NOTE: MACSettingsProfileIdentifiers does not seem to implement MarshalProtoJSON.
-		golang.MarshalMessage(s, x.MacSettingsProfileIds)
-	}
 	if x.MacSettingsProfile != nil || s.HasField("mac_settings_profile") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("mac_settings_profile")
@@ -47,16 +41,6 @@ func (x *CreateMACSettingsProfileRequest) UnmarshalProtoJSON(s *jsonplugin.Unmar
 		switch key {
 		default:
 			s.ReadAny() // ignore unknown field
-		case "mac_settings_profile_ids", "macSettingsProfileIds":
-			s.AddField("mac_settings_profile_ids")
-			if s.ReadNil() {
-				x.MacSettingsProfileIds = nil
-				return
-			}
-			// NOTE: MACSettingsProfileIdentifiers does not seem to implement UnmarshalProtoJSON.
-			var v MACSettingsProfileIdentifiers
-			golang.UnmarshalMessage(s, &v)
-			x.MacSettingsProfileIds = &v
 		case "mac_settings_profile", "macSettingsProfile":
 			if s.ReadNil() {
 				x.MacSettingsProfile = nil

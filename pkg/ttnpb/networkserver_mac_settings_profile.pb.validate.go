@@ -47,25 +47,6 @@ func (m *CreateMACSettingsProfileRequest) ValidateFields(paths ...string) error 
 	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
 		_ = subs
 		switch name {
-		case "mac_settings_profile_ids":
-
-			if m.GetMacSettingsProfileIds() == nil {
-				return CreateMACSettingsProfileRequestValidationError{
-					field:  "mac_settings_profile_ids",
-					reason: "value is required",
-				}
-			}
-
-			if v, ok := interface{}(m.GetMacSettingsProfileIds()).(interface{ ValidateFields(...string) error }); ok {
-				if err := v.ValidateFields(subs...); err != nil {
-					return CreateMACSettingsProfileRequestValidationError{
-						field:  "mac_settings_profile_ids",
-						reason: "embedded message failed validation",
-						cause:  err,
-					}
-				}
-			}
-
 		case "mac_settings_profile":
 
 			if m.GetMacSettingsProfile() == nil {
@@ -919,7 +900,7 @@ func (m *ListMACSettingsProfilesRequest) ValidateFields(paths ...string) error {
 			if _, ok := _ListMACSettingsProfilesRequest_Order_InLookup[m.GetOrder()]; !ok {
 				return ListMACSettingsProfilesRequestValidationError{
 					field:  "order",
-					reason: "value must be in list [ created_at -created_at updated_at -updated_at]",
+					reason: "value must be in list [ ids.profile_id -ids.profile_id]",
 				}
 			}
 
@@ -1002,11 +983,9 @@ var _ interface {
 } = ListMACSettingsProfilesRequestValidationError{}
 
 var _ListMACSettingsProfilesRequest_Order_InLookup = map[string]struct{}{
-	"":            {},
-	"created_at":  {},
-	"-created_at": {},
-	"updated_at":  {},
-	"-updated_at": {},
+	"":                {},
+	"ids.profile_id":  {},
+	"-ids.profile_id": {},
 }
 
 // ValidateFields checks the field values on ListMACSettingsProfilesResponse

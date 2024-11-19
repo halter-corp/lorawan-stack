@@ -7,31 +7,6 @@ import fmt "fmt"
 func (dst *CreateMACSettingsProfileRequest) SetFields(src *CreateMACSettingsProfileRequest, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
-		case "mac_settings_profile_ids":
-			if len(subs) > 0 {
-				var newDst, newSrc *MACSettingsProfileIdentifiers
-				if (src == nil || src.MacSettingsProfileIds == nil) && dst.MacSettingsProfileIds == nil {
-					continue
-				}
-				if src != nil {
-					newSrc = src.MacSettingsProfileIds
-				}
-				if dst.MacSettingsProfileIds != nil {
-					newDst = dst.MacSettingsProfileIds
-				} else {
-					newDst = &MACSettingsProfileIdentifiers{}
-					dst.MacSettingsProfileIds = newDst
-				}
-				if err := newDst.SetFields(newSrc, subs...); err != nil {
-					return err
-				}
-			} else {
-				if src != nil {
-					dst.MacSettingsProfileIds = src.MacSettingsProfileIds
-				} else {
-					dst.MacSettingsProfileIds = nil
-				}
-			}
 		case "mac_settings_profile":
 			if len(subs) > 0 {
 				var newDst, newSrc *MACSettingsProfile

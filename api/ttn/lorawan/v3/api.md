@@ -9313,14 +9313,12 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | The identifiers of the MAC settings profile. |
 | `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile to create. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
-| `mac_settings_profile_ids` | <p>`message.required`: `true`</p> |
 | `mac_settings_profile` | <p>`message.required`: `true`</p> |
 
 ### <a name="ttn.lorawan.v3.CreateMACSettingsProfileResponse">Message `CreateMACSettingsProfileResponse`</a>
@@ -9389,7 +9387,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
-| `order` | <p>`string.in`: `[ created_at -created_at updated_at -updated_at]`</p> |
+| `order` | <p>`string.in`: `[ ids.profile_id -ids.profile_id]`</p> |
 | `limit` | <p>`uint32.lte`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.ListMACSettingsProfilesResponse">Message `ListMACSettingsProfilesResponse`</a>
@@ -9442,7 +9440,7 @@ The NsMACSettingsProfileRegistry service allows clients to manage MAC settings p
 
 | Method Name | Method | Pattern | Body |
 | ----------- | ------ | ------- | ---- |
-| `Create` | `POST` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles` | `*` |
+| `Create` | `POST` | `/api/v3/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles` | `*` |
 | `Get` | `GET` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` |  |
 | `Update` | `PUT` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` |  |
