@@ -11,6 +11,8 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Added
 
+- Support user email notification preferences.
+
 ### Changed
 
 ### Deprecated
