@@ -8207,6 +8207,24 @@
       "file": "errors.go"
     }
   },
+  "error:pkg/networkserver:mac_settings_profile_already_exists": {
+    "translations": {
+      "en": "MAC settings profile already exists"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
+  "error:pkg/networkserver:mac_settings_profile_not_found": {
+    "translations": {
+      "en": "MAC settings profile not found"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
   "error:pkg/networkserver:no_downlink": {
     "translations": {
       "en": "no downlink to send"
