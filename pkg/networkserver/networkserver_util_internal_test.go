@@ -103,11 +103,12 @@ var (
 	EvtScheduleJoinAcceptSuccess   = evtScheduleJoinAcceptSuccess
 	EvtUpdateEndDevice             = evtUpdateEndDevice
 
-	NewDeviceRegistry           func(context.Context) (DeviceRegistry, func())
-	NewApplicationUplinkQueue   func(context.Context) (ApplicationUplinkQueue, func())
-	NewDownlinkTaskQueue        func(context.Context) (DownlinkTaskQueue, func())
-	NewUplinkDeduplicator       func(context.Context) (UplinkDeduplicator, func())
-	NewScheduledDownlinkMatcher func(context.Context) (ScheduledDownlinkMatcher, func())
+	NewDeviceRegistry             func(context.Context) (DeviceRegistry, func())
+	NewApplicationUplinkQueue     func(context.Context) (ApplicationUplinkQueue, func())
+	NewDownlinkTaskQueue          func(context.Context) (DownlinkTaskQueue, func())
+	NewUplinkDeduplicator         func(context.Context) (UplinkDeduplicator, func())
+	NewScheduledDownlinkMatcher   func(context.Context) (ScheduledDownlinkMatcher, func())
+	NewMACSettingsProfileRegistry func(context.Context) (MACSettingsProfileRegistry, func())
 )
 
 type DownlinkPath = downlinkPath
@@ -2102,6 +2103,13 @@ func StartTest(ctx context.Context, conf TestConfig) (*NetworkServer, context.Co
 			closeFuncs = append(closeFuncs, closeFn)
 		}
 		conf.NetworkServer.ScheduledDownlinkMatcher = v
+	}
+	if conf.NetworkServer.MACSettingsProfileRegistry == nil {
+		v, closeFn := NewMACSettingsProfileRegistry(ctx)
+		if closeFn != nil {
+			closeFuncs = append(closeFuncs, closeFn)
+		}
+		conf.NetworkServer.MACSettingsProfileRegistry = v
 	}
 
 	ns := test.Must(New(
