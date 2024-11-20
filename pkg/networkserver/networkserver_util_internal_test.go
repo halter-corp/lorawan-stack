@@ -2588,3 +2588,40 @@ func (m MockDeviceRegistry) BatchDelete(
 	}
 	return m.BatchDeleteFunc(ctx, appIDs, deviceIDs)
 }
+
+type MockMACSettingsProfileRegistry struct {
+	GetFunc func(
+		ctx context.Context,
+		ids *ttnpb.MACSettingsProfileIdentifiers,
+		paths []string,
+	) (*ttnpb.MACSettingsProfile, error)
+	SetFunc func(
+		ctx context.Context,
+		ids *ttnpb.MACSettingsProfileIdentifiers,
+		paths []string,
+		f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
+	) (*ttnpb.MACSettingsProfile, error)
+}
+
+func (m MockMACSettingsProfileRegistry) Get(
+	ctx context.Context,
+	ids *ttnpb.MACSettingsProfileIdentifiers,
+	paths []string,
+) (*ttnpb.MACSettingsProfile, error) {
+	if m.GetFunc == nil {
+		panic("GetFunc not set")
+	}
+	return m.GetFunc(ctx, ids, paths)
+}
+
+func (m MockMACSettingsProfileRegistry) Set(
+	ctx context.Context,
+	ids *ttnpb.MACSettingsProfileIdentifiers,
+	paths []string,
+	f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
+) (*ttnpb.MACSettingsProfile, error) {
+	if m.SetFunc == nil {
+		panic("SetFunc not set")
+	}
+	return m.SetFunc(ctx, ids, paths, f)
+}
