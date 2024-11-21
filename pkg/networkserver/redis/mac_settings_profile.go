@@ -17,7 +17,6 @@ package redis
 
 import (
 	"context"
-	"fmt"
 	"runtime/trace"
 
 	"github.com/redis/go-redis/v9"
@@ -25,6 +24,8 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/networkserver/internal/time"
 	ttnredis "go.thethings.network/lorawan-stack/v3/pkg/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"go.thethings.network/lorawan-stack/v3/pkg/unique"
+	"google.golang.org/protobuf/proto"
 )
 
 // MACSettingsProfileRegistry is an implementation of networkserver.MACSettingsProfileRegistry.
@@ -41,15 +42,18 @@ func applyMACSettingsProfileFieldMask(dst, src *ttnpb.MACSettingsProfile, paths 
 	return dst, dst.SetFields(src, paths...)
 }
 
-func uniqueID(ids *ttnpb.MACSettingsProfileIdentifiers) string {
-	if ids == nil {
-		return ""
-	}
-	return fmt.Sprintf("%s.%s", ids.GetApplicationIds().IDString(), ids.GetProfileId())
+func (r *MACSettingsProfileRegistry) appKey(uid string) string {
+	return r.Redis.Key("uid", uid)
 }
 
-func (r *MACSettingsProfileRegistry) uidKey(uid string) string {
-	return r.Redis.Key("uid", uid)
+func (r *MACSettingsProfileRegistry) profileKey(appUID string, id string) string {
+	return r.Redis.Key("uid", appUID, id)
+}
+
+func (r *MACSettingsProfileRegistry) makeProfileKeyFunc(appUID string) func(string) string {
+	return func(id string) string {
+		return r.profileKey(appUID, id)
+	}
 }
 
 // Init initializes the MAC settings profile registry.
@@ -63,15 +67,15 @@ func (r *MACSettingsProfileRegistry) Get(
 	ids *ttnpb.MACSettingsProfileIdentifiers,
 	paths []string,
 ) (*ttnpb.MACSettingsProfile, error) {
-	defer trace.StartRegion(ctx, "get mac settings profile by id").End()
+	defer trace.StartRegion(ctx, "get mac settings profile").End()
 
 	if err := ids.ValidateContext(ctx); err != nil {
 		return nil, err
 	}
 
 	pb := &ttnpb.MACSettingsProfile{}
-	uid := uniqueID(ids)
-	if err := ttnredis.GetProto(ctx, r.Redis, r.uidKey(uid)).ScanProto(pb); err != nil {
+	appUID := unique.ID(ctx, ids.ApplicationIds)
+	if err := ttnredis.GetProto(ctx, r.Redis, r.profileKey(appUID, ids.ProfileId)).ScanProto(pb); err != nil {
 		return nil, err
 	}
 	pb, err := applyMACSettingsProfileFieldMask(nil, pb, paths...)
@@ -88,14 +92,14 @@ func (r *MACSettingsProfileRegistry) Set( //nolint:gocyclo
 	paths []string,
 	f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
 ) (*ttnpb.MACSettingsProfile, error) {
-	defer trace.StartRegion(ctx, "set mac settings profile by id").End()
+	defer trace.StartRegion(ctx, "set mac settings profile").End()
 
 	if err := ids.ValidateContext(ctx); err != nil {
 		return nil, err
 	}
 
-	uid := uniqueID(ids)
-	uk := r.uidKey(uid)
+	appUID := unique.ID(ctx, ids.ApplicationIds)
+	pk := r.profileKey(appUID, ids.ProfileId)
 
 	lockerID, err := ttnredis.GenerateLockerID()
 	if err != nil {
@@ -103,8 +107,8 @@ func (r *MACSettingsProfileRegistry) Set( //nolint:gocyclo
 	}
 
 	var pb *ttnpb.MACSettingsProfile
-	err = ttnredis.LockedWatch(ctx, r.Redis, uk, lockerID, r.LockTTL, func(tx *redis.Tx) error {
-		cmd := ttnredis.GetProto(ctx, tx, uk)
+	err = ttnredis.LockedWatch(ctx, r.Redis, pk, lockerID, r.LockTTL, func(tx *redis.Tx) error {
+		cmd := ttnredis.GetProto(ctx, tx, pk)
 		stored := &ttnpb.MACSettingsProfile{}
 		if err := cmd.ScanProto(stored); errors.IsNotFound(err) {
 			stored = nil
@@ -140,7 +144,8 @@ func (r *MACSettingsProfileRegistry) Set( //nolint:gocyclo
 		var pipelined func(redis.Pipeliner) error
 		if pb == nil && len(sets) == 0 {
 			pipelined = func(p redis.Pipeliner) error {
-				p.Del(ctx, uk)
+				p.Del(ctx, pk)
+				p.SRem(ctx, r.appKey(appUID), stored.Ids.ProfileId)
 				return nil
 			}
 		} else {
@@ -187,9 +192,10 @@ func (r *MACSettingsProfileRegistry) Set( //nolint:gocyclo
 				return err
 			}
 			pipelined = func(p redis.Pipeliner) error {
-				if _, err := ttnredis.SetProto(ctx, p, uk, updated, 0); err != nil {
+				if _, err := ttnredis.SetProto(ctx, p, pk, updated, 0); err != nil {
 					return err
 				}
+				p.SAdd(ctx, r.appKey(appUID), updated.Ids.ProfileId)
 				return nil
 			}
 			pb, err = applyMACSettingsProfileFieldMask(nil, updated, paths...)
@@ -208,4 +214,40 @@ func (r *MACSettingsProfileRegistry) Set( //nolint:gocyclo
 	}
 
 	return pb, nil
+}
+
+// List lists MAC settings profiles by application identifiers.
+func (r *MACSettingsProfileRegistry) List(
+	ctx context.Context,
+	ids *ttnpb.ApplicationIdentifiers,
+	paths []string,
+) ([]*ttnpb.MACSettingsProfile, error) {
+	defer trace.StartRegion(ctx, "list mac settings profile").End()
+
+	if err := ids.ValidateContext(ctx); err != nil {
+		return nil, err
+	}
+
+	appUID := unique.ID(ctx, ids)
+	var pbs []*ttnpb.MACSettingsProfile
+	err := ttnredis.FindProtos(
+		ctx,
+		r.Redis,
+		r.appKey(appUID),
+		r.makeProfileKeyFunc(appUID),
+	).Range(func() (proto.Message, func() (bool, error)) {
+		pb := &ttnpb.MACSettingsProfile{}
+		return pb, func() (bool, error) {
+			pb, err := applyMACSettingsProfileFieldMask(nil, pb, paths...)
+			if err != nil {
+				return false, err
+			}
+			pbs = append(pbs, pb)
+			return true, nil
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return pbs, nil
 }

@@ -2609,6 +2609,11 @@ type MockMACSettingsProfileRegistry struct {
 		paths []string,
 		f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
 	) (*ttnpb.MACSettingsProfile, error)
+	ListFunc func(
+		ctx context.Context,
+		ids *ttnpb.ApplicationIdentifiers,
+		paths []string,
+	) ([]*ttnpb.MACSettingsProfile, error)
 }
 
 func (m MockMACSettingsProfileRegistry) Get(
@@ -2632,4 +2637,15 @@ func (m MockMACSettingsProfileRegistry) Set(
 		panic("SetFunc not set")
 	}
 	return m.SetFunc(ctx, ids, paths, f)
+}
+
+func (m MockMACSettingsProfileRegistry) List(
+	ctx context.Context,
+	ids *ttnpb.ApplicationIdentifiers,
+	paths []string,
+) ([]*ttnpb.MACSettingsProfile, error) {
+	if m.ListFunc == nil {
+		panic("ListFunc not set")
+	}
+	return m.ListFunc(ctx, ids, paths)
 }

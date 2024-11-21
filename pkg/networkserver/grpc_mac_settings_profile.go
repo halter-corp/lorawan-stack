@@ -147,13 +147,25 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 }
 
 // List lists the MAC settings profiles.
-func (*NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.ListMACSettingsProfilesRequest,
+func (m *NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.ListMACSettingsProfilesRequest,
 ) (*ttnpb.ListMACSettingsProfilesResponse, error) {
 	if err := rights.RequireApplication(
 		ctx, req.ApplicationIds, ttnpb.Right_RIGHT_APPLICATION_DEVICES_READ,
 	); err != nil {
 		return nil, err
 	}
+	paths := []string{"ids", "mac_settings"}
+	if req.FieldMask != nil {
+		paths = req.FieldMask.GetPaths()
+	}
+	profiles, err := m.registry.List(ctx, req.ApplicationIds, paths)
+	if err != nil {
+		logRegistryRPCError(ctx, err, "Failed to list MAC settings profiles")
+		return nil, err
+	}
 
-	return &ttnpb.ListMACSettingsProfilesResponse{}, nil
+	return &ttnpb.ListMACSettingsProfilesResponse{
+		MacSettingsProfiles: profiles,
+		TotalCount:          uint32(len(profiles)), // nolint: gosec
+	}, nil
 }

@@ -42,6 +42,13 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		},
 		ProfileId: "prof-01",
 	}
+	ids2 := &ttnpb.MACSettingsProfileIdentifiers{
+		ApplicationIds: &ttnpb.ApplicationIdentifiers{
+			ApplicationId: "myapp-02",
+		},
+		ProfileId: "prof-02",
+	}
+
 	frequencies := []uint64{868100000, 868300000, 868500000}
 	frequencies2 := []uint64{868100000, 868300000, 868500000, 868700000}
 
@@ -94,6 +101,17 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		return nil, nil, nil
 	}
 
+	listProfileFunc := func(_ context.Context, pb *ttnpb.MACSettingsProfile,
+	) (*ttnpb.MACSettingsProfile, []string, error) { // nolint: unparam
+		a.So(pb, should.BeNil)
+		return &ttnpb.MACSettingsProfile{
+			Ids: ids2,
+			MacSettings: &ttnpb.MACSettings{
+				ResetsFCnt: &ttnpb.BoolValue{Value: true},
+			},
+		}, []string{"ids", "mac_settings"}, nil
+	}
+
 	t.Run("GetNonExisting", func(t *testing.T) {
 		t.Parallel()
 		a, ctx := test.New(t)
@@ -142,5 +160,26 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		deleted, err := registry.Set(ctx, ids, []string{"ids", "mac_settings"}, deleteProfileFunc)
 		a.So(err, should.BeNil)
 		a.So(deleted, should.BeNil)
+	})
+
+	t.Run("List", func(t *testing.T) {
+		t.Parallel()
+		a, ctx := test.New(t)
+		profile, err := registry.Set(ctx, ids2, []string{"ids", "mac_settings"}, listProfileFunc)
+		a.So(err, should.BeNil)
+		a.So(profile, should.NotBeNil)
+		a.So(profile.Ids, should.Resemble, ids2)
+		a.So(profile.MacSettings, should.NotBeNil)
+		a.So(profile.MacSettings.ResetsFCnt, should.NotBeNil)
+		a.So(profile.MacSettings.ResetsFCnt.Value, should.BeTrue)
+
+		profiles, err := registry.List(ctx, ids2.ApplicationIds, []string{"ids", "mac_settings"})
+		a.So(err, should.BeNil)
+		a.So(profiles, should.HaveLength, 1)
+		a.So(profiles[0], should.NotBeNil)
+		a.So(profiles[0].Ids, should.Resemble, ids2)
+		a.So(profiles[0].MacSettings, should.NotBeNil)
+		a.So(profiles[0].MacSettings.ResetsFCnt, should.NotBeNil)
+		a.So(profiles[0].MacSettings.ResetsFCnt.Value, should.BeTrue)
 	})
 }

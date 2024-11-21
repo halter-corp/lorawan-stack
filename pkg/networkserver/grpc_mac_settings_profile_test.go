@@ -944,3 +944,231 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestMACSettingsProfileRegistryList(t *testing.T) {
+	t.Parallel()
+	nilProfileAssertion := func(t *testing.T, profile *ttnpb.ListMACSettingsProfilesResponse) bool {
+		t.Helper()
+		return assertions.New(t).So(profile, should.BeNil)
+	}
+	nilErrorAssertion := func(t *testing.T, err error) bool {
+		t.Helper()
+		return assertions.New(t).So(err, should.BeNil)
+	}
+	permissionDeniedErrorAssertion := func(t *testing.T, err error) bool {
+		t.Helper()
+		return assertions.New(t).So(errors.IsPermissionDenied(err), should.BeTrue)
+	}
+	notFoundErrorAssertion := func(t *testing.T, err error) bool {
+		t.Helper()
+		return assertions.New(t).So(errors.IsNotFound(err), should.BeTrue)
+	}
+
+	registeredProfileIDs := &ttnpb.MACSettingsProfileIdentifiers{
+		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
+		ProfileId:      "test-profile-id",
+	}
+
+	for _, tc := range []struct {
+		Name             string
+		ContextFunc      func(context.Context) context.Context
+		ListFunc         func(context.Context, *ttnpb.ApplicationIdentifiers, []string) ([]*ttnpb.MACSettingsProfile, error) // nolint: lll
+		ProfileRequest   *ttnpb.ListMACSettingsProfilesRequest
+		ProfileAssertion func(*testing.T, *ttnpb.ListMACSettingsProfilesResponse) bool
+		ErrorAssertion   func(*testing.T, error) bool
+		ListCalls        uint64
+	}{
+		{
+			Name: "Permission denied",
+			ContextFunc: func(ctx context.Context) context.Context {
+				return rights.NewContext(ctx, &rights.Rights{
+					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
+						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"}): nil,
+					}),
+				})
+			},
+			ListFunc: func(
+				ctx context.Context,
+				_ *ttnpb.ApplicationIdentifiers,
+				_ []string,
+			) ([]*ttnpb.MACSettingsProfile, error) {
+				err := errors.New("ListFunc must not be called")
+				test.MustTFromContext(ctx).Error(err)
+				return nil, err
+			},
+			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
+				ApplicationIds: registeredProfileIDs.ApplicationIds,
+				FieldMask:      ttnpb.FieldMask("mac_settings"),
+			},
+			ProfileAssertion: nilProfileAssertion,
+			ErrorAssertion:   permissionDeniedErrorAssertion,
+			ListCalls:        0,
+		},
+		{
+			Name: "Invalid application ID",
+			ContextFunc: func(ctx context.Context) context.Context {
+				return rights.NewContext(ctx, &rights.Rights{
+					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
+						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{
+							ApplicationId: "invalid-application",
+						}): ttnpb.RightsFrom(
+							ttnpb.Right_RIGHT_APPLICATION_DEVICES_READ,
+						),
+					}),
+				})
+			},
+			ListFunc: func(
+				ctx context.Context,
+				_ *ttnpb.ApplicationIdentifiers,
+				_ []string,
+			) ([]*ttnpb.MACSettingsProfile, error) {
+				err := errors.New("ListFunc must not be called")
+				test.MustTFromContext(ctx).Error(err)
+				return nil, err
+			},
+			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
+				ApplicationIds: registeredProfileIDs.ApplicationIds,
+				FieldMask:      ttnpb.FieldMask("mac_settings"),
+			},
+			ProfileAssertion: nilProfileAssertion,
+			ErrorAssertion:   permissionDeniedErrorAssertion,
+			ListCalls:        0,
+		},
+		{
+			Name: "Not found",
+			ContextFunc: func(ctx context.Context) context.Context {
+				return rights.NewContext(ctx, &rights.Rights{
+					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
+						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{
+							ApplicationId: "test-app-id",
+						}): ttnpb.RightsFrom(
+							ttnpb.Right_RIGHT_APPLICATION_DEVICES_READ,
+						),
+					}),
+				})
+			},
+			ListFunc: func(
+				ctx context.Context,
+				ids *ttnpb.ApplicationIdentifiers,
+				paths []string,
+			) ([]*ttnpb.MACSettingsProfile, error) {
+				a := assertions.New(test.MustTFromContext(ctx))
+				a.So(ids, should.Resemble, ids)
+				a.So(paths, should.HaveSameElementsDeep, []string{
+					"mac_settings",
+				})
+				return nil, errNotFound.New()
+			},
+			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
+				ApplicationIds: registeredProfileIDs.ApplicationIds,
+				FieldMask:      ttnpb.FieldMask("mac_settings"),
+			},
+			ProfileAssertion: nilProfileAssertion,
+			ErrorAssertion:   notFoundErrorAssertion,
+			ListCalls:        1,
+		},
+		{
+			Name: "Found",
+			ContextFunc: func(ctx context.Context) context.Context {
+				return rights.NewContext(ctx, &rights.Rights{
+					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
+						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{
+							ApplicationId: "test-app-id",
+						}): ttnpb.RightsFrom(
+							ttnpb.Right_RIGHT_APPLICATION_DEVICES_READ,
+						),
+					}),
+				})
+			},
+			ListFunc: func(
+				ctx context.Context,
+				ids *ttnpb.ApplicationIdentifiers,
+				paths []string,
+			) ([]*ttnpb.MACSettingsProfile, error) {
+				a := assertions.New(test.MustTFromContext(ctx))
+				a.So(ids, should.Resemble, ids)
+				a.So(paths, should.HaveSameElementsDeep, []string{
+					"ids",
+					"mac_settings",
+				})
+				return []*ttnpb.MACSettingsProfile{ttnpb.Clone(&ttnpb.MACSettingsProfile{
+					Ids: registeredProfileIDs,
+					MacSettings: &ttnpb.MACSettings{
+						ResetsFCnt: &ttnpb.BoolValue{Value: true},
+					},
+				})}, nil
+			},
+			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
+				ApplicationIds: registeredProfileIDs.ApplicationIds,
+				FieldMask:      ttnpb.FieldMask("ids", "mac_settings"),
+			},
+			ProfileAssertion: func(t *testing.T, profile *ttnpb.ListMACSettingsProfilesResponse) bool {
+				t.Helper()
+				a := assertions.New(t)
+				a.So(profile, should.NotBeNil)
+				a.So(profile.MacSettingsProfiles, should.HaveLength, 1)
+				a.So(profile.TotalCount, should.Equal, 1)
+				return a.So(profile.MacSettingsProfiles, should.Resemble, []*ttnpb.MACSettingsProfile{{
+					Ids: &ttnpb.MACSettingsProfileIdentifiers{
+						ApplicationIds: &ttnpb.ApplicationIdentifiers{
+							ApplicationId: "test-app-id",
+						},
+						ProfileId: "test-profile-id",
+					},
+					MacSettings: &ttnpb.MACSettings{
+						ResetsFCnt: &ttnpb.BoolValue{Value: true},
+					},
+				}})
+			},
+			ErrorAssertion: nilErrorAssertion,
+			ListCalls:      1,
+		},
+	} {
+		tc := tc
+		test.RunSubtest(t, test.SubtestConfig{
+			Name:     tc.Name,
+			Parallel: true,
+			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
+				t.Helper()
+				var listCalls uint64
+
+				ns, ctx, _, stop := StartTest(
+					ctx,
+					TestConfig{
+						NetworkServer: Config{
+							MACSettingsProfileRegistry: &MockMACSettingsProfileRegistry{
+								ListFunc: func(
+									ctx context.Context,
+									ids *ttnpb.ApplicationIdentifiers,
+									paths []string,
+								) ([]*ttnpb.MACSettingsProfile, error) {
+									atomic.AddUint64(&listCalls, 1)
+									return tc.ListFunc(ctx, ids, paths)
+								},
+							},
+						},
+						TaskStarter: StartTaskExclude(
+							DownlinkProcessTaskName,
+							DownlinkDispatchTaskName,
+						),
+					},
+				)
+				defer stop()
+
+				ns.AddContextFiller(tc.ContextFunc)
+				ns.AddContextFiller(func(ctx context.Context) context.Context {
+					return test.ContextWithTB(ctx, t)
+				})
+
+				req := ttnpb.Clone(tc.ProfileRequest)
+
+				profile, err := ttnpb.NewNsMACSettingsProfileRegistryClient(ns.LoopbackConn()).List(ctx, req)
+				if a.So(tc.ErrorAssertion(t, err), should.BeTrue) {
+					a.So(tc.ProfileAssertion(t, profile), should.BeTrue)
+				}
+				a.So(req, should.Resemble, tc.ProfileRequest)
+				a.So(listCalls, should.Equal, tc.ListCalls)
+			},
+		})
+	}
+}
