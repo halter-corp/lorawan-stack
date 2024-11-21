@@ -122,7 +122,7 @@ const AuthorizationSettings = () => {
 
   return (
     <div className="container container--xl grid">
-      <div className="item-12 xl:item-6">
+      <div className="item-12">
         <DataSheet data={sheetData} />
       </div>
     </div>
