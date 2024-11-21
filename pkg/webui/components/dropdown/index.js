@@ -133,7 +133,7 @@ const DropdownItem = ({
       className={classnames(style.button, { [style.buttonActive]: active })}
     >
       {iconElement}
-      <Message content={title} />
+      <Message content={title} className={messageClassName} />
     </button>
   ) : external ? (
     <Link.Anchor href={path} external tabIndex={tabIndex} className={style.button}>
