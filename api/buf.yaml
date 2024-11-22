@@ -101,6 +101,7 @@ lint:
       - ttn/lorawan/v3/identityserver.proto
       - ttn/lorawan/v3/joinserver.proto
       - ttn/lorawan/v3/networkserver.proto
+      - ttn/lorawan/v3/networkserver_mac_settings_profile.proto
       - ttn/lorawan/v3/notification_service.proto
       - ttn/lorawan/v3/oauth_services.proto
       - ttn/lorawan/v3/organization_services.proto
@@ -127,6 +128,7 @@ lint:
       - ttn/lorawan/v3/identityserver.proto
       - ttn/lorawan/v3/joinserver.proto
       - ttn/lorawan/v3/networkserver.proto
+      - ttn/lorawan/v3/networkserver_mac_settings_profile.proto
       - ttn/lorawan/v3/notification_service.proto
       - ttn/lorawan/v3/oauth_services.proto
       - ttn/lorawan/v3/organization_services.proto
@@ -154,6 +156,7 @@ lint:
       - ttn/lorawan/v3/identityserver.proto
       - ttn/lorawan/v3/joinserver.proto
       - ttn/lorawan/v3/networkserver.proto
+      - ttn/lorawan/v3/networkserver_mac_settings_profile.proto
       - ttn/lorawan/v3/oauth_services.proto
       - ttn/lorawan/v3/organization_services.proto
       - ttn/lorawan/v3/packetbrokeragent.proto
