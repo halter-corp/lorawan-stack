@@ -499,6 +499,7 @@ export default defineMessages({
   scanGatewayQR: 'Scan gateway QR code',
   redirecting: 'Redirecting…',
   refresh: 'Refresh',
+  reactivateSuccess: 'Successfully reactivated',
   registerEndDevice: 'Register end device',
   registerDeviceInApplication: 'Register end device in an application',
   registerGateway: 'Register gateway',

@@ -1641,6 +1641,7 @@
   "lib.shared-messages.scanGatewayQR": "Scan gateway QR code",
   "lib.shared-messages.redirecting": "Redirecting…",
   "lib.shared-messages.refresh": "Refresh",
+  "lib.shared-messages.reactivateSuccess": "Successfully reactivated",
   "lib.shared-messages.registerEndDevice": "Register end device",
   "lib.shared-messages.registerDeviceInApplication": "Register end device in an application",
   "lib.shared-messages.registerGateway": "Register gateway",

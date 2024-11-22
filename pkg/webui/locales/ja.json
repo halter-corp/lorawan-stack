@@ -1641,6 +1641,7 @@
   "lib.shared-messages.scanGatewayQR": "",
   "lib.shared-messages.redirecting": "リダイレクト中...",
   "lib.shared-messages.refresh": "リフレッシュ",
+  "lib.shared-messages.reactivateSuccess": "",
   "lib.shared-messages.registerEndDevice": "エンドデバイスの登録",
   "lib.shared-messages.registerDeviceInApplication": "",
   "lib.shared-messages.registerGateway": "ゲートウェイの登録",
