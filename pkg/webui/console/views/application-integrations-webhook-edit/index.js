@@ -95,6 +95,7 @@ const webhookEntitySelector = [
   'template_ids',
   'health_status',
   'field_mask',
+  'paused',
 ]
 
 const ApplicationWebhookEdit = () => {

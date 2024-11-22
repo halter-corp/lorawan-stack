@@ -464,7 +464,6 @@ export default defineMessages({
   packetsPerChannel: 'Packets per channel (24 days)',
   password: 'Password',
   passwordChanged: 'Password changed',
-  pause: 'Pause',
   payload: 'Payload',
   payloadFormatters: 'Payload formatters',
   payloadFormattersDownlink: 'Downlink payload formatters',
@@ -688,5 +687,8 @@ export default defineMessages({
   webhookId: 'Webhook ID',
   webhookUpdated: 'Webhook updated',
   webhooks: 'Webhooks',
+  webhookError: 'Webhook error',
+  webhookActive: 'Webhook active',
+  webhookPaused: 'Webhook paused',
   wifiProfiles: 'WiFi profiles',
 })
