@@ -96,8 +96,6 @@ message ListMACSettingsProfilesRequest {
 message ListMACSettingsProfilesResponse {
   // The MAC settings profiles.
   repeated MACSettingsProfile mac_settings_profiles = 1;
-  // The total number of MAC settings profiles that match the request.
-  uint32 total_count = 2;
 }
 
 // The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.

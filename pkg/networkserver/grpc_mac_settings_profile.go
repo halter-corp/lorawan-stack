@@ -17,15 +17,18 @@ package networkserver
 
 import (
 	"context"
+	"strconv"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
-	errProfileAlreadyExists = errors.DefineAlreadyExists("mac_settings_profile_already_exists", "MAC settings profile already exists") // nolint: lll
-	errProfileNotFound      = errors.DefineNotFound("mac_settings_profile_not_found", "MAC settings profile not found")
+	errMACSettingsProfileAlreadyExists = errors.DefineAlreadyExists("mac_settings_profile_already_exists", "MAC settings profile already exists") // nolint: lll
+	errMACSettingsProfileNotFound      = errors.DefineNotFound("mac_settings_profile_not_found", "MAC settings profile not found")                // nolint: lll
 )
 
 // NsMACSettingsProfileRegistry implements the MAC settings profile registry grpc service.
@@ -50,7 +53,7 @@ func (m *NsMACSettingsProfileRegistry) Create(ctx context.Context, req *ttnpb.Cr
 		paths,
 		func(_ context.Context, profile *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
 			if profile != nil {
-				return nil, nil, errProfileAlreadyExists.New()
+				return nil, nil, errMACSettingsProfileAlreadyExists.New()
 			}
 			return req.MacSettingsProfile, paths, nil
 		})
@@ -105,7 +108,7 @@ func (m *NsMACSettingsProfileRegistry) Update(ctx context.Context, req *ttnpb.Up
 		paths,
 		func(_ context.Context, profile *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
 			if profile == nil {
-				return nil, nil, errProfileNotFound.New()
+				return nil, nil, errMACSettingsProfileNotFound.New()
 			}
 			return req.MacSettingsProfile, paths, nil
 		})
@@ -134,7 +137,7 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 		paths,
 		func(_ context.Context, profile *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
 			if profile == nil {
-				return nil, nil, errProfileNotFound.New()
+				return nil, nil, errMACSettingsProfileNotFound.New()
 			}
 			return nil, nil, nil
 		})
@@ -164,8 +167,8 @@ func (m *NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.List
 		return nil, err
 	}
 
+	grpc.SetHeader(ctx, metadata.Pairs("x-total-count", strconv.FormatInt(int64(len(profiles)), 10))) // nolint: errcheck
 	return &ttnpb.ListMACSettingsProfilesResponse{
 		MacSettingsProfiles: profiles,
-		TotalCount:          uint32(len(profiles)), // nolint: gosec
 	}, nil
 }

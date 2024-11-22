@@ -460,11 +460,6 @@ func (x *ListMACSettingsProfilesResponse) MarshalProtoJSON(s *jsonplugin.Marshal
 		}
 		s.WriteArrayEnd()
 	}
-	if x.TotalCount != 0 || s.HasField("total_count") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("total_count")
-		s.WriteUint32(x.TotalCount)
-	}
 	s.WriteObjectEnd()
 }
 
@@ -500,9 +495,6 @@ func (x *ListMACSettingsProfilesResponse) UnmarshalProtoJSON(s *jsonplugin.Unmar
 				}
 				x.MacSettingsProfiles = append(x.MacSettingsProfiles, v)
 			})
-		case "total_count", "totalCount":
-			s.AddField("total_count")
-			x.TotalCount = s.ReadUint32()
 		}
 	})
 }

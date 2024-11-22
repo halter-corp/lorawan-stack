@@ -393,16 +393,6 @@ func (dst *ListMACSettingsProfilesResponse) SetFields(src *ListMACSettingsProfil
 			} else {
 				dst.MacSettingsProfiles = nil
 			}
-		case "total_count":
-			if len(subs) > 0 {
-				return fmt.Errorf("'total_count' has no subfields, but %s were specified", subs)
-			}
-			if src != nil {
-				dst.TotalCount = src.TotalCount
-			} else {
-				var zero uint32
-				dst.TotalCount = zero
-			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)

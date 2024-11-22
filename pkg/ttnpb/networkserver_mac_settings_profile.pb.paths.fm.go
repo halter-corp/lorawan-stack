@@ -1116,10 +1116,8 @@ var ListMACSettingsProfilesRequestFieldPathsTopLevel = []string{
 }
 var ListMACSettingsProfilesResponseFieldPathsNested = []string{
 	"mac_settings_profiles",
-	"total_count",
 }
 
 var ListMACSettingsProfilesResponseFieldPathsTopLevel = []string{
 	"mac_settings_profiles",
-	"total_count",
 }

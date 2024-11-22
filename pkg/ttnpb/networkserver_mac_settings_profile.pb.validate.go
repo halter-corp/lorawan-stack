@@ -1020,8 +1020,6 @@ func (m *ListMACSettingsProfilesResponse) ValidateFields(paths ...string) error 
 
 			}
 
-		case "total_count":
-			// no validation rules for TotalCount
 		default:
 			return ListMACSettingsProfilesResponseValidationError{
 				field:  name,

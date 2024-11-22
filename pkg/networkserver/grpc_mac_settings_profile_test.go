@@ -1107,7 +1107,6 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				a := assertions.New(t)
 				a.So(profile, should.NotBeNil)
 				a.So(profile.MacSettingsProfiles, should.HaveLength, 1)
-				a.So(profile.TotalCount, should.Equal, 1)
 				return a.So(profile.MacSettingsProfiles, should.Resemble, []*ttnpb.MACSettingsProfile{{
 					Ids: &ttnpb.MACSettingsProfileIdentifiers{
 						ApplicationIds: &ttnpb.ApplicationIdentifiers{

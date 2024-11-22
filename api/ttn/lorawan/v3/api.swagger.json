@@ -25910,11 +25910,6 @@
             "$ref": "#/definitions/v3MACSettingsProfile"
           },
           "description": "The MAC settings profiles."
-        },
-        "total_count": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The total number of MAC settings profiles that match the request."
         }
       }
     },

@@ -9395,7 +9395,6 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `mac_settings_profiles` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) | repeated | The MAC settings profiles. |
-| `total_count` | [`uint32`](#uint32) |  | The total number of MAC settings profiles that match the request. |
 
 ### <a name="ttn.lorawan.v3.UpdateMACSettingsProfileRequest">Message `UpdateMACSettingsProfileRequest`</a>
 
