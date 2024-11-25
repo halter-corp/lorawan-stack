@@ -10976,6 +10976,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_USER_SETTINGS_BASIC` | 2 | The right to edit basic user settings. |
 | `RIGHT_USER_SETTINGS_API_KEYS` | 3 | The right to view and edit user API keys. |
 | `RIGHT_USER_DELETE` | 4 | The right to delete user account. |
+| `RIGHT_USER_PURGE` | 66 | The right to delete user account. |
 | `RIGHT_USER_AUTHORIZED_CLIENTS` | 5 | The right to view and edit authorized OAuth clients of the user. |
 | `RIGHT_USER_APPLICATIONS_LIST` | 6 | The right to list applications the user is a collaborator of. |
 | `RIGHT_USER_APPLICATIONS_CREATE` | 7 | The right to create an application under the user account. |

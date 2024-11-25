@@ -41,6 +41,8 @@ enum Right {
   RIGHT_USER_SETTINGS_API_KEYS = 3;
   // The right to delete user account.
   RIGHT_USER_DELETE = 4;
+  // The right to delete user account.
+  RIGHT_USER_PURGE = 66;
   // The right to view and edit authorized OAuth clients of the user.
   RIGHT_USER_AUTHORIZED_CLIENTS = 5;
   // The right to list applications the user is a collaborator of.
@@ -179,7 +181,7 @@ enum Right {
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;
 
-  // Next value: 66
+  // Next value: 67
 }
 
 message Rights {

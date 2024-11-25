@@ -32,6 +32,7 @@ var Right_customvalue = map[string]int32{
 	"USER_SETTINGS_BASIC":                2,
 	"USER_SETTINGS_API_KEYS":             3,
 	"USER_DELETE":                        4,
+	"USER_PURGE":                         66,
 	"USER_AUTHORIZED_CLIENTS":            5,
 	"USER_APPLICATIONS_LIST":             6,
 	"USER_APPLICATIONS_CREATE":           7,
