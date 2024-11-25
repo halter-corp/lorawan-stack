@@ -3230,6 +3230,15 @@
       "file": "require.go"
     }
   },
+  "error:pkg/auth/rights:insufficient_rights": {
+    "translations": {
+      "en": "insufficient rights for {entity_type} `{uid}`"
+    },
+    "description": {
+      "package": "pkg/auth/rights",
+      "file": "require.go"
+    }
+  },
   "error:pkg/auth/rights:insufficient_universal_rights": {
     "translations": {
       "en": "insufficient universal rights"

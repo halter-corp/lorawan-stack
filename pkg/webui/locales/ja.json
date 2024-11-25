@@ -2184,6 +2184,7 @@
   "error:pkg/auth/rights:insufficient_client_rights": "クライアント `{uid}` に対して権限が不十分です",
   "error:pkg/auth/rights:insufficient_gateway_rights": "ゲートウェイ `{uid}` に対して権限が不十分です",
   "error:pkg/auth/rights:insufficient_organization_rights": "組織 `{uid}` に対して権限が不十分です",
+  "error:pkg/auth/rights:insufficient_rights": "",
   "error:pkg/auth/rights:insufficient_universal_rights": "普遍的な権利が不十分",
   "error:pkg/auth/rights:insufficient_user_rights": "ユーザ `{uid}` に対して権限が不十分です",
   "error:pkg/auth/rights:no_admin": "管理者がいません",
