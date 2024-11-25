@@ -108,10 +108,10 @@ func userToPB(m *User, fieldMask ...string) (*ttnpb.User, error) {
 		TemporaryPasswordExpiresAt: ttnpb.ProtoTime(m.TemporaryPasswordExpiresAt),
 
 		ConsolePreferences: &ttnpb.UserConsolePreferences{},
-
 		EmailNotificationPreferences: &ttnpb.EmailNotificationPreferences{
 			Types: convertIntSlice[int, ttnpb.NotificationType](m.EmailNotificationPreferences),
 		},
+		UniversalRights: convertIntSlice[int, ttnpb.Right](m.UniversalRights),
 	}
 
 	if len(m.Attributes) > 0 {
@@ -187,6 +187,7 @@ func (s *userStore) CreateUser(ctx context.Context, pb *ttnpb.User) (*ttnpb.User
 		TemporaryPasswordCreatedAt:     cleanTimePtr(ttnpb.StdTime(pb.TemporaryPasswordCreatedAt)),
 		TemporaryPasswordExpiresAt:     cleanTimePtr(ttnpb.StdTime(pb.TemporaryPasswordExpiresAt)),
 		EmailNotificationPreferences:   convertIntSlice[ttnpb.NotificationType, int](pb.EmailNotificationPreferences.GetTypes()), // nolint:lll
+		UniversalRights:                convertIntSlice[ttnpb.Right, int](pb.UniversalRights),
 	}
 
 	if pb.ProfilePicture != nil {
@@ -290,6 +291,8 @@ func (*userStore) selectWithFields(q *bun.SelectQuery, fieldMask store.FieldMask
 				columns = append(columns, "console_preferences")
 			case "email_notification_preferences", "email_notification_preferences.types":
 				columns = append(columns, "email_notification_preferences")
+			case "universal_rights":
+				columns = append(columns, "universal_rights")
 			case "attributes":
 				q = q.Relation("Attributes")
 			case "administrative_contact":
@@ -608,6 +611,7 @@ func (s *userStore) updateUserModel( //nolint:gocyclo
 			updateConsolePreferences = true
 			consolePreferences.Tutorials = pb.ConsolePreferences.GetTutorials()
 		case "universal_rights":
+			model.UniversalRights = convertIntSlice[ttnpb.Right, int](pb.UniversalRights)
 			columns = append(columns, "universal_rights")
 		case "email_notification_preferences", "email_notification_preferences.types":
 			model.EmailNotificationPreferences = convertIntSlice[ttnpb.NotificationType, int](pb.EmailNotificationPreferences.Types) // nolint:lll
