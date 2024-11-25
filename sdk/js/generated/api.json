@@ -42305,7 +42305,7 @@
           "name": "NsMACSettingsProfileRegistry",
           "longName": "NsMACSettingsProfileRegistry",
           "fullName": "ttn.lorawan.v3.NsMACSettingsProfileRegistry",
-          "description": "The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.",
+          "description": "The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.\nEXPERIMENTAL: This service is subject to change.",
           "methods": [
             {
               "name": "Create",

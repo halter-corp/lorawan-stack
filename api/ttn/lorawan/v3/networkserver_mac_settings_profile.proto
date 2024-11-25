@@ -99,6 +99,7 @@ message ListMACSettingsProfilesResponse {
 }
 
 // The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.
+// EXPERIMENTAL: This service is subject to change.
 service NsMACSettingsProfileRegistry {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage MAC settings profiles on The Things Stack Network Server."};
 

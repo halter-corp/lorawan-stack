@@ -9426,6 +9426,7 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 ### <a name="ttn.lorawan.v3.NsMACSettingsProfileRegistry">Service `NsMACSettingsProfileRegistry`</a>
 
 The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.
+EXPERIMENTAL: This service is subject to change.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
