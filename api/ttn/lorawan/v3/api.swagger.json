@@ -29654,8 +29654,14 @@
           "description": "Console preferences contains the user's preferences regarding the behavior of the Console."
         },
         "email_notification_preferences": {
-          "$ref": "#/definitions/v3EmailNotificationPreferences",
-          "title": "next: 27"
+          "$ref": "#/definitions/v3EmailNotificationPreferences"
+        },
+        "universal_rights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3Right"
+          },
+          "description": "Universal rights are capable of restricting the user's interactions with the API, be it an admin or not."
         }
       },
       "description": "User is the message that defines a user on the network."
@@ -29920,8 +29926,14 @@
               "description": "Console preferences contains the user's preferences regarding the behavior of the Console."
             },
             "email_notification_preferences": {
-              "$ref": "#/definitions/v3EmailNotificationPreferences",
-              "title": "next: 27"
+              "$ref": "#/definitions/v3EmailNotificationPreferences"
+            },
+            "universal_rights": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/v3Right"
+              },
+              "description": "Universal rights are capable of restricting the user's interactions with the API, be it an admin or not."
             }
           },
           "description": "User is the message that defines a user on the network."

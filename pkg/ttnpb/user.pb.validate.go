@@ -538,6 +538,8 @@ func (m *User) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "universal_rights":
+
 		default:
 			return UserValidationError{
 				field:  name,

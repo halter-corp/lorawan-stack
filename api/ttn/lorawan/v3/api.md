@@ -11803,7 +11803,8 @@ User is the message that defines a user on the network.
 | `temporary_password_expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `profile_picture` | [`Picture`](#ttn.lorawan.v3.Picture) |  | A profile picture for the user. This information is public and can be seen by any authenticated user in the network. |
 | `console_preferences` | [`UserConsolePreferences`](#ttn.lorawan.v3.UserConsolePreferences) |  | Console preferences contains the user's preferences regarding the behavior of the Console. |
-| `email_notification_preferences` | [`EmailNotificationPreferences`](#ttn.lorawan.v3.EmailNotificationPreferences) |  | next: 27 |
+| `email_notification_preferences` | [`EmailNotificationPreferences`](#ttn.lorawan.v3.EmailNotificationPreferences) |  |  |
+| `universal_rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated | Universal rights are capable of restricting the user's interactions with the API, be it an admin or not. |
 
 #### Field Rules
 

@@ -8169,6 +8169,7 @@
         "state_description",
         "temporary_password_created_at",
         "temporary_password_expires_at",
+        "universal_rights",
         "updated_at"
       ]
     },
@@ -8534,6 +8535,7 @@
         "state_description",
         "temporary_password_created_at",
         "temporary_password_expires_at",
+        "universal_rights",
         "updated_at"
       ]
     },
@@ -8593,6 +8595,7 @@
         "state_description",
         "temporary_password_created_at",
         "temporary_password_expires_at",
+        "universal_rights",
         "updated_at"
       ]
     },
@@ -8655,6 +8658,7 @@
         "temporary_password",
         "temporary_password_created_at",
         "temporary_password_expires_at",
+        "universal_rights",
         "updated_at"
       ]
     },

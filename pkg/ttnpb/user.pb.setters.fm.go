@@ -392,6 +392,15 @@ func (dst *User) SetFields(src *User, paths ...string) error {
 					dst.EmailNotificationPreferences = nil
 				}
 			}
+		case "universal_rights":
+			if len(subs) > 0 {
+				return fmt.Errorf("'universal_rights' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.UniversalRights = src.UniversalRights
+			} else {
+				dst.UniversalRights = nil
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)
