@@ -11026,6 +11026,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_ORGANIZATION_SETTINGS_API_KEYS` | 43 | The right to view and edit organization API keys. |
 | `RIGHT_ORGANIZATION_SETTINGS_MEMBERS` | 44 | The right to view and edit organization members. |
 | `RIGHT_ORGANIZATION_DELETE` | 45 | The right to delete organization. |
+| `RIGHT_ORGANIZATION_PURGE` | 65 | The right to purge organization. |
 | `RIGHT_ORGANIZATION_APPLICATIONS_LIST` | 46 | The right to list the applications the organization is a collaborator of. |
 | `RIGHT_ORGANIZATION_APPLICATIONS_CREATE` | 47 | The right to create an application under the organization. |
 | `RIGHT_ORGANIZATION_GATEWAYS_LIST` | 48 | The right to list the gateways the organization is a collaborator of. |

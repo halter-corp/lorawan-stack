@@ -49990,6 +49990,11 @@
               "description": "The right to delete organization."
             },
             {
+              "name": "RIGHT_ORGANIZATION_PURGE",
+              "number": "65",
+              "description": "The right to purge organization."
+            },
+            {
               "name": "RIGHT_ORGANIZATION_APPLICATIONS_LIST",
               "number": "46",
               "description": "The right to list the applications the organization is a collaborator of."

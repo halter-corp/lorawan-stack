@@ -153,6 +153,8 @@ enum Right {
   RIGHT_ORGANIZATION_SETTINGS_MEMBERS = 44;
   // The right to delete organization.
   RIGHT_ORGANIZATION_DELETE = 45;
+  // The right to purge organization.
+  RIGHT_ORGANIZATION_PURGE = 65;
   // The right to list the applications the organization is a collaborator of.
   RIGHT_ORGANIZATION_APPLICATIONS_LIST = 46;
   // The right to create an application under the organization.
@@ -177,7 +179,7 @@ enum Right {
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;
 
-  // Next value: 65
+  // Next value: 66
 }
 
 message Rights {
