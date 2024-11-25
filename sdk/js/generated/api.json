@@ -42759,6 +42759,74 @@
               "description": ""
             }
           ]
+        },
+        {
+          "name": "NotificationType",
+          "longName": "NotificationType",
+          "fullName": "ttn.lorawan.v3.NotificationType",
+          "description": "",
+          "values": [
+            {
+              "name": "UNKNOWN",
+              "number": "0",
+              "description": ""
+            },
+            {
+              "name": "API_KEY_CREATED",
+              "number": "1",
+              "description": ""
+            },
+            {
+              "name": "API_KEY_CHANGED",
+              "number": "2",
+              "description": ""
+            },
+            {
+              "name": "CLIENT_REQUESTED",
+              "number": "3",
+              "description": ""
+            },
+            {
+              "name": "COLLABORATOR_CHANGED",
+              "number": "4",
+              "description": ""
+            },
+            {
+              "name": "ENTITY_STATE_CHANGED",
+              "number": "5",
+              "description": ""
+            },
+            {
+              "name": "INVITATION",
+              "number": "6",
+              "description": ""
+            },
+            {
+              "name": "LOGIN_TOKEN",
+              "number": "7",
+              "description": ""
+            },
+            {
+              "name": "PASSWORD_CHANGED",
+              "number": "8",
+              "description": ""
+            },
+            {
+              "name": "TEMPORARY_PASSWORD",
+              "number": "9",
+              "description": ""
+            },
+            {
+              "name": "USER_REQUESTED",
+              "number": "10",
+              "description": ""
+            },
+            {
+              "name": "VALIDATE",
+              "number": "11",
+              "description": ""
+            }
+          ]
         }
       ],
       "extensions": [],
@@ -42807,12 +42875,21 @@
               "options": {
                 "validate.rules": [
                   {
-                    "name": "string.min_len",
-                    "value": 1
-                  },
-                  {
-                    "name": "string.max_len",
-                    "value": 100
+                    "name": "string.in",
+                    "value": [
+                      "unknown",
+                      "api_key_created",
+                      "api_key_changed",
+                      "client_requested",
+                      "collaborator_changed",
+                      "entity_state_changed",
+                      "invitation",
+                      "login_token",
+                      "password_changed",
+                      "temporary_password",
+                      "user_requested",
+                      "validate"
+                    ]
                   }
                 ]
               }
@@ -42879,7 +42956,10 @@
               "ismap": false,
               "isoneof": false,
               "oneofdecl": "",
-              "defaultValue": ""
+              "defaultValue": "",
+              "options": {
+                "deprecated": true
+              }
             }
           ]
         },
@@ -43119,7 +43199,7 @@
             },
             {
               "name": "notification_type",
-              "description": "The type of this notification.",
+              "description": "The type of this notification.\nTODO: Replace with type NotificationType in v4 https://github.com/TheThingsNetwork/lorawan-stack/issues/7384.",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -43127,7 +43207,28 @@
               "ismap": false,
               "isoneof": false,
               "oneofdecl": "",
-              "defaultValue": ""
+              "defaultValue": "",
+              "options": {
+                "validate.rules": [
+                  {
+                    "name": "string.in",
+                    "value": [
+                      "unknown",
+                      "api_key_created",
+                      "api_key_changed",
+                      "client_requested",
+                      "collaborator_changed",
+                      "entity_state_changed",
+                      "invitation",
+                      "login_token",
+                      "password_changed",
+                      "temporary_password",
+                      "user_requested",
+                      "validate"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "name": "data",
@@ -43175,7 +43276,10 @@
               "ismap": false,
               "isoneof": false,
               "oneofdecl": "",
-              "defaultValue": ""
+              "defaultValue": "",
+              "options": {
+                "deprecated": true
+              }
             },
             {
               "name": "status",
@@ -52674,6 +52778,42 @@
           ]
         },
         {
+          "name": "EmailNotificationPreferences",
+          "longName": "EmailNotificationPreferences",
+          "fullName": "ttn.lorawan.v3.EmailNotificationPreferences",
+          "description": "EmailNotificationPreferences is the message that defines the types of notifications for which the user wants to receive an email.",
+          "hasExtensions": false,
+          "hasFields": true,
+          "hasOneofs": false,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "types",
+              "description": "",
+              "label": "repeated",
+              "type": "NotificationType",
+              "longType": "NotificationType",
+              "fullType": "ttn.lorawan.v3.NotificationType",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": "",
+              "options": {
+                "validate.rules": [
+                  {
+                    "name": "repeated.unique",
+                    "value": true
+                  },
+                  {
+                    "name": "repeated.items.enum.defined_only",
+                    "value": true
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "GetUserAPIKeyRequest",
           "longName": "GetUserAPIKeyRequest",
           "fullName": "ttn.lorawan.v3.GetUserAPIKeyRequest",
@@ -54020,6 +54160,18 @@
               "type": "UserConsolePreferences",
               "longType": "UserConsolePreferences",
               "fullType": "ttn.lorawan.v3.UserConsolePreferences",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
+            },
+            {
+              "name": "email_notification_preferences",
+              "description": "next: 27",
+              "label": "",
+              "type": "EmailNotificationPreferences",
+              "longType": "EmailNotificationPreferences",
+              "fullType": "ttn.lorawan.v3.EmailNotificationPreferences",
               "ismap": false,
               "isoneof": false,
               "oneofdecl": "",
