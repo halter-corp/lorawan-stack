@@ -751,6 +751,11 @@ func (is *IdentityServer) purgeUser(ctx context.Context, ids *ttnpb.UserIdentifi
 	if !is.IsAdmin(ctx) {
 		return nil, errAdminsPurgeUsers.New()
 	}
+	if err := rights.RequireUser(
+		store.WithSoftDeleted(ctx, false), ids, ttnpb.Right_RIGHT_USER_PURGE,
+	); err != nil {
+		return nil, err
+	}
 	err := is.store.Transact(ctx, func(ctx context.Context, st store.Store) error {
 		// Delete related API keys before purging the user.
 		err := st.DeleteEntityAPIKeys(ctx, ids.GetEntityIdentifiers())
