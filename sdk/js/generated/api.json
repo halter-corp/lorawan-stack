@@ -49730,6 +49730,16 @@
               "description": "The right to edit basic user settings."
             },
             {
+              "name": "RIGHT_USER_LIST",
+              "number": "87",
+              "description": "The right to list users accounts."
+            },
+            {
+              "name": "RIGHT_USER_CREATE",
+              "number": "88",
+              "description": "The right to create an user account."
+            },
+            {
               "name": "RIGHT_USER_SETTINGS_API_KEYS",
               "number": "3",
               "description": "The right to view and edit user API keys."

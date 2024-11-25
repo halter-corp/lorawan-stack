@@ -30,6 +30,8 @@ func (x Right) MarshalJSON() ([]byte, error) {
 var Right_customvalue = map[string]int32{
 	"USER_INFO":                          1,
 	"USER_SETTINGS_BASIC":                2,
+	"USER_LIST":                          87,
+	"USER_CREATE":                        88,
 	"USER_SETTINGS_API_KEYS":             3,
 	"USER_DELETE":                        4,
 	"USER_PURGE":                         66,
