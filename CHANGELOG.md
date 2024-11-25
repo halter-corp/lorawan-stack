@@ -12,6 +12,7 @@ For details about compatibility between different releases, see the **Commitment
 ### Added
 
 - Support user email notification preferences.
+  - This requires a database migration.
 
 ### Changed
 
