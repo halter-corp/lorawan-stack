@@ -345,6 +345,11 @@ func (is *IdentityServer) notifyAdminsInternal(ctx context.Context, req *ttnpb.C
 
 	receiverUserIDs := make([]*ttnpb.UserIdentifiers, len(receivers))
 	for i, receiver := range receivers {
+		// Skips over the possible `support` user.
+		// This user can only be created via the API endpoints defined in the tenant access service.
+		if receiver.Ids.IDString() == "support" {
+			continue
+		}
 		receiverUserIDs[i] = receiver.Ids
 	}
 

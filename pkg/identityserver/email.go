@@ -102,6 +102,13 @@ func (is *IdentityServer) SendNotificationEmailToUsers(ctx context.Context, noti
 	var wg errgroup.Group
 	for _, receiver := range receivers {
 		receiver := receiver // shadow range variable.
+
+		// Skips over the possible `support` user.
+		// This user can only be created via the API endpoints defined in the tenant access service.
+		if receiver.Ids.IDString() == "support" {
+			continue
+		}
+
 		wg.Go(func() error {
 			templateData, err := emailNotification.DataBuilder(
 				ctx,
