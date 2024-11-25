@@ -65,6 +65,7 @@ var Right_customvalue = map[string]int32{
 	"CLIENT_SETTINGS_BASIC":              61,
 	"CLIENT_SETTINGS_COLLABORATORS":      62,
 	"CLIENT_DELETE":                      63,
+	"CLIENT_PURGE":                       68,
 	"GATEWAY_INFO":                       30,
 	"GATEWAY_SETTINGS_BASIC":             31,
 	"GATEWAY_SETTINGS_API_KEYS":          32,

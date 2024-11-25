@@ -49905,6 +49905,11 @@
               "description": "The right to delete a client."
             },
             {
+              "name": "RIGHT_CLIENT_PURGE",
+              "number": "68",
+              "description": "The right to purge a client."
+            },
+            {
               "name": "RIGHT_GATEWAY_INFO",
               "number": "30",
               "description": "The right to view gateway information."

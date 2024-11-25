@@ -114,6 +114,8 @@ enum Right {
   RIGHT_CLIENT_SETTINGS_COLLABORATORS = 62;
   // The right to delete a client.
   RIGHT_CLIENT_DELETE = 63;
+  // The right to purge a client.
+  RIGHT_CLIENT_PURGE = 68;
 
   // The right to view gateway information.
   RIGHT_GATEWAY_INFO = 30;
@@ -183,7 +185,7 @@ enum Right {
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;
 
-  // Next value: 68
+  // Next value: 69
 }
 
 message Rights {

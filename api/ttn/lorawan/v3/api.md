@@ -11009,6 +11009,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_CLIENT_SETTINGS_BASIC` | 61 | The right to edit basic client settings. |
 | `RIGHT_CLIENT_SETTINGS_COLLABORATORS` | 62 | The right to view and edit client collaborators. |
 | `RIGHT_CLIENT_DELETE` | 63 | The right to delete a client. |
+| `RIGHT_CLIENT_PURGE` | 68 | The right to purge a client. |
 | `RIGHT_GATEWAY_INFO` | 30 | The right to view gateway information. |
 | `RIGHT_GATEWAY_SETTINGS_BASIC` | 31 | The right to edit basic gateway settings. |
 | `RIGHT_GATEWAY_SETTINGS_API_KEYS` | 32 | The right to view and edit gateway API keys. |
