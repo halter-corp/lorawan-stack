@@ -10993,6 +10993,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_APPLICATION_SETTINGS_COLLABORATORS` | 18 | The right to view and edit application collaborators. |
 | `RIGHT_APPLICATION_SETTINGS_PACKAGES` | 56 | The right to view and edit application packages and associations. |
 | `RIGHT_APPLICATION_DELETE` | 19 | The right to delete application. |
+| `RIGHT_APPLICATION_PURGE` | 64 | The right to purge application. |
 | `RIGHT_APPLICATION_DEVICES_READ` | 20 | The right to view devices in application. |
 | `RIGHT_APPLICATION_DEVICES_WRITE` | 21 | The right to create devices in application. |
 | `RIGHT_APPLICATION_DEVICES_READ_KEYS` | 22 | The right to view device keys in application. Note that keys may not be stored in a way that supports viewing them. |

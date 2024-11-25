@@ -49825,6 +49825,11 @@
               "description": "The right to delete application."
             },
             {
+              "name": "RIGHT_APPLICATION_PURGE",
+              "number": "64",
+              "description": "The right to purge application."
+            },
+            {
               "name": "RIGHT_APPLICATION_DEVICES_READ",
               "number": "20",
               "description": "The right to view devices in application."
