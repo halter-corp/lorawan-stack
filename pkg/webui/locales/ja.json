@@ -2726,6 +2726,8 @@
   "error:pkg/networkserver:field_value": "フィールド `{field}` の値が無効",
   "error:pkg/networkserver:fixed_paths": "アプリケーションダウンリンクに無効な固定パスが設定されています",
   "error:pkg/networkserver:join_server_not_found": "ジョインサーバーが見つかりません",
+  "error:pkg/networkserver:mac_settings_profile_already_exists": "",
+  "error:pkg/networkserver:mac_settings_profile_not_found": "",
   "error:pkg/networkserver:no_downlink": "ダウンリンクが送信されません",
   "error:pkg/networkserver:no_downlink_path": "ダウンリンクパスが利用できません",
   "error:pkg/networkserver:outdated_data": "データが古いです",

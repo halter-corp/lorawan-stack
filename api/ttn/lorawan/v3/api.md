@@ -267,6 +267,7 @@
   - [Message `MACParameters`](#ttn.lorawan.v3.MACParameters)
   - [Message `MACParameters.Channel`](#ttn.lorawan.v3.MACParameters.Channel)
   - [Message `MACSettings`](#ttn.lorawan.v3.MACSettings)
+  - [Message `MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile)
   - [Message `MACState`](#ttn.lorawan.v3.MACState)
   - [Message `MACState.DataRateRange`](#ttn.lorawan.v3.MACState.DataRateRange)
   - [Message `MACState.DataRateRanges`](#ttn.lorawan.v3.MACState.DataRateRanges)
@@ -417,6 +418,7 @@
   - [Message `GatewayIdentifiers`](#ttn.lorawan.v3.GatewayIdentifiers)
   - [Message `GatewayIdentifiersList`](#ttn.lorawan.v3.GatewayIdentifiersList)
   - [Message `LoRaAllianceProfileIdentifiers`](#ttn.lorawan.v3.LoRaAllianceProfileIdentifiers)
+  - [Message `MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers)
   - [Message `NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers)
   - [Message `OrganizationIdentifiers`](#ttn.lorawan.v3.OrganizationIdentifiers)
   - [Message `OrganizationOrUserIdentifiers`](#ttn.lorawan.v3.OrganizationOrUserIdentifiers)
@@ -637,6 +639,18 @@
   - [Service `Ns`](#ttn.lorawan.v3.Ns)
   - [Service `NsEndDeviceBatchRegistry`](#ttn.lorawan.v3.NsEndDeviceBatchRegistry)
   - [Service `NsEndDeviceRegistry`](#ttn.lorawan.v3.NsEndDeviceRegistry)
+- [File `ttn/lorawan/v3/networkserver_mac_settings_profile.proto`](#ttn/lorawan/v3/networkserver_mac_settings_profile.proto)
+  - [Message `CreateMACSettingsProfileRequest`](#ttn.lorawan.v3.CreateMACSettingsProfileRequest)
+  - [Message `CreateMACSettingsProfileResponse`](#ttn.lorawan.v3.CreateMACSettingsProfileResponse)
+  - [Message `DeleteMACSettingsProfileRequest`](#ttn.lorawan.v3.DeleteMACSettingsProfileRequest)
+  - [Message `DeleteMACSettingsProfileResponse`](#ttn.lorawan.v3.DeleteMACSettingsProfileResponse)
+  - [Message `GetMACSettingsProfileRequest`](#ttn.lorawan.v3.GetMACSettingsProfileRequest)
+  - [Message `GetMACSettingsProfileResponse`](#ttn.lorawan.v3.GetMACSettingsProfileResponse)
+  - [Message `ListMACSettingsProfilesRequest`](#ttn.lorawan.v3.ListMACSettingsProfilesRequest)
+  - [Message `ListMACSettingsProfilesResponse`](#ttn.lorawan.v3.ListMACSettingsProfilesResponse)
+  - [Message `UpdateMACSettingsProfileRequest`](#ttn.lorawan.v3.UpdateMACSettingsProfileRequest)
+  - [Message `UpdateMACSettingsProfileResponse`](#ttn.lorawan.v3.UpdateMACSettingsProfileResponse)
+  - [Service `NsMACSettingsProfileRegistry`](#ttn.lorawan.v3.NsMACSettingsProfileRegistry)
 - [File `ttn/lorawan/v3/networkserver_relay.proto`](#ttn/lorawan/v3/networkserver_relay.proto)
   - [Message `CreateRelayRequest`](#ttn.lorawan.v3.CreateRelayRequest)
   - [Message `CreateRelayResponse`](#ttn.lorawan.v3.CreateRelayResponse)
@@ -4338,6 +4352,20 @@ This is used internally by the Network Server.
 | ----- | ----------- |
 | `factory_preset_frequencies` | <p>`repeated.max_items`: `96`</p> |
 
+### <a name="ttn.lorawan.v3.MACSettingsProfile">Message `MACSettingsProfile`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | Profile identifiers. |
+| `mac_settings` | [`MACSettings`](#ttn.lorawan.v3.MACSettings) |  | MAC settings. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `ids` | <p>`message.required`: `true`</p> |
+| `mac_settings` | <p>`message.required`: `true`</p> |
+
 ### <a name="ttn.lorawan.v3.MACState">Message `MACState`</a>
 
 MACState represents the state of MAC layer of the device.
@@ -6345,6 +6373,20 @@ EntityIdentifiers contains one of the possible entity identifiers.
 | ----- | ---- | ----- | ----------- |
 | `vendor_id` | [`uint32`](#uint32) |  | VendorID managed by the LoRa Alliance, as defined in TR005. |
 | `vendor_profile_id` | [`uint32`](#uint32) |  | ID of the LoRaWAN end device profile assigned by the vendor. |
+
+### <a name="ttn.lorawan.v3.MACSettingsProfileIdentifiers">Message `MACSettingsProfileIdentifiers`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | Application IDs. |
+| `profile_id` | [`string`](#string) |  | Profile ID. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `application_ids` | <p>`message.required`: `true`</p> |
+| `profile_id` | <p>`string.max_len`: `36`</p><p>`string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p> |
 
 ### <a name="ttn.lorawan.v3.NetworkIdentifiers">Message `NetworkIdentifiers`</a>
 
@@ -9264,6 +9306,145 @@ The NsEndDeviceRegistry service allows clients to manage their end devices on th
 | `Set` | `POST` | `/api/v3/ns/applications/{end_device.ids.application_ids.application_id}/devices` | `*` |
 | `ResetFactoryDefaults` | `PATCH` | `/api/v3/ns/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}` | `*` |
 | `Delete` | `DELETE` | `/api/v3/ns/applications/{application_ids.application_id}/devices/{device_id}` |  |
+
+## <a name="ttn/lorawan/v3/networkserver_mac_settings_profile.proto">File `ttn/lorawan/v3/networkserver_mac_settings_profile.proto`</a>
+
+### <a name="ttn.lorawan.v3.CreateMACSettingsProfileRequest">Message `CreateMACSettingsProfileRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile to create. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.CreateMACSettingsProfileResponse">Message `CreateMACSettingsProfileResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DeleteMACSettingsProfileRequest">Message `DeleteMACSettingsProfileRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | The identifiers of the MAC settings profile. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile_ids` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.DeleteMACSettingsProfileResponse">Message `DeleteMACSettingsProfileResponse`</a>
+
+### <a name="ttn.lorawan.v3.GetMACSettingsProfileRequest">Message `GetMACSettingsProfileRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | The identifiers of the MAC settings profile. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the fields that should be returned. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile_ids` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.GetMACSettingsProfileResponse">Message `GetMACSettingsProfileResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.ListMACSettingsProfilesRequest">Message `ListMACSettingsProfilesRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  | The identifiers of the application. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the fields that should be returned. |
+| `order` | [`string`](#string) |  | Order the results by this field path (must be present in the field mask). Default ordering is by ID. Prepend with a minus (-) to reverse the order. |
+| `limit` | [`uint32`](#uint32) |  | Limit the number of results per page. |
+| `page` | [`uint32`](#uint32) |  | Page number for pagination. 0 is interpreted as 1. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `application_ids` | <p>`message.required`: `true`</p> |
+| `order` | <p>`string.in`: `[ ids.profile_id -ids.profile_id]`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
+
+### <a name="ttn.lorawan.v3.ListMACSettingsProfilesResponse">Message `ListMACSettingsProfilesResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profiles` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) | repeated | The MAC settings profiles. |
+
+### <a name="ttn.lorawan.v3.UpdateMACSettingsProfileRequest">Message `UpdateMACSettingsProfileRequest`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | The identifiers of the MAC settings profile. |
+| `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile to update. |
+| `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  | The names of the fields that should be updated. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile_ids` | <p>`message.required`: `true`</p> |
+| `mac_settings_profile` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.UpdateMACSettingsProfileResponse">Message `UpdateMACSettingsProfileResponse`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `mac_settings_profile` | [`MACSettingsProfile`](#ttn.lorawan.v3.MACSettingsProfile) |  | The MAC settings profile. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `mac_settings_profile` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.NsMACSettingsProfileRegistry">Service `NsMACSettingsProfileRegistry`</a>
+
+The NsMACSettingsProfileRegistry service allows clients to manage MAC settings profiles on the Network Server.
+EXPERIMENTAL: This service is subject to change.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| `Create` | [`CreateMACSettingsProfileRequest`](#ttn.lorawan.v3.CreateMACSettingsProfileRequest) | [`CreateMACSettingsProfileResponse`](#ttn.lorawan.v3.CreateMACSettingsProfileResponse) | Create creates a new MAC settings profile. |
+| `Get` | [`GetMACSettingsProfileRequest`](#ttn.lorawan.v3.GetMACSettingsProfileRequest) | [`GetMACSettingsProfileResponse`](#ttn.lorawan.v3.GetMACSettingsProfileResponse) | Get returns the MAC settings profile that matches the given identifiers. |
+| `Update` | [`UpdateMACSettingsProfileRequest`](#ttn.lorawan.v3.UpdateMACSettingsProfileRequest) | [`UpdateMACSettingsProfileResponse`](#ttn.lorawan.v3.UpdateMACSettingsProfileResponse) | Update updates the MAC settings profile that matches the given identifiers. |
+| `Delete` | [`DeleteMACSettingsProfileRequest`](#ttn.lorawan.v3.DeleteMACSettingsProfileRequest) | [`DeleteMACSettingsProfileResponse`](#ttn.lorawan.v3.DeleteMACSettingsProfileResponse) | Delete deletes the MAC settings profile that matches the given identifiers. |
+| `List` | [`ListMACSettingsProfilesRequest`](#ttn.lorawan.v3.ListMACSettingsProfilesRequest) | [`ListMACSettingsProfilesResponse`](#ttn.lorawan.v3.ListMACSettingsProfilesResponse) | List lists the MAC settings profiles. |
+
+#### HTTP bindings
+
+| Method Name | Method | Pattern | Body |
+| ----------- | ------ | ------- | ---- |
+| `Create` | `POST` | `/api/v3/ns/applications/{mac_settings_profile.ids.application_ids.application_id}/mac_settings_profiles` | `*` |
+| `Get` | `GET` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` |  |
+| `Update` | `PUT` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` | `*` |
+| `Delete` | `DELETE` | `/api/v3/ns/applications/{mac_settings_profile_ids.application_ids.application_id}/mac_settings_profiles/{mac_settings_profile_ids.profile_id}` |  |
+| `List` | `GET` | `/api/v3/ns/applications/{application_ids.application_id}/mac_settings_profiles` |  |
 
 ## <a name="ttn/lorawan/v3/networkserver_relay.proto">File `ttn/lorawan/v3/networkserver_relay.proto`</a>
 

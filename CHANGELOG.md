@@ -13,6 +13,8 @@ For details about compatibility between different releases, see the **Commitment
 
 - Support user email notification preferences.
   - This requires a database migration.
+- Support for managing MAC settings profiles.
+  - This feature is experimental and subject to change.
 
 ### Changed
 

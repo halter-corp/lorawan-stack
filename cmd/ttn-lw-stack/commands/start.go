@@ -342,6 +342,14 @@ var startCommand = &cobra.Command{
 			config.NS.ScheduledDownlinkMatcher = &nsredis.ScheduledDownlinkMatcher{
 				Redis: redis.New(config.Cache.Redis.WithNamespace("ns", "scheduled-downlinks")),
 			}
+			macSettingsProfiles := &nsredis.MACSettingsProfileRegistry{
+				Redis:   redis.New(config.Redis.WithNamespace("ns", "mac-settings-profiles")),
+				LockTTL: defaultLockTTL,
+			}
+			if err := macSettingsProfiles.Init(ctx); err != nil {
+				return shared.ErrInitializeNetworkServer.WithCause(err)
+			}
+			config.NS.MACSettingsProfileRegistry = macSettingsProfiles
 			ns, err := networkserver.New(c, &config.NS)
 			if err != nil {
 				return shared.ErrInitializeNetworkServer.WithCause(err)
