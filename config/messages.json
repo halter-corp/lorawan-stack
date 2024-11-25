@@ -593,6 +593,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_APPLICATION_PURGE": {
+    "translations": {
+      "en": "purge application"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_APPLICATION_SETTINGS_API_KEYS": {
     "translations": {
       "en": "view and edit application API keys"
@@ -683,6 +692,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_CLIENT_PURGE": {
+    "translations": {
+      "en": "purge OAuth client"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_CLIENT_SETTINGS_BASIC": {
     "translations": {
       "en": "edit OAuth client basic settings"
@@ -740,6 +758,15 @@
   "enum:RIGHT_GATEWAY_LOCATION_READ": {
     "translations": {
       "en": "view gateway location"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
+  "enum:RIGHT_GATEWAY_PURGE": {
+    "translations": {
+      "en": "purge gateway"
     },
     "description": {
       "package": "pkg/ttnpb",
@@ -908,6 +935,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_ORGANIZATION_PURGE": {
+    "translations": {
+      "en": "purge organization"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_ORGANIZATION_SETTINGS_API_KEYS": {
     "translations": {
       "en": "view and edit organization API keys"
@@ -998,6 +1034,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_USER_CREATE": {
+    "translations": {
+      "en": "create user account"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_USER_DELETE": {
     "translations": {
       "en": "delete user account"
@@ -1034,6 +1079,15 @@
       "file": "i18n.go"
     }
   },
+  "enum:RIGHT_USER_LIST": {
+    "translations": {
+      "en": "list user accounts"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
   "enum:RIGHT_USER_NOTIFICATIONS_READ": {
     "translations": {
       "en": "read user notifications"
@@ -1055,6 +1109,15 @@
   "enum:RIGHT_USER_ORGANIZATIONS_LIST": {
     "translations": {
       "en": "list organizations the user is a member of"
+    },
+    "description": {
+      "package": "pkg/ttnpb",
+      "file": "i18n.go"
+    }
+  },
+  "enum:RIGHT_USER_PURGE": {
+    "translations": {
+      "en": "purge user account"
     },
     "description": {
       "package": "pkg/ttnpb",
