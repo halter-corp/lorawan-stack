@@ -182,10 +182,29 @@ enum Right {
   // Note that this is not prefixed with "USER_"; it is not a right on the user entity.
   RIGHT_SEND_INVITES = 54;
 
+  reserved 69;
+  reserved 70;
+  reserved 71;
+  reserved 72;
+  reserved 73;
+  reserved 74;
+  reserved 75;
+  reserved 76;
+  reserved 77;
+  reserved 78;
+  reserved 79;
+  reserved 80;
+  reserved 81;
+  reserved 82;
+  reserved 83;
+  reserved 84;
+  reserved 85;
+  reserved 86;
+
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;
 
-  // Next value: 69
+  // Next value: 87
 }
 
 message Rights {
