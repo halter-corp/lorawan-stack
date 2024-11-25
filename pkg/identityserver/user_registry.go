@@ -179,6 +179,20 @@ func (is *IdentityServer) createUser(ctx context.Context, req *ttnpb.CreateUserR
 	createdByAdmin := is.IsAdmin(ctx)
 	config := is.configFromContext(ctx)
 
+	if createdByAdmin {
+		authInfo, err := is.authInfo(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !ttnpb.RightsFrom(authInfo.GetRights()...).IncludesAll(ttnpb.Right_RIGHT_USER_CREATE) {
+			return nil, rights.ErrInsufficientRights.WithAttributes(
+				"uid", req.IDString(),
+				"entity_type", "user",
+				"missing", ttnpb.Right_RIGHT_ALL.String(),
+			)
+		}
+	}
+
 	if err = blocklist.Check(ctx, req.User.GetIds().GetUserId()); err != nil {
 		return nil, err
 	}
@@ -338,6 +352,18 @@ func (is *IdentityServer) listUsers(ctx context.Context, req *ttnpb.ListUsersReq
 	if err = is.RequireAdmin(ctx); err != nil {
 		return nil, err
 	}
+
+	authInfo, err := is.authInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ttnpb.RightsFrom(authInfo.GetRights()...).IncludesAll(ttnpb.Right_RIGHT_USER_LIST) {
+		return nil, rights.ErrInsufficientRights.WithAttributes(
+			"entity_type", "user",
+			"missing", ttnpb.Right_RIGHT_ALL.String(),
+		)
+	}
+
 	contactInfoInPath := ttnpb.HasAnyField(req.FieldMask.GetPaths(), "contact_info")
 	if contactInfoInPath {
 		req.FieldMask.Paths = ttnpb.ExcludeFields(req.FieldMask.Paths, "contact_info")
