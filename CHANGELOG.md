@@ -20,6 +20,7 @@ For details about compatibility between different releases, see the **Commitment
 ### Fixed
 
 - Fix OAuth client authorizations delete request in the Console.
+- Consecutive disconnect/reconnect messages in the Live Data view in the Console.
 
 ### Security
 
