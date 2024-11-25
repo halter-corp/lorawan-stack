@@ -70,6 +70,7 @@ var Right_customvalue = map[string]int32{
 	"GATEWAY_SETTINGS_API_KEYS":          32,
 	"GATEWAY_SETTINGS_COLLABORATORS":     33,
 	"GATEWAY_DELETE":                     34,
+	"GATEWAY_PURGE":                      67,
 	"GATEWAY_TRAFFIC_READ":               35,
 	"GATEWAY_TRAFFIC_DOWN_WRITE":         36,
 	"GATEWAY_LINK":                       37,

@@ -49930,6 +49930,11 @@
               "description": "The right to delete gateway."
             },
             {
+              "name": "RIGHT_GATEWAY_PURGE",
+              "number": "67",
+              "description": "The right to purge gateway."
+            },
+            {
               "name": "RIGHT_GATEWAY_TRAFFIC_READ",
               "number": "35",
               "description": "The right to read gateway traffic."

@@ -11014,6 +11014,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_GATEWAY_SETTINGS_API_KEYS` | 32 | The right to view and edit gateway API keys. |
 | `RIGHT_GATEWAY_SETTINGS_COLLABORATORS` | 33 | The right to view and edit gateway collaborators. |
 | `RIGHT_GATEWAY_DELETE` | 34 | The right to delete gateway. |
+| `RIGHT_GATEWAY_PURGE` | 67 | The right to purge gateway. |
 | `RIGHT_GATEWAY_TRAFFIC_READ` | 35 | The right to read gateway traffic. |
 | `RIGHT_GATEWAY_TRAFFIC_DOWN_WRITE` | 36 | The right to write downlink gateway traffic. |
 | `RIGHT_GATEWAY_LINK` | 37 | The right to link as Gateway to a Gateway Server for traffic exchange, i.e. write uplink and read downlink (API keys only) This right is typically only given to a gateway. This right implies RIGHT_GATEWAY_INFO. |
