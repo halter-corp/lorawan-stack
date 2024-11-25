@@ -37,17 +37,28 @@ func (m *AuthInfoResponse) GetRights() []Right {
 	if m == nil {
 		return nil
 	}
+
+	var rights []Right
 	switch accessMethod := m.GetAccessMethod().(type) {
 	case *AuthInfoResponse_ApiKey:
-		return accessMethod.ApiKey.GetApiKey().GetRights()
+		rights = accessMethod.ApiKey.GetApiKey().GetRights()
 	case *AuthInfoResponse_OauthAccessToken:
-		return accessMethod.OauthAccessToken.GetRights()
+		rights = accessMethod.OauthAccessToken.GetRights()
 	case *AuthInfoResponse_UserSession:
-		return RightsFrom(Right_RIGHT_ALL).Implied().GetRights()
+		rights = RightsFrom(Right_RIGHT_ALL).Implied().GetRights()
 	case *AuthInfoResponse_GatewayToken_:
-		return accessMethod.GatewayToken.GetRights()
+		rights = accessMethod.GatewayToken.GetRights()
 	}
-	return nil
+
+	// Limit standard rights with the UniversalRights. There are two possibilities here.
+	//
+	// 1. User is an admin which has all rights and therefore the conditional is moot.
+	// 2. User has its own set of universal rights, which should limit their ability to perform operations.
+	if universalRights := m.GetUniversalRights(); universalRights != nil {
+		return RightsFrom(rights...).Intersect(universalRights).GetRights()
+	}
+
+	return rights
 }
 
 // GetOrganizationOrUserIdentifiers returns the OrganizationOrUserIdentifiers for the used access method.
