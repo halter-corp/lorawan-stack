@@ -1,8 +1,6 @@
 module go.thethings.network/lorawan-stack/tools
 
-go 1.22.7
-
-toolchain go1.22.9
+go 1.23.3
 
 replace go.thethings.network/lorawan-stack/v3 => ../
 
@@ -65,6 +63,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.3 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
 	github.com/blevesearch/bleve v1.0.14 // indirect
@@ -78,6 +77,7 @@ require (
 	github.com/blevesearch/zap/v14 v14.0.5 // indirect
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
 	github.com/bluele/gcache v0.0.2 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.12.3 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hellofresh/health-go/v5 v5.5.3 // indirect
@@ -148,6 +148,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mileusna/useragent v1.3.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -196,13 +197,14 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/throttled/throttled/v2 v2.12.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun v1.2.5 // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.5 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.2.5 // indirect
+	github.com/uptrace/bun v1.2.6 // indirect
+	github.com/uptrace/bun/dialect/pgdialect v1.2.6 // indirect
+	github.com/uptrace/bun/driver/pgdriver v1.2.6 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/weppos/publicsuffix-go v0.30.0 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240816141633-0a40785b4f41 // indirect
 	github.com/zmap/zcrypto v0.0.0-20230310154051-c8b263fd8300 // indirect
 	github.com/zmap/zlint/v3 v3.5.0 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect
@@ -247,8 +249,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/api v0.191.0 // indirect
 	google.golang.org/genproto v0.0.0-20240812133136-8ffd90a71988 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/grpc v1.68.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
