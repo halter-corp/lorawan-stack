@@ -87,6 +87,7 @@ var UserFieldPathsNested = []string{
 	"temporary_password",
 	"temporary_password_created_at",
 	"temporary_password_expires_at",
+	"universal_rights",
 	"updated_at",
 }
 
@@ -112,6 +113,7 @@ var UserFieldPathsTopLevel = []string{
 	"temporary_password",
 	"temporary_password_created_at",
 	"temporary_password_expires_at",
+	"universal_rights",
 	"updated_at",
 }
 var UsersFieldPathsNested = []string{
@@ -198,6 +200,7 @@ var CreateUserRequestFieldPathsNested = []string{
 	"user.temporary_password",
 	"user.temporary_password_created_at",
 	"user.temporary_password_expires_at",
+	"user.universal_rights",
 	"user.updated_at",
 }
 
@@ -256,6 +259,7 @@ var UpdateUserRequestFieldPathsNested = []string{
 	"user.temporary_password",
 	"user.temporary_password_created_at",
 	"user.temporary_password_expires_at",
+	"user.universal_rights",
 	"user.updated_at",
 }
 

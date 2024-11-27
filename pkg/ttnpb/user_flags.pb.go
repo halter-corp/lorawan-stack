@@ -101,6 +101,7 @@ func AddSelectFlagsForUser(flags *pflag.FlagSet, prefix string, hidden bool) {
 	AddSelectFlagsForUserConsolePreferences(flags, flagsplugin.Prefix("console-preferences", prefix), hidden)
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("email-notification-preferences", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("email-notification-preferences", prefix), true), flagsplugin.WithHidden(hidden)))
 	// NOTE: email_notification_preferences (EmailNotificationPreferences) does not seem to have select flags.
+	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("universal-rights", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("universal-rights", prefix), false), flagsplugin.WithHidden(hidden)))
 }
 
 // SelectFromFlags outputs the fieldmask paths forUser message from select flags.
@@ -207,6 +208,11 @@ func PathsFromSelectFlagsForUser(flags *pflag.FlagSet, prefix string) (paths []s
 		paths = append(paths, flagsplugin.Prefix("email_notification_preferences", prefix))
 	}
 	// NOTE: email_notification_preferences (EmailNotificationPreferences) does not seem to have select flags.
+	if val, selected, err := flagsplugin.GetBool(flags, flagsplugin.Prefix("universal_rights", prefix)); err != nil {
+		return nil, err
+	} else if selected && val {
+		paths = append(paths, flagsplugin.Prefix("universal_rights", prefix))
+	}
 	return paths, nil
 }
 
@@ -228,6 +234,7 @@ func AddSetFlagsForUser(flags *pflag.FlagSet, prefix string, hidden bool) {
 	// FIXME: Skipping ProfilePicture because it does not seem to implement AddSetFlags.
 	AddSetFlagsForUserConsolePreferences(flags, flagsplugin.Prefix("console-preferences", prefix), hidden)
 	// FIXME: Skipping EmailNotificationPreferences because it does not seem to implement AddSetFlags.
+	flags.AddFlag(flagsplugin.NewStringSliceFlag(flagsplugin.Prefix("universal-rights", prefix), flagsplugin.EnumValueDesc(Right_value), flagsplugin.WithHidden(hidden)))
 }
 
 // SetFromFlags sets the User message from flags.
@@ -325,6 +332,19 @@ func (m *User) SetFromFlags(flags *pflag.FlagSet, prefix string) (paths []string
 		}
 	}
 	// FIXME: Skipping EmailNotificationPreferences because it does not seem to implement AddSetFlags.
+	if val, changed, err := flagsplugin.GetStringSlice(flags, flagsplugin.Prefix("universal_rights", prefix)); err != nil {
+		return nil, err
+	} else if changed {
+		m.UniversalRights = make([]Right, len(val))
+		for i, v := range val {
+			enumValue, err := flagsplugin.SetEnumString(v, Right_value)
+			if err != nil {
+				return nil, err
+			}
+			m.UniversalRights[i] = Right(enumValue)
+		}
+		paths = append(paths, flagsplugin.Prefix("universal_rights", prefix))
+	}
 	return paths, nil
 }
 

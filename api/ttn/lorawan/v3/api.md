@@ -10974,8 +10974,11 @@ Right is the enum that defines all the different rights to do something in the n
 | `right_invalid` | 0 |  |
 | `RIGHT_USER_INFO` | 1 | The right to view user information. |
 | `RIGHT_USER_SETTINGS_BASIC` | 2 | The right to edit basic user settings. |
+| `RIGHT_USER_LIST` | 87 | The right to list users accounts. |
+| `RIGHT_USER_CREATE` | 88 | The right to create an user account. |
 | `RIGHT_USER_SETTINGS_API_KEYS` | 3 | The right to view and edit user API keys. |
 | `RIGHT_USER_DELETE` | 4 | The right to delete user account. |
+| `RIGHT_USER_PURGE` | 66 | The right to delete user account. |
 | `RIGHT_USER_AUTHORIZED_CLIENTS` | 5 | The right to view and edit authorized OAuth clients of the user. |
 | `RIGHT_USER_APPLICATIONS_LIST` | 6 | The right to list applications the user is a collaborator of. |
 | `RIGHT_USER_APPLICATIONS_CREATE` | 7 | The right to create an application under the user account. |
@@ -10993,6 +10996,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_APPLICATION_SETTINGS_COLLABORATORS` | 18 | The right to view and edit application collaborators. |
 | `RIGHT_APPLICATION_SETTINGS_PACKAGES` | 56 | The right to view and edit application packages and associations. |
 | `RIGHT_APPLICATION_DELETE` | 19 | The right to delete application. |
+| `RIGHT_APPLICATION_PURGE` | 64 | The right to purge application. |
 | `RIGHT_APPLICATION_DEVICES_READ` | 20 | The right to view devices in application. |
 | `RIGHT_APPLICATION_DEVICES_WRITE` | 21 | The right to create devices in application. |
 | `RIGHT_APPLICATION_DEVICES_READ_KEYS` | 22 | The right to view device keys in application. Note that keys may not be stored in a way that supports viewing them. |
@@ -11007,11 +11011,13 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_CLIENT_SETTINGS_BASIC` | 61 | The right to edit basic client settings. |
 | `RIGHT_CLIENT_SETTINGS_COLLABORATORS` | 62 | The right to view and edit client collaborators. |
 | `RIGHT_CLIENT_DELETE` | 63 | The right to delete a client. |
+| `RIGHT_CLIENT_PURGE` | 68 | The right to purge a client. |
 | `RIGHT_GATEWAY_INFO` | 30 | The right to view gateway information. |
 | `RIGHT_GATEWAY_SETTINGS_BASIC` | 31 | The right to edit basic gateway settings. |
 | `RIGHT_GATEWAY_SETTINGS_API_KEYS` | 32 | The right to view and edit gateway API keys. |
 | `RIGHT_GATEWAY_SETTINGS_COLLABORATORS` | 33 | The right to view and edit gateway collaborators. |
 | `RIGHT_GATEWAY_DELETE` | 34 | The right to delete gateway. |
+| `RIGHT_GATEWAY_PURGE` | 67 | The right to purge gateway. |
 | `RIGHT_GATEWAY_TRAFFIC_READ` | 35 | The right to read gateway traffic. |
 | `RIGHT_GATEWAY_TRAFFIC_DOWN_WRITE` | 36 | The right to write downlink gateway traffic. |
 | `RIGHT_GATEWAY_LINK` | 37 | The right to link as Gateway to a Gateway Server for traffic exchange, i.e. write uplink and read downlink (API keys only) This right is typically only given to a gateway. This right implies RIGHT_GATEWAY_INFO. |
@@ -11025,6 +11031,7 @@ Right is the enum that defines all the different rights to do something in the n
 | `RIGHT_ORGANIZATION_SETTINGS_API_KEYS` | 43 | The right to view and edit organization API keys. |
 | `RIGHT_ORGANIZATION_SETTINGS_MEMBERS` | 44 | The right to view and edit organization members. |
 | `RIGHT_ORGANIZATION_DELETE` | 45 | The right to delete organization. |
+| `RIGHT_ORGANIZATION_PURGE` | 65 | The right to purge organization. |
 | `RIGHT_ORGANIZATION_APPLICATIONS_LIST` | 46 | The right to list the applications the organization is a collaborator of. |
 | `RIGHT_ORGANIZATION_APPLICATIONS_CREATE` | 47 | The right to create an application under the organization. |
 | `RIGHT_ORGANIZATION_GATEWAYS_LIST` | 48 | The right to list the gateways the organization is a collaborator of. |
@@ -11803,7 +11810,8 @@ User is the message that defines a user on the network.
 | `temporary_password_expires_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  |  |
 | `profile_picture` | [`Picture`](#ttn.lorawan.v3.Picture) |  | A profile picture for the user. This information is public and can be seen by any authenticated user in the network. |
 | `console_preferences` | [`UserConsolePreferences`](#ttn.lorawan.v3.UserConsolePreferences) |  | Console preferences contains the user's preferences regarding the behavior of the Console. |
-| `email_notification_preferences` | [`EmailNotificationPreferences`](#ttn.lorawan.v3.EmailNotificationPreferences) |  | next: 27 |
+| `email_notification_preferences` | [`EmailNotificationPreferences`](#ttn.lorawan.v3.EmailNotificationPreferences) |  |  |
+| `universal_rights` | [`Right`](#ttn.lorawan.v3.Right) | repeated | Universal rights are capable of restricting the user's interactions with the API, be it an admin or not. |
 
 #### Field Rules
 

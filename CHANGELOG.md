@@ -16,6 +16,10 @@ For details about compatibility between different releases, see the **Commitment
 - Support for managing MAC settings profiles.
   - This feature is experimental and subject to change.
 - Support pausing webhook in the edit webhook view in console
+- Add more specific rights for user operations.
+  - The rights added were for listing and creating rights.
+  - Admin validation associated with these operations remains.
+- Add purge rights for application, organizations, Oauth clients, gateways and user operations.
 
 ### Changed
 

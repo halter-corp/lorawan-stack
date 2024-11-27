@@ -49730,6 +49730,16 @@
               "description": "The right to edit basic user settings."
             },
             {
+              "name": "RIGHT_USER_LIST",
+              "number": "87",
+              "description": "The right to list users accounts."
+            },
+            {
+              "name": "RIGHT_USER_CREATE",
+              "number": "88",
+              "description": "The right to create an user account."
+            },
+            {
               "name": "RIGHT_USER_SETTINGS_API_KEYS",
               "number": "3",
               "description": "The right to view and edit user API keys."
@@ -49737,6 +49747,11 @@
             {
               "name": "RIGHT_USER_DELETE",
               "number": "4",
+              "description": "The right to delete user account."
+            },
+            {
+              "name": "RIGHT_USER_PURGE",
+              "number": "66",
               "description": "The right to delete user account."
             },
             {
@@ -49825,6 +49840,11 @@
               "description": "The right to delete application."
             },
             {
+              "name": "RIGHT_APPLICATION_PURGE",
+              "number": "64",
+              "description": "The right to purge application."
+            },
+            {
               "name": "RIGHT_APPLICATION_DEVICES_READ",
               "number": "20",
               "description": "The right to view devices in application."
@@ -49895,6 +49915,11 @@
               "description": "The right to delete a client."
             },
             {
+              "name": "RIGHT_CLIENT_PURGE",
+              "number": "68",
+              "description": "The right to purge a client."
+            },
+            {
               "name": "RIGHT_GATEWAY_INFO",
               "number": "30",
               "description": "The right to view gateway information."
@@ -49918,6 +49943,11 @@
               "name": "RIGHT_GATEWAY_DELETE",
               "number": "34",
               "description": "The right to delete gateway."
+            },
+            {
+              "name": "RIGHT_GATEWAY_PURGE",
+              "number": "67",
+              "description": "The right to purge gateway."
             },
             {
               "name": "RIGHT_GATEWAY_TRAFFIC_READ",
@@ -49983,6 +50013,11 @@
               "name": "RIGHT_ORGANIZATION_DELETE",
               "number": "45",
               "description": "The right to delete organization."
+            },
+            {
+              "name": "RIGHT_ORGANIZATION_PURGE",
+              "number": "65",
+              "description": "The right to purge organization."
             },
             {
               "name": "RIGHT_ORGANIZATION_APPLICATIONS_LIST",
@@ -54813,11 +54848,23 @@
             },
             {
               "name": "email_notification_preferences",
-              "description": "next: 27",
+              "description": "",
               "label": "",
               "type": "EmailNotificationPreferences",
               "longType": "EmailNotificationPreferences",
               "fullType": "ttn.lorawan.v3.EmailNotificationPreferences",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
+            },
+            {
+              "name": "universal_rights",
+              "description": "Universal rights are capable of restricting the user's interactions with the API, be it an admin or not.",
+              "label": "repeated",
+              "type": "Right",
+              "longType": "Right",
+              "fullType": "ttn.lorawan.v3.Right",
               "ismap": false,
               "isoneof": false,
               "oneofdecl": "",

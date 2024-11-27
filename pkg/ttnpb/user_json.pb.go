@@ -598,6 +598,17 @@ func (x *User) MarshalProtoJSON(s *jsonplugin.MarshalState) {
 		s.WriteObjectField("email_notification_preferences")
 		x.EmailNotificationPreferences.MarshalProtoJSON(s.WithField("email_notification_preferences"))
 	}
+	if len(x.UniversalRights) > 0 || s.HasField("universal_rights") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("universal_rights")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.UniversalRights {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s)
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -781,6 +792,17 @@ func (x *User) UnmarshalProtoJSON(s *jsonplugin.UnmarshalState) {
 			}
 			x.EmailNotificationPreferences = &EmailNotificationPreferences{}
 			x.EmailNotificationPreferences.UnmarshalProtoJSON(s.WithField("email_notification_preferences", true))
+		case "universal_rights", "universalRights":
+			s.AddField("universal_rights")
+			if s.ReadNil() {
+				x.UniversalRights = nil
+				return
+			}
+			s.ReadArray(func() {
+				var v Right
+				v.UnmarshalProtoJSON(s)
+				x.UniversalRights = append(x.UniversalRights, v)
+			})
 		}
 	})
 }

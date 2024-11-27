@@ -318,7 +318,11 @@ message User {
   UserConsolePreferences console_preferences = 25;
 
   EmailNotificationPreferences email_notification_preferences = 26;
-  // next: 27
+
+  // Universal rights are capable of restricting the user's interactions with the API, be it an admin or not.
+  repeated Right universal_rights = 27;
+
+  // next: 28
 }
 
 message Users {

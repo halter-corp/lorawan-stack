@@ -429,6 +429,11 @@ func (is *IdentityServer) purgeClient(ctx context.Context, ids *ttnpb.ClientIden
 	if !is.IsAdmin(ctx) {
 		return nil, errAdminsPurgeClients.New()
 	}
+	if err := rights.RequireClient(
+		store.WithSoftDeleted(ctx, false), ids, ttnpb.Right_RIGHT_CLIENT_PURGE,
+	); err != nil {
+		return nil, err
+	}
 	err := is.store.Transact(ctx, func(ctx context.Context, st store.Store) error {
 		// delete related authorizations before purging the client
 		err := st.DeleteClientAuthorizations(ctx, ids)
