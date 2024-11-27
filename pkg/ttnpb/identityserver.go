@@ -14,6 +14,10 @@
 
 package ttnpb
 
+// SupportUserID is the userID used for creating the support user and for validation of operation in which this user
+// should be present.
+const SupportUserID = "support"
+
 // GetEntityIdentifiers returns the EntityIdentifiers for the used access method.
 func (m *AuthInfoResponse) GetEntityIdentifiers() *EntityIdentifiers {
 	if m == nil {
@@ -39,22 +43,30 @@ func (m *AuthInfoResponse) GetRights() []Right {
 	}
 
 	var rights []Right
+	var limitRights bool
+
 	switch accessMethod := m.GetAccessMethod().(type) {
 	case *AuthInfoResponse_ApiKey:
+		if accessMethod.ApiKey.GetEntityIds().GetUserIds().GetUserId() == SupportUserID {
+			limitRights = true
+		}
 		rights = accessMethod.ApiKey.GetApiKey().GetRights()
 	case *AuthInfoResponse_OauthAccessToken:
+		if accessMethod.OauthAccessToken.GetUserIds().GetUserId() == SupportUserID {
+			limitRights = true
+		}
 		rights = accessMethod.OauthAccessToken.GetRights()
 	case *AuthInfoResponse_UserSession:
+		if accessMethod.UserSession.GetUserIds().GetUserId() == SupportUserID {
+			limitRights = true
+		}
 		rights = RightsFrom(Right_RIGHT_ALL).Implied().GetRights()
 	case *AuthInfoResponse_GatewayToken_:
 		rights = accessMethod.GatewayToken.GetRights()
 	}
 
-	// Limit standard rights with the UniversalRights. There are two possibilities here.
-	//
-	// 1. User is an admin which has all rights and therefore the conditional is moot.
-	// 2. User has its own set of universal rights, which should limit their ability to perform operations.
-	if universalRights := m.GetUniversalRights(); universalRights != nil {
+	universalRights := m.GetUniversalRights()
+	if universalRights != nil && limitRights {
 		return RightsFrom(rights...).Intersect(universalRights).GetRights()
 	}
 
