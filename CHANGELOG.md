@@ -12,7 +12,7 @@ For details about compatibility between different releases, see the **Commitment
 ### Added
 
 - Support user email notification preferences.
-  - This requires a database migration.
+  - This requires an Identity Server database migration (`ttn-lw-stack is-db migrate`).
 - Support for managing MAC settings profiles.
   - This feature is experimental and subject to change.
 - Support pausing webhook in the edit webhook view in console
