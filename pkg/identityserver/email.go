@@ -105,7 +105,7 @@ func (is *IdentityServer) SendNotificationEmailToUsers(ctx context.Context, noti
 
 		// Skips over the possible `support` user.
 		// This user can only be created via the API endpoints defined in the tenant access service.
-		if receiver.Ids.IDString() == "support" {
+		if receiver.Ids.IDString() == ttnpb.SupportUserID {
 			continue
 		}
 
