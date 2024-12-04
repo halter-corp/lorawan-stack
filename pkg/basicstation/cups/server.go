@@ -165,11 +165,12 @@ func WithAuth(auth func(ctx context.Context) grpc.CallOption) Option {
 }
 
 // NewServer returns a new CUPS server.
-func NewServer(c *component.Component, conf ServerConfig, options ...Option) *Server {
-	options = append(options,
+func NewServer(ctx context.Context, c *component.Component, conf ServerConfig, options ...Option) (*Server, error) {
+	options = append([]Option{
 		WithAllowCUPSURIUpdate(conf.AllowCUPSURIUpdate),
 		WithDefaultLNSURI(conf.Default.LNSURI),
-	)
+	}, options...)
+
 	var registerUnknownTo *ttnpb.OrganizationOrUserIdentifiers
 	switch conf.RegisterUnknown.Type {
 	case "user":
@@ -192,12 +193,14 @@ func NewServer(c *component.Component, conf ServerConfig, options ...Option) *Se
 			}),
 		)
 	}
+
 	// The Server.tlsConfig is used when dialing a CUPS or an LNS server to query its certificate chain.
 	// When dialing servers with self-signed certs, the Root CA of target server must either be trusted by the system or
 	// added explicitly via the `--tls.root-ca` option.
 	if tlsConfig, err := c.GetTLSClientConfig(c.Context()); err == nil {
 		options = append(options, WithTLSConfig(tlsConfig))
 	}
+
 	s := &Server{
 		component:  c,
 		signers:    make(map[uint32]stdcrypto.Signer),
@@ -207,7 +210,7 @@ func NewServer(c *component.Component, conf ServerConfig, options ...Option) *Se
 		opt(s)
 	}
 	c.RegisterWeb(s)
-	return s
+	return s, nil
 }
 
 // RegisterRoutes implements web.Registerer.
