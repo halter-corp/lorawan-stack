@@ -133,7 +133,7 @@ var (
 )
 
 // New returns new *GatewayServer.
-func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServer, err error) {
+func New(c *component.Component, conf *Config, opts ...Option) (gs *GatewayServer, err error) { //nolint:gocyclo
 	ctx := tracer.NewContextWithTracer(c.Context(), tracerNamespace)
 
 	forward, err := conf.ForwardDevAddrPrefixes()
@@ -454,8 +454,8 @@ func (gs *GatewayServer) RegisterServices(s *grpc.Server) {
 
 // RegisterHandlers registers gRPC handlers.
 func (gs *GatewayServer) RegisterHandlers(s *runtime.ServeMux, conn *grpc.ClientConn) {
-	ttnpb.RegisterGsHandler(gs.Context(), s, conn)
-	ttnpb.RegisterGtwGsHandler(gs.Context(), s, conn)
+	ttnpb.RegisterGsHandler(gs.Context(), s, conn)    //nolint:errcheck
+	ttnpb.RegisterGtwGsHandler(gs.Context(), s, conn) //nolint:errcheck
 }
 
 // Roles returns the roles that the Gateway Server fulfills.
@@ -967,7 +967,7 @@ func (host *upstreamHost) handlePacket(ctx context.Context, item any) {
 
 var errMessageCRC = errors.DefineInvalidArgument("message_crc", "message CRC failed")
 
-func (gs *GatewayServer) handleUpstream(ctx context.Context, conn connectionEntry) {
+func (gs *GatewayServer) handleUpstream(ctx context.Context, conn connectionEntry) { //nolint:gocyclo
 	var (
 		gtw      = conn.Gateway()
 		protocol = conn.Frontend().Protocol()
