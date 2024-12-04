@@ -43,7 +43,7 @@ import (
 func TestGetTrust(t *testing.T) {
 	a := assertions.New(t)
 
-	s := NewServer(componenttest.NewComponent(t, &component.Config{}))
+	s := NewServer(componenttest.NewComponent(t, &component.Config{}), ServerConfig{})
 
 	for _, addr := range []string{
 		"thethingsnetwork.org:443",
@@ -568,17 +568,19 @@ func TestServer(t *testing.T) { //nolint:gocyclo
 				tt.StoreSetup(store)
 			}
 
-			s := NewServer(componenttest.NewComponent(t, &component.Config{
+			c := componenttest.NewComponent(t, &component.Config{
 				ServiceBase: config.ServiceBase{
 					KeyVault: kv,
 				},
-			}), append([]Option{
+			})
+			opts := append([]Option{
 				WithTLSConfig(&tls.Config{
 					InsecureSkipVerify: true, //nolint:gosec
 				}),
 				WithAuth(mockAuthFunc),
 				WithRegistries(store, store),
-			}, tt.Options...)...)
+			}, tt.Options...)
+			s := NewServer(c, ServerConfig{}, opts...)
 			req := httptest.NewRequest(http.MethodPost, "/update-info", strings.NewReader(updateInfoRequest))
 			ctx := test.Context()
 			ctx = log.NewContext(ctx, test.GetLogger(t))

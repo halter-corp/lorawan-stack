@@ -16,6 +16,7 @@ package gatewayconfigurationserver
 
 import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.thethings.network/lorawan-stack/v3/pkg/basicstation/cups"
 	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/gatewayconfigurationserver/managed"
@@ -65,7 +66,7 @@ func New(c *component.Component, conf *Config) (*Server, error) {
 		config:    conf,
 	}
 
-	bsCUPS := conf.BasicStation.NewServer(c)
+	bsCUPS := cups.NewServer(c, conf.BasicStation)
 	_ = bsCUPS
 
 	ttkgServer := ttkg.New(c, ttkg.WithConfig(conf.TheThingsKickstarterGateway))
