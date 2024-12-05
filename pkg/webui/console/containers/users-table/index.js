@@ -66,7 +66,7 @@ const INVITATIONS_TAB = 'invitations'
 const tabs = [
   {
     title: sharedMessages.users,
-    name: 'users',
+    name: USERS_TAB,
   },
   { title: sharedMessages.deleted, name: DELETED_TAB },
 ]
