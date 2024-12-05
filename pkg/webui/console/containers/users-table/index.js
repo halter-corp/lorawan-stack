@@ -113,7 +113,7 @@ const UsersTable = props => {
 
   const tabsWithInvitations = [
     ...tabs,
-    { title: sharedMessages.invitations, name: INVITATIONS_TAB },
+    { title: sharedMessages.userInvitations, name: INVITATIONS_TAB },
   ]
   const [tab, setTab] = React.useState(USERS_TAB)
   const isInvitationsTab = tab === INVITATIONS_TAB
