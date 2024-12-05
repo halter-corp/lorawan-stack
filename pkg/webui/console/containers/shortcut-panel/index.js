@@ -15,6 +15,7 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 import { useDispatch } from 'react-redux'
+import classNames from 'classnames'
 
 import { APPLICATION } from '@console/constants/entities'
 
@@ -35,6 +36,8 @@ import Panel from '../../../components/panel'
 
 import ShortcutItem from './shortcut-item'
 
+import style from './shortcut-panel.styl'
+
 const m = defineMessages({
   shortcuts: 'Quick actions',
   addPersonalApiKey: 'Add new personal API key',
@@ -49,7 +52,7 @@ const ShortcutPanel = () => {
 
   return (
     <Panel title={m.shortcuts} icon={IconBolt} className="h-full">
-      <div className="d-flex gap-cs-xs">
+      <div className={classNames(style.shortcutGroup, 'd-flex gap-cs-xs w-full')}>
         <ShortcutItem
           icon={IconApplication}
           title={sharedMessages.createApplication}

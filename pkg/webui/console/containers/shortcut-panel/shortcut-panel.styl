@@ -12,23 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-.shortcut
-  padding: $cs.s $cs.m
-  background: var(--c-bg-brand-light)
-  border-radius: $br.l
-  height: 4.5rem
-  width: 100%
-  display: flex
-  align-items: center
-  justify-content: center
-  border: 0
-
-  .icon
-    color: var(--c-icon-brand-normal)
-
-  &:hover
-    cursor: pointer
-
 @container panel (max-width: 320px)
-  .shortcut
-    width: auto
+  .shortcut-group
+      flex-wrap: wrap
