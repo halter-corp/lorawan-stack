@@ -35,6 +35,10 @@ const Overview = () => {
 
   return (
     <div className="container container--xl grid p-ls-s gap-ls-s md:p-cs-xs md:gap-cs-xs">
+      <div className="item-12 md-lg:item-4 d-flex direction-column gap-">
+        <ShortcutPanel />
+        <TotalEndDevicesUpsellerPanel />
+      </div>
       <div className="item-12 md-lg:item-4">
         <BlurryNocMetricsPanel
           entity={APPLICATION}
@@ -51,9 +55,7 @@ const Overview = () => {
           entityPath="/gateways"
         />
       </div>
-      <div className="item-12 md-lg:item-4">
-        <TotalEndDevicesUpsellerPanel />
-      </div>
+
       <div className="item-12 xl:item-6 md-lg:item-6">
         <TopEntitiesDashboardPanel />
       </div>
@@ -62,9 +64,6 @@ const Overview = () => {
       </div>
       <div className="item-12 xl:item-6 md-lg:item-6">
         <DocumentationDashboardPanel />
-      </div>
-      <div className="item-12 xl:item-6 md-lg:item-6">
-        <ShortcutPanel />
       </div>
     </div>
   )

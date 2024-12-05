@@ -18,29 +18,21 @@ import classnames from 'classnames'
 import Icon from '@ttn-lw/components/icon'
 import Link from '@ttn-lw/components/link'
 
-import Message from '@ttn-lw/lib/components/message'
-
 import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './shortcut-item.styl'
 
-const ShortcutItem = ({ icon, title, link, action, className }) =>
+const ShortcutItem = ({ icon, link, action, className }) =>
   action ? (
     <button onClick={action} className={classnames(style.shortcut, className)}>
       <div className="pos-relative w-full h-full">
-        <div className={style.shortcutTitleWrapper}>
-          <Icon icon={icon} className={style.icon} size={28} />
-          <Message content={title} component="span" />
-        </div>
+        <Icon icon={icon} className={style.icon} size={28} />
       </div>
     </button>
   ) : (
     <Link to={link} className={classnames(style.shortcut, className)}>
       <div className="pos-relative w-full h-full">
-        <div className={style.shortcutTitleWrapper}>
-          <Icon icon={icon} className={style.icon} size={28} />
-          <Message content={title} component="span" />
-        </div>
+        <Icon icon={icon} className={style.icon} size={28} />
       </div>
     </Link>
   )
@@ -50,7 +42,6 @@ ShortcutItem.propTypes = {
   className: PropTypes.string,
   icon: PropTypes.icon.isRequired,
   link: PropTypes.string,
-  title: PropTypes.message.isRequired,
 }
 
 ShortcutItem.defaultProps = {

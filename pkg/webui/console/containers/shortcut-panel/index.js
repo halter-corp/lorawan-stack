@@ -52,37 +52,12 @@ const ShortcutPanel = () => {
 
   return (
     <Panel title={m.shortcuts} icon={IconBolt} divider className="h-full">
-      <div className="grid gap-cs-xs">
-        <ShortcutItem
-          icon={IconApplication}
-          title={m.addApplication}
-          link="/applications/add"
-          className="item-6"
-        />
-        <ShortcutItem
-          icon={IconDevice}
-          title={sharedMessages.registerDeviceInApplication}
-          action={handleRegisterDeviceClick}
-          className="item-6"
-        />
-        <ShortcutItem
-          icon={IconUsersGroup}
-          title={m.addNewOrganization}
-          link="/organizations/add"
-          className="item-4"
-        />
-        <ShortcutItem
-          icon={IconKey}
-          title={m.addPersonalApiKey}
-          link="/user/api-keys/add"
-          className="item-4"
-        />
-        <ShortcutItem
-          icon={IconGateway}
-          title={m.addGateway}
-          link="/gateways/add"
-          className="item-4"
-        />
+      <div className="d-flex gap-cs-xs">
+        <ShortcutItem icon={IconApplication} link="/applications/add" />
+        <ShortcutItem icon={IconDevice} action={handleRegisterDeviceClick} />
+        <ShortcutItem icon={IconUsersGroup} link="/organizations/add" />
+        <ShortcutItem icon={IconKey} link="/user/api-keys/add" />
+        <ShortcutItem icon={IconGateway} link="/gateways/add" />
       </div>
     </Panel>
   )
