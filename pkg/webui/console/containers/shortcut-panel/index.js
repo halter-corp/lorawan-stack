@@ -37,10 +37,7 @@ import ShortcutItem from './shortcut-item'
 
 const m = defineMessages({
   shortcuts: 'Quick actions',
-  addApplication: 'New application',
-  addGateway: 'New gateway',
-  addNewOrganization: 'New organization',
-  addPersonalApiKey: 'New personal API key',
+  addPersonalApiKey: 'Add new personal API key',
 })
 
 const ShortcutPanel = () => {
@@ -51,13 +48,33 @@ const ShortcutPanel = () => {
   }, [dispatch])
 
   return (
-    <Panel title={m.shortcuts} icon={IconBolt} divider className="h-full">
+    <Panel title={m.shortcuts} icon={IconBolt} className="h-full">
       <div className="d-flex gap-cs-xs">
-        <ShortcutItem icon={IconApplication} link="/applications/add" />
-        <ShortcutItem icon={IconDevice} action={handleRegisterDeviceClick} />
-        <ShortcutItem icon={IconUsersGroup} link="/organizations/add" />
-        <ShortcutItem icon={IconKey} link="/user/api-keys/add" />
-        <ShortcutItem icon={IconGateway} link="/gateways/add" />
+        <ShortcutItem
+          icon={IconApplication}
+          title={sharedMessages.createApplication}
+          link="/applications/add"
+        />
+        <ShortcutItem
+          icon={IconDevice}
+          title={sharedMessages.registerEndDevice}
+          action={handleRegisterDeviceClick}
+        />
+        <ShortcutItem
+          icon={IconUsersGroup}
+          title={sharedMessages.createOrganization}
+          link="/organizations/add"
+        />
+        <ShortcutItem
+          icon={IconKey}
+          title={m.addPersonalApiKey}
+          link="/user-settings/api-keys/add"
+        />
+        <ShortcutItem
+          icon={IconGateway}
+          title={sharedMessages.registerGateway}
+          link="/gateways/add"
+        />
       </div>
     </Panel>
   )

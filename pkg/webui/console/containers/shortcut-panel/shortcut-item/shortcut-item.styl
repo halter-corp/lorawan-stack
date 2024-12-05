@@ -14,13 +14,17 @@
 
 .shortcut
   padding: $cs.s $cs.m
+  background: var(--c-bg-brand-light)
+  border-radius: $br.l
+  height: 4.5rem
+  width: 100%
+  display: flex
+  align-items: center
+  justify-content: center
+  border: 0
 
-  span.icon
-    font-size: 2rem
+  .icon
+    color: var(--c-icon-brand-normal)
 
   &:hover
     cursor: pointer
-    background: var(--c-bg-brand-normal-hover)
-
-    span.icon
-      font-size: 2rem
