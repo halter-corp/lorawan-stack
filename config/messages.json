@@ -5687,6 +5687,15 @@
       "file": "packetbroker.go"
     }
   },
+  "error:pkg/gatewayserver:empty_gateway_token_hash_key_id": {
+    "translations": {
+      "en": "gateway token hash key ID is empty"
+    },
+    "description": {
+      "package": "pkg/gatewayserver",
+      "file": "gatewayserver.go"
+    }
+  },
   "error:pkg/gatewayserver:empty_identifiers": {
     "translations": {
       "en": "empty identifiers"
