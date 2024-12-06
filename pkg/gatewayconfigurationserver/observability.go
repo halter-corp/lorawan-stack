@@ -1,4 +1,4 @@
-// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2024 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package gatewayconfigurationserver
 
-func (c *Component) initACME() error {
-	if !c.config.TLS.ACME.Enable {
-		return nil
-	}
-	var err error
-	c.acme, err = c.config.TLS.ACME.Initialize()
-	if err != nil {
-		return err
-	}
-	c.web.Prefix("/.well-known/acme-challenge/").Handler(c.acme.HTTPHandler(nil))
-	return nil
-}
+const (
+	logNamespace    = "gatewayconfigurationserver"
+	tracerNamespace = "go.thethings.network/lorawan-stack/pkg/gatewayconfigurationserver"
+)

@@ -21,6 +21,22 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Security
 
+## [3.34.0] - unreleased
+
+### Added
+
+- Support for using a TLS client certificate obtained via ACME for The Things Gateway Controller.
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [3.33.0] - unreleased
 
 ### Added

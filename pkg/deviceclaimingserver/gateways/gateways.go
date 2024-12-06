@@ -31,6 +31,7 @@ import (
 // Component is the interface to the component.
 type Component interface {
 	GetBaseConfig(context.Context) config.ServiceBase
+	GetTLSConfig(context.Context) tlsconfig.Config
 	GetTLSClientConfig(context.Context, ...tlsconfig.Option) (*tls.Config, error)
 }
 

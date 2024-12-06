@@ -3644,6 +3644,15 @@
       "file": "config.go"
     }
   },
+  "error:pkg/config/tlsconfig:missing_acme_default_host": {
+    "translations": {
+      "en": "missing ACME default host"
+    },
+    "description": {
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
+    }
+  },
   "error:pkg/config/tlsconfig:missing_acme_dir": {
     "translations": {
       "en": "missing ACME storage directory"
@@ -5676,6 +5685,15 @@
     "description": {
       "package": "pkg/gatewayserver/upstream/packetbroker",
       "file": "packetbroker.go"
+    }
+  },
+  "error:pkg/gatewayserver:empty_gateway_token_hash_key_id": {
+    "translations": {
+      "en": "gateway token hash key ID is empty"
+    },
+    "description": {
+      "package": "pkg/gatewayserver",
+      "file": "gatewayserver.go"
     }
   },
   "error:pkg/gatewayserver:empty_identifiers": {

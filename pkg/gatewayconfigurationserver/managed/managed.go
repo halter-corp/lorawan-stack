@@ -37,6 +37,7 @@ type Component interface {
 	GRPCServer() *rpcserver.Server
 	GetPeerConn(ctx context.Context, role ttnpb.ClusterRole, ids cluster.EntityIdentifiers) (*grpc.ClientConn, error)
 	AllowInsecureForCredentials() bool
+	GetTLSConfig(context.Context) tlsconfig.Config
 	GetTLSClientConfig(context.Context, ...tlsconfig.Option) (*tls.Config, error)
 }
 
