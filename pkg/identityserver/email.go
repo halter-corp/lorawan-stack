@@ -109,6 +109,11 @@ func (is *IdentityServer) SendNotificationEmailToUsers(ctx context.Context, noti
 			continue
 		}
 
+		// Skips over non approved users.
+		if receiver.State != ttnpb.State_STATE_APPROVED {
+			continue
+		}
+
 		wg.Go(func() error {
 			templateData, err := emailNotification.DataBuilder(
 				ctx,
@@ -147,7 +152,7 @@ func (is *IdentityServer) SendTemplateEmailToUserIDs(
 	return is.SendTemplateEmailToUsers(ctx, templateName, dataBuilder, receivers...)
 }
 
-var notificationEmailUserFields = store.FieldMask{"ids", "name", "primary_email_address", "admin"}
+var notificationEmailUserFields = store.FieldMask{"ids", "name", "primary_email_address", "admin", "state"}
 
 // SendNotificationEmailToUserIDs looks up the users and sends them a notification email.
 func (is *IdentityServer) SendNotificationEmailToUserIDs(ctx context.Context, notification *ttnpb.Notification, receiverIDs ...*ttnpb.UserIdentifiers) error {

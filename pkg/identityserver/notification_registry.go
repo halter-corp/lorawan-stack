@@ -350,6 +350,11 @@ func (is *IdentityServer) notifyAdminsInternal(ctx context.Context, req *ttnpb.C
 		if receiver.Ids.IDString() == ttnpb.SupportUserID {
 			continue
 		}
+
+		// Skips over non approved administrators.
+		if receiver.State != ttnpb.State_STATE_APPROVED {
+			continue
+		}
 		receiverUserIDs[i] = receiver.Ids
 	}
 
