@@ -973,10 +973,12 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 		Name             string
 		ContextFunc      func(context.Context) context.Context
 		ListFunc         func(context.Context, *ttnpb.ApplicationIdentifiers, []string) ([]*ttnpb.MACSettingsProfile, error) // nolint: lll
+		PaginationFunc   func(context.Context, uint32, uint32, *int64) context.Context
 		ProfileRequest   *ttnpb.ListMACSettingsProfilesRequest
 		ProfileAssertion func(*testing.T, *ttnpb.ListMACSettingsProfilesResponse) bool
 		ErrorAssertion   func(*testing.T, error) bool
 		ListCalls        uint64
+		PaginationCalls  uint64
 	}{
 		{
 			Name: "Permission denied",
@@ -996,6 +998,16 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				test.MustTFromContext(ctx).Error(err)
 				return nil, err
 			},
+			PaginationFunc: func(
+				ctx context.Context,
+				_ uint32,
+				_ uint32,
+				_ *int64,
+			) context.Context {
+				err := errors.New("PaginationFunc must not be called")
+				test.MustTFromContext(ctx).Error(err)
+				return ctx
+			},
 			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
 				ApplicationIds: registeredProfileIDs.ApplicationIds,
 				FieldMask:      ttnpb.FieldMask("mac_settings"),
@@ -1003,6 +1015,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 			ProfileAssertion: nilProfileAssertion,
 			ErrorAssertion:   permissionDeniedErrorAssertion,
 			ListCalls:        0,
+			PaginationCalls:  0,
 		},
 		{
 			Name: "Invalid application ID",
@@ -1026,6 +1039,16 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				test.MustTFromContext(ctx).Error(err)
 				return nil, err
 			},
+			PaginationFunc: func(
+				ctx context.Context,
+				_ uint32,
+				_ uint32,
+				_ *int64,
+			) context.Context {
+				err := errors.New("PaginationFunc must not be called")
+				test.MustTFromContext(ctx).Error(err)
+				return ctx
+			},
 			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
 				ApplicationIds: registeredProfileIDs.ApplicationIds,
 				FieldMask:      ttnpb.FieldMask("mac_settings"),
@@ -1033,6 +1056,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 			ProfileAssertion: nilProfileAssertion,
 			ErrorAssertion:   permissionDeniedErrorAssertion,
 			ListCalls:        0,
+			PaginationCalls:  0,
 		},
 		{
 			Name: "Not found",
@@ -1059,6 +1083,18 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				})
 				return nil, errNotFound.New()
 			},
+			PaginationFunc: func(
+				ctx context.Context,
+				limit uint32,
+				page uint32,
+				total *int64,
+			) context.Context {
+				a := assertions.New(test.MustTFromContext(ctx))
+				a.So(limit, should.Equal, 0)
+				a.So(page, should.Equal, 0)
+				a.So(total, should.NotBeNil)
+				return ctx
+			},
 			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
 				ApplicationIds: registeredProfileIDs.ApplicationIds,
 				FieldMask:      ttnpb.FieldMask("mac_settings"),
@@ -1066,6 +1102,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 			ProfileAssertion: nilProfileAssertion,
 			ErrorAssertion:   notFoundErrorAssertion,
 			ListCalls:        1,
+			PaginationCalls:  1,
 		},
 		{
 			Name: "Found",
@@ -1098,9 +1135,23 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 					},
 				})}, nil
 			},
+			PaginationFunc: func(
+				ctx context.Context,
+				limit uint32,
+				page uint32,
+				total *int64,
+			) context.Context {
+				a := assertions.New(test.MustTFromContext(ctx))
+				a.So(limit, should.Equal, 2)
+				a.So(page, should.Equal, 1)
+				a.So(total, should.NotBeNil)
+				return ctx
+			},
 			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
 				ApplicationIds: registeredProfileIDs.ApplicationIds,
 				FieldMask:      ttnpb.FieldMask("ids", "mac_settings"),
+				Limit:          2,
+				Page:           1,
 			},
 			ProfileAssertion: func(t *testing.T, profile *ttnpb.ListMACSettingsProfilesResponse) bool {
 				t.Helper()
@@ -1119,8 +1170,9 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 					},
 				}})
 			},
-			ErrorAssertion: nilErrorAssertion,
-			ListCalls:      1,
+			ErrorAssertion:  nilErrorAssertion,
+			ListCalls:       1,
+			PaginationCalls: 1,
 		},
 	} {
 		tc := tc
@@ -1129,7 +1181,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 			Parallel: true,
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 				t.Helper()
-				var listCalls uint64
+				var listCalls, paginationCalls uint64
 
 				ns, ctx, _, stop := StartTest(
 					ctx,
@@ -1143,6 +1195,15 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 								) ([]*ttnpb.MACSettingsProfile, error) {
 									atomic.AddUint64(&listCalls, 1)
 									return tc.ListFunc(ctx, ids, paths)
+								},
+								WithPaginationFunc: func(
+									ctx context.Context,
+									limit uint32,
+									page uint32,
+									total *int64,
+								) context.Context {
+									atomic.AddUint64(&paginationCalls, 1)
+									return tc.PaginationFunc(ctx, limit, page, total)
 								},
 							},
 						},
@@ -1167,6 +1228,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				}
 				a.So(req, should.Resemble, tc.ProfileRequest)
 				a.So(listCalls, should.Equal, tc.ListCalls)
+				a.So(paginationCalls, should.Equal, tc.PaginationCalls)
 			},
 		})
 	}

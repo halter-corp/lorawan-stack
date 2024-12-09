@@ -131,6 +131,11 @@ type InteropConfig struct {
 	ID                   *types.EUI64 `name:"id" description:"NSID of this Network Server (EUI)"`
 }
 
+// PaginationConfig represents the configuration for pagination.
+type PaginationConfig struct {
+	DefaultLimit int64 `name:"default-limit" description:"Default limit for pagination"`
+}
+
 // Config represents the NetworkServer configuration.
 type Config struct {
 	ApplicationUplinkQueue     ApplicationUplinkQueueConfig `name:"application-uplink-queue"`
@@ -149,6 +154,7 @@ type Config struct {
 	DeviceKEKLabel             string                       `name:"device-kek-label" description:"Label of KEK used to encrypt device keys at rest"`                                                     // nolint: lll
 	DownlinkQueueCapacity      int                          `name:"downlink-queue-capacity" description:"Maximum downlink queue size per-session"`                                                       // nolint: lll
 	MACSettingsProfileRegistry MACSettingsProfileRegistry   `name:"-"`
+	Pagination                 PaginationConfig             `name:"pagination" description:"Pagination configuration"`
 }
 
 // DefaultConfig is the default Network Server configuration.
