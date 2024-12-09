@@ -31,6 +31,10 @@ var (
 	errMACSettingsProfileNotFound      = errors.DefineNotFound("mac_settings_profile_not_found", "MAC settings profile not found")                // nolint: lll
 )
 
+func setTotalHeader(ctx context.Context, total int64) {
+	grpc.SetHeader(ctx, metadata.Pairs("x-total-count", strconv.FormatInt(total, 10))) // nolint: errcheck
+}
+
 // NsMACSettingsProfileRegistry implements the MAC settings profile registry grpc service.
 type NsMACSettingsProfileRegistry struct {
 	ttnpb.UnimplementedNsMACSettingsProfileRegistryServer
@@ -161,13 +165,17 @@ func (m *NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.List
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
+
+	var total int64
+	ctx = m.registry.WithPagination(ctx, req.Limit, req.Page, &total)
+
 	profiles, err := m.registry.List(ctx, req.ApplicationIds, paths)
 	if err != nil {
 		logRegistryRPCError(ctx, err, "Failed to list MAC settings profiles")
 		return nil, err
 	}
 
-	grpc.SetHeader(ctx, metadata.Pairs("x-total-count", strconv.FormatInt(int64(len(profiles)), 10))) // nolint: errcheck
+	setTotalHeader(ctx, total)
 	return &ttnpb.ListMACSettingsProfilesResponse{
 		MacSettingsProfiles: profiles,
 	}, nil

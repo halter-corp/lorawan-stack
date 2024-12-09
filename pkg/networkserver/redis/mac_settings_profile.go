@@ -228,26 +228,69 @@ func (r *MACSettingsProfileRegistry) List(
 		return nil, err
 	}
 
-	appUID := unique.ID(ctx, ids)
 	var pbs []*ttnpb.MACSettingsProfile
-	err := ttnredis.FindProtos(
-		ctx,
-		r.Redis,
-		r.appKey(appUID),
-		r.makeProfileKeyFunc(appUID),
-	).Range(func() (proto.Message, func() (bool, error)) {
-		pb := &ttnpb.MACSettingsProfile{}
-		return pb, func() (bool, error) {
-			pb, err := applyMACSettingsProfileFieldMask(nil, pb, paths...)
-			if err != nil {
-				return false, err
+	appUID := unique.ID(ctx, ids)
+	uidKey := r.appKey(appUID)
+
+	opts := []ttnredis.FindProtosOption{}
+	limit, offset := ttnredis.PaginationLimitAndOffsetFromContext(ctx)
+	if limit != 0 {
+		opts = append(opts,
+			ttnredis.FindProtosSorted(true),
+			ttnredis.FindProtosWithOffsetAndCount(offset, limit),
+		)
+	}
+
+	rangeProtos := func(c redis.Cmdable) error {
+		return ttnredis.FindProtos(
+			ctx,
+			c,
+			uidKey,
+			r.makeProfileKeyFunc(appUID),
+			opts...,
+		).Range(func() (proto.Message, func() (bool, error)) {
+			pb := &ttnpb.MACSettingsProfile{}
+			return pb, func() (bool, error) {
+				pb, err := applyMACSettingsProfileFieldMask(nil, pb, paths...)
+				if err != nil {
+					return false, err
+				}
+				pbs = append(pbs, pb)
+				return true, nil
 			}
-			pbs = append(pbs, pb)
-			return true, nil
+		})
+	}
+
+	var err error
+	if limit != 0 {
+		var lockerID string
+		lockerID, err = ttnredis.GenerateLockerID()
+		if err != nil {
+			return nil, err
 		}
-	})
+		err = ttnredis.LockedWatch(ctx, r.Redis, uidKey, lockerID, r.LockTTL, func(tx *redis.Tx) (err error) {
+			total, err := tx.SCard(ctx, uidKey).Result()
+			if err != nil {
+				return err
+			}
+			ttnredis.SetPaginationTotal(ctx, total)
+			return rangeProtos(tx)
+		})
+	} else {
+		err = rangeProtos(r.Redis)
+	}
 	if err != nil {
-		return nil, err
+		return nil, ttnredis.ConvertError(err)
 	}
 	return pbs, nil
+}
+
+// WithPagination returns a new context with pagination parameters.
+func (*MACSettingsProfileRegistry) WithPagination(
+	ctx context.Context,
+	limit uint32,
+	page uint32,
+	total *int64,
+) context.Context {
+	return ttnredis.NewContextWithPagination(ctx, int64(limit), int64(page), total)
 }
