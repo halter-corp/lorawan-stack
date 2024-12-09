@@ -1122,7 +1122,7 @@ func (gs *GatewayServer) updateConnStats(ctx context.Context, conn connectionEnt
 		Protocol:             conn.Connection.Frontend().Protocol(),
 		GatewayRemoteAddress: conn.Connection.GatewayRemoteAddress(),
 	}
-	registerGatewayConnectionStats(ctx, ids, stats)
+	registerGatewayConnectionStats(ctx, ids, ttnpb.Clone(stats))
 	if gs.statsRegistry != nil {
 		if err := gs.statsRegistry.Set(
 			decoupledCtx,
@@ -1142,7 +1142,7 @@ func (gs *GatewayServer) updateConnStats(ctx context.Context, conn connectionEnt
 			ConnectedAt:    nil,
 			DisconnectedAt: timestamppb.Now(),
 		}
-		registerGatewayConnectionStats(decoupledCtx, ids, stats)
+		registerGatewayConnectionStats(decoupledCtx, ids, ttnpb.Clone(stats))
 		if gs.statsRegistry == nil {
 			return
 		}
