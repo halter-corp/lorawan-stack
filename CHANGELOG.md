@@ -19,6 +19,8 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Fixed
 
+- Enforce default page limit on AS and NS List RPCs if a value is not provided in the request.
+
 ### Security
 
 ## [3.33.0] - unreleased
