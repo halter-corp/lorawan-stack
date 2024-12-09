@@ -28,9 +28,7 @@ const idToEntityMap = {
 }
 
 export const validateNotification = (notificationType, ingestedBy) => {
-  const existantNotification = notificationMap[notificationType]
-
-  if (!existantNotification) {
+  if (!(notificationType in notificationMap)) {
     ingestError(new Error(`Notification type "${notificationType}" does not exist`), {
       ingestedBy,
     })
