@@ -54,13 +54,13 @@ const ApplicationWebhookEditInner = () => {
   )
 
   return (
-    <div className="container container--xxl grid">
+    <div className="container container--xl grid">
       <PageTitle
         title={sharedMessages.editWebhook}
         className="mb-0"
         hideHeading={Boolean(webhookTemplate)}
       />
-      <div className="item-12 xl:item-8">
+      <div className="item-12">
         <WebhookEdit
           update
           appId={appId}

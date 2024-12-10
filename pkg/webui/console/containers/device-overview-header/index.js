@@ -341,6 +341,7 @@ const DeviceOverviewHeader = ({ device }) => {
           supportsClaiming ? sharedMessages.unclaimAndDeleteDevice : sharedMessages.deleteDevice
         }
         action={handleOpenDeleteDeviceModal}
+        messageClassName="c-text-error-normal"
       />
     </>
   )
