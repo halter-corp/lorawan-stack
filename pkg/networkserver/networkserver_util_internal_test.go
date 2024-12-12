@@ -2614,6 +2614,12 @@ type MockMACSettingsProfileRegistry struct {
 		ids *ttnpb.ApplicationIdentifiers,
 		paths []string,
 	) ([]*ttnpb.MACSettingsProfile, error)
+	WithPaginationFunc func(
+		ctx context.Context,
+		limit uint32,
+		page uint32,
+		total *int64,
+	) context.Context
 }
 
 func (m MockMACSettingsProfileRegistry) Get(
@@ -2648,4 +2654,16 @@ func (m MockMACSettingsProfileRegistry) List(
 		panic("ListFunc not set")
 	}
 	return m.ListFunc(ctx, ids, paths)
+}
+
+func (m MockMACSettingsProfileRegistry) WithPagination(
+	ctx context.Context,
+	limit uint32,
+	page uint32,
+	total *int64,
+) context.Context {
+	if m.WithPaginationFunc == nil {
+		panic("WithPaginationFunc not set")
+	}
+	return m.WithPaginationFunc(ctx, limit, page, total)
 }

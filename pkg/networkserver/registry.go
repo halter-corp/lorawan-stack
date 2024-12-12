@@ -305,4 +305,5 @@ type MACSettingsProfileRegistry interface {
 	Get(ctx context.Context, ids *ttnpb.MACSettingsProfileIdentifiers, paths []string) (*ttnpb.MACSettingsProfile, error)                                                                                                  // nolint: lll
 	Set(ctx context.Context, ids *ttnpb.MACSettingsProfileIdentifiers, paths []string, f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error)) (*ttnpb.MACSettingsProfile, error) // nolint: lll
 	List(ctx context.Context, ids *ttnpb.ApplicationIdentifiers, paths []string) ([]*ttnpb.MACSettingsProfile, error)                                                                                                      // nolint: lll
+	WithPagination(ctx context.Context, limit uint32, page uint32, total *int64) context.Context
 }
