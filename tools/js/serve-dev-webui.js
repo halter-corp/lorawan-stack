@@ -136,6 +136,9 @@ if (relevantSetEnvs.length > 0) {
       }
       envConfig += stagingConfig
     }
+  } else {
+    // Cypress setup
+    envConfig = `${baseConfig + localConfig}export CYPRESS_BASE_URL="http://localhost:8080"\n`
   }
 
   const envVars = envConfig
