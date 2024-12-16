@@ -24,12 +24,6 @@ let currentInstance
 
 const popperModifiers = [
   {
-    name: 'offset',
-    options: {
-      offset: [-12, 8],
-    },
-  },
-  {
     name: 'arrow',
     options: {
       element: '.tippy-arrow',
