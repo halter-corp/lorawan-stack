@@ -29,6 +29,7 @@ import {
 } from '@ttn-lw/components/icon'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { setSearchOpen, setSearchScope } from '@console/store/actions/search'
 
@@ -36,23 +37,59 @@ import Panel from '../../../components/panel'
 
 import ShortcutItem from './shortcut-item'
 
-import style from './shortcut-panel.styl'
-
 const m = defineMessages({
   shortcuts: 'Quick actions',
-  addPersonalApiKey: 'Add new personal API key',
+  addEndDevice: 'Add end device',
+  addPersonalApiKey: 'Add API key',
 })
 
-const ShortcutPanel = () => {
+const ShortcutPanel = ({ panelClassName, mobile }) => {
   const dispatch = useDispatch()
   const handleRegisterDeviceClick = React.useCallback(() => {
     dispatch(setSearchScope(APPLICATION))
     dispatch(setSearchOpen(true))
   }, [dispatch])
 
+  if (mobile) {
+    return (
+      <div className="d-flex gap-cs-s">
+        <ShortcutItem
+          icon={IconApplication}
+          title={sharedMessages.createApplication}
+          link="/applications/add"
+          mobile
+        />
+        <ShortcutItem
+          icon={IconDevice}
+          title={m.addEndDevice}
+          action={handleRegisterDeviceClick}
+          mobile
+        />
+        <ShortcutItem
+          icon={IconUsersGroup}
+          title={sharedMessages.createOrganization}
+          link="/organizations/add"
+          mobile
+        />
+        <ShortcutItem
+          icon={IconKey}
+          title={m.addPersonalApiKey}
+          link="/user-settings/api-keys/add"
+          mobile
+        />
+        <ShortcutItem
+          icon={IconGateway}
+          title={sharedMessages.registerGateway}
+          link="/gateways/add"
+          mobile
+        />
+      </div>
+    )
+  }
+
   return (
-    <Panel title={m.shortcuts} icon={IconBolt} className="h-full">
-      <div className={classNames(style.shortcutGroup, 'd-flex gap-cs-xs w-full')}>
+    <Panel title={m.shortcuts} icon={IconBolt} className={classNames(panelClassName, 'h-full')}>
+      <div className="d-flex gap-cs-xs w-full">
         <ShortcutItem
           icon={IconApplication}
           title={sharedMessages.createApplication}
@@ -81,6 +118,16 @@ const ShortcutPanel = () => {
       </div>
     </Panel>
   )
+}
+
+ShortcutPanel.propTypes = {
+  mobile: PropTypes.bool,
+  panelClassName: PropTypes.string,
+}
+
+ShortcutPanel.defaultProps = {
+  panelClassName: undefined,
+  mobile: false,
 }
 
 export default ShortcutPanel

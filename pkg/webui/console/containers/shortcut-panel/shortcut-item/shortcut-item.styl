@@ -17,21 +17,24 @@
 
 .shortcut
   padding: $cs.s $cs.m
-  background: var(--c-bg-brand-light)
+  color: var(--c-text-brand-normal)
+  background-color: var(--c-bg-brand-light)
   border-radius: $br.l
   height: 4.5rem
   width: 100%
   display: flex
   align-items: center
   justify-content: center
+  gap: $cs.xs
+  font-weight: $fw.bold
   border: 0
+
+  +media-query(1304px)
+    padding: $cs.xxs $cs.xs
 
   .icon
     color: var(--c-icon-brand-normal)
 
   &:hover
     cursor: pointer
-
-@container panel (max-width: 320px)
-  .shortcut
-    width: 4.5rem
+    background-color: var(--c-bg-brand-semilight)

@@ -25,7 +25,7 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './shortcut-item.styl'
 
-const ShortcutItem = ({ icon, link, action, title, className }) =>
+const ShortcutItem = ({ icon, link, action, title, className, mobile }) =>
   action ? (
     <Tooltip
       content={<Message content={title} />}
@@ -34,6 +34,7 @@ const ShortcutItem = ({ icon, link, action, title, className }) =>
     >
       <button onClick={action} className={classnames(style.shortcut, className)}>
         <Icon icon={icon} className={style.icon} size={28} />
+        {mobile && <Message content={title} className="lg-xl:d-none" />}
       </button>
     </Tooltip>
   ) : (
@@ -44,6 +45,7 @@ const ShortcutItem = ({ icon, link, action, title, className }) =>
     >
       <Link to={link} className={classnames(style.shortcut, className)}>
         <Icon icon={icon} className={style.icon} size={28} />
+        {mobile && <Message content={title} className="lg-xl:d-none" />}
       </Link>
     </Tooltip>
   )
@@ -53,6 +55,7 @@ ShortcutItem.propTypes = {
   className: PropTypes.string,
   icon: PropTypes.icon.isRequired,
   link: PropTypes.string,
+  mobile: PropTypes.bool,
   title: PropTypes.message.isRequired,
 }
 
@@ -60,6 +63,7 @@ ShortcutItem.defaultProps = {
   className: undefined,
   action: undefined,
   link: undefined,
+  mobile: false,
 }
 
 export default ShortcutItem

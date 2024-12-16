@@ -35,9 +35,12 @@ const Overview = () => {
 
   return (
     <div className="container container--xl grid p-ls-s gap-ls-s md:p-cs-xs md:gap-cs-xs">
+      <div className="item-12 d-none xl:d-block md-lg:d-none">
+        <ShortcutPanel mobile />
+      </div>
       <div className="item-12 md-lg:item-4 d-flex direction-column gap-ls-s">
-        <ShortcutPanel />
-        <TotalEndDevicesUpsellerPanel />
+        <ShortcutPanel panelClassName="xl:d-none" />
+        <TotalEndDevicesUpsellerPanel className="h-full" />
       </div>
       <div className="item-12 md-lg:item-4">
         <BlurryNocMetricsPanel
