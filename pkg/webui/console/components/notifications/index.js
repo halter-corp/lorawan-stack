@@ -21,10 +21,6 @@ import { getNotification } from './utils'
 const NotificationContent = ({ receiver, notificationType, data }) => {
   const NotificationContent = useMemo(() => getNotification(notificationType), [notificationType])
 
-  if (!NotificationContent) {
-    return null
-  }
-
   return <NotificationContent notificationData={data} receiver={receiver} />
 }
 
@@ -37,10 +33,6 @@ NotificationContent.propTypes = {
 const NotificationTitle = ({ notificationType, data }) => {
   const Notification = useMemo(() => getNotification(notificationType), [notificationType])
 
-  if (!Notification) {
-    return null
-  }
-
   return <Notification.Title notificationData={data} />
 }
 
@@ -52,10 +44,6 @@ NotificationTitle.propTypes = {
 const NotificationPreview = ({ notificationType, data }) => {
   const Notification = useMemo(() => getNotification(notificationType), [notificationType])
 
-  if (!Notification) {
-    return null
-  }
-
   return <Notification.Preview notificationData={data} />
 }
 
@@ -66,10 +54,6 @@ NotificationPreview.propTypes = {
 
 const NotificationIcon = ({ notificationType, data }) => {
   const Notification = useMemo(() => getNotification(notificationType), [notificationType])
-
-  if (!Notification) {
-    return null
-  }
 
   return <Notification.Icon notificationData={data} />
 }
