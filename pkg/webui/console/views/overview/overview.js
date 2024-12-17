@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import React from 'react'
+import classNames from 'classnames'
 
 import { APPLICATION, GATEWAY } from '@console/constants/entities'
 
@@ -30,12 +31,14 @@ import TopEntitiesDashboardPanel from '@console/containers/top-entities-dashboar
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
+import style from './overview.styl'
+
 const Overview = () => {
   useBreadcrumbs('overview.dashboard', <Breadcrumb path="/" content={sharedMessages.dashboard} />)
 
   return (
     <div className="container container--xl grid p-ls-s gap-ls-s md:p-cs-xs md:gap-cs-xs">
-      <div className="item-12 d-none xl:d-block md-lg:d-none">
+      <div className={classNames(style.shortcutOverviewPanel, 'item-12')}>
         <ShortcutPanel mobile />
       </div>
       <div className="item-12 md-lg:item-4 d-flex direction-column gap-ls-s">
