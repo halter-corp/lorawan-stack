@@ -253,116 +253,30 @@ In order to easily launch development environments in different deployment conte
 $ tools/bin/mage dev:serveDevWebui
 ```
 
-It will interactively guide you through the desired setup and launches the The Things Stack Enterprise as well as a frontend development server wia webpack.
+It will interactively guide you through the desired setup and launches the The Things Stack as well as a frontend development server wia webpack.
 
-#### Development Configuration
-
-> The preffered way to set up the development environment is to use the [interactive development stack launcher tool](#interactive-development-stack-launcher-tool).
-
-In order to set up The Things Stack to support running the frontend via `webpack-dev-server`, the following environment setup is needed:
+The Things Stack can be accessed at `http://localhost:8080`. The frontend is ready when you see:
 
 ```bash
-# .dev.env
-export NODE_ENV="development"
-export TTN_LW_IS_ADMIN_RIGHTS_ALL="true"
-export TTN_LW_IS_EMAIL_DIR=".dev/email"
-export TTN_LW_IS_EMAIL_PROVIDER="dir"
-export TTN_LW_LOG_LEVEL="debug"
-export TTN_LW_NOC_ACCESS_EXTENDED="true"
-export TTN_LW_PLUGINS_SOURCE="directory"
-export TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
-
-export TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="http://localhost:8080/oauth/authorize"
-export TTN_LW_CONSOLE_OAUTH_LOGOUT_URL="http://localhost:8080/oauth/logout"
-export TTN_LW_CONSOLE_OAUTH_TOKEN_URL="http://localhost:8080/oauth/token"
-export TTN_LW_CONSOLE_UI_ASSETS_BASE_URL="http://localhost:8080/assets"
-export TTN_LW_CONSOLE_UI_AS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_EDTC_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_GCS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_GS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_IS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_JS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_JS_FILE="libs.bundle.js console.js"
-export TTN_LW_CONSOLE_UI_NS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_QRG_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_IS_OAUTH_UI_IS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_IS_OAUTH_UI_JS_FILE="libs.bundle.js account.js"
-export WEBPACK_DEV_BACKEND_API_PROXY_URL="http://localhost:1885"
-export TTN_LW_CONSOLE_UI_ACCOUNT_URL="http://localhost:8080/oauth"
-export TTN_LW_IS_EMAIL_NETWORK_IDENTITY_SERVER_URL="http://localhost:8080/oauth"
-export TTN_LW_IS_OAUTH_UI_CANONICAL_URL="http://localhost:8080/oauth"
-export CYPRESS_BASE_URL="http://localhost:8080"
+[js:serve] <i> [webpack-dev-server] Project is running at:
+[js:serve] <i> [webpack-dev-server] Loopback: http://localhost:8080/, http://[::1]:8080/
 ```
 
-We recommend saving this configuration as an `.dev.env` file and sourcing it like `source .dev.env`. This allows you to easily apply development configuration when needed.
-
-The development server can also be run with a staging environment (`.staging.env`) with the following set up:
+The backend is ready when you see:
 
 ```bash
-# .staging.env
-export STAGING_URL="<STAGING URL>"
-
-export NODE_ENV="development"
-export TTN_LW_IS_ADMIN_RIGHTS_ALL="true"
-export TTN_LW_IS_EMAIL_DIR=".dev/email"
-export TTN_LW_IS_EMAIL_PROVIDER="dir"
-export TTN_LW_LOG_LEVEL="debug"
-export TTN_LW_NOC_ACCESS_EXTENDED="true"
-export TTN_LW_PLUGINS_SOURCE="directory"
-export TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
-
-export TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="${STAGING_URL}/oauth/authorize"
-export TTN_LW_CONSOLE_OAUTH_CLIENT_ID="localhost-console"
-export TTN_LW_CONSOLE_OAUTH_CLIENT_SECRET="console"
-export TTN_LW_CONSOLE_OAUTH_LOGOUT_URL="${STAGING_URL}/oauth/logout"
-export TTN_LW_CONSOLE_OAUTH_TOKEN_URL="${STAGING_URL}/oauth/token"
-export TTN_LW_CONSOLE_UI_AS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_EDTC_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_GCS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_GS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_IS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_JS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_NS_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_QRG_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_NOC_BASE_URL="http://localhost:8080/api/v3"
-export TTN_LW_CONSOLE_UI_NOC_URL="${STAGING_URL}/noc"
-export WEBPACK_DEV_BACKEND_API_PROXY_URL="${STAGING_URL}"
-export TTN_LW_CONSOLE_UI_ACCOUNT_URL="${STAGING_URL}/oauth"
-export TTN_LW_IS_OAUTH_UI_CANONICAL_URL="${STAGING_URL}/oauth"
+[stack] DEBUG	Creating listener	{"address": ":8887"}
+[stack] DEBUG	Creating listener	{"address": ":1889"}
+DEBUG	Creating listener	{"address": ":1887"}
+DEBUG	Creating listener	{"address": ":8881"}
+INFO	New patch version available	{"current": "3.32.2-dev", "docs_url": "https://www.thethingsindustries.com/docs/getting-started/upgrading/", "latest": "3.32.3"}
+DEBUG	Creating listener	{"address": ":8883"}
+DEBUG	Creating listener	{"address": ":8889"}
+DEBUG	Creating listener	{"address": ":1881"}
+DEBUG	Creating listener	{"address": ":8882"}
+DEBUG	Creating listener	{"address": ":1883"}
+DEBUG	Creating listener	{"address": ":1882"}
 ```
-
-> Note: It is important to **source these environment variables in all terminal sessions** that run The Things Stack or the `tools/bin/mage` commands. Failing to do so will result in erros such as blank page renders. See also [troubleshooting](#troubleshooting).
-
-#### Optional Configuration
-
-##### Disable [Hot Module Replacement](https://webpack.js.org/concepts/hot-module-replacement/)
-
-If you experience trouble seeing the WebUIs updated after a code change, you can also disable hot module replacement and enforce a hard reload on code changes instead. This method is a bit slower but more robust. To do so apply the following variable:
-
-```bash
-WEBPACK_DEV_SERVER_DISABLE_HMR="true"
-```
-
-> Note: Webpack-related configuration can be loaded from environment variables only. It cannot be sourced from a config file.
-
-##### Enable TLS in `webpack-dev-server`
-
-```bash
-WEBPACK_DEV_SERVER_USE_TLS="true"
-```
-This option uses the key and certificate set via `TTN_LW_TLS_KEY` and `TTN_LW_TLS_CERTIFICATE` environment variables. Useful when developing functionalities that rely on TLS.
-
-> Note: To use this option, The Things Stack for LoRaWAN must be properly setup for TLS. You can obtain more information about this in the **Getting Started** section of the The Things Stack for LoRaWAN documentation.
-
-#### Serving
-
-For development purposes, the frontend can be run using `webpack-dev-server`. After following the [Getting Started](#getting-started) section to initialize The Things Stack and doing an initial build of the frontend via `tools/bin/mage js:build`, and [setting up the correct environment](#development-configuration), it can be served using:
-
-```bash
-$ tools/bin/mage js:serve
-```
-
-The development server runs on `http://localhost:8080` and will proxy all API calls to port `1885`. The serve command watches any changes inside `pkg/webui` and refreshes automatically.
 
 ## Code Style
 
@@ -810,9 +724,10 @@ The preferred way to run the end-to-end tests is to use the interactive launcher
 $  tools/bin/mage dev:serveDevWebui
 ```
 
-1. Make sure to run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:dbStart dev:initStack dev:sqlDump dev:sqlCreateSeedDb` to create a seed database which the tests can reset the database to in between runs.
-2. Select "Cypress" in the launcher tool
-3. Add the following environment variables:
+1. Make sure to run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:dbStart dev:initStack dev:sqlDump` to create a seed database which the tests can reset the database to in between runs.
+2. Run `tools/bin/mage dev:serveDevWebui`
+3. Select "Cypress" in the launcher tool
+4. Add the following environment variables:
 
 ```bash
   export NODE_ENV="development"
@@ -1119,6 +1034,115 @@ $ go run ./cmd/ttn-lw-stack start
 ```
 
 It is also possible to use `go build`, or release snapshots, as described below.
+
+### Advanced Development Configuration
+
+> The preffered way to set up the development environment is to use the [interactive development stack launcher tool](#interactive-development-stack-launcher-tool).
+
+In order to set up The Things Stack to support running the frontend via `webpack-dev-server`, the following environment setup is needed:
+
+```bash
+# .dev.env
+export NODE_ENV="development"
+export TTN_LW_IS_ADMIN_RIGHTS_ALL="true"
+export TTN_LW_IS_EMAIL_DIR=".dev/email"
+export TTN_LW_IS_EMAIL_PROVIDER="dir"
+export TTN_LW_LOG_LEVEL="debug"
+export TTN_LW_NOC_ACCESS_EXTENDED="true"
+export TTN_LW_PLUGINS_SOURCE="directory"
+export TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
+
+export TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="http://localhost:8080/oauth/authorize"
+export TTN_LW_CONSOLE_OAUTH_LOGOUT_URL="http://localhost:8080/oauth/logout"
+export TTN_LW_CONSOLE_OAUTH_TOKEN_URL="http://localhost:8080/oauth/token"
+export TTN_LW_CONSOLE_UI_ASSETS_BASE_URL="http://localhost:8080/assets"
+export TTN_LW_CONSOLE_UI_AS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_EDTC_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_GCS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_GS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_IS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_JS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_JS_FILE="libs.bundle.js console.js"
+export TTN_LW_CONSOLE_UI_NS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_QRG_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_IS_OAUTH_UI_IS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_IS_OAUTH_UI_JS_FILE="libs.bundle.js account.js"
+export WEBPACK_DEV_BACKEND_API_PROXY_URL="http://localhost:1885"
+export TTN_LW_CONSOLE_UI_ACCOUNT_URL="http://localhost:8080/oauth"
+export TTN_LW_IS_EMAIL_NETWORK_IDENTITY_SERVER_URL="http://localhost:8080/oauth"
+export TTN_LW_IS_OAUTH_UI_CANONICAL_URL="http://localhost:8080/oauth"
+export CYPRESS_BASE_URL="http://localhost:8080"
+```
+
+We recommend saving this configuration as an `.dev.env` file and sourcing it like `source .dev.env`. This allows you to easily apply development configuration when needed.
+
+The development server can also be run with a staging environment (`.staging.env`) with the following set up:
+
+```bash
+# .staging.env
+export STAGING_URL="<STAGING URL>"
+
+export NODE_ENV="development"
+export TTN_LW_IS_ADMIN_RIGHTS_ALL="true"
+export TTN_LW_IS_EMAIL_DIR=".dev/email"
+export TTN_LW_IS_EMAIL_PROVIDER="dir"
+export TTN_LW_LOG_LEVEL="debug"
+export TTN_LW_NOC_ACCESS_EXTENDED="true"
+export TTN_LW_PLUGINS_SOURCE="directory"
+export TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
+
+export TTN_LW_CONSOLE_OAUTH_AUTHORIZE_URL="${STAGING_URL}/oauth/authorize"
+export TTN_LW_CONSOLE_OAUTH_CLIENT_ID="localhost-console"
+export TTN_LW_CONSOLE_OAUTH_CLIENT_SECRET="console"
+export TTN_LW_CONSOLE_OAUTH_LOGOUT_URL="${STAGING_URL}/oauth/logout"
+export TTN_LW_CONSOLE_OAUTH_TOKEN_URL="${STAGING_URL}/oauth/token"
+export TTN_LW_CONSOLE_UI_AS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_EDTC_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_GCS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_GS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_IS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_JS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_NS_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_QRG_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_NOC_BASE_URL="http://localhost:8080/api/v3"
+export TTN_LW_CONSOLE_UI_NOC_URL="${STAGING_URL}/noc"
+export WEBPACK_DEV_BACKEND_API_PROXY_URL="${STAGING_URL}"
+export TTN_LW_CONSOLE_UI_ACCOUNT_URL="${STAGING_URL}/oauth"
+export TTN_LW_IS_OAUTH_UI_CANONICAL_URL="${STAGING_URL}/oauth"
+```
+
+> Note: It is important to **source these environment variables in all terminal sessions** that run The Things Stack or the `tools/bin/mage` commands. Failing to do so will result in erros such as blank page renders. See also [troubleshooting](#troubleshooting).
+
+#### Optional Configuration
+
+##### Disable [Hot Module Replacement](https://webpack.js.org/concepts/hot-module-replacement/)
+
+If you experience trouble seeing the WebUIs updated after a code change, you can also disable hot module replacement and enforce a hard reload on code changes instead. This method is a bit slower but more robust. To do so apply the following variable:
+
+```bash
+WEBPACK_DEV_SERVER_DISABLE_HMR="true"
+```
+
+> Note: Webpack-related configuration can be loaded from environment variables only. It cannot be sourced from a config file.
+
+##### Enable TLS in `webpack-dev-server`
+
+```bash
+WEBPACK_DEV_SERVER_USE_TLS="true"
+```
+This option uses the key and certificate set via `TTN_LW_TLS_KEY` and `TTN_LW_TLS_CERTIFICATE` environment variables. Useful when developing functionalities that rely on TLS.
+
+> Note: To use this option, The Things Stack for LoRaWAN must be properly setup for TLS. You can obtain more information about this in the **Getting Started** section of the The Things Stack for LoRaWAN documentation.
+
+#### Serving
+
+For development purposes, the frontend can be run using `webpack-dev-server`. After following the [Getting Started](#getting-started) section to initialize The Things Stack and doing an initial build of the frontend via `tools/bin/mage js:build`, and [setting up the correct environment](#development-configuration), it can be served using:
+
+```bash
+$ tools/bin/mage js:serve
+```
+
+The development server runs on `http://localhost:8080` and will proxy all API calls to port `1885`. The serve command watches any changes inside `pkg/webui` and refreshes automatically.
 
 ## Releasing
 
