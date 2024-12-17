@@ -568,7 +568,15 @@ macLoop:
 				break
 			}
 			cmds = cmds[dupCount:]
-			evs, err = mac.HandleLinkADRAns(ctx, dev, pld, uint(dupCount), cmacFMatchResult.FullFCnt, fps)
+			evs, err = mac.HandleLinkADRAns(
+				ctx,
+				dev,
+				pld,
+				uint(dupCount), // nolint: gosec
+				cmacFMatchResult.FullFCnt,
+				fps,
+				up.GetPayload().GetMacPayload().GetFHdr().GetFCtrl().GetAdr(),
+			)
 		case ttnpb.MACCommandIdentifier_CID_DUTY_CYCLE:
 			evs, err = mac.HandleDutyCycleAns(ctx, dev)
 		case ttnpb.MACCommandIdentifier_CID_RX_PARAM_SETUP:

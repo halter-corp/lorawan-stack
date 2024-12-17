@@ -310,6 +310,7 @@ func HandleLinkADRAns(
 	dupCount uint,
 	fCntUp uint32,
 	fps *frequencyplans.Store,
+	adrEnabled bool,
 ) (events.Builders, error) {
 	if pld == nil {
 		return nil, ErrNoPayload.New()
@@ -321,7 +322,10 @@ func HandleLinkADRAns(
 	}
 
 	ev := EvtReceiveLinkADRAccept
-	if !pld.ChannelMaskAck || !pld.DataRateIndexAck || !pld.TxPowerIndexAck {
+
+	if (!adrEnabled && !pld.ChannelMaskAck) ||
+		(adrEnabled && !pld.DataRateIndexAck) ||
+		(adrEnabled && !pld.TxPowerIndexAck) {
 		ev = EvtReceiveLinkADRReject
 
 		// See "Table 6: LinkADRAns status bits signification" of LoRaWAN 1.1 specification
