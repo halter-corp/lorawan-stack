@@ -77,10 +77,7 @@ const sqlTask = on => {
     },
     dropAndSeedDatabase: async () => {
       const exec = util.promisify(childProcess.exec)
-      await Promise.all([
-        exec('tools/bin/mage dev:sqlRestore', { cwd: '..' }),
-        exec('tools/bin/mage dev:redisFlush', { cwd: '..' }),
-      ])
+      await Promise.all([exec('tools/bin/mage dev:sqlRestore', { cwd: '..' })])
       return null
     },
   })
