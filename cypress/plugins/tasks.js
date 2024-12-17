@@ -81,21 +81,12 @@ const sqlTask = on => {
       // Restore SQL data
       await exec('tools/bin/mage dev:sqlRestore', { cwd: '..' })
 
-      // Manually flush Redis keys
+      // Flush Redis database
       try {
-        // Get all TTN v3 keys
-        const { stdout: keys } = await exec(
-          'docker compose exec -T redis redis-cli keys "ttn:v3:*"',
-          { cwd: '..' },
-        )
-        if (keys.trim()) {
-          // Delete all found keys
-          await exec(`docker compose exec -T redis redis-cli del ${keys.split('\n').join(' ')}`, {
-            cwd: '..',
-          })
-        }
+        await exec('tools/bin/mage dev:redisFlush', { cwd: '..' })
       } catch (e) {
-        console.error('Error flushing Redis:', e)
+        // eslint-disable-next-line no-console
+        console.log('Error flushing Redis:', e)
       }
 
       return null
