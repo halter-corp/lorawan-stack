@@ -1,4 +1,4 @@
-// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2024 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,10 +77,27 @@ const sqlTask = on => {
     },
     dropAndSeedDatabase: async () => {
       const exec = util.promisify(childProcess.exec)
-      await Promise.all([
-        exec('tools/bin/mage dev:sqlRestore', { cwd: '..' }),
-        exec('tools/bin/mage dev:redisFlush', { cwd: '..' }),
-      ])
+
+      // Restore SQL data
+      await exec('tools/bin/mage dev:sqlRestore', { cwd: '..' })
+
+      // Manually flush Redis keys
+      try {
+        // Get all TTN v3 keys
+        const { stdout: keys } = await exec(
+          'docker compose exec -T redis redis-cli keys "ttn:v3:*"',
+          { cwd: '..' },
+        )
+        if (keys.trim()) {
+          // Delete all found keys
+          await exec(`docker compose exec -T redis redis-cli del ${keys.split('\n').join(' ')}`, {
+            cwd: '..',
+          })
+        }
+      } catch (e) {
+        console.error('Error flushing Redis:', e)
+      }
+
       return null
     },
   })
