@@ -77,18 +77,10 @@ const sqlTask = on => {
     },
     dropAndSeedDatabase: async () => {
       const exec = util.promisify(childProcess.exec)
-
-      // Restore SQL data
-      await exec('tools/bin/mage dev:sqlRestore', { cwd: '..' })
-
-      // Flush Redis database
-      try {
-        await exec('tools/bin/mage dev:redisFlush', { cwd: '..' })
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.log('Error flushing Redis:', e)
-      }
-
+      await Promise.all([
+        exec('tools/bin/mage dev:sqlRestore', { cwd: '..' }),
+        exec('tools/bin/mage -v dev:redisFlush', { cwd: '..' }),
+      ])
       return null
     },
   })
