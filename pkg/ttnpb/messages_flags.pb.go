@@ -38,6 +38,8 @@ func AddSelectFlagsForApplicationUplink(flags *pflag.FlagSet, prefix string, hid
 	AddSelectFlagsForEndDeviceVersionIdentifiers(flags, flagsplugin.Prefix("version-ids", prefix), hidden)
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("network-ids", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("network-ids", prefix), true), flagsplugin.WithHidden(hidden)))
 	AddSelectFlagsForNetworkIdentifiers(flags, flagsplugin.Prefix("network-ids", prefix), hidden)
+	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("last-battery-percentage", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("last-battery-percentage", prefix), true), flagsplugin.WithHidden(hidden)))
+	// NOTE: last_battery_percentage (LastBatteryPercentage) does not seem to have select flags.
 }
 
 // SelectFromFlags outputs the fieldmask paths forApplicationUplink message from select flags.
@@ -157,6 +159,12 @@ func PathsFromSelectFlagsForApplicationUplink(flags *pflag.FlagSet, prefix strin
 	} else {
 		paths = append(paths, selectPaths...)
 	}
+	if val, selected, err := flagsplugin.GetBool(flags, flagsplugin.Prefix("last_battery_percentage", prefix)); err != nil {
+		return nil, err
+	} else if selected && val {
+		paths = append(paths, flagsplugin.Prefix("last_battery_percentage", prefix))
+	}
+	// NOTE: last_battery_percentage (LastBatteryPercentage) does not seem to have select flags.
 	return paths, nil
 }
 
@@ -181,6 +189,7 @@ func AddSetFlagsForApplicationUplink(flags *pflag.FlagSet, prefix string, hidden
 	// FIXME: Skipping Locations because maps with message value types are currently not supported.
 	AddSetFlagsForEndDeviceVersionIdentifiers(flags, flagsplugin.Prefix("version-ids", prefix), hidden)
 	AddSetFlagsForNetworkIdentifiers(flags, flagsplugin.Prefix("network-ids", prefix), hidden)
+	// FIXME: Skipping LastBatteryPercentage because it does not seem to implement AddSetFlags.
 }
 
 // SetFromFlags sets the ApplicationUplink message from flags.
@@ -295,6 +304,7 @@ func (m *ApplicationUplink) SetFromFlags(flags *pflag.FlagSet, prefix string) (p
 			paths = append(paths, setPaths...)
 		}
 	}
+	// FIXME: Skipping LastBatteryPercentage because it does not seem to implement AddSetFlags.
 	return paths, nil
 }
 

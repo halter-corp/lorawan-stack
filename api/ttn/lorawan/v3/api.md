@@ -615,6 +615,7 @@
   - [Message `DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest)
   - [Message `GatewayTxAcknowledgment`](#ttn.lorawan.v3.GatewayTxAcknowledgment)
   - [Message `GatewayUplinkMessage`](#ttn.lorawan.v3.GatewayUplinkMessage)
+  - [Message `LastBatteryPercentage`](#ttn.lorawan.v3.LastBatteryPercentage)
   - [Message `MessagePayloadFormatters`](#ttn.lorawan.v3.MessagePayloadFormatters)
   - [Message `TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment)
   - [Message `UplinkMessage`](#ttn.lorawan.v3.UplinkMessage)
@@ -8795,6 +8796,7 @@ Application uplink message.
 | `locations` | [`ApplicationUplink.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplink.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
 | `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
 | `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `last_battery_percentage` | [`LastBatteryPercentage`](#ttn.lorawan.v3.LastBatteryPercentage) |  | Last battery percentage of the end device. Received via the DevStatus MAC command at last_dev_status_received_at or earlier. Set by the Network Server while handling the message. |
 
 #### Field Rules
 
@@ -8939,6 +8941,20 @@ ncrc: [scheduled.advanced]
 | Field | Validations |
 | ----- | ----------- |
 | `message` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.LastBatteryPercentage">Message `LastBatteryPercentage`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `f_cnt` | [`uint32`](#uint32) |  | Frame counter value of last uplink containing DevStatusAns. |
+| `value` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | The battery percentage of the end device. The value is defined in the [0, 100] interval. |
+| `received_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Time when last DevStatus MAC command was received. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `value` | <p>`float.lte`: `1`</p><p>`float.gte`: `0`</p> |
 
 ### <a name="ttn.lorawan.v3.MessagePayloadFormatters">Message `MessagePayloadFormatters`</a>
 

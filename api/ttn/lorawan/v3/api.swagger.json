@@ -21068,6 +21068,10 @@
         "network_ids": {
           "$ref": "#/definitions/v3NetworkIdentifiers",
           "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "last_battery_percentage": {
+          "$ref": "#/definitions/v3LastBatteryPercentage",
+          "description": "Last battery percentage of the end device.\nReceived via the DevStatus MAC command at last_dev_status_received_at or earlier.\nSet by the Network Server while handling the message."
         }
       }
     },
@@ -25799,6 +25803,26 @@
         },
         "coding_rate": {
           "type": "string"
+        }
+      }
+    },
+    "v3LastBatteryPercentage": {
+      "type": "object",
+      "properties": {
+        "f_cnt": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Frame counter value of last uplink containing DevStatusAns."
+        },
+        "value": {
+          "type": "number",
+          "format": "float",
+          "description": "The battery percentage of the end device.\nThe value is defined in the [0, 100] interval."
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time when last DevStatus MAC command was received."
         }
       }
     },

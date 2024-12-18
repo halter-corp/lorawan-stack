@@ -186,6 +186,19 @@ message GatewayUplinkMessage {
   string band_id = 2;
 }
 
+message LastBatteryPercentage {
+  // Frame counter value of last uplink containing DevStatusAns.
+  uint32 f_cnt = 1;
+  // The battery percentage of the end device.
+  // The value is defined in the [0, 100] interval.
+  google.protobuf.FloatValue value = 2 [(validate.rules).float = {
+    gte: 0,
+    lte: 1
+  }];
+  // Time when last DevStatus MAC command was received.
+  google.protobuf.Timestamp received_at = 3;
+}
+
 message ApplicationUplink {
   option (thethings.flags.message) = {
     select: true,
@@ -259,7 +272,12 @@ message ApplicationUplink {
   // Network identifiers, set by the Network Server that handles the message.
   NetworkIdentifiers network_ids = 16;
 
-  // next: 20
+  // Last battery percentage of the end device.
+  // Received via the DevStatus MAC command at last_dev_status_received_at or earlier.
+  // Set by the Network Server while handling the message.
+  LastBatteryPercentage last_battery_percentage = 20;
+
+  // next: 21
 }
 
 message ApplicationUplinkNormalized {
