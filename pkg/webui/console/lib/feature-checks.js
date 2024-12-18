@@ -34,6 +34,10 @@ export const checkFromState = (featureCheck, state) =>
   featureCheck.check(featureCheck.rightsSelector(state))
 
 // User related feature checks.
+export const mayPerformAllUserActions = {
+  rightsSelector: selectUserRights,
+  check: rights => rights.includes('RIGHT_USER_ALL'),
+}
 export const mayViewApplicationsOfUser = {
   rightsSelector: selectUserRights,
   check: rights => rights.includes('RIGHT_USER_APPLICATIONS_LIST'),
@@ -90,6 +94,11 @@ export const mayViewOrEditUserSettings = {
 export const mayViewOrEditUserApiKeys = {
   rightsSelector: selectUserRights,
   check: rights => rights.includes('RIGHT_USER_SETTINGS_API_KEYS'),
+}
+
+export const mayCreateUsers = {
+  rightsSelector: selectUserRights,
+  check: rights => rights.includes('RIGHT_USER_CREATE'),
 }
 
 // Application related feature checks.
