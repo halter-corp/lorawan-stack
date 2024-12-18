@@ -34,6 +34,7 @@ import capitalizeMessage from '@ttn-lw/lib/capitalize-message'
 import { createUser } from '@console/store/actions/users'
 
 import { selectPasswordRequirements } from '@console/store/selectors/identity-server'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
 const approvalStates = [
   'STATE_REQUESTED',
@@ -73,7 +74,10 @@ const UserDataFormAdd = () => {
   const validationSchema = baseValidationSchema.concat(
     createPasswordValidationSchema(passwordRequirements),
   )
-  const createUserAction = useCallback(values => dispatch(createUser(values)), [dispatch])
+  const createUserAction = useCallback(
+    values => dispatch(attachPromise(createUser(values))),
+    [dispatch],
+  )
 
   const { formatMessage } = intl
 
