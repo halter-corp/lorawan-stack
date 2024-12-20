@@ -718,27 +718,23 @@ We use [Cypress](https://cypress.io) for running frontend-based end-to-end tests
 
 #### Running frontend end-to-end tests locally
 
-The preferred way to run the end-to-end tests is to use the interactive launcher tool with:
+The preferred way to run the end-to-end tests is to use the [interactive launcher tool](#interactive-development-stack-launcher-tool).
 
-```bash
-$  tools/bin/mage dev:serveDevWebui
-```
-
-1. Make sure to run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:dbStart dev:initStack dev:sqlDump` to create a seed database which the tests can reset the database to in between runs.
+1. Make sure to run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:initStack dev:sqlDump` to create a seed database which the tests can reset the database to in between runs.
 2. Run `tools/bin/mage dev:serveDevWebui`
 3. Select "Cypress" in the launcher tool
-4. Add the following environment variables:
+4. In a separate terminal, add the following environment variables:
 
 ```bash
   export NODE_ENV="development"
   export CYPRESS_BASE_URL="http://localhost:8080"
 ```
 
-4. Run the end-to-end tests (`tools/bin/mage js:cypressInteractive`)
+5. And run the end-to-end tests (`tools/bin/mage js:cypressInteractive`)
 
 #### Optional: testing in development environment
 
-Make sure to [build the frontend assets](#building-the-frontend) and run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:dbStart dev:initStack dev:sqlDump dev:sqlCreateSeedDb` to create a seed database which the tests can reset the database to in between runs.
+Make sure to [build the frontend assets](#building-the-frontend) and run `tools/bin/mage dev:dbStop dev:dbErase dev:dbCreate dev:initStack dev:sqlDump` to create a seed database which the tests can reset the database to in between runs.
 
 To run the stack when working on end-to-end tests, use the `tools/bin/mage dev:startDevStack` command. This will run the runs The Things Stack with proper configuration for the end-to-end tests. Note: this command does not output anything, but logs are written to `.cache/devStack.log`.
 
