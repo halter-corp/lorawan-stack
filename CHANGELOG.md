@@ -40,7 +40,7 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Security
 
-## [3.33.0] - unreleased
+## [3.33.0] - 2024-12-18
 
 ### Added
 
@@ -58,6 +58,8 @@ For details about compatibility between different releases, see the **Commitment
 
 - Fix OAuth client authorizations delete request in the Console.
 - Consecutive disconnect/reconnect messages in the Live Data view in the Console.
+
+## [3.32.3] - 2024-12-04
 
 ## [3.32.2] - 2024-11-18
 
@@ -2935,7 +2937,8 @@ NOTE: These links should respect backports. See https://github.com/TheThingsNetw
 -->
 
 [unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.0...v3.33
-[3.33.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.2...v3.33.0
+[3.33.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.3...v3.33.0
+[3.32.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.2...v3.32.3
 [3.32.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.1...v3.32.2
 [3.32.1]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.0...v3.32.1
 [3.32.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.31.1...v3.32.0

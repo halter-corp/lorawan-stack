@@ -80,7 +80,7 @@ jobs:
       - name: Update APT
         run: sudo apt-get -yq update
       - name: Install Snapcraft
-        run: sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft
+        run: sudo snap install snapcraft --classic
       - name: Create Snapcraft folders
         run: |
           mkdir -p $HOME/.cache/snapcraft/download
