@@ -38,12 +38,12 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 	github.com/hellofresh/health-go/v5 v5.5.3
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.7.2
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056
@@ -55,8 +55,8 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/nats-io/nats-server/v2 v2.10.23
-	github.com/nats-io/nats.go v1.37.0
+	github.com/nats-io/nats-server/v2 v2.10.24
+	github.com/nats-io/nats.go v1.38.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
@@ -66,7 +66,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/smarty/assertions v1.16.0
-	github.com/spf13/cast v1.7.0
+	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
@@ -103,10 +103,10 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/sync v0.10.0
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697
-	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576
+	google.golang.org/genproto/googleapis/api v0.0.0-20241219192143-6b3ec007d9bb
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241219192143-6b3ec007d9bb
 	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/mail.v2 v2.3.1
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -228,8 +228,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/jwt/v2 v2.5.8 // indirect
-	github.com/nats-io/nkeys v0.4.8 // indirect
+	github.com/nats-io/jwt/v2 v2.7.3 // indirect
+	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
