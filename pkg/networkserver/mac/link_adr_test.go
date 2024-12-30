@@ -487,19 +487,19 @@ func TestHandleLinkADRAns(t *testing.T) {
 			AdrEnabled: true,
 		},
 		{
-			Name: "no request/channel mask ack/rejected",
+			Name: "1.0.2/channel mask on/adr enabled/rejected",
 			Device: &ttnpb.EndDevice{
 				FrequencyPlanId:   test.EUFrequencyPlanID,
-				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_0_2_REV_B,
 				MacState: &ttnpb.MACState{
-					LorawanVersion: ttnpb.MACVersion_MAC_V1_1,
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_2,
 				},
 			},
 			Expected: &ttnpb.EndDevice{
 				FrequencyPlanId:   test.EUFrequencyPlanID,
-				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_0_2_REV_B,
 				MacState: &ttnpb.MACState{
-					LorawanVersion: ttnpb.MACVersion_MAC_V1_1,
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_2,
 				},
 			},
 			Payload: &ttnpb.MACCommand_LinkADRAns{
@@ -518,19 +518,19 @@ func TestHandleLinkADRAns(t *testing.T) {
 			AdrEnabled: true,
 		},
 		{
-			Name: "no request/channel mask ack/accepted",
+			Name: "1.0.4/channel mask on/adr disabled/accepted",
 			Device: &ttnpb.EndDevice{
 				FrequencyPlanId:   test.EUFrequencyPlanID,
-				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
 				MacState: &ttnpb.MACState{
-					LorawanVersion: ttnpb.MACVersion_MAC_V1_1,
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
 				},
 			},
 			Expected: &ttnpb.EndDevice{
 				FrequencyPlanId:   test.EUFrequencyPlanID,
-				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_1_REV_B,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
 				MacState: &ttnpb.MACState{
-					LorawanVersion: ttnpb.MACVersion_MAC_V1_1,
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
 				},
 			},
 			Payload: &ttnpb.MACCommand_LinkADRAns{
@@ -547,6 +547,37 @@ func TestHandleLinkADRAns(t *testing.T) {
 			},
 			Error:      ErrRequestNotFound.WithAttributes("cid", ttnpb.MACCommandIdentifier_CID_LINK_ADR),
 			AdrEnabled: false,
+		},
+		{
+			Name: "1.0.4/channel mask on/adr enabled/rejected",
+			Device: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Expected: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Payload: &ttnpb.MACCommand_LinkADRAns{
+				ChannelMaskAck:   true,
+				DataRateIndexAck: false,
+				TxPowerIndexAck:  false,
+			},
+			Events: events.Builders{
+				EvtReceiveLinkADRReject.With(events.WithData(&ttnpb.MACCommand_LinkADRAns{
+					ChannelMaskAck:   true,
+					DataRateIndexAck: false,
+					TxPowerIndexAck:  false,
+				})),
+			},
+			Error:      ErrRequestNotFound.WithAttributes("cid", ttnpb.MACCommandIdentifier_CID_LINK_ADR),
+			AdrEnabled: true,
 		},
 		{
 			Name: "1 request/all ack",

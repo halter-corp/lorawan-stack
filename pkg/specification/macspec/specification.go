@@ -237,3 +237,9 @@ func EncryptionOptions(v ttnpb.MACVersion, frameType FrameType, fPort uint32, cm
 func ValidateUplinkPayloadSize(v ttnpb.MACVersion) bool {
 	return compareMACVersion(v, ttnpb.MACVersion_MAC_V1_1) >= 0
 }
+
+// UseADRBit reports whether v uses the ADR bit in the FCtrl field.
+func UseADRBit(v ttnpb.MACVersion) bool {
+	return compareMACVersion(v, ttnpb.MACVersion_MAC_V1_0_3) >= 0 &&
+		compareMACVersion(v, ttnpb.MACVersion_MAC_V1_0_4) <= 0
+}
