@@ -40,7 +40,6 @@ import ShortcutItem from './shortcut-item'
 const m = defineMessages({
   shortcuts: 'Quick actions',
   addEndDevice: 'Add end device',
-  addPersonalApiKey: 'Add API key',
 })
 
 const ShortcutPanel = ({ panelClassName, mobile }) => {
@@ -73,7 +72,7 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
         />
         <ShortcutItem
           icon={IconKey}
-          title={m.addPersonalApiKey}
+          title={sharedMessages.addApiKey}
           link="/user-settings/api-keys/add"
           mobile
         />
@@ -107,7 +106,7 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
         />
         <ShortcutItem
           icon={IconKey}
-          title={m.addPersonalApiKey}
+          title={sharedMessages.addApiKey}
           link="/user-settings/api-keys/add"
         />
         <ShortcutItem
