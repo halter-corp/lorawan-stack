@@ -28,15 +28,21 @@ import style from './shortcut-item.styl'
 const ShortcutItem = ({ icon, link, action, title, className, mobile }) =>
   action ? (
     <Tooltip content={<Message content={title} />} delay={0}>
-      <button onClick={action} className={classnames(style.shortcut, className)}>
-        <Icon icon={icon} className={style.icon} size={28} />
+      <button
+        onClick={action}
+        className={classnames(style.shortcut, className, { [style.shortcutPanel]: !mobile })}
+      >
+        <Icon icon={icon} className={style.icon} size={25} />
         {mobile && <Message content={title} className="lg-xl:d-none" />}
       </button>
     </Tooltip>
   ) : (
     <Tooltip content={<Message content={title} />} delay={0}>
-      <Link to={link} className={classnames(style.shortcut, className)}>
-        <Icon icon={icon} className={style.icon} size={28} />
+      <Link
+        to={link}
+        className={classnames(style.shortcut, className, { [style.shortcutPanel]: !mobile })}
+      >
+        <Icon icon={icon} className={style.icon} size={25} />
         {mobile && <Message content={title} className="lg-xl:d-none" />}
       </Link>
     </Tooltip>
