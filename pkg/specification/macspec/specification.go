@@ -238,8 +238,9 @@ func ValidateUplinkPayloadSize(v ttnpb.MACVersion) bool {
 	return compareMACVersion(v, ttnpb.MACVersion_MAC_V1_1) >= 0
 }
 
-// UseADRBit reports whether v uses the ADR bit in the FCtrl field.
-func UseADRBit(v ttnpb.MACVersion) bool {
+// LinkADRReqRejected reports whether v uses the ADR bit in the FCtrl field
+// to modify which ACK bits needs to check in the LinkADRAns.
+func LinkADRReqRejected(v ttnpb.MACVersion) bool {
 	return compareMACVersion(v, ttnpb.MACVersion_MAC_V1_0_3) >= 0 &&
 		compareMACVersion(v, ttnpb.MACVersion_MAC_V1_0_4) <= 0
 }
