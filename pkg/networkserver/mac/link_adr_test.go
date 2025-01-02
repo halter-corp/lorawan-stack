@@ -549,6 +549,37 @@ func TestHandleLinkADRAns(t *testing.T) {
 			AdrEnabled: false,
 		},
 		{
+			Name: "1.0.4/channel mask off/adr disabled/rejected",
+			Device: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Expected: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Payload: &ttnpb.MACCommand_LinkADRAns{
+				ChannelMaskAck:   false,
+				DataRateIndexAck: false,
+				TxPowerIndexAck:  false,
+			},
+			Events: events.Builders{
+				EvtReceiveLinkADRReject.With(events.WithData(&ttnpb.MACCommand_LinkADRAns{
+					ChannelMaskAck:   false,
+					DataRateIndexAck: false,
+					TxPowerIndexAck:  false,
+				})),
+			},
+			Error:      ErrRequestNotFound.WithAttributes("cid", ttnpb.MACCommandIdentifier_CID_LINK_ADR),
+			AdrEnabled: false,
+		},
+		{
 			Name: "1.0.4/channel mask on/adr enabled/rejected",
 			Device: &ttnpb.EndDevice{
 				FrequencyPlanId:   test.EUFrequencyPlanID,
@@ -572,6 +603,37 @@ func TestHandleLinkADRAns(t *testing.T) {
 			Events: events.Builders{
 				EvtReceiveLinkADRReject.With(events.WithData(&ttnpb.MACCommand_LinkADRAns{
 					ChannelMaskAck:   true,
+					DataRateIndexAck: false,
+					TxPowerIndexAck:  false,
+				})),
+			},
+			Error:      ErrRequestNotFound.WithAttributes("cid", ttnpb.MACCommandIdentifier_CID_LINK_ADR),
+			AdrEnabled: true,
+		},
+		{
+			Name: "1.0.4/channel mask off/adr enabled/rejected",
+			Device: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Expected: &ttnpb.EndDevice{
+				FrequencyPlanId:   test.EUFrequencyPlanID,
+				LorawanPhyVersion: ttnpb.PHYVersion_RP002_V1_0_4,
+				MacState: &ttnpb.MACState{
+					LorawanVersion: ttnpb.MACVersion_MAC_V1_0_4,
+				},
+			},
+			Payload: &ttnpb.MACCommand_LinkADRAns{
+				ChannelMaskAck:   false,
+				DataRateIndexAck: false,
+				TxPowerIndexAck:  false,
+			},
+			Events: events.Builders{
+				EvtReceiveLinkADRReject.With(events.WithData(&ttnpb.MACCommand_LinkADRAns{
+					ChannelMaskAck:   false,
 					DataRateIndexAck: false,
 					TxPowerIndexAck:  false,
 				})),

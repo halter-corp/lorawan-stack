@@ -331,7 +331,7 @@ func HandleLinkADRAns(
 	// rejected. This behavior differs from when the uplink ADR bit is set, in which case the end-
 	// device accepts or rejects the entire command.
 	if macspec.UseADRBit(macState.LorawanVersion) {
-		rejected = (!adrEnabled && !pld.ChannelMaskAck) ||
+		rejected = !pld.ChannelMaskAck ||
 			(adrEnabled && !pld.DataRateIndexAck) ||
 			(adrEnabled && !pld.TxPowerIndexAck)
 	} else {
