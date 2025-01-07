@@ -27,7 +27,6 @@ import (
 	asioapredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/packages/redis"
 	asiopsredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/pubsub/redis"
 	asiowebredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/io/web/redis"
-	asmetaredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/metadata/redis"
 	asredis "go.thethings.network/lorawan-stack/v3/pkg/applicationserver/redis"
 	"go.thethings.network/lorawan-stack/v3/pkg/component"
 	"go.thethings.network/lorawan-stack/v3/pkg/console"
@@ -445,21 +444,11 @@ var startCommand = &cobra.Command{
 				}
 				config.AS.Webhooks.Registry = webhookRegistry
 			}
-			if cache := &config.AS.EndDeviceMetadataStorage.Location.Cache; cache.Enable {
-				switch config.Cache.Service {
-				case "redis":
-					cache.Cache = &asmetaredis.EndDeviceLocationCache{
-						Redis: redis.New(config.Cache.Redis.WithNamespace("as", "metadata", "locations")),
-					}
-				default:
-					cache.Enable = false
-				}
-			}
-			locationRegistry, err := config.AS.EndDeviceMetadataStorage.Location.NewRegistry(ctx, c)
+			endDeviceRegistry, err := config.AS.EndDeviceMetadataStorage.NewRegistry(ctx, c)
 			if err != nil {
 				return shared.ErrInitializeApplicationServer.WithCause(err)
 			}
-			config.AS.EndDeviceMetadataStorage.Location.Registry = locationRegistry
+			config.AS.EndDeviceMetadataStorage.Registry = endDeviceRegistry
 			as, err := applicationserver.New(c, &config.AS)
 			if err != nil {
 				return shared.ErrInitializeApplicationServer.WithCause(err)

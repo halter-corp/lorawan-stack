@@ -40298,7 +40298,11 @@
               "label": "",
               "type": "LastBatteryPercentage",
               "longType": "LastBatteryPercentage",
-              "fullType": "ttn.lorawan.v3.LastBatteryPercentage"
+              "fullType": "ttn.lorawan.v3.LastBatteryPercentage",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
             },
             {
               "name": "attributes",
