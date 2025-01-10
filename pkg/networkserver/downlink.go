@@ -1611,7 +1611,7 @@ func (ns *NetworkServer) attemptClassADataDownlink(ctx context.Context, dev *ttn
 		} else {
 			logger = logger.WithError(err)
 		}
-		logger.Warn("All Gateway Servers failed to schedule downlink, skip class A downlink slot")
+		logger.Info("All Gateway Servers failed to schedule downlink, skip class A downlink slot")
 		if genState.ApplicationDownlink != nil {
 			dev.Session.QueuedApplicationDownlinks = append([]*ttnpb.ApplicationDownlink{genState.ApplicationDownlink}, dev.Session.QueuedApplicationDownlinks...)
 		}
@@ -2071,7 +2071,7 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 						} else {
 							logger = logger.WithError(err)
 						}
-						logger.Warn("All Gateway Servers failed to schedule downlink, skip join-accept downlink slot")
+						logger.Info("All Gateway Servers failed to schedule downlink, skip join-accept downlink slot")
 						dev.PendingMacState.RxWindowsAvailable = false
 						taskUpdateStrategy = nextDownlinkTask
 						return dev, []string{

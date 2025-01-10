@@ -60,6 +60,9 @@ func UnaryServerInterceptor(ctx context.Context, opts ...Option) grpc.UnaryServe
 		if err == context.Canceled {
 			level = log.InfoLevel
 		}
+		if level > log.InfoLevel {
+			level = log.InfoLevel
+		}
 
 		entry := logger.WithFields(onceFields)
 		if err != nil {
