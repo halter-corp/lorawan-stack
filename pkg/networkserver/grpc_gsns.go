@@ -62,6 +62,9 @@ const (
 
 	// DeduplicationLimit is the number of metadata to deduplicate for a single transmission.
 	deduplicationLimit = 50
+
+	// If end device sends data upload packet using this special fport, do not attempt to schedule downlink since end device is not going to open rx windows
+	dataUploadFPort = 222
 )
 
 // UplinkDeduplicator represents an entity, that deduplicates uplinks and accumulates metadata.
@@ -1110,9 +1113,17 @@ func (ns *NetworkServer) handleDataUplink(ctx context.Context, up *ttnpb.UplinkM
 	matched.Device = stored
 	ctx = matched.Context
 
-	if err := ns.updateDataDownlinkTask(ctx, stored, time.Time{}); err != nil {
-		log.FromContext(ctx).WithError(err).Error("Failed to update downlink task queue after data uplink")
+	macPayload := up.Payload.GetMacPayload()
+	isDataUpload := false
+	if macPayload != nil && macPayload.GetFPort() == dataUploadFPort {
+		isDataUpload = true
 	}
+	if !isDataUpload {
+		if err := ns.updateDataDownlinkTask(ctx, stored, time.Time{}); err != nil {
+			log.FromContext(ctx).WithError(err).Error("Failed to update downlink task queue after data uplink")
+		}
+	}
+
 	if !matched.IsRetransmission {
 		var frmPayload []byte
 		switch pld.FPort {
