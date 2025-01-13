@@ -15,6 +15,7 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 import { useDispatch } from 'react-redux'
+import classNames from 'classnames'
 
 import { APPLICATION } from '@console/constants/entities'
 
@@ -28,6 +29,7 @@ import {
 } from '@ttn-lw/components/icon'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import { setSearchOpen, setSearchScope } from '@console/store/actions/search'
 
@@ -37,55 +39,94 @@ import ShortcutItem from './shortcut-item'
 
 const m = defineMessages({
   shortcuts: 'Quick actions',
-  addApplication: 'New application',
-  addGateway: 'New gateway',
-  addNewOrganization: 'New organization',
-  addPersonalApiKey: 'New personal API key',
+  addEndDevice: 'Add end device',
 })
 
-const ShortcutPanel = () => {
+const ShortcutPanel = ({ panelClassName, mobile }) => {
   const dispatch = useDispatch()
   const handleRegisterDeviceClick = React.useCallback(() => {
     dispatch(setSearchScope(APPLICATION))
     dispatch(setSearchOpen(true))
   }, [dispatch])
 
-  return (
-    <Panel title={m.shortcuts} icon={IconBolt} divider className="h-full">
-      <div className="grid gap-cs-xs">
+  if (mobile) {
+    return (
+      <div className="d-flex gap-cs-s">
         <ShortcutItem
           icon={IconApplication}
-          title={m.addApplication}
+          title={sharedMessages.createApplication}
           link="/applications/add"
-          className="item-6"
+          mobile
         />
         <ShortcutItem
           icon={IconDevice}
-          title={sharedMessages.registerDeviceInApplication}
+          title={m.addEndDevice}
           action={handleRegisterDeviceClick}
-          className="item-6"
+          mobile
         />
         <ShortcutItem
           icon={IconUsersGroup}
-          title={m.addNewOrganization}
+          title={sharedMessages.createOrganization}
           link="/organizations/add"
-          className="item-4"
+          mobile
         />
         <ShortcutItem
           icon={IconKey}
-          title={m.addPersonalApiKey}
-          link="/user/api-keys/add"
-          className="item-4"
+          title={sharedMessages.addApiKey}
+          link="/user-settings/api-keys/add"
+          mobile
         />
         <ShortcutItem
           icon={IconGateway}
-          title={m.addGateway}
+          title={sharedMessages.registerGateway}
           link="/gateways/add"
-          className="item-4"
+          mobile
+        />
+      </div>
+    )
+  }
+
+  return (
+    <Panel title={m.shortcuts} icon={IconBolt} className={classNames(panelClassName, 'h-full')}>
+      <div className="d-flex gap-cs-xs w-full">
+        <ShortcutItem
+          icon={IconApplication}
+          title={sharedMessages.createApplication}
+          link="/applications/add"
+        />
+        <ShortcutItem
+          icon={IconDevice}
+          title={sharedMessages.registerEndDevice}
+          action={handleRegisterDeviceClick}
+        />
+        <ShortcutItem
+          icon={IconUsersGroup}
+          title={sharedMessages.createOrganization}
+          link="/organizations/add"
+        />
+        <ShortcutItem
+          icon={IconKey}
+          title={sharedMessages.addApiKey}
+          link="/user-settings/api-keys/add"
+        />
+        <ShortcutItem
+          icon={IconGateway}
+          title={sharedMessages.registerGateway}
+          link="/gateways/add"
         />
       </div>
     </Panel>
   )
+}
+
+ShortcutPanel.propTypes = {
+  mobile: PropTypes.bool,
+  panelClassName: PropTypes.string,
+}
+
+ShortcutPanel.defaultProps = {
+  panelClassName: undefined,
+  mobile: false,
 }
 
 export default ShortcutPanel

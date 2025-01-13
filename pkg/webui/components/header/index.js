@@ -95,7 +95,8 @@ const Header = ({
         <div className="d-flex al-center gap-cs-xs">
           <AppStatusBadge />
           <Button
-            secondary
+            primary
+            message={sharedMessages.add}
             icon={IconPlus}
             dropdownItems={addDropdownItems}
             dropdownPosition="below left"

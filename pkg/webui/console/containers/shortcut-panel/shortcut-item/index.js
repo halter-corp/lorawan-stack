@@ -17,6 +17,7 @@ import classnames from 'classnames'
 
 import Icon from '@ttn-lw/components/icon'
 import Link from '@ttn-lw/components/link'
+import Tooltip from '@ttn-lw/components/tooltip'
 
 import Message from '@ttn-lw/lib/components/message'
 
@@ -24,25 +25,27 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './shortcut-item.styl'
 
-const ShortcutItem = ({ icon, title, link, action, className }) =>
+const ShortcutItem = ({ icon, link, action, title, className, mobile }) =>
   action ? (
-    <button onClick={action} className={classnames(style.shortcut, className)}>
-      <div className="pos-relative w-full h-full">
-        <div className={style.shortcutTitleWrapper}>
-          <Icon icon={icon} className={style.icon} size={28} />
-          <Message content={title} component="span" />
-        </div>
-      </div>
-    </button>
+    <Tooltip content={<Message content={title} />} delay={0}>
+      <button
+        onClick={action}
+        className={classnames(style.shortcut, className, { [style.shortcutPanel]: !mobile })}
+      >
+        <Icon icon={icon} className={style.icon} size={25} />
+        {mobile && <Message content={title} className="lg-xl:d-none" />}
+      </button>
+    </Tooltip>
   ) : (
-    <Link to={link} className={classnames(style.shortcut, className)}>
-      <div className="pos-relative w-full h-full">
-        <div className={style.shortcutTitleWrapper}>
-          <Icon icon={icon} className={style.icon} size={28} />
-          <Message content={title} component="span" />
-        </div>
-      </div>
-    </Link>
+    <Tooltip content={<Message content={title} />} delay={0}>
+      <Link
+        to={link}
+        className={classnames(style.shortcut, className, { [style.shortcutPanel]: !mobile })}
+      >
+        <Icon icon={icon} className={style.icon} size={25} />
+        {mobile && <Message content={title} className="lg-xl:d-none" />}
+      </Link>
+    </Tooltip>
   )
 
 ShortcutItem.propTypes = {
@@ -50,6 +53,7 @@ ShortcutItem.propTypes = {
   className: PropTypes.string,
   icon: PropTypes.icon.isRequired,
   link: PropTypes.string,
+  mobile: PropTypes.bool,
   title: PropTypes.message.isRequired,
 }
 
@@ -57,6 +61,7 @@ ShortcutItem.defaultProps = {
   className: undefined,
   action: undefined,
   link: undefined,
+  mobile: false,
 }
 
 export default ShortcutItem
