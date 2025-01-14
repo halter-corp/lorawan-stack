@@ -30,11 +30,11 @@ import Yup from '@ttn-lw/lib/yup'
 import createPasswordValidationSchema from '@ttn-lw/lib/create-password-validation-schema'
 import { userId as userIdRegexp } from '@ttn-lw/lib/regexp'
 import capitalizeMessage from '@ttn-lw/lib/capitalize-message'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
 import { createUser } from '@console/store/actions/users'
 
 import { selectPasswordRequirements } from '@console/store/selectors/identity-server'
-import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
 const approvalStates = [
   'STATE_REQUESTED',
