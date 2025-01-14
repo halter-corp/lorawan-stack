@@ -62,6 +62,9 @@ const (
 
 	// DeduplicationLimit is the number of metadata to deduplicate for a single transmission.
 	deduplicationLimit = 50
+
+	// If end device sends data upload packet using this special fport, do not attempt to schedule downlink since end device is not going to open rx windows
+	dataUploadFPort uint32 = 222
 )
 
 // UplinkDeduplicator represents an entity, that deduplicates uplinks and accumulates metadata.
@@ -253,6 +256,15 @@ func (ns *NetworkServer) matchAndHandleDataUplink(ctx context.Context, dev *ttnp
 	pld := up.Payload.GetMacPayload()
 	devAddr := types.MustDevAddr(pld.FHdr.DevAddr).OrZero()
 	pendingAppDown := dev.MacState.GetPendingApplicationDownlink()
+
+	skipDownlinkTx := false
+	macPayload := up.Payload.GetMacPayload()
+	if macPayload != nil && macPayload.FPort == dataUploadFPort {
+		skipDownlinkTx = true
+	}
+	if skipDownlinkTx {
+		pendingAppDown = nil
+	}
 
 	// NOTE: Device might have changed session since the CMACF match.
 	// E.g. We could have matched pending session by CMACF and device might
@@ -1110,9 +1122,17 @@ func (ns *NetworkServer) handleDataUplink(ctx context.Context, up *ttnpb.UplinkM
 	matched.Device = stored
 	ctx = matched.Context
 
-	if err := ns.updateDataDownlinkTask(ctx, stored, time.Time{}); err != nil {
-		log.FromContext(ctx).WithError(err).Error("Failed to update downlink task queue after data uplink")
+	skipDownlinkTx := false
+	macPayload := up.Payload.GetMacPayload()
+	if macPayload != nil && macPayload.FPort == dataUploadFPort {
+		skipDownlinkTx = true
 	}
+	if !skipDownlinkTx {
+		if err := ns.updateDataDownlinkTask(ctx, stored, time.Time{}); err != nil {
+			log.FromContext(ctx).WithError(err).Error("Failed to update downlink task queue after data uplink")
+		}
+	}
+
 	if !matched.IsRetransmission {
 		var frmPayload []byte
 		switch pld.FPort {
