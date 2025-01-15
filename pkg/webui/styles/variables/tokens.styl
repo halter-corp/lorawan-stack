@@ -199,7 +199,7 @@ $tokens = {
 
       'bg-neutral-min': $c.neutral-black, // Background color for panels, dropdowns, inputs, tab, table, ...
       'bg-neutral-extralight': $c.neutral-1025, // Background for navigation element items.
-      'bg-neutral-extralight-hover': $c.neutral-900, // Background color for panels, dropdowns, inputs, tab, table, ... on hover.
+      'bg-neutral-extralight-hover': $c.neutral-1000, // Background color for panels, dropdowns, inputs, tab, table, ... on hover.
       'bg-neutral-light': $c.neutral-900, // Background for navigation element items on hover.
       'bg-neutral-semilight': $c.neutral-900, // Background for the console dashboard.
       'bg-neutral-normal': $c.neutral-700, // Background for the console dashboard on hover.
@@ -211,8 +211,11 @@ $tokens = {
 
       'bg-brand-extralight': $c.neutral-1000, // Background for navigation elements background.
       'bg-brand-light': $c.neutral-800, // ?
-      'bg-brand-normal': $c.tts-400, // Background for highlight elements.
-      'bg-brand-normal-hover': $c.tts-500, // Background for highlight elements on hover.
+      'bg-brand-normal': $c.tts-500, // Background for highlight elements.
+      'bg-brand-normal-hover': $c.tts-600, // Background for highlight elements on hover.
+      'bg-brand-semibold': $c.tts-400, // ?
+      'bg-brand-bold': $c.tts-200, // Background for tertiary.
+      'bg-brand-heavy': $c.tts-100, // Background for tertiary button on hover.
 
       // Semantic
 
@@ -236,6 +239,10 @@ $tokens = {
       'bg-error-normal-hover': $c.error-500, // Background for error highlight elements on hover.
       'bg-info-normal-hover': $c.info-500, // Background for info highlight elements on hover.
 
+      'bg-error-bold': $c.error-1000, // Background for error secondary button.
+
+      'bg-error-heavy': $c.error-1025, // Background for error secondary button on hover.
+
       'bg-success-normal-disabled': $c.success-100, // Background for success highlight elements on disabled.
       'bg-warning-normal-disabled': $c.warning-100, // Background for warning highlight elements on disabled.
       'bg-error-normal-disabled': $c.error-100, // Background for error highlight elements on disabled.
@@ -254,6 +261,8 @@ $tokens = {
 
       // Brand
 
+      'text-brand-extralight': $c.tts-800, // Text color for tertiary button label.
+      'text-brand-light': $c.tts-600, // ?
       'text-brand-normal': $c.tts-400, // Text color for highlight information.
       'text-brand-normal-hover': $c.tts-500, // Text color for highlight information on hover.
       'text-brand-normal-active': $c.tts-300, // Text color for highlight information on active.
@@ -317,15 +326,17 @@ $tokens = {
 
       // Semantic
 
-      'border-success-normal': $c.success-400, // Border for success element borders.
-      'border-warning-normal': $c.warning-400, // Border for warning element borders.
-      'border-error-normal': $c.error-400, // Border for error element borders.
-      'border-info-normal': $c.information-400, // Border for info element borders.
+      'border-error-extralight': $c.error-900, // Border for info element borders on regular elements like tags or banners.
 
       'border-success-light': $c.success-800, // Border for success element borders on regular elements like tags or banners.
       'border-warning-light': $c.warning-800, // Border for warning element borders on regular elements like tags or banners.
       'border-error-light': $c.error-800, // Border for error element borders on regular elements like tags or banners.
       'border-info-light': $c.information-800, // Border for info element borders on regular elements like tags or banners.
+
+      'border-success-normal': $c.success-400, // Border for success element borders.
+      'border-warning-normal': $c.warning-400, // Border for warning element borders.
+      'border-error-normal': $c.error-400, // Border for error element borders.
+      'border-info-normal': $c.information-400, // Border for info element borders.
 
       // Gradients
 
