@@ -11,6 +11,8 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Added
 
+- Add recvTime field to the decodeUplink input in payload formatters
+
 ### Changed
 
 ### Deprecated
