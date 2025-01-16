@@ -73,7 +73,13 @@ const AppSideNavigation = () => {
   const rights = useSelector(selectApplicationRights)
   const natsDisabled = useSelector(selectNatsProviderDisabled)
   const mqttDisabled = useSelector(selectMqttProviderDisabled)
-  const topEntityFilter = useCallback(e => e.id.startsWith(appId), [appId])
+  const topEntityFilter = useCallback(
+    e => {
+      const separatedAppId = e.id.split('/')[0]
+      return separatedAppId === appId
+    },
+    [appId],
+  )
   const topEntities = useSelector(state => selectEndDeviceTopEntities(state, topEntityFilter))
 
   if (!app) {
