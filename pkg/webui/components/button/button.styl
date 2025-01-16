@@ -245,11 +245,11 @@
 
       &:not(:disabled)
         &:hover
-          background-color: rgba(0,0,0,.04)
+          background-color: var(--c-bg-neutral-light)
           color: var(--c-text-neutral-heavy)
 
         +focus-visible()
-          background-color: rgba(0,0,0,.04)
+          background-color: var(--c-bg-neutral-light)
           color: var(--c-text-neutral-heavy)
 
         &:active
@@ -259,7 +259,7 @@
       color: var(--c-bg-brand-normal)
 
       &:disabled
-        color: var(--c-bg-brand-normal-disabled)
+        color: var(--c-text-neutral-extralight)
 
       &:not(:disabled)
         &:hover
