@@ -72,15 +72,15 @@
       height: 2.5rem
 
     &.primary:not(.naked)
-      color: var(--c-text-neutral-min)
-      background-color: var(--c-text-brand-normal)
+      color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
+      background-color: var(--c-bg-brand-normal)
 
       &:disabled
         background-color: var(--c-border-neutral-light)
 
       &:not(:disabled)
         &:hover
-          background-color: var(--c-text-brand-normal-hover)
+          background-color: var(--c-bg-brand-normal-hover)
 
         +focus-visible()
           background-color: var(--c-text-brand-normal-hover)
@@ -125,12 +125,12 @@
 
     &.secondary
       color: var(--c-text-neutral-heavy)
-      background-color: var(--c-bg-neutral-min)
-      border: solid 1px var(--c-border-neutral-light)
+      background-color: light-dark(var(--c-text-neutral-min), var(--c-bg-neutral-light))
+      border: solid 1px light-dark(var(--c-border-neutral-light), var(--c-border-neutral-normal))
 
       &:not(:disabled)
         &:hover
-          background-color: var(--c-bg-neutral-light)
+          background-color: light-dark(var(--c-bg-neutral-light), var(--c-bg-neutral-extralight-hover))
 
         +focus-visible()
           gradient-border(var(--c-bg-neutral-light), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
@@ -156,11 +156,19 @@
 
       &.danger
         color: var(--c-text-error-normal)
-        border-color: var(--c-border-error-normal)
+        border-color: var(--c-border-error-extralight)
+        background-color: var(--c-bg-error-bold)
+
+        //Backup (light)
+        // color: var(--c-text-error-normal)
+        // border-color: var(--c-border-error-normal)
 
         &:not(:disabled)
           &:hover
-            gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
+            background-color: var(--c-bg-error-heavy)
+
+            //Backup (light)
+            //gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
 
           +focus-visible()
             gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
@@ -184,8 +192,8 @@
           height: 1.2rem
 
     &.tertiary
-      color: var(--c-text-brand-normal)
-      background-color: var(--c-bg-brand-light)
+      color: light-dark(var(--c-text-brand-normal), var(--c-text-brand-extralight))
+      background-color: light-dark(var(--c-bg-brand-light), var(--c-bg-brand-bold))
 
       &:disabled
         color: var(--c-text-neutral-light)
@@ -193,7 +201,7 @@
 
       &:not(:disabled)
         &:hover
-          background-color: var(--c-bg-brand-semilight)
+          background-color: light-dark(var(--c-bg-brand-semilight), var(--c-bg-brand-heavy))
 
         +focus-visible()
           background-color: var(--c-bg-brand-light)
@@ -220,11 +228,12 @@
 
       &.danger
         color: var(--c-text-danger-normal)
-        background-color: var(--c-bg-error-light)
+        border-color: light-dark(var(--c-border-error-normal)var(--c-border-error-extralight))
+        background-color: light-dark(var(--c-bg-error-light), var(--c-bg-error-bold))
 
         &:not(:disabled)
           &:hover
-            background-color: var(--c-bg-error-semilight)
+            background-color: light-dark(var(--c-bg-error-semilight), var(--c-bg-error-heavy))
 
           +focus-visible()
             background-color: var(--c-bg-error-semilight)
