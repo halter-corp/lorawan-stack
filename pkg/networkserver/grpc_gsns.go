@@ -43,6 +43,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -911,7 +912,7 @@ func lastBatteryPercentage(dev *ttnpb.EndDevice) *ttnpb.LastBatteryPercentage {
 
 	return &ttnpb.LastBatteryPercentage{
 		FCnt:       dev.MacState.LastDevStatusFCntUp,
-		Value:      dev.BatteryPercentage,
+		Value:      wrapperspb.Float(dev.BatteryPercentage.Value * 100),
 		ReceivedAt: dev.LastDevStatusReceivedAt,
 	}
 }

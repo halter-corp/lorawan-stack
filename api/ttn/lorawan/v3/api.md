@@ -8954,7 +8954,7 @@ ncrc: [scheduled.advanced]
 
 | Field | Validations |
 | ----- | ----------- |
-| `value` | <p>`float.lte`: `1`</p><p>`float.gte`: `0`</p> |
+| `value` | <p>`float.lte`: `100`</p><p>`float.gte`: `0`</p> |
 
 ### <a name="ttn.lorawan.v3.MessagePayloadFormatters">Message `MessagePayloadFormatters`</a>
 

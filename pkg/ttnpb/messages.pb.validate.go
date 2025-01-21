@@ -739,10 +739,10 @@ func (m *LastBatteryPercentage) ValidateFields(paths ...string) error {
 
 			if wrapper := m.GetValue(); wrapper != nil {
 
-				if val := wrapper.GetValue(); val < 0 || val > 1 {
+				if val := wrapper.GetValue(); val < 0 || val > 100 {
 					return LastBatteryPercentageValidationError{
 						field:  "value",
-						reason: "value must be inside range [0, 1]",
+						reason: "value must be inside range [0, 100]",
 					}
 				}
 

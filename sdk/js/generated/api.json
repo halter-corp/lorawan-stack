@@ -40305,7 +40305,7 @@
                 "validate.rules": [
                   {
                     "name": "float.lte",
-                    "value": 1
+                    "value": 100
                   },
                   {
                     "name": "float.gte",
