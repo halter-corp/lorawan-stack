@@ -719,6 +719,12 @@ func (x *ApplicationUplink) MarshalProtoJSON(s *jsonplugin.MarshalState) {
 		s.WriteObjectField("network_ids")
 		x.NetworkIds.MarshalProtoJSON(s.WithField("network_ids"))
 	}
+	if x.LastBatteryPercentage != nil || s.HasField("last_battery_percentage") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("last_battery_percentage")
+		// NOTE: LastBatteryPercentage does not seem to implement MarshalProtoJSON.
+		golang.MarshalMessage(s, x.LastBatteryPercentage)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -881,6 +887,16 @@ func (x *ApplicationUplink) UnmarshalProtoJSON(s *jsonplugin.UnmarshalState) {
 			}
 			x.NetworkIds = &NetworkIdentifiers{}
 			x.NetworkIds.UnmarshalProtoJSON(s.WithField("network_ids", true))
+		case "last_battery_percentage", "lastBatteryPercentage":
+			s.AddField("last_battery_percentage")
+			if s.ReadNil() {
+				x.LastBatteryPercentage = nil
+				return
+			}
+			// NOTE: LastBatteryPercentage does not seem to implement UnmarshalProtoJSON.
+			var v LastBatteryPercentage
+			golang.UnmarshalMessage(s, &v)
+			x.LastBatteryPercentage = &v
 		}
 	})
 }

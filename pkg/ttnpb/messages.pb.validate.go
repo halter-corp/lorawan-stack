@@ -718,6 +718,114 @@ var _ interface {
 	ErrorName() string
 } = GatewayUplinkMessageValidationError{}
 
+// ValidateFields checks the field values on LastBatteryPercentage with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *LastBatteryPercentage) ValidateFields(paths ...string) error {
+	if m == nil {
+		return nil
+	}
+
+	if len(paths) == 0 {
+		paths = LastBatteryPercentageFieldPathsNested
+	}
+
+	for name, subs := range _processPaths(append(paths[:0:0], paths...)) {
+		_ = subs
+		switch name {
+		case "f_cnt":
+			// no validation rules for FCnt
+		case "value":
+
+			if wrapper := m.GetValue(); wrapper != nil {
+
+				if val := wrapper.GetValue(); val < 0 || val > 100 {
+					return LastBatteryPercentageValidationError{
+						field:  "value",
+						reason: "value must be inside range [0, 100]",
+					}
+				}
+
+			}
+
+		case "received_at":
+
+			if v, ok := interface{}(m.GetReceivedAt()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return LastBatteryPercentageValidationError{
+						field:  "received_at",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		default:
+			return LastBatteryPercentageValidationError{
+				field:  name,
+				reason: "invalid field path",
+			}
+		}
+	}
+	return nil
+}
+
+// LastBatteryPercentageValidationError is the validation error returned by
+// LastBatteryPercentage.ValidateFields if the designated constraints aren't met.
+type LastBatteryPercentageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e LastBatteryPercentageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e LastBatteryPercentageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e LastBatteryPercentageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e LastBatteryPercentageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e LastBatteryPercentageValidationError) ErrorName() string {
+	return "LastBatteryPercentageValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e LastBatteryPercentageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sLastBatteryPercentage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = LastBatteryPercentageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = LastBatteryPercentageValidationError{}
+
 // ValidateFields checks the field values on ApplicationUplink with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -910,6 +1018,18 @@ func (m *ApplicationUplink) ValidateFields(paths ...string) error {
 				if err := v.ValidateFields(subs...); err != nil {
 					return ApplicationUplinkValidationError{
 						field:  "network_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		case "last_battery_percentage":
+
+			if v, ok := interface{}(m.GetLastBatteryPercentage()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return ApplicationUplinkValidationError{
+						field:  "last_battery_percentage",
 						reason: "embedded message failed validation",
 						cause:  err,
 					}

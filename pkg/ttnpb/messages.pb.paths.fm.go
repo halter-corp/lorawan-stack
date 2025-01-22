@@ -545,6 +545,17 @@ var GatewayUplinkMessageFieldPathsTopLevel = []string{
 	"band_id",
 	"message",
 }
+var LastBatteryPercentageFieldPathsNested = []string{
+	"f_cnt",
+	"received_at",
+	"value",
+}
+
+var LastBatteryPercentageFieldPathsTopLevel = []string{
+	"f_cnt",
+	"received_at",
+	"value",
+}
 var ApplicationUplinkFieldPathsNested = []string{
 	"app_s_key",
 	"app_s_key.encrypted_key",
@@ -558,6 +569,10 @@ var ApplicationUplinkFieldPathsNested = []string{
 	"f_port",
 	"frm_payload",
 	"last_a_f_cnt_down",
+	"last_battery_percentage",
+	"last_battery_percentage.f_cnt",
+	"last_battery_percentage.received_at",
+	"last_battery_percentage.value",
 	"locations",
 	"network_ids",
 	"network_ids.cluster_address",
@@ -612,6 +627,7 @@ var ApplicationUplinkFieldPathsTopLevel = []string{
 	"f_port",
 	"frm_payload",
 	"last_a_f_cnt_down",
+	"last_battery_percentage",
 	"locations",
 	"network_ids",
 	"normalized_payload",
@@ -979,6 +995,10 @@ var ApplicationUpFieldPathsNested = []string{
 	"up.uplink_message.f_port",
 	"up.uplink_message.frm_payload",
 	"up.uplink_message.last_a_f_cnt_down",
+	"up.uplink_message.last_battery_percentage",
+	"up.uplink_message.last_battery_percentage.f_cnt",
+	"up.uplink_message.last_battery_percentage.received_at",
+	"up.uplink_message.last_battery_percentage.value",
 	"up.uplink_message.locations",
 	"up.uplink_message.network_ids",
 	"up.uplink_message.network_ids.cluster_address",

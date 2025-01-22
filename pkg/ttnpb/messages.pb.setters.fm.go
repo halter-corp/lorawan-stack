@@ -471,6 +471,45 @@ func (dst *GatewayUplinkMessage) SetFields(src *GatewayUplinkMessage, paths ...s
 	return nil
 }
 
+func (dst *LastBatteryPercentage) SetFields(src *LastBatteryPercentage, paths ...string) error {
+	for name, subs := range _processPaths(paths) {
+		switch name {
+		case "f_cnt":
+			if len(subs) > 0 {
+				return fmt.Errorf("'f_cnt' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.FCnt = src.FCnt
+			} else {
+				var zero uint32
+				dst.FCnt = zero
+			}
+		case "value":
+			if len(subs) > 0 {
+				return fmt.Errorf("'value' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.Value = src.Value
+			} else {
+				dst.Value = nil
+			}
+		case "received_at":
+			if len(subs) > 0 {
+				return fmt.Errorf("'received_at' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.ReceivedAt = src.ReceivedAt
+			} else {
+				dst.ReceivedAt = nil
+			}
+
+		default:
+			return fmt.Errorf("invalid field: '%s'", name)
+		}
+	}
+	return nil
+}
+
 func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string) error {
 	for name, subs := range _processPaths(paths) {
 		switch name {
@@ -712,6 +751,31 @@ func (dst *ApplicationUplink) SetFields(src *ApplicationUplink, paths ...string)
 					dst.NetworkIds = src.NetworkIds
 				} else {
 					dst.NetworkIds = nil
+				}
+			}
+		case "last_battery_percentage":
+			if len(subs) > 0 {
+				var newDst, newSrc *LastBatteryPercentage
+				if (src == nil || src.LastBatteryPercentage == nil) && dst.LastBatteryPercentage == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.LastBatteryPercentage
+				}
+				if dst.LastBatteryPercentage != nil {
+					newDst = dst.LastBatteryPercentage
+				} else {
+					newDst = &LastBatteryPercentage{}
+					dst.LastBatteryPercentage = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.LastBatteryPercentage = src.LastBatteryPercentage
+				} else {
+					dst.LastBatteryPercentage = nil
 				}
 			}
 
