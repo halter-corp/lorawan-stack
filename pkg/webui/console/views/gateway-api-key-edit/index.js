@@ -41,7 +41,7 @@ const GatewayApiKeyEditInner = () => {
   )
 
   return (
-    <div className="container container--xl grid">
+    <div className="container container--xl grid mb-ls-xs">
       <PageTitle title={sharedMessages.keyEdit} />
       <div className="item-12">
         <ApiKeyEditForm entity={GATEWAY} entityId={gtwId} />

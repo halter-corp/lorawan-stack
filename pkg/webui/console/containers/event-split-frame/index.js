@@ -14,30 +14,57 @@
 
 import React, { useContext, useCallback, useRef, useEffect } from 'react'
 import DOM from 'react-dom'
-import { IconLayoutBottombarExpand } from '@tabler/icons-react'
-import { defineMessages } from 'react-intl'
+import { useDispatch, useSelector } from 'react-redux'
 
 import Button from '@ttn-lw/components/button'
+import { IconChevronUp } from '@ttn-lw/components/icon'
+
+import RequireRequest from '@ttn-lw/lib/components/require-request'
+
+import LiveDataTutorial from '@console/components/live-data-tutorial'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
+import { getUser } from '@console/store/actions/users'
+import { updateUser } from '@console/store/actions/user'
+
+import { selectUserId } from '@console/store/selectors/logout'
+import { selectUserById } from '@console/store/selectors/users'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import EventSplitFrameContext from './context'
 
 import style from './event-split-frame.styl'
 
-const m = defineMessages({
-  expandEventPanel: 'Expand live data overlay',
-})
-
 const EventSplitFrameInner = ({ children }) => {
   const { isOpen, height, isActive, setHeight, setIsMounted, setIsOpen } =
     useContext(EventSplitFrameContext)
   const ref = useRef()
+  const dispatch = useDispatch()
+  const userId = useSelector(selectUserId)
+  const user = useSelector(state => selectUserById(state, userId))
+  const consolePreferences = useSelector(state => selectConsolePreferences(state))
+  const tutorialsSeen = consolePreferences.tutorials?.seen || []
+  const seen = tutorialsSeen.includes('TUTORIAL_LIVE_DATA_SPLIT_VIEW')
 
   useEffect(() => {
     setIsMounted(true)
     return () => setIsMounted(false)
   }, [setIsMounted])
+
+  const setTutorialSeen = useCallback(async () => {
+    const patch = {
+      console_preferences: {
+        tutorials: {
+          seen: [...tutorialsSeen, 'TUTORIAL_LIVE_DATA_SPLIT_VIEW'],
+        },
+      },
+    }
+
+    await dispatch(attachPromise(updateUser({ id: user.ids.user_id, patch })))
+  }, [dispatch, tutorialsSeen, user.ids.user_id])
 
   // Handle the dragging of the handler to resize the frame.
   const handleDragStart = useCallback(
@@ -79,13 +106,12 @@ const EventSplitFrameInner = ({ children }) => {
       )}
       {isActive && !isOpen && (
         <div className={style.openButton}>
+          <LiveDataTutorial setIsOpen={setIsOpen} setTutorialSeen={setTutorialSeen} seen={seen} />
           <Button
-            icon={IconLayoutBottombarExpand}
-            tooltip={m.expandEventPanel}
-            tooltipPlacement="left"
+            icon={IconChevronUp}
+            className={style.liveDataButton}
             onClick={() => setIsOpen(true)}
-            secondary
-            small
+            message={sharedMessages.liveData}
           />
         </div>
       )}
@@ -97,7 +123,15 @@ EventSplitFrameInner.propTypes = {
   children: PropTypes.node.isRequired,
 }
 
-const EventSplitFrame = props =>
-  DOM.createPortal(<EventSplitFrameInner {...props} />, document.getElementById('split-frame'))
+const EventSplitFrame = props => {
+  const userId = useSelector(selectUserId)
+
+  return DOM.createPortal(
+    <RequireRequest requestAction={getUser(userId, ['console_preferences'])}>
+      <EventSplitFrameInner {...props} />
+    </RequireRequest>,
+    document.getElementById('split-frame'),
+  )
+}
 
 export default EventSplitFrame

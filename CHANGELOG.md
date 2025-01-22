@@ -13,6 +13,7 @@ For details about compatibility between different releases, see the **Commitment
 
 - Add recvTime field to the decodeUplink input in payload formatters
 - Add the latest battery percentage of the end device in the `ApplicationUplink` message.
+- Add live data split view tutorial to the Console.
 
 ### Changed
 
