@@ -178,17 +178,20 @@ export const selectTopEntities = createSelector(
 )
 
 const createTopEntityByTypeSelector = entityType =>
-  createSelector([selectTopEntities, (_, filter) => filter], (topEntities, filter) => {
-    if (!topEntities[entityType]) {
-      return []
-    }
+  createSelector(
+    [selectTopEntities, (_, topEntityFilter) => topEntityFilter],
+    (topEntities, topEntityFilter) => {
+      if (!topEntities[entityType]) {
+        return []
+      }
 
-    const filteredEntities = filter
-      ? topEntities[entityType].filter(filter)
-      : topEntities[entityType]
+      const filteredEntities = topEntityFilter
+        ? topEntities[entityType].filter(topEntityFilter)
+        : topEntities[entityType]
 
-    return filteredEntities
-  })
+      return filteredEntities
+    },
+  )
 
 export const selectTopEntitiesAll = state => selectTopEntities(state)[ALL]
 
