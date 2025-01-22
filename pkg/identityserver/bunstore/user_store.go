@@ -493,7 +493,11 @@ func (s *userStore) updateUserModel( //nolint:gocyclo
 ) (err error) {
 	columns := store.FieldMask{"updated_at"}
 
-	consolePreferences := &ttnpb.UserConsolePreferences{}
+	consolePreferences := &ttnpb.UserConsolePreferences{
+		DashboardLayouts: &ttnpb.UserConsolePreferences_DashboardLayouts{},
+		SortBy:           &ttnpb.UserConsolePreferences_SortBy{},
+		Tutorials:        &ttnpb.UserConsolePreferences_Tutorials{},
+	}
 	updateConsolePreferences := false
 
 	if ttnpb.HasAnyField(ttnpb.TopLevelFields(fieldMask), "console_preferences") && len(model.ConsolePreferences) > 0 {
@@ -610,6 +614,9 @@ func (s *userStore) updateUserModel( //nolint:gocyclo
 		case "console_preferences.tutorials":
 			updateConsolePreferences = true
 			consolePreferences.Tutorials = pb.ConsolePreferences.GetTutorials()
+		case "console_preferences.tutorials.seen":
+			updateConsolePreferences = true
+			consolePreferences.Tutorials.Seen = pb.ConsolePreferences.Tutorials.GetSeen()
 		case "universal_rights":
 			model.UniversalRights = convertIntSlice[ttnpb.Right, int](pb.UniversalRights)
 			columns = append(columns, "universal_rights")
