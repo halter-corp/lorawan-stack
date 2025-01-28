@@ -37,9 +37,11 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 
 import {
   checkFromState,
-  mayViewApplications,
-  mayViewGateways,
-  mayViewOrganizationsOfUser,
+  mayCreateEntities,
+  mayCreateApplications,
+  mayCreateGateways,
+  mayCreateOrganizations,
+  mayCreateDevices,
 } from '@console/lib/feature-checks'
 
 import { logout } from '@console/store/actions/logout'
@@ -67,13 +69,19 @@ const Header = ({ alwaysShowLogo }) => {
 
   const handleLogout = useCallback(() => dispatch(logout()), [dispatch])
   const user = useSelector(selectUser)
-  const mayViewApps = useSelector(state =>
-    user ? checkFromState(mayViewApplications, state) : false,
+  const mayCreateApps = useSelector(state =>
+    user ? checkFromState(mayCreateApplications, state) : false,
   )
-  const mayViewGtws = useSelector(state => (user ? checkFromState(mayViewGateways, state) : false))
-  const mayViewOrgs = useSelector(state =>
-    user ? checkFromState(mayViewOrganizationsOfUser, state) : false,
+  const mayCreateGtws = useSelector(state =>
+    user ? checkFromState(mayCreateGateways, state) : false,
   )
+  const mayCreateOrgs = useSelector(state =>
+    user ? checkFromState(mayCreateOrganizations, state) : false,
+  )
+  const mayCreateDev = useSelector(state =>
+    user ? checkFromState(mayCreateDevices, state) : false,
+  )
+  const hasCreateRights = useSelector(state => user && checkFromState(mayCreateEntities, state))
   const isAdmin = useSelector(selectUserIsAdmin)
   const hasUnseenNotifications = useSelector(selectTotalUnseenCount) > 0
 
@@ -92,29 +100,30 @@ const Header = ({ alwaysShowLogo }) => {
 
   const plusDropdownItems = (
     <>
-      {mayViewApps && (
+      {mayCreateApps && (
         <Dropdown.Item
           title={sharedMessages.addApplication}
           icon={IconApplication}
           path="/applications/add"
         />
       )}
-      {mayViewGtws && (
+      {mayCreateGtws && (
         <Dropdown.Item title={sharedMessages.addGateway} icon={IconGateway} path="/gateways/add" />
       )}
-      {mayViewOrgs && (
+      {mayCreateOrgs && (
         <Dropdown.Item
           title={sharedMessages.addOrganization}
           icon={IconOrganization}
           path="/organizations/add"
         />
       )}
-
-      <Dropdown.Item
-        title={sharedMessages.registerDeviceInApplication}
-        icon={IconDevice}
-        action={handleRegisterEndDeviceClick}
-      />
+      {mayCreateDev && (
+        <Dropdown.Item
+          title={sharedMessages.registerDeviceInApplication}
+          icon={IconDevice}
+          action={handleRegisterEndDeviceClick}
+        />
+      )}
     </>
   )
 
@@ -183,6 +192,7 @@ const Header = ({ alwaysShowLogo }) => {
       alwaysShowLogo={alwaysShowLogo}
       expandSidebar={handleExpandSidebar}
       handleHideSidebar={handleHideSidebar}
+      hasCreateRights={hasCreateRights}
     />
   )
 }

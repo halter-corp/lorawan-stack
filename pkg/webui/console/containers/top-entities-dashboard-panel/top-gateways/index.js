@@ -24,7 +24,10 @@ import Message from '@ttn-lw/lib/components/message'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
+import { checkFromState, mayCreateGateways } from '@console/lib/feature-checks'
+
 import { selectGatewayTopEntities } from '@console/store/selectors/top-entities'
+import { selectUser } from '@console/store/selectors/user'
 
 import EntitiesList from '../list'
 
@@ -36,6 +39,10 @@ const m = defineMessages({
 
 const TopGatewaysList = () => {
   const items = useSelector(selectGatewayTopEntities)
+  const user = useSelector(selectUser)
+  const mayCreateGtws = useSelector(state =>
+    user ? checkFromState(mayCreateGateways, state) : false,
+  )
 
   const headers = [
     {
@@ -95,7 +102,9 @@ const TopGatewaysList = () => {
             />
           </div>
           <div className="text-center">
-            <Button.Link to="/gateways/add" primary message={m.emptyAction} icon={IconPlus} />
+            {mayCreateGtws && (
+              <Button.Link to="/gateways/add" primary message={m.emptyAction} icon={IconPlus} />
+            )}
           </div>
         </div>
       }
