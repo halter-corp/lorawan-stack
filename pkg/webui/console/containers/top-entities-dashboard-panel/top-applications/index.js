@@ -27,7 +27,10 @@ import LastSeen from '@console/components/last-seen'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
+import { checkFromState, mayCreateApplications } from '@console/lib/feature-checks'
+
 import { selectApplicationTopEntities } from '@console/store/selectors/top-entities'
+import { selectUser } from '@console/store/selectors/user'
 
 import EntitiesList from '../list'
 
@@ -38,6 +41,10 @@ const m = defineMessages({
 
 const TopApplicationsList = () => {
   const items = useSelector(selectApplicationTopEntities)
+  const user = useSelector(selectUser)
+  const mayCreateApps = useSelector(state =>
+    user ? checkFromState(mayCreateApplications, state) : false,
+  )
 
   const headers = [
     {
@@ -104,12 +111,14 @@ const TopApplicationsList = () => {
             />
           </div>
           <div className="text-center">
-            <Button.Link
-              to="/application/add"
-              primary
-              message={sharedMessages.addApplication}
-              icon={IconPlus}
-            />
+            {mayCreateApps && (
+              <Button.Link
+                to="/application/add"
+                primary
+                message={sharedMessages.addApplication}
+                icon={IconPlus}
+              />
+            )}
           </div>
         </div>
       }

@@ -45,6 +45,7 @@ const Header = ({
   toggleSidebarMinimized,
   expandSidebar,
   handleHideSidebar,
+  hasCreateRights,
   ...rest
 }) => {
   const LinkComponent = safe ? 'a' : Link
@@ -94,16 +95,19 @@ const Header = ({
       {!safe && (
         <div className="d-flex al-center gap-cs-xs">
           <AppStatusBadge />
-          <Button
-            primary
-            message={sharedMessages.add}
-            icon={IconPlus}
-            dropdownItems={addDropdownItems}
-            dropdownPosition="below left"
-            tooltip={sharedMessages.addEntity}
-            tooltipPlacement="bottom"
-            className="md-lg:d-none"
-          />
+          {hasCreateRights && (
+            <Button
+              primary
+              message={sharedMessages.add}
+              icon={IconPlus}
+              dropdownItems={addDropdownItems}
+              dropdownPosition="below left"
+              tooltip={sharedMessages.addEntity}
+              tooltipPlacement="bottom"
+              className="md-lg:d-none"
+            />
+          )}
+
           <Button
             secondary
             icon={IconStar}
@@ -159,6 +163,8 @@ Header.propTypes = {
   expandSidebar: PropTypes.func.isRequired,
   /** A handler for when the sidebar is hidden. */
   handleHideSidebar: PropTypes.func,
+  /** Has the right to create entities. */
+  hasCreateRights: PropTypes.bool,
   /** Whether the sidebar is minimized. */
   isSidebarMinimized: PropTypes.bool.isRequired,
   /** The dropdown items when the notifications button is clicked. */
@@ -192,6 +198,7 @@ Header.defaultProps = {
   profileDropdownItems: undefined,
   onMenuClick: () => null,
   handleHideSidebar: () => null,
+  hasCreateRights: false,
 }
 
 export default Header
