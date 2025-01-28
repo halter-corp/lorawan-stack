@@ -29,9 +29,10 @@ import sharedMessages from '@ttn-lw/lib/shared-messages'
 
 import {
   checkFromState,
-  mayViewApplications,
-  mayViewGateways,
-  mayViewOrganizationsOfUser,
+  mayCreateApplications,
+  mayCreateDevices,
+  mayCreateGateways,
+  mayCreateOrganizations,
 } from '@console/lib/feature-checks'
 
 import { setSearchOpen, setSearchScope } from '@console/store/actions/search'
@@ -52,12 +53,17 @@ const SectionLabel = ({
   const dispatch = useDispatch()
   const user = useSelector(selectUser)
   const appId = useSelector(selectSelectedApplicationId)
-  const mayViewApps = useSelector(state =>
-    user ? checkFromState(mayViewApplications, state) : false,
+  const mayCreateApps = useSelector(state =>
+    user ? checkFromState(mayCreateApplications, state) : false,
   )
-  const mayViewGtws = useSelector(state => (user ? checkFromState(mayViewGateways, state) : false))
-  const mayViewOrgs = useSelector(state =>
-    user ? checkFromState(mayViewOrganizationsOfUser, state) : false,
+  const mayCreateGtws = useSelector(state =>
+    user ? checkFromState(mayCreateGateways, state) : false,
+  )
+  const mayCreateOrgs = useSelector(state =>
+    user ? checkFromState(mayCreateOrganizations, state) : false,
+  )
+  const mayCreateDev = useSelector(state =>
+    user ? checkFromState(mayCreateDevices, state) : false,
   )
 
   const handleRegisterDeviceClick = React.useCallback(() => {
@@ -67,34 +73,35 @@ const SectionLabel = ({
 
   const plusDropdownItems = (
     <>
-      {mayViewApps && (
+      {mayCreateApps && (
         <Dropdown.Item
           title={sharedMessages.addApplication}
           icon={IconApplication}
           path="/applications/add"
         />
       )}
-      {mayViewGtws && (
+      {mayCreateGtws && (
         <Dropdown.Item title={sharedMessages.addGateway} icon={IconGateway} path="/gateways/add" />
       )}
-      {mayViewOrgs && (
+      {mayCreateOrgs && (
         <Dropdown.Item
           title={sharedMessages.addOrganization}
           icon={IconOrganization}
           path="/organizations/add"
         />
       )}
-
-      <Dropdown.Item
-        title={
-          type === END_DEVICE
-            ? sharedMessages.registerEndDevice
-            : sharedMessages.registerDeviceInApplication
-        }
-        icon={IconDevice}
-        path={type === END_DEVICE ? `/applications/${appId}/devices/add` : undefined}
-        action={type === END_DEVICE ? undefined : handleRegisterDeviceClick}
-      />
+      {mayCreateDev && (
+        <Dropdown.Item
+          title={
+            type === END_DEVICE
+              ? sharedMessages.registerEndDevice
+              : sharedMessages.registerDeviceInApplication
+          }
+          icon={IconDevice}
+          path={type === END_DEVICE ? `/applications/${appId}/devices/add` : undefined}
+          action={type === END_DEVICE ? undefined : handleRegisterDeviceClick}
+        />
+      )}
     </>
   )
 

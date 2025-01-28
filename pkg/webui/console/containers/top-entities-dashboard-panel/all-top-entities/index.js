@@ -29,7 +29,14 @@ import LastSeen from '@console/components/last-seen'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
+import {
+  checkFromState,
+  mayCreateApplications,
+  mayCreateGateways,
+} from '@console/lib/feature-checks'
+
 import { selectTopEntitiesAll } from '@console/store/selectors/top-entities'
+import { selectUser } from '@console/store/selectors/user'
 
 import EntitiesList from '../list'
 
@@ -40,6 +47,13 @@ const m = defineMessages({
 
 const AllTopEntitiesList = () => {
   const items = useSelector(selectTopEntitiesAll)
+  const user = useSelector(selectUser)
+  const mayCreateApps = useSelector(state =>
+    user ? checkFromState(mayCreateApplications, state) : false,
+  )
+  const mayCreateGtws = useSelector(state =>
+    user ? checkFromState(mayCreateGateways, state) : false,
+  )
 
   const headers = [
     {
@@ -129,18 +143,22 @@ const AllTopEntitiesList = () => {
             />
           </div>
           <ButtonGroup align="center">
-            <Button.Link
-              to="/gateways/add"
-              message={sharedMessages.addGateway}
-              icon={IconGateway}
-              primary
-            />
-            <Button.Link
-              to="/applications/add"
-              message={sharedMessages.addApplication}
-              icon={IconApplication}
-              primary
-            />
+            {mayCreateGtws && (
+              <Button.Link
+                to="/gateways/add"
+                message={sharedMessages.addGateway}
+                icon={IconGateway}
+                primary
+              />
+            )}
+            {mayCreateApps && (
+              <Button.Link
+                to="/applications/add"
+                message={sharedMessages.addApplication}
+                icon={IconApplication}
+                primary
+              />
+            )}
           </ButtonGroup>
         </div>
       }

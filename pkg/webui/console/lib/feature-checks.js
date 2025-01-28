@@ -46,6 +46,10 @@ export const mayCreateApplications = {
   rightsSelector: selectUserRights,
   check: rights => rights.includes('RIGHT_USER_APPLICATIONS_CREATE'),
 }
+export const mayCreateDevices = {
+  rightsSelector: selectUserRights,
+  check: rights => rights.includes('RIGHT_APPLICATION_DEVICES_WRITE'),
+}
 export const mayViewGatewaysOfUser = {
   rightsSelector: selectUserRights,
   check: rights => rights.includes('RIGHT_USER_GATEWAYS_LIST'),
@@ -323,6 +327,20 @@ export const mayViewGateways = {
 export const mayWriteTraffic = {
   rightsSelector: selectApplicationRights,
   check: rights => mayScheduleDownlinks.check(rights) || maySendUplink.check(rights),
+}
+
+export const mayCreateEntities = {
+  rightsSelector: createSelector(
+    [
+      selectUserRights,
+      selectOrganizationRights,
+      selectApplicationRights,
+      selectClientRights,
+      selectGatewayRights,
+    ],
+    (user, org, app, client, gateway) => [...user, ...org, ...app, ...client, ...gateway],
+  ),
+  check: rights => rights.some(right => right.includes('_CREATE')),
 }
 
 // Pub/Sub feature checks.

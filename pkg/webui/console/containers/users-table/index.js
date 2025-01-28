@@ -116,6 +116,8 @@ const UsersTable = props => {
   const dispatch = useDispatch()
   const currentUserId = useSelector(selectUserId)
   const mayInvite = useSelector(state => checkFromState(maySendInvites, state))
+  const mayPerformAllActions = useSelector(state => checkFromState(mayPerformAllUserActions, state))
+  const mayCreate = useSelector(state => checkFromState(mayCreateUsers, state))
 
   const tabsWithInvitations = [
     ...tabs,
@@ -335,7 +337,7 @@ const UsersTable = props => {
     (users, totalCount) => ({
       users,
       totalCount,
-      mayAdd: mayManageUsers && (mayPerformAllUserActions || mayCreateUsers),
+      mayAdd: mayManageUsers && (mayPerformAllActions || mayCreate),
     }),
   )
 
