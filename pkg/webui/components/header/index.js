@@ -198,7 +198,7 @@ Header.defaultProps = {
   profileDropdownItems: undefined,
   onMenuClick: () => null,
   handleHideSidebar: () => null,
-  hasCreateRights: true,
+  hasCreateRights: false,
 }
 
 export default Header
