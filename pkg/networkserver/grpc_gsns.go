@@ -857,6 +857,7 @@ var handleDataUplinkGetPaths = [...]string{
 	"supports_class_b",
 	"supports_class_c",
 	"supports_join",
+	"battery_percentage",
 }
 
 // mergeMetadata merges the metadata collected for up.
