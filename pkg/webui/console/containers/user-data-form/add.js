@@ -30,6 +30,7 @@ import Yup from '@ttn-lw/lib/yup'
 import createPasswordValidationSchema from '@ttn-lw/lib/create-password-validation-schema'
 import { userId as userIdRegexp } from '@ttn-lw/lib/regexp'
 import capitalizeMessage from '@ttn-lw/lib/capitalize-message'
+import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
 import { createUser } from '@console/store/actions/users'
 
@@ -73,7 +74,10 @@ const UserDataFormAdd = () => {
   const validationSchema = baseValidationSchema.concat(
     createPasswordValidationSchema(passwordRequirements),
   )
-  const createUserAction = useCallback(values => dispatch(createUser(values)), [dispatch])
+  const createUserAction = useCallback(
+    values => dispatch(attachPromise(createUser(values))),
+    [dispatch],
+  )
 
   const { formatMessage } = intl
 

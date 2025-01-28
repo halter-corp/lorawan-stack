@@ -2861,13 +2861,13 @@
       "file": "io.go"
     }
   },
-  "error:pkg/applicationserver/metadata/redis:cache_miss": {
+  "error:pkg/applicationserver/metadata:field_mask_path_not_supported": {
     "translations": {
-      "en": "cache miss"
+      "en": "field mask path `{path}` is not supported"
     },
     "description": {
-      "package": "pkg/applicationserver/metadata/redis",
-      "file": "location_cache.go"
+      "package": "pkg/applicationserver/metadata",
+      "file": "metadata.go"
     }
   },
   "error:pkg/applicationserver/redis:application_uid": {
@@ -2972,15 +2972,6 @@
   "error:pkg/applicationserver:invalid_timeout": {
     "translations": {
       "en": "invalid timeout `{timeout}`"
-    },
-    "description": {
-      "package": "pkg/applicationserver",
-      "file": "config.go"
-    }
-  },
-  "error:pkg/applicationserver:invalid_ttl": {
-    "translations": {
-      "en": "invalid TTL `{ttl}`"
     },
     "description": {
       "package": "pkg/applicationserver",

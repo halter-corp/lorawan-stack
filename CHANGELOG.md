@@ -11,18 +11,44 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Added
 
+- Add recvTime field to the decodeUplink input in payload formatters
+- Add the latest battery percentage of the end device in the `ApplicationUplink` message.
+- Add live data split view tutorial to the Console.
+- Add end device attributes to ApplicationUp messages.
+  - Add the locations, version_ids, network_ids fields to the following ApplicationUp messages:
+    - ApplicationJoinAccept
+    - ApplicationDownlink
+    - ApplicationDownlinkFailed
+    - ApplicationInvalidatedDownlinks
+    - ApplicationServiceData
+  - Add Timeout and Cache fields in the EndDeviceMetadataStorageConfig of the AS.
+
 ### Changed
 
 ### Deprecated
+
+- Deprecate the Location field (and its subfields) in the EndDeviceMetadataStorageConfig of AS.
 
 ### Removed
 
 ### Fixed
 
+### Security
+
+## [3.33.1] - unreleased
+
+### Added
+
+- Add recvTime field to the decodeUplink input in payload formatters
+- Add the latest battery percentage of the end device in the `ApplicationUplink` message.
+- Add live data split view tutorial to the Console.
+
+### Fixed
+
 - Enforce default page limit on AS and NS List RPCs if a value is not provided in the request.
 - Swapped field order in `RelayNotifyNewEndDeviceReq` MAC command.
-
-### Security
+- `LinkADRAns` MAC command verification when the end device does not support ADR.
+- Being able to remove all attributes in general settings.
 
 ## [3.34.0] - unreleased
 
@@ -2936,7 +2962,8 @@ For details about compatibility between different releases, see the **Commitment
 NOTE: These links should respect backports. See https://github.com/TheThingsNetwork/lorawan-stack/pull/1444/files#r333379706.
 -->
 
-[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.0...v3.33
+[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.1...v3.33
+[3.33.1]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.0...v3.33.1
 [3.33.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.3...v3.33.0
 [3.32.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.2...v3.32.3
 [3.32.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.1...v3.32.2

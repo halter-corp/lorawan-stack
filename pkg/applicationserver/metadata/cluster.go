@@ -1,4 +1,4 @@
-// Copyright © 2024 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2025 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,28 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-.panel
-  display: flex
-  flex-direction: column
-  position: relative
+package metadata
 
-  & > :first-child
-    flex-wrap: nowrap
+import (
+	"context"
 
-  .content
-    display: flex
-    flex-direction: column
-    align-items: center
-    justify-content: center
-    height: 100%
-    min-height: 10rem
+	"go.thethings.network/lorawan-stack/v3/pkg/cluster"
+	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
+	"google.golang.org/grpc"
+)
 
-.upseller
-  height: 100%
-  display: flex
-  flex-direction: column
-  justify-content: center
-  align-items: center
-
-.upgrade-button
-  box-shadow: 0px 1px 5px 0px rgba(0, 0, 0, .09)
+// ClusterPeerAccess provides access to cluster peers.
+type ClusterPeerAccess interface {
+	GetPeerConn(ctx context.Context, role ttnpb.ClusterRole, ids cluster.EntityIdentifiers) (*grpc.ClientConn, error)
+	WithClusterAuth() grpc.CallOption
+}

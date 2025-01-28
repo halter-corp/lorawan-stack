@@ -34,7 +34,13 @@ import PropTypes from '@ttn-lw/lib/prop-types'
 import { getUserId } from '@ttn-lw/lib/selectors/id'
 import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 
-import { checkFromState, mayManageUsers, maySendInvites } from '@console/lib/feature-checks'
+import {
+  checkFromState,
+  mayCreateUsers,
+  mayManageUsers,
+  mayPerformAllUserActions,
+  maySendInvites,
+} from '@console/lib/feature-checks'
 
 import {
   getUsersList,
@@ -329,7 +335,7 @@ const UsersTable = props => {
     (users, totalCount) => ({
       users,
       totalCount,
-      mayAdd: mayManageUsers,
+      mayAdd: mayManageUsers && (mayPerformAllUserActions || mayCreateUsers),
     }),
   )
 

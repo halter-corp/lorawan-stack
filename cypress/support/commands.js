@@ -126,6 +126,14 @@ Cypress.Commands.add('getAccessToken', callback => {
   callback(accessToken)
 })
 
+Cypress.Commands.add('setAllTutorialSeen', user => {
+  const tutorialNames = ['TUTORIAL_LIVE_DATA_SPLIT_VIEW']
+  cy.task(
+    'execSql',
+    `UPDATE users SET console_preferences = '{"dashboard_layouts":{},"sort_by":{},"tutorials":{"seen":[${tutorialNames.map(name => `"${name}"`).join(',')}]}}'::jsonb::text::bytea WHERE primary_email_address = '${user.primary_email_address}';`,
+  )
+})
+
 // Helper function to create a new user programmatically.
 Cypress.Commands.add('createUser', user => {
   const baseUrl = Cypress.config('baseUrl')
@@ -147,6 +155,8 @@ Cypress.Commands.add('createUser', user => {
     })
   })
 
+  // Set all tutorials as seen.
+  cy.setAllTutorialSeen(user)
   // Reset cookies and local storage to avoid csrf and session state inconsistencies within tests.
   cy.clearCookies()
   cy.clearLocalStorage()

@@ -192,6 +192,10 @@ message UserConsolePreferences {
   SortBy sort_by = 3;
 
   message Tutorials {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
     repeated Tutorial seen = 1 [(validate.rules).repeated = {
       unique: true,
       items: {
