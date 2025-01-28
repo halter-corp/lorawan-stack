@@ -49,15 +49,7 @@ var DefaultApplicationServerConfig = applicationserver.Config{
 		Downlinks: web.DownlinksConfig{PublicAddress: shared.DefaultPublicURL + "/api/v3"},
 	},
 	EndDeviceMetadataStorage: applicationserver.EndDeviceMetadataStorageConfig{
-		Location: applicationserver.EndDeviceLocationStorageConfig{
-			Timeout: 5 * time.Second,
-			Cache: applicationserver.EndDeviceLocationStorageCacheConfig{
-				Enable:             true,
-				MinRefreshInterval: 15 * time.Minute,
-				MaxRefreshInterval: 4 * time.Hour,
-				TTL:                14 * 24 * time.Hour,
-			},
-		},
+		Timeout: 5 * time.Second,
 	},
 	Distribution: applicationserver.DistributionConfig{
 		Timeout: time.Minute,

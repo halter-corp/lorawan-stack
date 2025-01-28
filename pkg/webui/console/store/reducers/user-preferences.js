@@ -22,6 +22,8 @@ import {
 } from '@console/store/actions/user-preferences'
 import { APPLY_PERSISTED_STATE_SUCCESS, GET_USER_ME_SUCCESS } from '@console/store/actions/user'
 
+import { UPDATE_USER_SUCCESS } from '../actions/users'
+
 const initialState = {
   bookmarks: {
     bookmarks: [],
@@ -109,6 +111,7 @@ const userPreferences = (state = initialState, { type, payload }) => {
         },
       }
     case GET_USER_ME_SUCCESS:
+    case UPDATE_USER_SUCCESS:
       return {
         ...state,
         consolePreferences: {

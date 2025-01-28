@@ -12,6 +12,44 @@ import (
 	pflag "github.com/spf13/pflag"
 )
 
+// AddSelectFlagsForUserConsolePreferences_Tutorials adds flags to select fields in UserConsolePreferences_Tutorials.
+func AddSelectFlagsForUserConsolePreferences_Tutorials(flags *pflag.FlagSet, prefix string, hidden bool) {
+	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("seen", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("seen", prefix), false), flagsplugin.WithHidden(hidden)))
+}
+
+// SelectFromFlags outputs the fieldmask paths forUserConsolePreferences_Tutorials message from select flags.
+func PathsFromSelectFlagsForUserConsolePreferences_Tutorials(flags *pflag.FlagSet, prefix string) (paths []string, err error) {
+	if val, selected, err := flagsplugin.GetBool(flags, flagsplugin.Prefix("seen", prefix)); err != nil {
+		return nil, err
+	} else if selected && val {
+		paths = append(paths, flagsplugin.Prefix("seen", prefix))
+	}
+	return paths, nil
+}
+
+// AddSetFlagsForUserConsolePreferences_Tutorials adds flags to select fields in UserConsolePreferences_Tutorials.
+func AddSetFlagsForUserConsolePreferences_Tutorials(flags *pflag.FlagSet, prefix string, hidden bool) {
+	flags.AddFlag(flagsplugin.NewStringSliceFlag(flagsplugin.Prefix("seen", prefix), flagsplugin.EnumValueDesc(Tutorial_value), flagsplugin.WithHidden(hidden)))
+}
+
+// SetFromFlags sets the UserConsolePreferences_Tutorials message from flags.
+func (m *UserConsolePreferences_Tutorials) SetFromFlags(flags *pflag.FlagSet, prefix string) (paths []string, err error) {
+	if val, changed, err := flagsplugin.GetStringSlice(flags, flagsplugin.Prefix("seen", prefix)); err != nil {
+		return nil, err
+	} else if changed {
+		m.Seen = make([]Tutorial, len(val))
+		for i, v := range val {
+			enumValue, err := flagsplugin.SetEnumString(v, Tutorial_value)
+			if err != nil {
+				return nil, err
+			}
+			m.Seen[i] = Tutorial(enumValue)
+		}
+		paths = append(paths, flagsplugin.Prefix("seen", prefix))
+	}
+	return paths, nil
+}
+
 // AddSelectFlagsForUserConsolePreferences adds flags to select fields in UserConsolePreferences.
 func AddSelectFlagsForUserConsolePreferences(flags *pflag.FlagSet, prefix string, hidden bool) {
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("console-theme", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("console-theme", prefix), false), flagsplugin.WithHidden(hidden)))
@@ -20,7 +58,7 @@ func AddSelectFlagsForUserConsolePreferences(flags *pflag.FlagSet, prefix string
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("sort-by", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("sort-by", prefix), true), flagsplugin.WithHidden(hidden)))
 	// NOTE: sort_by (UserConsolePreferences_SortBy) does not seem to have select flags.
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("tutorials", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("tutorials", prefix), true), flagsplugin.WithHidden(hidden)))
-	// NOTE: tutorials (UserConsolePreferences_Tutorials) does not seem to have select flags.
+	AddSelectFlagsForUserConsolePreferences_Tutorials(flags, flagsplugin.Prefix("tutorials", prefix), hidden)
 }
 
 // SelectFromFlags outputs the fieldmask paths forUserConsolePreferences message from select flags.
@@ -47,7 +85,11 @@ func PathsFromSelectFlagsForUserConsolePreferences(flags *pflag.FlagSet, prefix 
 	} else if selected && val {
 		paths = append(paths, flagsplugin.Prefix("tutorials", prefix))
 	}
-	// NOTE: tutorials (UserConsolePreferences_Tutorials) does not seem to have select flags.
+	if selectPaths, err := PathsFromSelectFlagsForUserConsolePreferences_Tutorials(flags, flagsplugin.Prefix("tutorials", prefix)); err != nil {
+		return nil, err
+	} else {
+		paths = append(paths, selectPaths...)
+	}
 	return paths, nil
 }
 
@@ -56,7 +98,7 @@ func AddSetFlagsForUserConsolePreferences(flags *pflag.FlagSet, prefix string, h
 	flags.AddFlag(flagsplugin.NewStringFlag(flagsplugin.Prefix("console-theme", prefix), flagsplugin.EnumValueDesc(ConsoleTheme_value), flagsplugin.WithHidden(hidden)))
 	// FIXME: Skipping DashboardLayouts because it does not seem to implement AddSetFlags.
 	// FIXME: Skipping SortBy because it does not seem to implement AddSetFlags.
-	// FIXME: Skipping Tutorials because it does not seem to implement AddSetFlags.
+	AddSetFlagsForUserConsolePreferences_Tutorials(flags, flagsplugin.Prefix("tutorials", prefix), hidden)
 }
 
 // SetFromFlags sets the UserConsolePreferences message from flags.
@@ -73,7 +115,16 @@ func (m *UserConsolePreferences) SetFromFlags(flags *pflag.FlagSet, prefix strin
 	}
 	// FIXME: Skipping DashboardLayouts because it does not seem to implement AddSetFlags.
 	// FIXME: Skipping SortBy because it does not seem to implement AddSetFlags.
-	// FIXME: Skipping Tutorials because it does not seem to implement AddSetFlags.
+	if changed := flagsplugin.IsAnyPrefixSet(flags, flagsplugin.Prefix("tutorials", prefix)); changed {
+		if m.Tutorials == nil {
+			m.Tutorials = &UserConsolePreferences_Tutorials{}
+		}
+		if setPaths, err := m.Tutorials.SetFromFlags(flags, flagsplugin.Prefix("tutorials", prefix)); err != nil {
+			return nil, err
+		} else {
+			paths = append(paths, setPaths...)
+		}
+	}
 	return paths, nil
 }
 

@@ -43,6 +43,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -568,7 +569,15 @@ macLoop:
 				break
 			}
 			cmds = cmds[dupCount:]
-			evs, err = mac.HandleLinkADRAns(ctx, dev, pld, uint(dupCount), cmacFMatchResult.FullFCnt, fps)
+			evs, err = mac.HandleLinkADRAns(
+				ctx,
+				dev,
+				pld,
+				uint(dupCount), // nolint: gosec
+				cmacFMatchResult.FullFCnt,
+				fps,
+				up.GetPayload().GetMacPayload().GetFHdr().GetFCtrl().GetAdr(),
+			)
 		case ttnpb.MACCommandIdentifier_CID_DUTY_CYCLE:
 			evs, err = mac.HandleDutyCycleAns(ctx, dev)
 		case ttnpb.MACCommandIdentifier_CID_RX_PARAM_SETUP:
@@ -896,6 +905,18 @@ const (
 	initialDeduplicationRound = iota
 )
 
+func lastBatteryPercentage(dev *ttnpb.EndDevice) *ttnpb.LastBatteryPercentage {
+	if dev.MacState == nil || dev.BatteryPercentage == nil || dev.LastDevStatusReceivedAt == nil {
+		return nil
+	}
+
+	return &ttnpb.LastBatteryPercentage{
+		FCnt:       dev.MacState.LastDevStatusFCntUp,
+		Value:      wrapperspb.Float(dev.BatteryPercentage.Value * 100),
+		ReceivedAt: dev.LastDevStatusReceivedAt,
+	}
+}
+
 func (ns *NetworkServer) handleDataUplink(ctx context.Context, up *ttnpb.UplinkMessage) (err error) {
 	defer trace.StartRegion(ctx, "handle data uplink").End()
 
@@ -1141,17 +1162,18 @@ func (ns *NetworkServer) handleDataUplink(ctx context.Context, up *ttnpb.UplinkM
 			CorrelationIds: up.CorrelationIds,
 			Up: &ttnpb.ApplicationUp_UplinkMessage{
 				UplinkMessage: &ttnpb.ApplicationUplink{
-					Confirmed:       up.Payload.MHdr.MType == ttnpb.MType_CONFIRMED_UP,
-					FCnt:            pld.FullFCnt,
-					FPort:           pld.FPort,
-					FrmPayload:      frmPayload,
-					RxMetadata:      up.RxMetadata,
-					SessionKeyId:    stored.Session.Keys.SessionKeyId,
-					Settings:        up.Settings,
-					ReceivedAt:      up.ReceivedAt,
-					ConsumedAirtime: up.ConsumedAirtime,
-					PacketErrorRate: mac.LossRate(stored.MacState, matched.phy),
-					NetworkIds:      ns.networkIdentifiers(ctx),
+					Confirmed:             up.Payload.MHdr.MType == ttnpb.MType_CONFIRMED_UP,
+					FCnt:                  pld.FullFCnt,
+					FPort:                 pld.FPort,
+					FrmPayload:            frmPayload,
+					RxMetadata:            up.RxMetadata,
+					SessionKeyId:          stored.Session.Keys.SessionKeyId,
+					Settings:              up.Settings,
+					ReceivedAt:            up.ReceivedAt,
+					ConsumedAirtime:       up.ConsumedAirtime,
+					PacketErrorRate:       mac.LossRate(stored.MacState, matched.phy),
+					NetworkIds:            ns.networkIdentifiers(ctx),
+					LastBatteryPercentage: lastBatteryPercentage(stored),
 				},
 			},
 		})

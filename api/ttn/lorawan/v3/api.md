@@ -596,25 +596,38 @@
   - [Enum `TxSchedulePriority`](#ttn.lorawan.v3.TxSchedulePriority)
 - [File `ttn/lorawan/v3/messages.proto`](#ttn/lorawan/v3/messages.proto)
   - [Message `ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink)
+  - [Message `ApplicationDownlink.AttributesEntry`](#ttn.lorawan.v3.ApplicationDownlink.AttributesEntry)
   - [Message `ApplicationDownlink.ClassBC`](#ttn.lorawan.v3.ApplicationDownlink.ClassBC)
   - [Message `ApplicationDownlink.ConfirmedRetry`](#ttn.lorawan.v3.ApplicationDownlink.ConfirmedRetry)
+  - [Message `ApplicationDownlink.LocationsEntry`](#ttn.lorawan.v3.ApplicationDownlink.LocationsEntry)
   - [Message `ApplicationDownlinkFailed`](#ttn.lorawan.v3.ApplicationDownlinkFailed)
+  - [Message `ApplicationDownlinkFailed.AttributesEntry`](#ttn.lorawan.v3.ApplicationDownlinkFailed.AttributesEntry)
+  - [Message `ApplicationDownlinkFailed.LocationsEntry`](#ttn.lorawan.v3.ApplicationDownlinkFailed.LocationsEntry)
   - [Message `ApplicationDownlinks`](#ttn.lorawan.v3.ApplicationDownlinks)
   - [Message `ApplicationInvalidatedDownlinks`](#ttn.lorawan.v3.ApplicationInvalidatedDownlinks)
+  - [Message `ApplicationInvalidatedDownlinks.AttributesEntry`](#ttn.lorawan.v3.ApplicationInvalidatedDownlinks.AttributesEntry)
+  - [Message `ApplicationInvalidatedDownlinks.LocationsEntry`](#ttn.lorawan.v3.ApplicationInvalidatedDownlinks.LocationsEntry)
   - [Message `ApplicationJoinAccept`](#ttn.lorawan.v3.ApplicationJoinAccept)
+  - [Message `ApplicationJoinAccept.AttributesEntry`](#ttn.lorawan.v3.ApplicationJoinAccept.AttributesEntry)
+  - [Message `ApplicationJoinAccept.LocationsEntry`](#ttn.lorawan.v3.ApplicationJoinAccept.LocationsEntry)
   - [Message `ApplicationLocation`](#ttn.lorawan.v3.ApplicationLocation)
   - [Message `ApplicationLocation.AttributesEntry`](#ttn.lorawan.v3.ApplicationLocation.AttributesEntry)
   - [Message `ApplicationServiceData`](#ttn.lorawan.v3.ApplicationServiceData)
+  - [Message `ApplicationServiceData.AttributesEntry`](#ttn.lorawan.v3.ApplicationServiceData.AttributesEntry)
+  - [Message `ApplicationServiceData.LocationsEntry`](#ttn.lorawan.v3.ApplicationServiceData.LocationsEntry)
   - [Message `ApplicationUp`](#ttn.lorawan.v3.ApplicationUp)
   - [Message `ApplicationUplink`](#ttn.lorawan.v3.ApplicationUplink)
+  - [Message `ApplicationUplink.AttributesEntry`](#ttn.lorawan.v3.ApplicationUplink.AttributesEntry)
   - [Message `ApplicationUplink.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplink.LocationsEntry)
   - [Message `ApplicationUplinkNormalized`](#ttn.lorawan.v3.ApplicationUplinkNormalized)
+  - [Message `ApplicationUplinkNormalized.AttributesEntry`](#ttn.lorawan.v3.ApplicationUplinkNormalized.AttributesEntry)
   - [Message `ApplicationUplinkNormalized.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplinkNormalized.LocationsEntry)
   - [Message `DownlinkMessage`](#ttn.lorawan.v3.DownlinkMessage)
   - [Message `DownlinkQueueOperationErrorDetails`](#ttn.lorawan.v3.DownlinkQueueOperationErrorDetails)
   - [Message `DownlinkQueueRequest`](#ttn.lorawan.v3.DownlinkQueueRequest)
   - [Message `GatewayTxAcknowledgment`](#ttn.lorawan.v3.GatewayTxAcknowledgment)
   - [Message `GatewayUplinkMessage`](#ttn.lorawan.v3.GatewayUplinkMessage)
+  - [Message `LastBatteryPercentage`](#ttn.lorawan.v3.LastBatteryPercentage)
   - [Message `MessagePayloadFormatters`](#ttn.lorawan.v3.MessagePayloadFormatters)
   - [Message `TxAcknowledgment`](#ttn.lorawan.v3.TxAcknowledgment)
   - [Message `UplinkMessage`](#ttn.lorawan.v3.UplinkMessage)
@@ -8632,6 +8645,10 @@ Transmission settings for downlink.
 | `priority` | [`TxSchedulePriority`](#ttn.lorawan.v3.TxSchedulePriority) |  | Priority for scheduling the downlink message. |
 | `correlation_ids` | [`string`](#string) | repeated |  |
 | `confirmed_retry` | [`ApplicationDownlink.ConfirmedRetry`](#ttn.lorawan.v3.ApplicationDownlink.ConfirmedRetry) |  |  |
+| `locations` | [`ApplicationDownlink.LocationsEntry`](#ttn.lorawan.v3.ApplicationDownlink.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationDownlink.AttributesEntry`](#ttn.lorawan.v3.ApplicationDownlink.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
@@ -8642,6 +8659,14 @@ Transmission settings for downlink.
 | `frm_payload` | <p>`bytes.max_len`: `255`</p> |
 | `priority` | <p>`enum.defined_only`: `true`</p> |
 | `correlation_ids` | <p>`repeated.items.string.max_len`: `100`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationDownlink.AttributesEntry">Message `ApplicationDownlink.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationDownlink.ClassBC">Message `ApplicationDownlink.ClassBC`</a>
 
@@ -8663,12 +8688,23 @@ Transmission settings for downlink.
 | ----- | ----------- |
 | `max_attempts` | <p>`uint32.lte`: `100`</p><p>`uint32.gt`: `0`</p> |
 
+### <a name="ttn.lorawan.v3.ApplicationDownlink.LocationsEntry">Message `ApplicationDownlink.LocationsEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`Location`](#ttn.lorawan.v3.Location) |  |  |
+
 ### <a name="ttn.lorawan.v3.ApplicationDownlinkFailed">Message `ApplicationDownlinkFailed`</a>
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `downlink` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) |  |  |
 | `error` | [`ErrorDetails`](#ttn.lorawan.v3.ErrorDetails) |  |  |
+| `locations` | [`ApplicationDownlinkFailed.LocationsEntry`](#ttn.lorawan.v3.ApplicationDownlinkFailed.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationDownlinkFailed.AttributesEntry`](#ttn.lorawan.v3.ApplicationDownlinkFailed.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
@@ -8676,6 +8712,21 @@ Transmission settings for downlink.
 | ----- | ----------- |
 | `downlink` | <p>`message.required`: `true`</p> |
 | `error` | <p>`message.required`: `true`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationDownlinkFailed.AttributesEntry">Message `ApplicationDownlinkFailed.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.ApplicationDownlinkFailed.LocationsEntry">Message `ApplicationDownlinkFailed.LocationsEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`Location`](#ttn.lorawan.v3.Location) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationDownlinks">Message `ApplicationDownlinks`</a>
 
@@ -8690,12 +8741,31 @@ Transmission settings for downlink.
 | `downlinks` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) | repeated |  |
 | `last_f_cnt_down` | [`uint32`](#uint32) |  |  |
 | `session_key_id` | [`bytes`](#bytes) |  |  |
+| `locations` | [`ApplicationInvalidatedDownlinks.LocationsEntry`](#ttn.lorawan.v3.ApplicationInvalidatedDownlinks.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationInvalidatedDownlinks.AttributesEntry`](#ttn.lorawan.v3.ApplicationInvalidatedDownlinks.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationInvalidatedDownlinks.AttributesEntry">Message `ApplicationInvalidatedDownlinks.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.ApplicationInvalidatedDownlinks.LocationsEntry">Message `ApplicationInvalidatedDownlinks.LocationsEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`Location`](#ttn.lorawan.v3.Location) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationJoinAccept">Message `ApplicationJoinAccept`</a>
 
@@ -8706,6 +8776,10 @@ Transmission settings for downlink.
 | `invalidated_downlinks` | [`ApplicationDownlink`](#ttn.lorawan.v3.ApplicationDownlink) | repeated | Downlink messages in the queue that got invalidated because of the session change. |
 | `pending_session` | [`bool`](#bool) |  | Indicates whether the security context refers to the pending session, i.e. when this join-accept is an answer to a rejoin-request. |
 | `received_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Server time when the Network Server received the message. |
+| `locations` | [`ApplicationJoinAccept.LocationsEntry`](#ttn.lorawan.v3.ApplicationJoinAccept.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationJoinAccept.AttributesEntry`](#ttn.lorawan.v3.ApplicationJoinAccept.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
@@ -8713,6 +8787,21 @@ Transmission settings for downlink.
 | ----- | ----------- |
 | `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
 | `received_at` | <p>`timestamp.required`: `true`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationJoinAccept.AttributesEntry">Message `ApplicationJoinAccept.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.ApplicationJoinAccept.LocationsEntry">Message `ApplicationJoinAccept.LocationsEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`Location`](#ttn.lorawan.v3.Location) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationLocation">Message `ApplicationLocation`</a>
 
@@ -8742,6 +8831,30 @@ Transmission settings for downlink.
 | ----- | ---- | ----- | ----------- |
 | `service` | [`string`](#string) |  |  |
 | `data` | [`google.protobuf.Struct`](#google.protobuf.Struct) |  |  |
+| `locations` | [`ApplicationServiceData.LocationsEntry`](#ttn.lorawan.v3.ApplicationServiceData.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
+| `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
+| `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationServiceData.AttributesEntry`](#ttn.lorawan.v3.ApplicationServiceData.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationServiceData.AttributesEntry">Message `ApplicationServiceData.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
+
+### <a name="ttn.lorawan.v3.ApplicationServiceData.LocationsEntry">Message `ApplicationServiceData.LocationsEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`Location`](#ttn.lorawan.v3.Location) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationUp">Message `ApplicationUp`</a>
 
@@ -8795,6 +8908,8 @@ Application uplink message.
 | `locations` | [`ApplicationUplink.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplink.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
 | `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
 | `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `last_battery_percentage` | [`LastBatteryPercentage`](#ttn.lorawan.v3.LastBatteryPercentage) |  | Last battery percentage of the end device. Received via the DevStatus MAC command at last_dev_status_received_at or earlier. Set by the Network Server while handling the message. |
+| `attributes` | [`ApplicationUplink.AttributesEntry`](#ttn.lorawan.v3.ApplicationUplink.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
@@ -8803,6 +8918,14 @@ Application uplink message.
 | `session_key_id` | <p>`bytes.max_len`: `2048`</p> |
 | `f_port` | <p>`uint32.lte`: `255`</p><p>`uint32.not_in`: `[224]`</p> |
 | `settings` | <p>`message.required`: `true`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationUplink.AttributesEntry">Message `ApplicationUplink.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationUplink.LocationsEntry">Message `ApplicationUplink.LocationsEntry`</a>
 
@@ -8829,6 +8952,7 @@ Application uplink message.
 | `locations` | [`ApplicationUplinkNormalized.LocationsEntry`](#ttn.lorawan.v3.ApplicationUplinkNormalized.LocationsEntry) | repeated | End device location metadata, set by the Application Server while handling the message. |
 | `version_ids` | [`EndDeviceVersionIdentifiers`](#ttn.lorawan.v3.EndDeviceVersionIdentifiers) |  | End device version identifiers, set by the Application Server while handling the message. |
 | `network_ids` | [`NetworkIdentifiers`](#ttn.lorawan.v3.NetworkIdentifiers) |  | Network identifiers, set by the Network Server that handles the message. |
+| `attributes` | [`ApplicationUplinkNormalized.AttributesEntry`](#ttn.lorawan.v3.ApplicationUplinkNormalized.AttributesEntry) | repeated | Attributes for devices, set by the Application Server while handling the message. |
 
 #### Field Rules
 
@@ -8839,6 +8963,14 @@ Application uplink message.
 | `normalized_payload` | <p>`message.required`: `true`</p> |
 | `settings` | <p>`message.required`: `true`</p> |
 | `received_at` | <p>`timestamp.required`: `true`</p> |
+| `attributes` | <p>`map.max_pairs`: `10`</p><p>`map.keys.string.max_len`: `36`</p><p>`map.keys.string.pattern`: `^[a-z0-9](?:[-]?[a-z0-9]){2,}$`</p><p>`map.values.string.max_len`: `200`</p> |
+
+### <a name="ttn.lorawan.v3.ApplicationUplinkNormalized.AttributesEntry">Message `ApplicationUplinkNormalized.AttributesEntry`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `key` | [`string`](#string) |  |  |
+| `value` | [`string`](#string) |  |  |
 
 ### <a name="ttn.lorawan.v3.ApplicationUplinkNormalized.LocationsEntry">Message `ApplicationUplinkNormalized.LocationsEntry`</a>
 
@@ -8939,6 +9071,20 @@ ncrc: [scheduled.advanced]
 | Field | Validations |
 | ----- | ----------- |
 | `message` | <p>`message.required`: `true`</p> |
+
+### <a name="ttn.lorawan.v3.LastBatteryPercentage">Message `LastBatteryPercentage`</a>
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `f_cnt` | [`uint32`](#uint32) |  | Frame counter value of last uplink containing DevStatusAns. |
+| `value` | [`google.protobuf.FloatValue`](#google.protobuf.FloatValue) |  | The battery percentage of the end device. The value is defined in the [0, 100] interval. |
+| `received_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Time when last DevStatus MAC command was received. |
+
+#### Field Rules
+
+| Field | Validations |
+| ----- | ----------- |
+| `value` | <p>`float.lte`: `100`</p><p>`float.gte`: `0`</p> |
 
 ### <a name="ttn.lorawan.v3.MessagePayloadFormatters">Message `MessagePayloadFormatters`</a>
 

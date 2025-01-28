@@ -29,6 +29,8 @@ export TTN_LW_LOG_LEVEL="debug"
 export TTN_LW_NOC_ACCESS_EXTENDED="true"
 export TTN_LW_PLUGINS_SOURCE="directory"
 export TTN_LW_CONSOLE_UI_CANONICAL_URL="http://localhost:8080/console"
+export TTN_LW_TRACING_ENABLE="false"
+export TTN_LW_TELEMETRY_ENABLE="false"
 `
 
 // Local configuration environment variables
@@ -136,6 +138,9 @@ if (relevantSetEnvs.length > 0) {
       }
       envConfig += stagingConfig
     }
+  } else {
+    // Cypress setup
+    envConfig = `${baseConfig + localConfig}export CYPRESS_BASE_URL="http://localhost:8080"\n`
   }
 
   const envVars = envConfig

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import React from 'react'
+import classNames from 'classnames'
 
 import { IconBolt, IconDevice } from '@ttn-lw/components/icon'
 import Panel from '@ttn-lw/components/panel'
@@ -21,10 +22,11 @@ import Button from '@ttn-lw/components/button'
 import Message from '@ttn-lw/lib/components/message'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
+import PropTypes from '@ttn-lw/lib/prop-types'
 
 import style from './total-end-devices-upseller-panel.styl'
 
-const TotalEndDevicesUpsellerPanel = () => {
+const TotalEndDevicesUpsellerPanel = ({ className }) => {
   const upgradeUrl = 'https://www.thethingsindustries.com/stack/plans/'
 
   return (
@@ -34,7 +36,7 @@ const TotalEndDevicesUpsellerPanel = () => {
       shortCutLinkButton
       shortCutLinkPath="#"
       shortCutLinkDisabled
-      className={style.panel}
+      className={classNames(className, style.panel)}
       compact
     >
       <div className={style.upseller}>
@@ -56,6 +58,14 @@ const TotalEndDevicesUpsellerPanel = () => {
       </div>
     </Panel>
   )
+}
+
+TotalEndDevicesUpsellerPanel.propTypes = {
+  className: PropTypes.string,
+}
+
+TotalEndDevicesUpsellerPanel.defaultProps = {
+  className: undefined,
 }
 
 export default TotalEndDevicesUpsellerPanel

@@ -20326,6 +20326,28 @@
         },
         "confirmed_retry": {
           "$ref": "#/definitions/ApplicationDownlinkConfirmedRetry"
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/lorawanv3Location"
+          },
+          "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -20337,6 +20359,28 @@
         },
         "error": {
           "$ref": "#/definitions/v3ErrorDetails"
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/lorawanv3Location"
+          },
+          "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -20377,6 +20421,28 @@
         "session_key_id": {
           "type": "string",
           "format": "byte"
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/lorawanv3Location"
+          },
+          "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -20408,6 +20474,28 @@
           "type": "string",
           "format": "date-time",
           "description": "Server time when the Network Server received the message."
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/lorawanv3Location"
+          },
+          "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -20907,6 +20995,28 @@
         },
         "data": {
           "type": "object"
+        },
+        "locations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/lorawanv3Location"
+          },
+          "description": "End device location metadata, set by the Application Server while handling the message."
+        },
+        "version_ids": {
+          "$ref": "#/definitions/v3EndDeviceVersionIdentifiers",
+          "description": "End device version identifiers, set by the Application Server while handling the message."
+        },
+        "network_ids": {
+          "$ref": "#/definitions/v3NetworkIdentifiers",
+          "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -21068,6 +21178,17 @@
         "network_ids": {
           "$ref": "#/definitions/v3NetworkIdentifiers",
           "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "last_battery_percentage": {
+          "$ref": "#/definitions/v3LastBatteryPercentage",
+          "description": "Last battery percentage of the end device.\nReceived via the DevStatus MAC command at last_dev_status_received_at or earlier.\nSet by the Network Server while handling the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -21144,6 +21265,13 @@
         "network_ids": {
           "$ref": "#/definitions/v3NetworkIdentifiers",
           "description": "Network identifiers, set by the Network Server that handles the message."
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Attributes for devices, set by the Application Server while handling the message."
         }
       }
     },
@@ -25799,6 +25927,26 @@
         },
         "coding_rate": {
           "type": "string"
+        }
+      }
+    },
+    "v3LastBatteryPercentage": {
+      "type": "object",
+      "properties": {
+        "f_cnt": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Frame counter value of last uplink containing DevStatusAns."
+        },
+        "value": {
+          "type": "number",
+          "format": "float",
+          "description": "The battery percentage of the end device.\nThe value is defined in the [0, 100] interval."
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time when last DevStatus MAC command was received."
         }
       }
     },

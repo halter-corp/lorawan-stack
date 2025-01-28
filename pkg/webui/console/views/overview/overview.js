@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import React from 'react'
+import classNames from 'classnames'
 
 import { APPLICATION, GATEWAY } from '@console/constants/entities'
 
@@ -30,11 +31,20 @@ import TopEntitiesDashboardPanel from '@console/containers/top-entities-dashboar
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
+import style from './overview.styl'
+
 const Overview = () => {
   useBreadcrumbs('overview.dashboard', <Breadcrumb path="/" content={sharedMessages.dashboard} />)
 
   return (
     <div className="container container--xl grid p-ls-s gap-ls-s md:p-cs-xs md:gap-cs-xs">
+      <div className={classNames(style.shortcutOverviewPanel, 'item-12')}>
+        <ShortcutPanel mobile />
+      </div>
+      <div className="item-12 md-lg:item-4 d-flex direction-column gap-ls-s">
+        <ShortcutPanel panelClassName="xl:d-none" />
+        <TotalEndDevicesUpsellerPanel className="h-full" />
+      </div>
       <div className="item-12 md-lg:item-4">
         <BlurryNocMetricsPanel
           entity={APPLICATION}
@@ -51,9 +61,6 @@ const Overview = () => {
           entityPath="/gateways"
         />
       </div>
-      <div className="item-12 md-lg:item-4">
-        <TotalEndDevicesUpsellerPanel />
-      </div>
       <div className="item-12 xl:item-6 md-lg:item-6">
         <TopEntitiesDashboardPanel />
       </div>
@@ -62,9 +69,6 @@ const Overview = () => {
       </div>
       <div className="item-12 xl:item-6 md-lg:item-6">
         <DocumentationDashboardPanel />
-      </div>
-      <div className="item-12 xl:item-6 md-lg:item-6">
-        <ShortcutPanel />
       </div>
     </div>
   )
