@@ -185,6 +185,7 @@ func TestOAuthStore(t *testing.T) {
 
 	st := storetest.New(t, newTestStore)
 	st.TestOAuthStore(t)
+	st.TestOAuthStoreSupportUser(t)
 	st.TestOAuthStorePagination(t)
 	st.TestOAuthStorePaginationDefaults(t)
 }
