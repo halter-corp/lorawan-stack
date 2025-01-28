@@ -15,7 +15,6 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 import { useDispatch, useSelector } from 'react-redux'
-import classNames from 'classnames'
 
 import { APPLICATION } from '@console/constants/entities'
 
