@@ -81,6 +81,39 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
     dispatch(setSearchOpen(true))
   }, [dispatch])
 
+  const shortcutItems = [
+    {
+      hasRight: mayCreateApps,
+      icon: IconApplication,
+      title: sharedMessages.createApplication,
+      link: '/applications/add',
+    },
+    {
+      hasRight: mayCreateDev,
+      icon: IconDevice,
+      title: m.addEndDevice,
+      action: handleRegisterDeviceClick,
+    },
+    {
+      hasRight: mayCreateOrgs,
+      icon: IconUsersGroup,
+      title: sharedMessages.createOrganization,
+      link: '/organizations/add',
+    },
+    {
+      hasRight: mayCreateKeys,
+      icon: IconKey,
+      title: sharedMessages.addApiKey,
+      link: '/user-settings/api-keys/add',
+    },
+    {
+      hasRight: mayCreateGtws,
+      icon: IconGateway,
+      title: sharedMessages.registerGateway,
+      link: '/gateways/add',
+    }
+  ]
+
   if (!hasCreateRights) {
     return null
   }
@@ -88,46 +121,16 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
   if (mobile) {
     return (
       <div className="d-flex gap-cs-s">
-        {mayCreateApps && (
+        {shortcutItems.filter((item) => item.hasRight).map(({ icon, title, link, action }, index) => (
           <ShortcutItem
-            icon={IconApplication}
-            title={sharedMessages.createApplication}
-            link="/applications/add"
+            key={index}
+            icon={icon}
+            title={title}
+            link={link}
+            action={action}
             mobile
           />
-        )}
-        {mayCreateDev && (
-          <ShortcutItem
-            icon={IconDevice}
-            title={sharedMessages.addEndDevice}
-            action={handleRegisterDeviceClick}
-            mobile
-          />
-        )}
-        {mayCreateOrgs && (
-          <ShortcutItem
-            icon={IconUsersGroup}
-            title={sharedMessages.createOrganization}
-            link="/organizations/add"
-            mobile
-          />
-        )}
-        {mayCreateKeys && (
-          <ShortcutItem
-            icon={IconKey}
-            title={sharedMessages.addApiKey}
-            link="/user-settings/api-keys/add"
-            mobile
-          />
-        )}
-        {mayCreateGtws && (
-          <ShortcutItem
-            icon={IconGateway}
-            title={sharedMessages.registerGateway}
-            link="/gateways/add"
-            mobile
-          />
-        )}
+        ))}
       </div>
     )
   }
@@ -135,41 +138,15 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
   return (
     <Panel title={m.shortcuts} icon={IconBolt} className={classNames(panelClassName, 'h-full')}>
       <div className="d-flex gap-cs-xs w-full">
-        {mayCreateApps && (
+        {shortcutItems.filter((item) => item.hasRight).map(({ icon, title, link, action }, index) => (
           <ShortcutItem
-            icon={IconApplication}
-            title={sharedMessages.createApplication}
-            link="/applications/add"
+            key={index}
+            icon={icon}
+            title={title}
+            link={link}
+            action={action}
           />
-        )}
-        {mayCreateDevices && (
-          <ShortcutItem
-            icon={IconDevice}
-            title={sharedMessages.registerEndDevice}
-            action={handleRegisterDeviceClick}
-          />
-        )}
-        {mayCreateOrgs && (
-          <ShortcutItem
-            icon={IconUsersGroup}
-            title={sharedMessages.createOrganization}
-            link="/organizations/add"
-          />
-        )}
-        {mayCreateKeys && (
-          <ShortcutItem
-            icon={IconKey}
-            title={sharedMessages.addApiKey}
-            link="/user-settings/api-keys/add"
-          />
-        )}
-        {mayCreateGtws && (
-          <ShortcutItem
-            icon={IconGateway}
-            title={sharedMessages.registerGateway}
-            link="/gateways/add"
-          />
-        )}
+        ))}
       </div>
     </Panel>
   )
