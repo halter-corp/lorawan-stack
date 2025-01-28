@@ -111,7 +111,7 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
       icon: IconGateway,
       title: sharedMessages.registerGateway,
       link: '/gateways/add',
-    }
+    },
   ]
 
   if (!hasCreateRights) {
@@ -121,16 +121,18 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
   if (mobile) {
     return (
       <div className="d-flex gap-cs-s">
-        {shortcutItems.filter((item) => item.hasRight).map(({ icon, title, link, action }, index) => (
-          <ShortcutItem
-            key={index}
-            icon={icon}
-            title={title}
-            link={link}
-            action={action}
-            mobile
-          />
-        ))}
+        {shortcutItems
+          .filter(item => item.hasRight)
+          .map(({ icon, title, link, action }, index) => (
+            <ShortcutItem
+              key={index}
+              icon={icon}
+              title={title}
+              link={link}
+              action={action}
+              mobile
+            />
+          ))}
       </div>
     )
   }
@@ -138,15 +140,11 @@ const ShortcutPanel = ({ panelClassName, mobile }) => {
   return (
     <Panel title={m.shortcuts} icon={IconBolt} className={classNames(panelClassName, 'h-full')}>
       <div className="d-flex gap-cs-xs w-full">
-        {shortcutItems.filter((item) => item.hasRight).map(({ icon, title, link, action }, index) => (
-          <ShortcutItem
-            key={index}
-            icon={icon}
-            title={title}
-            link={link}
-            action={action}
-          />
-        ))}
+        {shortcutItems
+          .filter(item => item.hasRight)
+          .map(({ icon, title, link, action }, index) => (
+            <ShortcutItem key={index} icon={icon} title={title} link={link} action={action} />
+          ))}
       </div>
     </Panel>
   )
