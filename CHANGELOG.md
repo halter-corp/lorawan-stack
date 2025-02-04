@@ -58,6 +58,10 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Changed
 
+- Set default page limit to `100` on AS and NS List RPCs
+  - All the List RPCs will use this value if the page limit is not provided in the request.
+  - The default limit is configurable via `as.pagination.default-limit` for AS and `ns.pagination.default-limit` for NS.
+
 ### Deprecated
 
 ### Removed
