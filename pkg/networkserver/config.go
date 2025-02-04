@@ -185,4 +185,7 @@ var DefaultConfig = Config{
 		StatusCountPeriodicity: func(v uint32) *uint32 { return &v }(mac.DefaultStatusCountPeriodicity),
 	},
 	DownlinkQueueCapacity: 10000,
+	Pagination: PaginationConfig{
+		DefaultLimit: 100,
+	},
 }

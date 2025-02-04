@@ -95,4 +95,7 @@ var DefaultApplicationServerConfig = applicationserver.Config{
 			MaxRetryAttempts:     32,
 		},
 	},
+	Pagination: applicationserver.PaginationConfig{
+		DefaultLimit: 100,
+	},
 }

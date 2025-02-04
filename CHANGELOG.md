@@ -58,6 +58,8 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Changed
 
+- Set default page limit to 100 on AS and NS List RPCs
+
 ### Deprecated
 
 ### Removed
