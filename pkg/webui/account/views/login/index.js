@@ -142,6 +142,7 @@ const Login = () => {
           component={Input}
           name="password"
           type="password"
+          sensitive
           required
         />
         <ButtonGroup>
