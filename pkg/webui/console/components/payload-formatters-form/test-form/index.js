@@ -191,7 +191,6 @@ const TestForm = props => {
               className={style.submitButton}
               component={SubmitButton}
               message={uplink ? m.testDecoder : m.testEncoder}
-              primary={false}
             />
           )}
         </Form.FieldContainer>
@@ -200,7 +199,6 @@ const TestForm = props => {
             className="mb-cs-m"
             component={SubmitButton}
             message={uplink ? m.testDecoder : m.testEncoder}
-            primary={false}
           />
         )}
         {uplink ? (
