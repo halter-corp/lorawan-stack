@@ -603,10 +603,7 @@ func (s *remoteStore) GetDownlinkEncoder(req store.GetCodecRequest) (*ttnpb.Mess
 	codec := codecs.DownlinkEncoder
 
 	if codec.FileName == "" {
-		return nil, errNoEncoder.WithAttributes(
-			"firmware_version", req.GetVersionIds().FirmwareVersion,
-			"band_id", req.GetVersionIds().BandId,
-		)
+		return nil, errNoEncoder.WithAttributes("codec_id", codecs.CodecID)
 	}
 
 	b, err := s.fetcher.File("vendor", req.GetVersionIds().BrandId, codec.FileName)
