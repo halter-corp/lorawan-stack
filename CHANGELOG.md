@@ -33,6 +33,8 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Fixed
 
+- Fix password manager to detect password field on the login page
+
 ### Security
 
 ## [3.33.1] - unreleased
