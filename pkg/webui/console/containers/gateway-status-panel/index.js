@@ -158,6 +158,7 @@ const GatewayStatusPanel = () => {
       iconClassName={isDisconnected ? style.gtwStatusPanelIcon : undefined}
       messageDecorators={
         <Status
+          className="pr-cs-s"
           status={
             isDisconnected
               ? 'bad'
