@@ -19,6 +19,7 @@ import { useSelector } from 'react-redux'
 
 import { IconDevice } from '@ttn-lw/components/icon'
 import Panel from '@ttn-lw/components/panel'
+import Toggle from '@ttn-lw/components/panel/toggle'
 
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 
@@ -35,35 +36,39 @@ const m = defineMessages({
 })
 
 const DevicesPanel = () => {
-  const [active, setActive] = useState('top')
+  const [activeToggle, setActiveToggle] = useState('top')
   const appId = useSelector(selectSelectedApplicationId)
 
-  const handleChange = useCallback(
+  const handleToggleChange = useCallback(
     (_, value) => {
       if (value !== 'all') {
-        setActive(value)
+        setActiveToggle(value)
       }
     },
-    [setActive],
+    [setActiveToggle],
   )
 
-  const options = [
+  const toggleOptions = [
     { label: sharedMessages.topDevices, value: 'top' },
     { label: m.recentDevices, value: 'recent' },
-    { label: sharedMessages.all, value: 'all', link: `/applications/${appId}/devices` },
   ]
 
   return (
     <Panel
       title={sharedMessages.devices}
       icon={IconDevice}
-      toggleOptions={options}
-      activeToggle={active}
-      onToggleClick={handleChange}
       className={classNames(style.devicesPanel)}
+      shortCutLinkTitle={sharedMessages.viewAll}
+      shortCutLinkPath={`/applications/${appId}/devices`}
     >
-      {active === 'top' && <TopDevicesList appId={appId} />}
-      {active === 'recent' && <RecentEndDevices />}
+      <Toggle
+        options={toggleOptions}
+        active={activeToggle}
+        onToggleChange={handleToggleChange}
+        fullWidth
+      />
+      {activeToggle === 'top' && <TopDevicesList appId={appId} />}
+      {activeToggle === 'recent' && <RecentEndDevices />}
     </Panel>
   )
 }
