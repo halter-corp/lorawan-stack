@@ -72,22 +72,15 @@ const RecentEndDevices = () => {
         id: row.ids.device_id,
         name: row.name,
       }),
-      render: details => (
-        <div className="c-text-neutral-light fw-bold">
-          <Message
-            content={details.name ?? details.id}
-            component="p"
-            className="mt-0 mb-cs-xs p-0 text-overflow-ellipsis c-text-neutral-heavy"
-          />
-          {details.name && (
-            <Message
-              content={details.id}
-              component="span"
-              className="c-text-neutral-light fw-normal"
-            />
-          )}
-        </div>
-      ),
+      render: ({ id, name }) =>
+        Boolean(name) ? (
+          <>
+            <span className="mt-0 mb-cs-xxs p-0 fw-bold d-block">{name}</span>
+            <span className="c-text-neutral-light d-block">{id}</span>
+          </>
+        ) : (
+          <span className="mt-0 p-0 fw-bold d-block">{id}</span>
+        ),
     },
     {
       name: 'last_seen_at',

@@ -34,8 +34,9 @@
   &:after
     content: ''
     position: absolute
-    top: 0
-    left: 0
+    top: 50%
+    left: 50%
+    transform: translate(-50%, -50%)
     border-radius: 50%
     width: 5px
     height: 5px
@@ -63,6 +64,12 @@
 .triggered-good-pulse:after
   animation: triggeredGoodPulse 1.5s ease-out
 
+.green-pulse:after
+  animation: greenPulse 4s infinite
+
+.triggered-green-pulse:after
+  animation: triggeredGreenPulse 1.5s ease-out
+
 pulse-animation($color, $name)
   @keyframes $name
     0%
@@ -89,5 +96,7 @@ triggered-pulse-animation($color, $name)
       box-shadow: 0 0 0 0 alpha($color, 0)
 
 pulse-animation($tokens.theme-light.color.icon-info-normal, 'goodPulse')
+pulse-animation($tokens.theme-light.color.icon-success-normal, 'greenPulse')
 
 triggered-pulse-animation($tokens.theme-light.color.icon-info-normal, 'triggeredGoodPulse')
+triggered-pulse-animation($tokens.theme-light.color.icon-success-normal, 'triggeredGreenPulse')

@@ -46,7 +46,7 @@ const TopDevicesList = ({ appId }) => {
         const cleanedId = Boolean(appId) ? id.split('/')[1] : id
         return Boolean(entity?.name) ? (
           <>
-            <span className="mt-0 mb-cs-xxs p-0 fw-bold d-block">{name}</span>
+            <span className="mt-0 mb-cs-xxs p-0 fw-bold d-block">{entity.name}</span>
             <span className="c-text-neutral-light d-block">{cleanedId}</span>
           </>
         ) : (
