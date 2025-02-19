@@ -1208,7 +1208,9 @@ message EndDevice {
 
   LoRaAllianceProfileIdentifiers lora_alliance_profile_ids = 56;
 
-  // next: 57;
+  reserved 57;
+
+  // next: 58;
 }
 
 message EndDevices {

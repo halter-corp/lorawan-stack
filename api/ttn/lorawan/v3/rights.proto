@@ -204,6 +204,12 @@ enum Right {
   reserved 84;
   reserved 85;
   reserved 86;
+  reserved 92;
+  reserved 93;
+  reserved 94;
+  reserved 95;
+  reserved 96;
+  reserved 97;
 
   // The pseudo-right for all (current and future) possible rights.
   RIGHT_ALL = 55;

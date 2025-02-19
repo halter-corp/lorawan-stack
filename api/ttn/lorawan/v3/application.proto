@@ -125,7 +125,9 @@ message Application {
   reserved 15;
   reserved "end_device_limit";
 
-  // next: 16
+  reserved 16;
+
+  // next: 17
 }
 
 message Applications {
