@@ -1209,6 +1209,7 @@ message EndDevice {
   LoRaAllianceProfileIdentifiers lora_alliance_profile_ids = 56;
 
   reserved 57;
+  reserved "label_ids";
 
   // next: 58;
 }

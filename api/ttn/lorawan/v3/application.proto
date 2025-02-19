@@ -126,6 +126,7 @@ message Application {
   reserved "end_device_limit";
 
   reserved 16;
+  reserved "label_ids";
 
   // next: 17
 }

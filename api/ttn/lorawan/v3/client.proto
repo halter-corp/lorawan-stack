@@ -153,6 +153,7 @@ message Client {
   repeated Right rights = 14 [(validate.rules).repeated.items.enum.defined_only = true];
 
   reserved 20;
+  reserved "label_ids";
 
   // next: 21
 }
