@@ -405,6 +405,30 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		return nil, err
 	}
 
+	fps, err := ns.FrequencyPlansStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if st.HasSetField(
+		"mac_settings_profile_ids",
+		"mac_settings_profile_ids.application_ids",
+		"mac_settings_profile_ids.application_ids.application_id",
+		"mac_settings_profile_ids.profile_id",
+	) {
+		if st.HasSetField(macSettingsFields...) {
+			return nil, newInvalidFieldValueError("mac_settings")
+		}
+		profile, err := ns.macSettingsProfiles.Get(ctx, st.Device.MacSettingsProfileIds, []string{"mac_settings"})
+		if err != nil {
+			return nil, err
+		}
+
+		if err = validateProfile(profile, st, fps); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := validateADR(st); err != nil {
 		return nil, err
 	}
@@ -472,10 +496,6 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		"pending_mac_state.desired_parameters.rx2_data_rate_index",
 		"supports_class_b",
 	) {
-		fps, err := ns.FrequencyPlansStore(ctx)
-		if err != nil {
-			return nil, err
-		}
 		if err := validateBandSpecifications(st, fps); err != nil {
 			return nil, err
 		}
