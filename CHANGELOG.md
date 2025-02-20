@@ -11,6 +11,20 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [3.34.0] - unreleased
+
+### Added
+
 - Add end device attributes to ApplicationUp messages.
   - Add the locations, version_ids, network_ids fields to the following ApplicationUp messages:
     - ApplicationJoinAccept
@@ -31,13 +45,9 @@ For details about compatibility between different releases, see the **Commitment
 
 - Deprecate the Location field (and its subfields) in the EndDeviceMetadataStorageConfig of AS.
 
-### Removed
-
 ### Fixed
 
 - Fix password manager to detect password field on the login page
-
-### Security
 
 ## [3.33.1] - 2025-02-10
 
@@ -2950,7 +2960,8 @@ For details about compatibility between different releases, see the **Commitment
 NOTE: These links should respect backports. See https://github.com/TheThingsNetwork/lorawan-stack/pull/1444/files#r333379706.
 -->
 
-[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.1...v3.33
+[unreleased]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.34.0...v3.34
+[3.34.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.1...v3.34.0
 [3.33.1]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.33.0...v3.33.1
 [3.33.0]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.3...v3.33.0
 [3.32.2]: https://github.com/TheThingsNetwork/lorawan-stack/compare/v3.32.2...v3.32.3
