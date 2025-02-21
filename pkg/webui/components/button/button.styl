@@ -105,6 +105,7 @@
           background-color: var(--c-bg-warning-normal-disabled)
 
       &.danger
+        color: var(--c-text-error-min)
         background-color: var(--c-bg-error-normal)
 
         &:not(:disabled)
@@ -156,30 +157,22 @@
 
       &.danger
         color: var(--c-text-error-normal)
-        border-color: var(--c-border-error-extralight)
-        background-color: var(--c-bg-error-bold)
-
-        //Backup (light)
-        // color: var(--c-text-error-normal)
-        // border-color: var(--c-border-error-normal)
+        border-color: var(--c-border-error-normal)
 
         &:not(:disabled)
           &:hover
-            background-color: var(--c-bg-error-heavy)
-
-            //Backup (light)
-            //gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
+            background-color: var(--c-bg-error-bold)
 
           +focus-visible()
-            gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
+            background-color: var(--c-bg-error-heavy)
 
           &:active
-            gradient-border(var(--c-bg-error-extralight), var(--c-gradient-neutral-light-01), var(--c-gradient-neutral-light-02))
+            background-color: var(--c-bg-error-heavy)
             box-shadow: none
 
       &:disabled
         color: var(--c-text-neutral-extralight)
-        background-color: var(--c-bg-neutral-semilight)
+        background-color: light-dark(var(--c-bg-neutral-semilight), var(--c-bg-neutral-semilight))
         border-color: var(--c-border-neutral-light)
 
       &.small
@@ -294,7 +287,8 @@
         color: var(--c-text-error-normal)
 
         &:hover
-          color: var(--c-text-error-normal-hover)
+          background-color: light-dark(var(--c-bg-error-heavy), var(--c-bg-error-bold))
+          color: var(--c-text-error-normal)
 
     &.with-dropdown&.only-icon:not(&.no-dropdown-icon)
       width: fit-content

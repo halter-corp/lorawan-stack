@@ -261,6 +261,7 @@ const BasicSettingsForm = React.memo(props => {
             }
             type="button"
             icon={IconTrash}
+            primary
             naked
             danger
           />

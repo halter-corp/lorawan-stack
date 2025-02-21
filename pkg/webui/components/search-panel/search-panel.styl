@@ -21,7 +21,7 @@
   overflow: hidden
   position: absolute
   z-index: $zi.modal
-  background-color: var(--c-bg-neutral-extralight)
+  background-color: light-dark(var(--c-bg-neutral-extralight), var(--c-bg-neutral-light))
   left: 50%
   top: 10rem
   transform: translateX(-50%)
@@ -48,7 +48,7 @@
     outline: none
     width: 100%
     height: 3rem
-    background-color: var(--c-bg-neutral-extralight)
+    background-color: light-dark(var(--c-bg-neutral-extralight), var(--c-bg-neutral-extralight))
 
     &:focus::placeholder
       visibility: hidden

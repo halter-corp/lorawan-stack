@@ -297,7 +297,6 @@ const IdentityServerForm = React.memo(props => {
             },
           }}
           onApprove={onDeviceDelete}
-          naked
           danger
         />
       </SubmitBar>

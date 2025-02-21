@@ -110,6 +110,7 @@ const AuthorizationSettings = () => {
                 message={m.deleteButton}
                 type="button"
                 icon={IconTrash}
+                primary
                 danger
               />
             ),
