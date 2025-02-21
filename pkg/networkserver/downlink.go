@@ -135,7 +135,7 @@ func (ns *NetworkServer) nextDataDownlinkTaskAt(ctx context.Context, dev *ttnpb.
 		log.FromContext(ctx).WithError(err).Warn("Failed to determine device band")
 		return time.Time{}, nil
 	}
-	slot, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt)
+	slot, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, &ttnpb.MACSettingsProfile{})
 	if !ok {
 		return time.Time{}, nil
 	}
@@ -598,7 +598,13 @@ func (ns *NetworkServer) generateDataDownlink(ctx context.Context, dev *ttnpb.En
 	ctx = log.NewContext(ctx, logger)
 
 	if mType == ttnpb.MType_CONFIRMED_DOWN && class != ttnpb.Class_CLASS_A {
-		confirmedAt, ok := nextConfirmedNetworkInitiatedDownlinkAt(ctx, dev, phy, ns.defaultMACSettings)
+		confirmedAt, ok := nextConfirmedNetworkInitiatedDownlinkAt(
+			ctx,
+			dev,
+			phy,
+			ns.defaultMACSettings,
+			&ttnpb.MACSettingsProfile{},
+		)
 		if !ok {
 			return nil, genState, ErrCorruptedMACState.
 				WithCause(ErrNetworkDownlinkSlot)
@@ -1931,7 +1937,7 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 					return nil, nil, nil
 				}
 
-				if !mac.DeviceScheduleDownlinks(dev, ns.defaultMACSettings) {
+				if !mac.DeviceScheduleDownlinks(dev, ns.defaultMACSettings, &ttnpb.MACSettingsProfile{}) {
 					logger.Debug("Downlink slot skipped since scheduling is disabled")
 					return dev, nil, nil
 				}
@@ -2154,7 +2160,7 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 				}
 				var earliestAt time.Time
 				for {
-					v, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt)
+					v, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, &ttnpb.MACSettingsProfile{})
 					if !ok {
 						return dev, nil, nil
 					}

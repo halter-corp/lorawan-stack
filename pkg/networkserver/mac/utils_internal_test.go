@@ -105,7 +105,7 @@ func TestDeviceDefaultChannels(t *testing.T) {
 
 				pb := ttnpb.Clone(tc.Device)
 
-				deviceDefaultChannels := DeviceDefaultChannels(pb, tc.Band, &ttnpb.MACSettings{})
+				deviceDefaultChannels := DeviceDefaultChannels(pb, tc.Band, &ttnpb.MACSettings{}, &ttnpb.MACSettingsProfile{})
 				a.So(deviceDefaultChannels, should.Resemble, tc.Channels)
 				a.So(pb, should.Resemble, tc.Device)
 			},
@@ -190,7 +190,13 @@ func TestDeviceDesiredChannels(t *testing.T) {
 
 				pb := ttnpb.Clone(tc.Device)
 
-				deviceDesiredChannels := DeviceDesiredChannels(pb, tc.Band, tc.FrequencyPlan, &ttnpb.MACSettings{})
+				deviceDesiredChannels := DeviceDesiredChannels(
+					pb,
+					tc.Band,
+					tc.FrequencyPlan,
+					&ttnpb.MACSettings{},
+					&ttnpb.MACSettingsProfile{},
+				)
 				a.So(deviceDesiredChannels, should.Resemble, tc.Channels)
 				a.So(pb, should.Resemble, tc.Device)
 			},
@@ -648,7 +654,7 @@ func TestNewState(t *testing.T) {
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 				pb := ttnpb.Clone(tc.Device)
 
-				macState, err := NewState(pb, tc.FrequencyPlanStore, &ttnpb.MACSettings{})
+				macState, err := NewState(pb, tc.FrequencyPlanStore, &ttnpb.MACSettings{}, &ttnpb.MACSettingsProfile{})
 				if tc.ErrorAssertion != nil {
 					a.So(tc.ErrorAssertion(t, err), should.BeTrue)
 				} else {

@@ -129,8 +129,14 @@ func relayCtrlUplinkListReqFields(req *ttnpb.MACCommand_RelayCtrlUplinkListReq) 
 }
 
 // DeviceDefaultRelaySettings returns the default relay parameters for the given device.
-func DeviceDefaultRelaySettings(dev *ttnpb.EndDevice, defaults *ttnpb.MACSettings) *ttnpb.RelaySettings {
+func DeviceDefaultRelaySettings(
+	dev *ttnpb.EndDevice,
+	defaults *ttnpb.MACSettings,
+	profile *ttnpb.MACSettingsProfile,
+) *ttnpb.RelaySettings {
 	switch {
+	case profile.GetMacSettings().GetRelay() != nil:
+		return profile.MacSettings.Relay
 	case dev.GetMacSettings().GetRelay() != nil:
 		return dev.MacSettings.Relay
 	case defaults.Relay != nil:
@@ -141,14 +147,20 @@ func DeviceDefaultRelaySettings(dev *ttnpb.EndDevice, defaults *ttnpb.MACSetting
 }
 
 // DeviceDesiredRelaySettings returns the desired relay parameters for the given device.
-func DeviceDesiredRelaySettings(dev *ttnpb.EndDevice, defaults *ttnpb.MACSettings) *ttnpb.RelaySettings {
+func DeviceDesiredRelaySettings(
+	dev *ttnpb.EndDevice,
+	defaults *ttnpb.MACSettings,
+	profile *ttnpb.MACSettingsProfile,
+) *ttnpb.RelaySettings {
 	switch {
+	case profile.GetMacSettings().GetDesiredRelay() != nil:
+		return profile.MacSettings.DesiredRelay
 	case dev.GetMacSettings().GetDesiredRelay() != nil:
 		return dev.MacSettings.DesiredRelay
 	case defaults.DesiredRelay != nil:
 		return defaults.DesiredRelay
 	default:
-		return DeviceDefaultRelaySettings(dev, defaults)
+		return DeviceDefaultRelaySettings(dev, defaults, profile)
 	}
 }
 

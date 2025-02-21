@@ -410,6 +410,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		return nil, err
 	}
 
+	profile := &ttnpb.MACSettingsProfile{}
 	if st.HasSetField(
 		"mac_settings_profile_ids",
 		"mac_settings_profile_ids.application_ids",
@@ -419,7 +420,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		if st.HasSetField(macSettingsFields...) {
 			return nil, newInvalidFieldValueError("mac_settings")
 		}
-		profile, err := ns.macSettingsProfiles.Get(ctx, st.Device.MacSettingsProfileIds, []string{"mac_settings"})
+		profile, err = ns.macSettingsProfiles.Get(ctx, st.Device.MacSettingsProfileIds, []string{"mac_settings"})
 		if err != nil {
 			return nil, err
 		}
@@ -1355,7 +1356,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				if err != nil {
 					return err
 				}
-				macState, err := mac.NewState(st.Device, fps, ns.defaultMACSettings)
+				macState, err := mac.NewState(st.Device, fps, ns.defaultMACSettings, profile)
 				if err != nil {
 					return err
 				}
@@ -1510,7 +1511,7 @@ func (ns *NetworkServer) ResetFactoryDefaults(ctx context.Context, req *ttnpb.Re
 			if err != nil {
 				return nil, nil, err
 			}
-			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings)
+			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings, &ttnpb.MACSettingsProfile{})
 			if err != nil {
 				return nil, nil, err
 			}

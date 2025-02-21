@@ -222,7 +222,7 @@ func MakeCFList(conf CFListConfig) *ttnpb.CFList {
 	if dr.MaxMACPayloadSize(downlinkDwellTime)+5 < lorawan.JoinAcceptWithCFListLength {
 		return nil
 	}
-	return mac.CFList(&phy, mac.DeviceDesiredChannels(&ttnpb.EndDevice{}, &phy, fp, nil)...)
+	return mac.CFList(&phy, mac.DeviceDesiredChannels(&ttnpb.EndDevice{}, &phy, fp, nil, nil)...)
 }
 
 type NsJsJoinRequestConfig struct {
@@ -1603,16 +1603,17 @@ func (env TestEnvironment) AssertJoin(ctx context.Context, conf JoinAssertionCon
 			t.Helper()
 
 			defaultMACSettings := test.Must(env.Config.DefaultMACSettings.Parse())
+			macSettingsProfile := &ttnpb.MACSettingsProfile{}
 
 			defaultLoRaWANVersion := mac.DeviceDefaultLoRaWANVersion(conf.Device)
 
-			defaultRX1DROffset := mac.DeviceDefaultRX1DataRateOffset(conf.Device, defaultMACSettings)
-			defaultRX2DRIdx := mac.DeviceDefaultRX2DataRateIndex(conf.Device, phy, defaultMACSettings)
-			defaultRX2Freq := mac.DeviceDefaultRX2Frequency(conf.Device, phy, defaultMACSettings)
+			defaultRX1DROffset := mac.DeviceDefaultRX1DataRateOffset(conf.Device, defaultMACSettings, macSettingsProfile)
+			defaultRX2DRIdx := mac.DeviceDefaultRX2DataRateIndex(conf.Device, phy, defaultMACSettings, macSettingsProfile)
+			defaultRX2Freq := mac.DeviceDefaultRX2Frequency(conf.Device, phy, defaultMACSettings, macSettingsProfile)
 
-			desiredRX1Delay := mac.DeviceDesiredRX1Delay(conf.Device, phy, defaultMACSettings)
-			desiredRX1DROffset := mac.DeviceDesiredRX1DataRateOffset(conf.Device, defaultMACSettings)
-			desiredRX2DRIdx := mac.DeviceDesiredRX2DataRateIndex(conf.Device, phy, fp, defaultMACSettings)
+			desiredRX1Delay := mac.DeviceDesiredRX1Delay(conf.Device, phy, defaultMACSettings, macSettingsProfile)
+			desiredRX1DROffset := mac.DeviceDesiredRX1DataRateOffset(conf.Device, defaultMACSettings, macSettingsProfile)
+			desiredRX2DRIdx := mac.DeviceDesiredRX2DataRateIndex(conf.Device, phy, fp, defaultMACSettings, macSettingsProfile)
 
 			deduplicatedUpConf := upConf
 			deduplicatedUpConf.DecodePayload = true
@@ -1683,41 +1684,41 @@ func (env TestEnvironment) AssertJoin(ctx context.Context, conf JoinAssertionCon
 					MaxEirp:                    phy.DefaultMaxEIRP,
 					AdrDataRateIndex:           ttnpb.DataRateIndex_DATA_RATE_0,
 					AdrNbTrans:                 1,
-					Rx1Delay:                   mac.DeviceDefaultRX1Delay(dev, phy, defaultMACSettings),
+					Rx1Delay:                   mac.DeviceDefaultRX1Delay(dev, phy, defaultMACSettings, macSettingsProfile), // nolint: lll
 					Rx1DataRateOffset:          defaultRX1DROffset,
 					Rx2DataRateIndex:           defaultRX2DRIdx,
 					Rx2Frequency:               defaultRX2Freq,
-					MaxDutyCycle:               mac.DeviceDefaultMaxDutyCycle(dev, defaultMACSettings),
+					MaxDutyCycle:               mac.DeviceDefaultMaxDutyCycle(dev, defaultMACSettings, macSettingsProfile), // nolint: lll
 					RejoinTimePeriodicity:      ttnpb.RejoinTimeExponent_REJOIN_TIME_0,
 					RejoinCountPeriodicity:     ttnpb.RejoinCountExponent_REJOIN_COUNT_16,
-					PingSlotFrequency:          mac.DeviceDefaultPingSlotFrequency(dev, phy, defaultMACSettings),
-					BeaconFrequency:            mac.DeviceDefaultBeaconFrequency(dev, phy, defaultMACSettings),
-					Channels:                   mac.DeviceDefaultChannels(dev, phy, defaultMACSettings),
-					UplinkDwellTime:            mac.DeviceUplinkDwellTime(dev, phy, defaultMACSettings),
-					DownlinkDwellTime:          mac.DeviceDownlinkDwellTime(dev, phy, defaultMACSettings),
+					PingSlotFrequency:          mac.DeviceDefaultPingSlotFrequency(dev, phy, defaultMACSettings, macSettingsProfile), // nolint: lll
+					BeaconFrequency:            mac.DeviceDefaultBeaconFrequency(dev, phy, defaultMACSettings, macSettingsProfile),   // nolint: lll
+					Channels:                   mac.DeviceDefaultChannels(dev, phy, defaultMACSettings, macSettingsProfile),          // nolint: lll
+					UplinkDwellTime:            mac.DeviceUplinkDwellTime(dev, phy, defaultMACSettings, macSettingsProfile),          // nolint: lll
+					DownlinkDwellTime:          mac.DeviceDownlinkDwellTime(dev, phy, defaultMACSettings, macSettingsProfile),        // nolint: lll
 					AdrAckLimitExponent:        &ttnpb.ADRAckLimitExponentValue{Value: phy.ADRAckLimit},
 					AdrAckDelayExponent:        &ttnpb.ADRAckDelayExponentValue{Value: phy.ADRAckDelay},
-					PingSlotDataRateIndexValue: mac.DeviceDefaultPingSlotDataRateIndexValue(dev, phy, defaultMACSettings),
+					PingSlotDataRateIndexValue: mac.DeviceDefaultPingSlotDataRateIndexValue(dev, phy, defaultMACSettings, macSettingsProfile), // nolint: lll
 				},
 				DesiredParameters: &ttnpb.MACParameters{
-					MaxEirp:                    mac.DeviceDesiredMaxEIRP(dev, phy, fp, defaultMACSettings),
+					MaxEirp:                    mac.DeviceDesiredMaxEIRP(dev, phy, fp, defaultMACSettings, macSettingsProfile), // nolint: lll
 					AdrDataRateIndex:           ttnpb.DataRateIndex_DATA_RATE_0,
 					AdrNbTrans:                 1,
 					Rx1Delay:                   desiredRX1Delay,
 					Rx1DataRateOffset:          desiredRX1DROffset,
 					Rx2DataRateIndex:           desiredRX2DRIdx,
-					Rx2Frequency:               mac.DeviceDesiredRX2Frequency(dev, phy, fp, defaultMACSettings),
-					MaxDutyCycle:               mac.DeviceDesiredMaxDutyCycle(dev, defaultMACSettings),
+					Rx2Frequency:               mac.DeviceDesiredRX2Frequency(dev, phy, fp, defaultMACSettings, macSettingsProfile), // nolint: lll
+					MaxDutyCycle:               mac.DeviceDesiredMaxDutyCycle(dev, defaultMACSettings, macSettingsProfile),          // nolint: lll
 					RejoinTimePeriodicity:      ttnpb.RejoinTimeExponent_REJOIN_TIME_0,
 					RejoinCountPeriodicity:     ttnpb.RejoinCountExponent_REJOIN_COUNT_16,
-					PingSlotFrequency:          mac.DeviceDesiredPingSlotFrequency(dev, phy, fp, defaultMACSettings),
-					BeaconFrequency:            mac.DeviceDesiredBeaconFrequency(dev, phy, defaultMACSettings),
-					Channels:                   mac.DeviceDesiredChannels(dev, phy, fp, defaultMACSettings),
+					PingSlotFrequency:          mac.DeviceDesiredPingSlotFrequency(dev, phy, fp, defaultMACSettings, macSettingsProfile), // nolint: lll
+					BeaconFrequency:            mac.DeviceDesiredBeaconFrequency(dev, phy, defaultMACSettings, macSettingsProfile),       // nolint: lll
+					Channels:                   mac.DeviceDesiredChannels(dev, phy, fp, defaultMACSettings, macSettingsProfile),          // nolint: lll
 					UplinkDwellTime:            mac.DeviceDesiredUplinkDwellTime(phy, fp),
 					DownlinkDwellTime:          mac.DeviceDesiredDownlinkDwellTime(phy, fp),
-					AdrAckLimitExponent:        mac.DeviceDesiredADRAckLimitExponent(dev, phy, defaultMACSettings),
-					AdrAckDelayExponent:        mac.DeviceDesiredADRAckDelayExponent(dev, phy, defaultMACSettings),
-					PingSlotDataRateIndexValue: mac.DeviceDesiredPingSlotDataRateIndexValue(dev, phy, fp, defaultMACSettings),
+					AdrAckLimitExponent:        mac.DeviceDesiredADRAckLimitExponent(dev, phy, defaultMACSettings, macSettingsProfile),            // nolint: lll
+					AdrAckDelayExponent:        mac.DeviceDesiredADRAckDelayExponent(dev, phy, defaultMACSettings, macSettingsProfile),            // nolint: lll
+					PingSlotDataRateIndexValue: mac.DeviceDesiredPingSlotDataRateIndexValue(dev, phy, fp, defaultMACSettings, macSettingsProfile), // nolint: lll
 				},
 				DeviceClass:    test.Must(mac.DeviceDefaultClass(dev)),
 				LorawanVersion: defaultLoRaWANVersion,
@@ -2186,7 +2187,12 @@ func LogEvents(t *testing.T, ch <-chan test.EventPubSubPublishRequest) {
 var MACStateOptions = test.MACStateOptions
 
 func MakeMACState(dev *ttnpb.EndDevice, defaults *ttnpb.MACSettings, opts ...test.MACStateOption) *ttnpb.MACState {
-	return MACStateOptions.Compose(opts...)(test.Must(mac.NewState(dev, test.FrequencyPlanStore, defaults)))
+	return MACStateOptions.Compose(opts...)(test.Must(mac.NewState(
+		dev,
+		test.FrequencyPlanStore,
+		defaults,
+		&ttnpb.MACSettingsProfile{},
+	)))
 }
 
 type SessionOptionNamespace struct{ test.SessionOptionNamespace }
