@@ -94,7 +94,7 @@ const Layout = () => {
   const { height: splitFrameHeight, isMounted } = useContext(EventSplitFrameContext)
 
   const toggleTheme = theme => {
-    const htmlElement = document.documentElement // Get the root element
+    const htmlElement = document.documentElement
 
     if (theme === 'dark') {
       htmlElement.classList.add('dark')

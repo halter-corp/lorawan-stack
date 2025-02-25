@@ -45,9 +45,9 @@ import { mayViewOrEditApplicationPackages } from '@console/lib/feature-checks'
 import { getAppPkgDefaultAssoc } from '@console/store/actions/application-packages'
 
 import { selectSelectedApplicationId } from '@console/store/selectors/applications'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import style from './application-integrations-lora-cloud.styl'
-import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 const m = defineMessages({
   loraCloudInfoText:

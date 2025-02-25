@@ -46,5 +46,12 @@ make-utilities($name, $theme)
       .focus\\:c-{$key}:focus
         border-color: $value !important
 
+// Define color theme and generate variables accordingly.
 :global
-  make-utilities('tokens', 'theme-light')
+  .dark
+    color-scheme: dark
+    make-utilities('tokens', 'theme-dark')
+
+  .light
+    color-scheme: light
+    make-utilities('tokens', 'theme-light')
