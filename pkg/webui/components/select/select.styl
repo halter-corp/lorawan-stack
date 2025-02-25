@@ -18,7 +18,7 @@
 
   // stylelint-disable
   :global(.select__single-value)
-    color: var(--c-text-neutral-heavy)
+    color: light-dark(inherit, var(--c-text-neutral-heavy))
   :global(.select__option)
     padding: $cs.xs $cs.s
   :global(.select__option--is-selected)
@@ -34,8 +34,10 @@
     width: 100%
     min-height: $default-input-height
     border-radius: $br.xs
+    border: 1px solid var(--c-border-neutral-normal)
+    background: var(--c-bg-neutral-min)
   :global(.select__menu)
-    background: var(--c-bg-neutral-extralight)
+    background: light-dark(var(--c-bg-neutral-min), var(--c-bg-neutral-light))
     z-index: $zi.dropdown
   :global(.select__dropdown-indicator)
     padding: 4px
