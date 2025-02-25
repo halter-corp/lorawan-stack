@@ -45,6 +45,7 @@ import {
   selectSelectedDevice,
 } from '@console/store/selectors/devices'
 import { selectDeviceRepoPayloadFromatters } from '@console/store/selectors/device-repository'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import m from './messages'
 
@@ -56,6 +57,8 @@ const DevicePayloadFormatters = () => {
   const formatters = useSelector(selectSelectedDeviceFormatters)
   const decodeUplink = tts.As.decodeUplink
   const repositoryPayloadFormatters = useSelector(selectDeviceRepoPayloadFromatters)
+  const consolePreferences = useSelector(selectConsolePreferences)
+  const darkTheme = consolePreferences.console_theme === 'CONSOLE_THEME_DARK'
   const [type, setType] = useState(
     Boolean(formatters)
       ? formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE
@@ -179,6 +182,7 @@ const DevicePayloadFormatters = () => {
         onTypeChange={onTypeChange}
         isDefaultType={isDefaultType}
         repoFormatters={repositoryPayloadFormatters}
+        darkTheme={darkTheme}
       />
     </RequireRequest>
   )

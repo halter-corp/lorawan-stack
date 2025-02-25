@@ -176,6 +176,7 @@ const TestForm = props => {
               component={CodeEditor}
               minLines={15}
               maxLines={15}
+              darkTheme={darkTheme}
             />
           )}
           <Form.Field

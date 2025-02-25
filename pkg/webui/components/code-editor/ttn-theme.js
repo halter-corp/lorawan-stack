@@ -152,12 +152,7 @@ ace.define(
     exports.cssClass = 'ace-ttn-dark'
     exports.cssText = `
 .ace-ttn-dark .ace_gutter {
-  background: var(--c-bg-neutral-bold);
   color: var(--c-text-neutral-light);
-}
-.ace-ttn-dark {
-  background: var(--c-bg-neutral-heavy);
-  color: var(--c-text-neutral-min);
 }
 // begin language
 .ace-ttn-dark .ace_string {
@@ -216,10 +211,6 @@ ace.define(
 }
 .ace-ttn-dark .ace_cursor {
   color: var(--c-text-neutral-min);
-}
-.ace-ttn-dark.ace_focus .ace_marker-layer .ace_active-line {
-  background: var(--c-bg-brand-extralight);
-  opacity: 0.2;
 }
 .ace-ttn-dark .ace_marker-layer .ace_active-line {
   background: var(--c-bg-neutral-bold);
