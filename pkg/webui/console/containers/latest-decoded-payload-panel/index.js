@@ -97,7 +97,10 @@ const LatestDecodedPayloadPanel = ({ appId, events, shortCutLinkPath, className,
   const [isHovered, setIsHovered] = useState(false)
   const [latestEvent, setLatestEvent] = useState(null)
   const consolePreferences = useSelector(selectConsolePreferences)
-  const darkTheme = consolePreferences.console_theme === 'CONSOLE_THEME_DARK'
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const dispatch = useDispatch()
 
   const _timer = useRef(null)

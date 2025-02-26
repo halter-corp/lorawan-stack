@@ -83,7 +83,6 @@ const m = defineMessages({
   requiresAdminAction: "<i>Requires admin action, can't be unselected</i>",
   unsubscribeFromEverything: 'Turn off all email notifications',
   unsubscribeDescription: 'You will continue to receive notifications in the console.',
-  discardChanges: 'Discard changes',
   updateEmailPreferences: 'Updated email preferences',
 })
 
@@ -174,7 +173,12 @@ const InnerForm = initialValues => {
       </div>
       <SubmitBar>
         <Form.Submit component={SubmitButton} message={sharedMessages.saveChanges} />
-        <Button type="button" secondary message={m.discardChanges} onClick={handleDiscardChanges} />
+        <Button
+          type="button"
+          secondary
+          message={sharedMessages.discardChanges}
+          onClick={handleDiscardChanges}
+        />
       </SubmitBar>
     </>
   )

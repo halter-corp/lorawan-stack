@@ -56,7 +56,10 @@ const ApplicationPayloadFormatters = () => {
   const linkError = useSelector(selectApplicationLinkError)
   const mayViewLink = useSelector(state => checkFromState(mayViewApplicationLink, state))
   const consolePreferences = useSelector(selectConsolePreferences)
-  const darkTheme = consolePreferences.console_theme === 'CONSOLE_THEME_DARK'
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const [type, setType] = useState(formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE)
   const dispatch = useDispatch()
 

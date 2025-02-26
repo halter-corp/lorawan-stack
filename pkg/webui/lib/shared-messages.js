@@ -215,6 +215,7 @@ export default defineMessages({
   devices: 'End devices',
   devicesShort: 'Devices',
   disabled: 'Disabled',
+  discardChanges: 'Discard changes',
   disconnected: 'Disconnected',
   documentation: 'Documentation',
   downlink: 'Downlink',
@@ -239,6 +240,7 @@ export default defineMessages({
   emailAddressValidation: 'Treat email address as validated',
   emailAddressValidationDescription:
     'Enable this option if you do not need this user to validate the email address',
+  emailNotifications: 'Email notifications',
   emailPlaceholder: 'mail@example.com',
   empty: 'Empty',
   enabled: 'Enabled',
@@ -594,6 +596,7 @@ export default defineMessages({
   technicalContact: 'Technical contact',
   tenantId: 'Tenant ID',
   termsAndCondition: 'Terms and conditions',
+  theme: 'Theme',
   time: 'Time',
   token: 'Token',
   tokenDelete: 'Token delete',

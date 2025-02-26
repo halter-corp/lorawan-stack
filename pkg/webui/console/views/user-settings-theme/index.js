@@ -1,4 +1,4 @@
-// Copyright © 2024 The Things Network Foundation, The Things Industries B.V.
+// Copyright © 2025 The Things Network Foundation, The Things Industries B.V.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,11 @@ import { useSelector } from 'react-redux'
 import PageTitle from '@ttn-lw/components/page-title'
 import { useBreadcrumbs } from '@ttn-lw/components/breadcrumbs/context'
 import Breadcrumb from '@ttn-lw/components/breadcrumbs/breadcrumb'
-import Link from '@ttn-lw/components/link'
 
 import Message from '@ttn-lw/lib/components/message'
 import RequireRequest from '@ttn-lw/lib/components/require-request'
 
-import EmailNotificationsForm from '@console/containers/email-notifications-form'
+import ThemeSettingsForm from '@console/containers/user-settings-theme'
 
 import Require from '@console/lib/components/require'
 
@@ -37,39 +36,25 @@ import { getUser } from '@console/store/actions/users'
 import { selectUserId } from '@console/store/selectors/logout'
 
 const m = defineMessages({
-  emailNotificationsSettings: 'Email notifications settings',
-  customizeEmailNotifications:
-    'Customize the notifications for which you receive emails. To see all your notifications, head to the <Link>notifications panel</Link>.',
+  customizeTheme: 'Customize your interface theme.',
 })
 
-const EmailNotificationsSettings = () => {
+const ThemeSettings = () => {
   useBreadcrumbs(
-    'user-settings.email-notifications-settings',
-    <Breadcrumb
-      path="/user-settings/email-notifications-settings"
-      content={m.emailNotificationsSettings}
-    />,
+    'user-settings.theme',
+    <Breadcrumb path="/user-settings/theme" content={sharedMessages.theme} />,
   )
 
   const userId = useSelector(selectUserId)
 
   return (
     <Require featureCheck={mayViewOrEditUserSettings} otherwise={{ redirect: '/' }}>
-      <RequireRequest requestAction={getUser(userId, ['email_notification_preferences'])}>
-        <div className="container container--xl grid">
-          <div className="lg:item-6 lg:item-start-4 item-12 item-start-1">
-            <PageTitle title={sharedMessages.emailNotifications} className="mb-0" />
-            <Message
-              content={m.customizeEmailNotifications}
-              values={{
-                Link: msg => (
-                  <Link to="/notifications/inbox" primary>
-                    {msg}
-                  </Link>
-                ),
-              }}
-            />
-            <EmailNotificationsForm />
+      <RequireRequest requestAction={getUser(userId, ['console_preferences'])}>
+        <div className="container container--xxl grid">
+          <div className="xxl:item-6 xxl:item-start-4 item-12 item-start-1">
+            <PageTitle title={sharedMessages.theme} className="mb-0" />
+            <Message content={m.customizeTheme} />
+            <ThemeSettingsForm />
           </div>
         </div>
       </RequireRequest>
@@ -77,4 +62,4 @@ const EmailNotificationsSettings = () => {
   )
 }
 
-export default EmailNotificationsSettings
+export default ThemeSettings

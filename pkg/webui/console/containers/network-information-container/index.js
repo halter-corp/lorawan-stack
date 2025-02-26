@@ -31,7 +31,10 @@ const m = defineMessages({
 
 const NetworkInformationContainer = () => {
   const consolePreferences = useSelector(selectConsolePreferences)
-  const darkTheme = consolePreferences.console_theme === 'CONSOLE_THEME_DARK'
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   return (
     <>

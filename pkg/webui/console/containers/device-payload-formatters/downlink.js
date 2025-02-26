@@ -57,7 +57,10 @@ const DevicePayloadFormatters = () => {
   const encodeDownlink = tts.As.encodeDownlink
   const repositoryPayloadFormatters = useSelector(selectDeviceRepoPayloadFromatters)
   const consolePreferences = useSelector(selectConsolePreferences)
-  const darkTheme = consolePreferences.console_theme === 'CONSOLE_THEME_DARK'
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const [type, setType] = useState(
     Boolean(formatters)
       ? formatters.down_formatter || PAYLOAD_FORMATTER_TYPES.NONE

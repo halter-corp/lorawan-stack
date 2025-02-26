@@ -61,6 +61,7 @@ import {
   selectUserRights,
   selectUserIsAdmin,
 } from '@console/store/selectors/user'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import style from './app.styl'
 
@@ -82,7 +83,11 @@ const Layout = () => {
   const { search } = useLocation()
   const page = new URLSearchParams(search).get('page')
   const user = useSelector(selectUser)
-  const darkTheme = user?.console_preferences?.console_theme === 'CONSOLE_THEME_DARK'
+  const consolePreferences = useSelector(selectConsolePreferences)
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const fetching = useSelector(selectUserFetching)
   const error = useSelector(selectUserError)
   const rights = useSelector(selectUserRights)
