@@ -2030,12 +2030,15 @@ The NATS provider settings.
 | ----- | ---- | ----- | ----------- |
 | `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  |  |
 | `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `limit` | [`uint32`](#uint32) |  |  |
+| `page` | [`uint32`](#uint32) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.SetApplicationPubSubRequest">Message `SetApplicationPubSubRequest`</a>
 
@@ -2342,12 +2345,15 @@ The fields are meant to be replaced inside the URLs and headers when the webhook
 | ----- | ---- | ----- | ----------- |
 | `application_ids` | [`ApplicationIdentifiers`](#ttn.lorawan.v3.ApplicationIdentifiers) |  |  |
 | `field_mask` | [`google.protobuf.FieldMask`](#google.protobuf.FieldMask) |  |  |
+| `limit` | [`uint32`](#uint32) |  |  |
+| `page` | [`uint32`](#uint32) |  |  |
 
 #### Field Rules
 
 | Field | Validations |
 | ----- | ----------- |
 | `application_ids` | <p>`message.required`: `true`</p> |
+| `limit` | <p>`uint32.lte`: `1000`</p> |
 
 ### <a name="ttn.lorawan.v3.SetApplicationWebhookRequest">Message `SetApplicationWebhookRequest`</a>
 

@@ -246,11 +246,15 @@ var ListApplicationWebhooksRequestFieldPathsNested = []string{
 	"application_ids",
 	"application_ids.application_id",
 	"field_mask",
+	"limit",
+	"page",
 }
 
 var ListApplicationWebhooksRequestFieldPathsTopLevel = []string{
 	"application_ids",
 	"field_mask",
+	"limit",
+	"page",
 }
 var SetApplicationWebhookRequestFieldPathsNested = []string{
 	"field_mask",
