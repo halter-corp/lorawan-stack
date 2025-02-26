@@ -1701,6 +1701,17 @@ func (m *ListApplicationWebhooksRequest) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "limit":
+
+			if m.GetLimit() > 1000 {
+				return ListApplicationWebhooksRequestValidationError{
+					field:  "limit",
+					reason: "value must be less than or equal to 1000",
+				}
+			}
+
+		case "page":
+			// no validation rules for Page
 		default:
 			return ListApplicationWebhooksRequestValidationError{
 				field:  name,
