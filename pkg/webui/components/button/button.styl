@@ -157,11 +157,12 @@
 
       &.danger
         color: var(--c-text-error-normal)
-        border-color: var(--c-border-error-normal)
+        border-color: light-dark(var(--c-text-error-normal), var(--c-border-error-extralight))
+        background-color: var(--c-bg-error-bold)
 
         &:not(:disabled)
           &:hover
-            background-color: var(--c-bg-error-bold)
+            background-color: light-dark(var(--c-bg-error-bold), var(--c-bg-error-heavy))
 
           +focus-visible()
             background-color: var(--c-bg-error-heavy)
@@ -172,7 +173,7 @@
 
       &:disabled
         color: light-dark(var(--c-text-neutral-extralight), var(--c-text-neutral-light))
-        background-color: var(--c-bg-neutral-semilight)
+        background-color: light-dark(var(--c-bg-neutral-semilight), var(--c-bg-neutral-light))
         border-color: var(--c-border-neutral-light)
 
       &.small
@@ -241,7 +242,7 @@
       color: var(--c-text-neutral-light)
 
       &:disabled
-        color: var(--c-text-neutral-extralight)
+        color: var(--c-bg-brand-normal-disabled)
 
       &:not(:disabled)
         &:hover
@@ -254,6 +255,14 @@
 
         &:active
           background-color: var(--c-bg-neutral-semilight)
+
+      &.danger
+        background-color: unset
+        color: var(--c-text-error-normal)
+
+        &:hover
+          background-color: light-dark(var(--c-bg-error-heavy), var(--c-bg-error-bold))
+          color: var(--c-text-error-normal)
 
     &.primary.naked
       color: var(--c-bg-brand-normal)
