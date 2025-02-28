@@ -43,7 +43,7 @@
     border-radius: $br.m
 
   .link:hover
-    background-color: var(--c-bg-neutral-extralight-hover)
+    background-color: var(--c-bg-neutral-light)
 
   .link
     +focus-visible()
@@ -61,7 +61,7 @@
   &-active
     .link
       background-color: var(--c-text-brand-normal)
-      color: var(--c-bg-neutral-min)
+      color: light-dark(var(--c-bg-neutral-min), var(--c-bg-neutral-heavy))
       border-radius: $br.m
 
     .link:hover

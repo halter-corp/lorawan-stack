@@ -16,7 +16,7 @@
   &-header
     font-size: $fs.l
     padding: $cs.xl $cs.l
-    border-bottom: 1px solid var(--c-border-neutral-light)
+    border-bottom: 1px solid light-dark(var(--c-border-neutral-light), var(--c-border-neutral-normal))
     margin-bottom: 0
     font-weight: $fw.bold
     line-height: 1
@@ -26,7 +26,7 @@
     justify-content: center
     gap: $cs.m
     text-decoration: none
-    border-bottom: 1px solid var(--c-border-neutral-light)
+    border-bottom: 1px solid light-dark(var(--c-border-neutral-light), var(--c-border-neutral-normal))
     padding: $cs.m 1.25rem
     color: var(--c-text-neutral-heavy)
 
@@ -34,13 +34,13 @@
       color: initial
 
     &:hover
-      background: var(--c-bg-neutral-light)
+      background: light-dark(var(--c-border-neutral-light), var(--c-border-neutral-normal))
 
     &-icon
       display: block
       border-radius: $br.m
       border: 1px solid var(--c-border-neutral-light)
-      background: var(--c-bg-neutral-min)
+      background: light-dark(var(--c-bg-neutral-min), var(--c-bg-neutral-heavy))
       color: var(--c-text-brand-normal)
       padding: $cs.m
       height: 1.25rem

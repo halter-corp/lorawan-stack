@@ -61,7 +61,7 @@
   .total-notifications
     border-radius: $br.l
     background-color: var(--c-bg-brand-normal)
-    color: var(--c-text-neutral-min)
+    color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
     padding: 0 .45rem
     margin-left: $cs.xxs
     font-size: $fs.s
@@ -130,15 +130,15 @@
       background-color: unset
 
     .notification-preview-title
-      color: var(--c-text-neutral-min)
+      color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
       +media-query($bp['md-lg'])
         color: var(--c-text-neutral-heavy)
 
       .notification-time
-        color: var(--c-text-neutral-min)
+        color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
 
     .notification-preview-content
-      color: var(--c-text-neutral-min)
+      color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
       +media-query($bp['md-lg'])
         color: var(--c-text-neutral-light)
 

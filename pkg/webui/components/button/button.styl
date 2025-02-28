@@ -53,7 +53,7 @@
       position: absolute
       top: 4px
       left: 17px
-      border: 3px solid var(--c-border-neutral-min)
+      border: 3px solid light-dark(var(--c-border-neutral-min), var(--c-bg-neutral-light))
       border-radius: 100%
       size: 13px
       box-sizing: border-box
@@ -105,7 +105,7 @@
           background-color: var(--c-bg-warning-normal-disabled)
 
       &.danger
-        color: var(--c-text-error-min)
+        color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
         background-color: var(--c-bg-error-normal)
 
         &:not(:disabled)
@@ -119,10 +119,11 @@
             background-color: var(--c-bg-error-normal-active)
 
         &:disabled
+          color: light-dark(var(--c-text-neutral-min), $c.error-300)
           background-color: var(--c-bg-error-normal-disabled)
 
       .expand-icon
-        color: var(--c-text-neutral-min)
+        color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
 
     &.secondary
       color: var(--c-text-neutral-heavy)
@@ -186,7 +187,7 @@
           height: 1.2rem
 
     &.tertiary
-      color: light-dark(var(--c-text-brand-normal), var(--c-text-brand-extralight))
+      color: light-dark(var(--c-text-brand-normal), var(--c-text-brand-light))
       background-color: light-dark(var(--c-bg-brand-light), var(--c-bg-brand-bold))
 
       &:disabled
@@ -263,6 +264,10 @@
         &:hover
           background-color: light-dark(var(--c-bg-error-heavy), var(--c-bg-error-bold))
           color: var(--c-text-error-normal)
+
+        &:disabled
+          color: light-dark(var(--c-text-neutral-extralight), var(--c-text-neutral-light))
+          background-color: light-dark(var(--c-bg-neutral-semilight), var(--c-bg-neutral-light))
 
     &.primary.naked
       color: var(--c-bg-brand-normal)
