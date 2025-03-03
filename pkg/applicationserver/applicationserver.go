@@ -924,7 +924,7 @@ func (as *ApplicationServer) handleUp(ctx context.Context, up *ttnpb.Application
 	case *ttnpb.ApplicationUp_LocationSolved:
 		return true, as.handleLocationSolved(ctx, up.EndDeviceIds, p.LocationSolved, link)
 	case *ttnpb.ApplicationUp_ServiceData:
-		return true, nil
+		return true, as.handleServiceData(ctx, up.EndDeviceIds, p.ServiceData)
 	default:
 		return false, nil
 	}
@@ -1488,18 +1488,12 @@ func (as *ApplicationServer) handleDownlinkNack(
 		return err
 	}
 
-	if _, err = as.endDeviceRegistry.Set(ctx, ids, []string{"attributes"},
-		func(entity *ttnpb.EndDevice) (*ttnpb.EndDevice, []string, error) {
-			if entity == nil {
-				return nil, nil, errDeviceNotFound.WithAttributes("device_uid", unique.ID(ctx, ids))
-			}
-			msg.Attributes = entity.Attributes
-			return entity, []string{""}, nil
-		},
-	); err != nil {
+	if entity, err := as.endDeviceRegistry.Get(ctx, ids, []string{"attributes"}); err != nil {
 		log.FromContext(ctx).WithError(err).Warn(
 			"Failed to retrieve end device attributes on downlink nack",
 		)
+	} else {
+		msg.Attributes = entity.Attributes
 	}
 
 	return nil
@@ -1565,6 +1559,24 @@ func (as *ApplicationServer) decryptDownlinkMessage(ctx context.Context, ids *tt
 		return nil
 	}
 	return as.decryptAndDecodeDownlink(ctx, dev, msg, link.DefaultFormatters)
+}
+
+func (as *ApplicationServer) handleServiceData(
+	ctx context.Context,
+	ids *ttnpb.EndDeviceIdentifiers,
+	msg *ttnpb.ApplicationServiceData,
+) error {
+	defer trace.StartRegion(ctx, "handle service data").End()
+
+	if entity, err := as.endDeviceRegistry.Get(ctx, ids, []string{"attributes"}); err != nil {
+		log.FromContext(ctx).WithError(err).Warn(
+			"Failed to retrieve end device attributes on downlink message",
+		)
+	} else {
+		msg.Attributes = entity.Attributes
+	}
+
+	return nil
 }
 
 // GetConfig returns the Application Server config based on the context.
