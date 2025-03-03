@@ -108,17 +108,17 @@ func (ids *MACSettingsProfileIdentifiers) IsZero() bool {
 }
 
 // FieldIsZero returns whether path p is zero.
-func (v *MACSettingsProfileIdentifiers) FieldIsZero(p string) bool {
-	if v == nil {
+func (ids *MACSettingsProfileIdentifiers) FieldIsZero(p string) bool {
+	if ids == nil {
 		return true
 	}
 	switch p {
 	case "application_ids":
-		return v.ApplicationIds == nil
+		return ids.ApplicationIds == nil
 	case "application_ids.application_id":
-		return v.ApplicationIds.FieldIsZero("application_id")
+		return ids.ApplicationIds.FieldIsZero("application_id")
 	case "profile_id":
-		return v.ProfileId == ""
+		return ids.ProfileId == ""
 	}
 	panic(fmt.Sprintf("unknown path '%s'", p))
 }
