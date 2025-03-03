@@ -4048,6 +4048,7 @@ SDKs are responsible for combining (if desired) the three.
 | `last_seen_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Timestamp when a device uplink has been last observed. This field is set by the Application Server and stored in the Identity Server. |
 | `serial_number` | [`string`](#string) |  |  |
 | `lora_alliance_profile_ids` | [`LoRaAllianceProfileIdentifiers`](#ttn.lorawan.v3.LoRaAllianceProfileIdentifiers) |  |  |
+| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | MAC settings profile identifiers. |
 
 #### Field Rules
 

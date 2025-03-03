@@ -21953,6 +21953,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -23388,6 +23392,10 @@
         },
         "lora_alliance_profile_ids": {
           "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+        },
+        "mac_settings_profile_ids": {
+          "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+          "description": "MAC settings profile identifiers."
         }
       },
       "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -23868,6 +23876,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -24171,6 +24183,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -25862,6 +25878,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -27891,6 +27911,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."

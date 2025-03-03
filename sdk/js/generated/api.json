@@ -16800,6 +16800,18 @@
               "isoneof": false,
               "oneofdecl": "",
               "defaultValue": ""
+            },
+            {
+              "name": "mac_settings_profile_ids",
+              "description": "MAC settings profile identifiers.",
+              "label": "",
+              "type": "MACSettingsProfileIdentifiers",
+              "longType": "MACSettingsProfileIdentifiers",
+              "fullType": "ttn.lorawan.v3.MACSettingsProfileIdentifiers",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
             }
           ]
         },

@@ -2685,6 +2685,14 @@ func (v *EndDevice) FieldIsZero(p string) bool {
 		return v.MacSettings.FieldIsZero("downlink_dwell_time")
 	case "mac_settings.downlink_dwell_time.value":
 		return v.MacSettings.FieldIsZero("downlink_dwell_time.value")
+	case "mac_settings_profile_ids":
+		return v.MacSettingsProfileIds == nil
+	case "mac_settings_profile_ids.application_ids":
+		return v.MacSettingsProfileIds.FieldIsZero("application_ids")
+	case "mac_settings_profile_ids.application_ids.application_id":
+		return v.MacSettingsProfileIds.FieldIsZero("application_ids.application_id")
+	case "mac_settings_profile_ids.profile_id":
+		return v.MacSettingsProfileIds.FieldIsZero("profile_id")
 	case "mac_state":
 		return v.MacState == nil
 	case "max_frequency":

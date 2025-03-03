@@ -1211,7 +1211,10 @@ message EndDevice {
   reserved 57;
   reserved "label_ids";
 
-  // next: 58;
+  // MAC settings profile identifiers.
+  MACSettingsProfileIdentifiers mac_settings_profile_ids = 58;
+
+  // next: 59;
 }
 
 message EndDevices {
