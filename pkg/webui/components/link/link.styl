@@ -34,10 +34,10 @@
         color: var(--c-text-brand-normal-active)
 
   &.secondary
-    color: var(--c-text-neutral-light)
+    color: light-dark(var(--c-text-neutral-light), var(--c-text-neutral-semilight))
     &:active:not(:disabled),
     &:hover:not(:disabled)
-      color: var(--c-text-neutral-heavy)
+      color: light-dark($c.neutral-500, var(--c-text-neutral-heavy)) // Exception from using tokens.
 
     &.link-visited
       &:visited

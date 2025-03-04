@@ -232,7 +232,7 @@ const CollaboratorForm = props => {
             type="button"
             icon={IconTrash}
             disabled={deleteDisabled}
-            primary
+            secondary
             danger
             naked
             message={

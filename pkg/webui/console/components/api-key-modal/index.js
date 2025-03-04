@@ -51,12 +51,13 @@ const ApiKeyModal = props => {
       subtitle={m.subtitle}
       approval={false}
       buttonMessage={m.buttonMessage}
+      approveButtonProps={{ primary: true }}
     >
       <div className={style.left}>
         <Message component="h4" content={m.grantedRights} />
         <ul>
           {rights.map(right => (
-            <li key={right}>
+            <li key={right} className="d-flex al-center">
               <Icon icon={IconCheck} className={style.icon} />
               <Message className={style.rightName} content={{ id: `enum:${right}` }} firstToUpper />
             </li>
