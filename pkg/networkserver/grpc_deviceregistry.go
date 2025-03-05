@@ -417,6 +417,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		"mac_settings_profile_ids.application_ids.application_id",
 		"mac_settings_profile_ids.profile_id",
 	) {
+		// If mac_settings_profile_ids is set, mac_settings must not be set.
 		if st.HasSetField(macSettingsFields...) {
 			return nil, newInvalidFieldValueError("mac_settings")
 		}
@@ -428,6 +429,10 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		if err = validateProfile(profile, st, fps); err != nil {
 			return nil, err
 		}
+
+		// If mac_settings_profile_ids is set, mac_settings must not be set.
+		st.Device.MacSettings = nil
+		st.AddSetFields(macSettingsFields...)
 	}
 
 	if err := validateADR(st); err != nil {
