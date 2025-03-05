@@ -33,7 +33,7 @@ import attachPromise from '@ttn-lw/lib/store/actions/attach-promise'
 import sharedMessages from '@ttn-lw/lib/shared-messages'
 import PropTypes from '@ttn-lw/lib/prop-types'
 
-import { updateUser } from '@console/store/actions/user'
+import { updateUser, updateUserSuccess } from '@console/store/actions/user'
 
 import { selectUserId } from '@console/store/selectors/logout'
 import { selectSelectedUser } from '@console/store/selectors/users'
@@ -54,11 +54,20 @@ const validationSchema = Yup.object().shape({
 })
 
 const InnerThemeForm = ({ initialValues }) => {
+  const dispatch = useDispatch()
   const { resetForm } = useFormContext()
+
+  const handleThemeChange = useCallback(
+    value => {
+      dispatch(updateUserSuccess({ console_preferences: { console_theme: value } }))
+    },
+    [dispatch],
+  )
 
   const handleDiscardChanges = useCallback(() => {
     resetForm(initialValues)
-  }, [resetForm, initialValues])
+    dispatch(updateUserSuccess(initialValues))
+  }, [resetForm, initialValues, dispatch])
 
   return (
     <>
@@ -68,6 +77,7 @@ const InnerThemeForm = ({ initialValues }) => {
         horizontal
         spaceBetween
         className="m-vert-cs-xxl"
+        onChange={handleThemeChange}
       >
         <Radio
           label={m.light}

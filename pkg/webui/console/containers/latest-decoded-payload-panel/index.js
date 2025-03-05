@@ -325,6 +325,7 @@ const LatestDecodedPayloadPanel = ({ appId, events, shortCutLinkPath, className,
       imageFetching,
       isDevice,
       modalVisible,
+      darkTheme,
     ],
   )
 
