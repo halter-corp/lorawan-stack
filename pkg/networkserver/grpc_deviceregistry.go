@@ -1516,7 +1516,14 @@ func (ns *NetworkServer) ResetFactoryDefaults(ctx context.Context, req *ttnpb.Re
 			if err != nil {
 				return nil, nil, err
 			}
-			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings, &ttnpb.MACSettingsProfile{})
+			profile := &ttnpb.MACSettingsProfile{}
+			if stored.MacSettingsProfileIds != nil {
+				profile, err = ns.macSettingsProfiles.Get(ctx, stored.MacSettingsProfileIds, []string{"mac_settings"})
+				if err != nil {
+					return nil, nil, err
+				}
+			}
+			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings, profile)
 			if err != nil {
 				return nil, nil, err
 			}
