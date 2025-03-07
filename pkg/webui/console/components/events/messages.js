@@ -17,8 +17,6 @@ import { defineMessages } from 'react-intl'
 const messages = defineMessages({
   MACPayload: 'MAC payload',
   devAddr: 'DevAddr',
-  fPort: 'FPort',
-  fCnt: 'FCnt',
   rawPayload: 'Raw payload',
   txPower: 'Tx Power',
   dataRate: 'Data rate',

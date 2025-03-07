@@ -15,8 +15,8 @@
 import React from 'react'
 import { defineMessages } from 'react-intl'
 
+import VerticalScrollFader from '@ttn-lw/components/vertical-scroll-fader'
 import { Table } from '@ttn-lw/components/table'
-import ScrollFader from '@ttn-lw/components/scroll-fader'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 
@@ -59,14 +59,19 @@ const EntitiesList = ({
   return entities.length === 0 ? (
     renderWhenEmpty
   ) : (
-    <ScrollFader className={styles.scrollFader} faderHeight="4rem" topFaderOffset="3rem" light>
+    <VerticalScrollFader
+      className={styles.scrollFader}
+      faderHeight="4rem"
+      topFaderOffset="3rem"
+      light
+    >
       <Table className={styles.table}>
         <Table.Head className={styles.topEntitiesPanelOuterTableHeader} panelStyle>
           {columns}
         </Table.Head>
         <Table.Body emptyMessage={m.empty}>{rows}</Table.Body>
       </Table>
-    </ScrollFader>
+    </VerticalScrollFader>
   )
 }
 

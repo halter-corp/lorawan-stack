@@ -59,8 +59,13 @@
     white-space: nowrap
 
   &-data
-    height: 4rem
     white-space: nowrap
+
+    &-small
+      height: 2.5rem
+
+    &:not(&-small)
+      height: 4rem
 
     &:not(:last-child)
       overflow: hidden

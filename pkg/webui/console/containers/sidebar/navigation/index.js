@@ -15,7 +15,7 @@
 import React from 'react'
 import { useLocation } from 'react-router-dom'
 
-import ScrollFader from '@ttn-lw/components/scroll-fader'
+import VerticalScrollFader from '@ttn-lw/components/vertical-scroll-fader'
 
 import AppListSideNavigation from './app-list-side-navigation'
 import AppSideNavigation from './app-side-navigation'
@@ -38,7 +38,7 @@ const SidebarNavigation = () => {
     !pathname.endsWith('gateways/add')
 
   return (
-    <ScrollFader className="overflow-y-auto">
+    <VerticalScrollFader className="overflow-y-auto">
       <div className="d-flex flex-column gap-cs-m">
         {!isApplicationsPath && !isGatewaysPath && <GeneralSideNavigation />}
         {isApplicationsPath && !isSingleAppPath && <AppListSideNavigation />}
@@ -46,7 +46,7 @@ const SidebarNavigation = () => {
         {isGatewaysPath && !isSingleGatewayPath && <GtwListSideNavigation />}
         {isSingleGatewayPath && <GtwSideNavigation />}
       </div>
-    </ScrollFader>
+    </VerticalScrollFader>
   )
 }
 

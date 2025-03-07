@@ -116,7 +116,7 @@ Tooltip.defaultProps = {
   hideOnClick: true,
   interactive: false,
   noOffset: false,
-  placement: 'bottom',
+  placement: 'top',
   small: true,
   delay: 300,
   onShow: () => null,
