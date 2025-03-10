@@ -29,6 +29,7 @@ import (
 
 	"github.com/smarty/assertions"
 	. "go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
+	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
 
@@ -139,4 +140,24 @@ func TestApplyTLSClientAuth(t *testing.T) {
 	}).ApplyTo(tlsConfig)
 	a.So(err, should.BeNil)
 	a.So(tlsConfig.GetClientCertificate, should.NotBeNil)
+}
+
+func TestACMEHosts(t *testing.T) {
+	t.Parallel()
+	a, ctx := test.New(t)
+	acmeConfig := &ACME{
+		Enable:      true,
+		Endpoint:    "https://acme.example.com/directory",
+		Dir:         "testdata",
+		Email:       "test@example.com",
+		Hosts:       []string{"example.com", "*.example.org"},
+		DefaultHost: "example.com",
+	}
+	manager, err := acmeConfig.Initialize()
+	a.So(err, should.BeNil)
+	a.So(manager.HostPolicy(ctx, "example.com"), should.BeNil)
+	a.So(manager.HostPolicy(ctx, "subdomain.example.com"), should.NotBeNil)
+	a.So(manager.HostPolicy(ctx, "example.net"), should.NotBeNil)
+	a.So(manager.HostPolicy(ctx, "example.org"), should.NotBeNil)
+	a.So(manager.HostPolicy(ctx, "subdomain.example.org"), should.BeNil)
 }

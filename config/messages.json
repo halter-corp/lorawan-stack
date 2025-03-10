@@ -3626,6 +3626,15 @@
       "file": "listeners.go"
     }
   },
+  "error:pkg/config/tlsconfig:acme_host_not_whitelisted": {
+    "translations": {
+      "en": "host `{host}` for ACME not whitelisted"
+    },
+    "description": {
+      "package": "pkg/config/tlsconfig",
+      "file": "config.go"
+    }
+  },
   "error:pkg/config/tlsconfig:fetch_file": {
     "translations": {
       "en": "fetch file `{name}`"
