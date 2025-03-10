@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/smarty/assertions"
-	. "go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
+	"go.thethings.network/lorawan-stack/v3/pkg/config/tlsconfig"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test"
 	"go.thethings.network/lorawan-stack/v3/pkg/util/test/assertions/should"
 )
@@ -84,8 +84,8 @@ func TestApplyTLSClientConfig(t *testing.T) {
 	t.Parallel()
 	a := assertions.New(t)
 	caCert, _ := genCert()
-	tlsConfig := &tls.Config{}
-	err := (&Client{
+	tlsConfig := &tls.Config{} //nolint:gosec
+	err := (&tlsconfig.Client{
 		FileReader: mockFileReader{
 			"ca.pem": caCert,
 		},
@@ -97,9 +97,10 @@ func TestApplyTLSClientConfig(t *testing.T) {
 	a.So(tlsConfig.InsecureSkipVerify, should.BeTrue)
 
 	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
 		a := assertions.New(t)
 		tlsConfig := &tls.Config{} //nolint:gosec
-		err := (&Client{}).ApplyTo(tlsConfig)
+		err := (&tlsconfig.Client{}).ApplyTo(tlsConfig)
 		a.So(err, should.BeNil)
 		a.So(tlsConfig.RootCAs, should.BeNil)
 		a.So(tlsConfig.InsecureSkipVerify, should.BeFalse)
@@ -111,7 +112,7 @@ func TestApplyTLSServerAuth(t *testing.T) {
 	a := assertions.New(t)
 	cert, key := genCert()
 	tlsConfig := &tls.Config{} //nolint:gosec
-	err := (&ServerAuth{
+	err := (&tlsconfig.ServerAuth{
 		Source: "file",
 		FileReader: mockFileReader{
 			"cert.pem": cert,
@@ -129,7 +130,7 @@ func TestApplyTLSClientAuth(t *testing.T) {
 	a := assertions.New(t)
 	cert, key := genCert()
 	tlsConfig := &tls.Config{} //nolint:gosec
-	err := (&ClientAuth{
+	err := (&tlsconfig.ClientAuth{
 		Source: "file",
 		FileReader: mockFileReader{
 			"cert.pem": cert,
@@ -145,7 +146,7 @@ func TestApplyTLSClientAuth(t *testing.T) {
 func TestACMEHosts(t *testing.T) {
 	t.Parallel()
 	a, ctx := test.New(t)
-	acmeConfig := &ACME{
+	acmeConfig := &tlsconfig.ACME{
 		Enable:      true,
 		Endpoint:    "https://acme.example.com/directory",
 		Dir:         "testdata",
