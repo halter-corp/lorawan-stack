@@ -2228,6 +2228,7 @@
   "error:pkg/cluster:peer_unavailable": "クラスター {cluster_role} が利用できません",
   "error:pkg/component:listen_endpoint": "アドレス `{endpoint}` が見当たりません",
   "error:pkg/component:listener": "リスナー `{protocol}` を生成できません",
+  "error:pkg/config/tlsconfig:acme_host_not_whitelisted": "",
   "error:pkg/config/tlsconfig:fetch_file": "ファイル`{name}`を取得",
   "error:pkg/config/tlsconfig:missing_acme_default_host": "",
   "error:pkg/config/tlsconfig:missing_acme_dir": "ACEMの保存先が見つかりません",
