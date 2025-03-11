@@ -410,29 +410,37 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		return nil, err
 	}
 
-	var profile *ttnpb.MACSettingsProfile
+	var (
+		profile                  *ttnpb.MACSettingsProfile
+		removeMacSettingsProfile bool
+	)
+
 	if st.HasSetField(
 		"mac_settings_profile_ids",
 		"mac_settings_profile_ids.application_ids",
 		"mac_settings_profile_ids.application_ids.application_id",
 		"mac_settings_profile_ids.profile_id",
 	) {
-		// If mac_settings_profile_ids is set, mac_settings must not be set.
-		if st.HasSetField(macSettingsFields...) {
-			return nil, newInvalidFieldValueError("mac_settings")
-		}
-		profile, err = ns.macSettingsProfiles.Get(ctx, st.Device.MacSettingsProfileIds, []string{"mac_settings"})
-		if err != nil {
-			return nil, err
-		}
+		if st.Device.MacSettingsProfileIds != nil {
+			// If mac_settings_profile_ids is set, mac_settings must not be set.
+			if st.HasSetField(macSettingsFields...) {
+				return nil, newInvalidFieldValueError("mac_settings")
+			}
+			profile, err = ns.macSettingsProfiles.Get(ctx, st.Device.MacSettingsProfileIds, []string{"mac_settings"})
+			if err != nil {
+				return nil, err
+			}
 
-		if err = validateProfile(profile.GetMacSettings(), st, fps); err != nil {
-			return nil, err
-		}
+			if err = validateProfile(profile.GetMacSettings(), st, fps); err != nil {
+				return nil, err
+			}
 
-		// If mac_settings_profile_ids is set, mac_settings must not be set.
-		st.Device.MacSettings = nil
-		st.AddSetFields(macSettingsFields...)
+			// If mac_settings_profile_ids is set, mac_settings must not be set.
+			st.Device.MacSettings = nil
+			st.AddSetFields(macSettingsFields...)
+		} else {
+			removeMacSettingsProfile = true
+		}
 	}
 
 	if err := validateADR(st); err != nil {
@@ -1432,6 +1440,17 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 					"pending_mac_state.queued_join_accept.keys.s_nwk_s_int_key.kek_label",
 					"pending_mac_state.queued_join_accept.keys.s_nwk_s_int_key.key",
 				)
+			}
+		}
+		if removeMacSettingsProfile {
+			if stored.MacSettingsProfileIds != nil {
+				profile, err = ns.macSettingsProfiles.Get(ctx, stored.MacSettingsProfileIds, []string{"mac_settings"})
+				if err != nil {
+					return err
+				}
+
+				st.Device.MacSettings = profile.MacSettings
+				st.AddSetFields(macSettingsFields...)
 			}
 		}
 
