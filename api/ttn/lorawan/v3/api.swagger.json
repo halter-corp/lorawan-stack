@@ -26661,6 +26661,14 @@
         "mac_settings": {
           "$ref": "#/definitions/v3MACSettings",
           "description": "MAC settings."
+        },
+        "end_devices_ids": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v3EndDeviceIdentifiers"
+          },
+          "description": "Associated end device identifiers."
         }
       }
     },
@@ -27978,6 +27986,14 @@
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
               "description": "MAC settings."
+            },
+            "end_devices_ids": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "$ref": "#/definitions/v3EndDeviceIdentifiers"
+              },
+              "description": "Associated end device identifiers."
             }
           },
           "description": "The MAC settings profile to create.",

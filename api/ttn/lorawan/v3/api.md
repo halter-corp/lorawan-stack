@@ -4378,6 +4378,7 @@ This is used internally by the Network Server.
 | ----- | ---- | ----- | ----------- |
 | `ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | Profile identifiers. |
 | `mac_settings` | [`MACSettings`](#ttn.lorawan.v3.MACSettings) |  | MAC settings. |
+| `end_devices_ids` | [`EndDeviceIdentifiers`](#ttn.lorawan.v3.EndDeviceIdentifiers) | repeated | Associated end device identifiers. |
 
 #### Field Rules
 

@@ -18731,6 +18731,18 @@
                   }
                 ]
               }
+            },
+            {
+              "name": "end_devices_ids",
+              "description": "Associated end device identifiers.",
+              "label": "repeated",
+              "type": "EndDeviceIdentifiers",
+              "longType": "EndDeviceIdentifiers",
+              "fullType": "ttn.lorawan.v3.EndDeviceIdentifiers",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
             }
           ]
         },

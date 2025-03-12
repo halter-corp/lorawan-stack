@@ -2608,6 +2608,23 @@ func (m *MACSettingsProfile) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "end_devices_ids":
+
+			for idx, item := range m.GetEndDevicesIds() {
+				_, _ = idx, item
+
+				if v, ok := interface{}(item).(interface{ ValidateFields(...string) error }); ok {
+					if err := v.ValidateFields(subs...); err != nil {
+						return MACSettingsProfileValidationError{
+							field:  fmt.Sprintf("end_devices_ids[%v]", idx),
+							reason: "embedded message failed validation",
+							cause:  err,
+						}
+					}
+				}
+
+			}
+
 		default:
 			return MACSettingsProfileValidationError{
 				field:  name,

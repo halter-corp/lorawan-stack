@@ -6434,6 +6434,7 @@
         }
       ],
       "allowedFieldMaskPaths": [
+        "end_device_ids",
         "ids",
         "ids.application_ids",
         "ids.application_ids.application_id",
@@ -6656,6 +6657,7 @@
         }
       ],
       "allowedFieldMaskPaths": [
+        "end_device_ids",
         "ids",
         "ids.application_ids",
         "ids.application_ids.application_id",
@@ -6889,6 +6891,7 @@
         }
       ],
       "allowedFieldMaskPaths": [
+        "end_device_ids",
         "ids",
         "ids.application_ids",
         "ids.application_ids.application_id",

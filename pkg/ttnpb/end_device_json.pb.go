@@ -2358,6 +2358,17 @@ func (x *MACSettingsProfile) MarshalProtoJSON(s *jsonplugin.MarshalState) {
 		s.WriteObjectField("mac_settings")
 		x.MacSettings.MarshalProtoJSON(s.WithField("mac_settings"))
 	}
+	if len(x.EndDevicesIds) > 0 || s.HasField("end_devices_ids") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("end_devices_ids")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.EndDevicesIds {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("end_devices_ids"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2392,6 +2403,24 @@ func (x *MACSettingsProfile) UnmarshalProtoJSON(s *jsonplugin.UnmarshalState) {
 			}
 			x.MacSettings = &MACSettings{}
 			x.MacSettings.UnmarshalProtoJSON(s.WithField("mac_settings", true))
+		case "end_devices_ids", "endDevicesIds":
+			s.AddField("end_devices_ids")
+			if s.ReadNil() {
+				x.EndDevicesIds = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.EndDevicesIds = append(x.EndDevicesIds, nil)
+					return
+				}
+				v := &EndDeviceIdentifiers{}
+				v.UnmarshalProtoJSON(s.WithField("end_devices_ids", false))
+				if s.Err() != nil {
+					return
+				}
+				x.EndDevicesIds = append(x.EndDevicesIds, v)
+			})
 		}
 	})
 }
