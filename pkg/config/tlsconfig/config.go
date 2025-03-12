@@ -20,12 +20,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
 	"go.thethings.network/lorawan-stack/v3/pkg/fetch"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/idna"
 )
 
 // ACME represents ACME configuration.
@@ -62,7 +64,7 @@ func (a *ACME) Initialize() (*autocert.Manager, error) {
 	a.manager = &autocert.Manager{
 		Cache:      autocert.DirCache(a.Dir),
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(a.Hosts...),
+		HostPolicy: a.buildHostPolicy(),
 		Client: &acme.Client{
 			DirectoryURL: a.Endpoint,
 		},
@@ -78,6 +80,39 @@ func (a ACME) IsZero() bool {
 		a.Dir == "" &&
 		a.Email == "" &&
 		len(a.Hosts) == 0
+}
+
+var errACMEHostNotWhitelisted = errors.DefineFailedPrecondition(
+	"acme_host_not_whitelisted", "host `{host}` for ACME not whitelisted",
+)
+
+func (a ACME) buildHostPolicy() autocert.HostPolicy {
+	var (
+		exact     = make(map[string]bool, len(a.Hosts))
+		wildcards = make(map[string]bool, len(a.Hosts))
+	)
+	for _, h := range a.Hosts {
+		h, wildcard := strings.CutPrefix(h, "*.")
+		h, err := idna.Lookup.ToASCII(h)
+		if err != nil {
+			continue
+		}
+		if wildcard {
+			wildcards[h] = true
+		} else {
+			exact[h] = true
+		}
+	}
+	return func(_ context.Context, host string) error {
+		if exact[host] {
+			return nil
+		}
+		parts := strings.SplitN(host, ".", 2)
+		if len(parts) == 2 && wildcards[parts[1]] {
+			return nil
+		}
+		return errACMEHostNotWhitelisted.WithAttributes("host", host)
+	}
 }
 
 // ServerKeyVault defines configuration for loading a TLS server certificate from the key vault.
