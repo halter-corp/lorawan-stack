@@ -410,7 +410,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 		return nil, err
 	}
 
-	profile := &ttnpb.MACSettingsProfile{}
+	var profile *ttnpb.MACSettingsProfile
 	if st.HasSetField(
 		"mac_settings_profile_ids",
 		"mac_settings_profile_ids.application_ids",
@@ -1516,7 +1516,7 @@ func (ns *NetworkServer) ResetFactoryDefaults(ctx context.Context, req *ttnpb.Re
 			if err != nil {
 				return nil, nil, err
 			}
-			profile := &ttnpb.MACSettingsProfile{}
+			var profile *ttnpb.MACSettingsProfile
 			if stored.MacSettingsProfileIds != nil {
 				profile, err = ns.macSettingsProfiles.Get(ctx, stored.MacSettingsProfileIds, []string{"mac_settings"})
 				if err != nil {

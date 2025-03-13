@@ -139,7 +139,7 @@ func DeviceDefaultRelaySettings(
 		return profile.MacSettings.Relay
 	case dev.GetMacSettings().GetRelay() != nil:
 		return dev.MacSettings.Relay
-	case defaults.Relay != nil:
+	case defaults.GetRelay() != nil:
 		return defaults.Relay
 	default:
 		return nil
@@ -157,7 +157,7 @@ func DeviceDesiredRelaySettings(
 		return profile.MacSettings.DesiredRelay
 	case dev.GetMacSettings().GetDesiredRelay() != nil:
 		return dev.MacSettings.DesiredRelay
-	case defaults.DesiredRelay != nil:
+	case defaults.GetDesiredRelay() != nil:
 		return defaults.DesiredRelay
 	default:
 		return DeviceDefaultRelaySettings(dev, defaults, profile)

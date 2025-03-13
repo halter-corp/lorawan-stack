@@ -135,7 +135,7 @@ func (ns *NetworkServer) nextDataDownlinkTaskAt(ctx context.Context, dev *ttnpb.
 		log.FromContext(ctx).WithError(err).Warn("Failed to determine device band")
 		return time.Time{}, nil
 	}
-	profile := &ttnpb.MACSettingsProfile{}
+	var profile *ttnpb.MACSettingsProfile
 	if dev.MacSettingsProfileIds != nil {
 		profile, err = ns.macSettingsProfiles.Get(ctx, dev.GetMacSettingsProfileIds(), []string{"mac_settings"})
 		if err != nil {
@@ -605,8 +605,10 @@ func (ns *NetworkServer) generateDataDownlink(ctx context.Context, dev *ttnpb.En
 	logger = logger.WithField("f_pending", pld.FHdr.FCtrl.FPending)
 	ctx = log.NewContext(ctx, logger)
 
-	var err error
-	profile := &ttnpb.MACSettingsProfile{}
+	var (
+		err     error
+		profile *ttnpb.MACSettingsProfile
+	)
 	if dev.MacSettingsProfileIds != nil {
 		profile, err = ns.macSettingsProfiles.Get(ctx, dev.GetMacSettingsProfileIds(), []string{"mac_settings"})
 		if err != nil {
@@ -1955,8 +1957,10 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 					return nil, nil, nil
 				}
 
-				var err error
-				profile := &ttnpb.MACSettingsProfile{}
+				var (
+					err     error
+					profile *ttnpb.MACSettingsProfile
+				)
 				if dev.MacSettingsProfileIds != nil {
 					profile, err = ns.macSettingsProfiles.Get(ctx, dev.GetMacSettingsProfileIds(), []string{"mac_settings"})
 					if err != nil {

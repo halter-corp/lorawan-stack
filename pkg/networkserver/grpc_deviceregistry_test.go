@@ -1200,7 +1200,7 @@ func TestDeviceRegistryResetFactoryDefaults(t *testing.T) {
 						}
 						var newErr error
 						defaultMACSettings := test.Must(DefaultConfig.DefaultMACSettings.Parse())
-						macState, newErr = mac.NewState(created, fps, defaultMACSettings, &ttnpb.MACSettingsProfile{})
+						macState, newErr = mac.NewState(created, fps, defaultMACSettings, nil)
 						if newErr != nil {
 							a.So(err, should.NotBeNil)
 							a.So(err, should.HaveSameErrorDefinitionAs, newErr)

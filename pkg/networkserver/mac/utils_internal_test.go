@@ -105,7 +105,7 @@ func TestDeviceDefaultChannels(t *testing.T) {
 
 				pb := ttnpb.Clone(tc.Device)
 
-				deviceDefaultChannels := DeviceDefaultChannels(pb, tc.Band, &ttnpb.MACSettings{}, &ttnpb.MACSettingsProfile{})
+				deviceDefaultChannels := DeviceDefaultChannels(pb, tc.Band, nil, nil)
 				a.So(deviceDefaultChannels, should.Resemble, tc.Channels)
 				a.So(pb, should.Resemble, tc.Device)
 			},
@@ -194,8 +194,8 @@ func TestDeviceDesiredChannels(t *testing.T) {
 					pb,
 					tc.Band,
 					tc.FrequencyPlan,
-					&ttnpb.MACSettings{},
-					&ttnpb.MACSettingsProfile{},
+					nil,
+					nil,
 				)
 				a.So(deviceDesiredChannels, should.Resemble, tc.Channels)
 				a.So(pb, should.Resemble, tc.Device)
@@ -654,7 +654,7 @@ func TestNewState(t *testing.T) {
 			Func: func(ctx context.Context, t *testing.T, a *assertions.Assertion) {
 				pb := ttnpb.Clone(tc.Device)
 
-				macState, err := NewState(pb, tc.FrequencyPlanStore, &ttnpb.MACSettings{}, &ttnpb.MACSettingsProfile{})
+				macState, err := NewState(pb, tc.FrequencyPlanStore, nil, nil)
 				if tc.ErrorAssertion != nil {
 					a.So(tc.ErrorAssertion(t, err), should.BeTrue)
 				} else {
@@ -736,8 +736,8 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 					},
 				},
 			},
-			Default: &ttnpb.MACSettings{},
-			Profile: &ttnpb.MACSettingsProfile{},
+			Default: nil,
+			Profile: nil,
 			MACState: func() *ttnpb.MACState {
 				macState := MakeDefaultEU868MACState(
 					ttnpb.Class_CLASS_A,
@@ -770,7 +770,7 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 				FrequencyPlanId:   test.EUFrequencyPlanID,
 				LorawanVersion:    ttnpb.MACVersion_MAC_V1_0_2,
 				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_0_2_REV_B,
-				MacSettings:       &ttnpb.MACSettings{},
+				MacSettings:       nil,
 			},
 			Default: &ttnpb.MACSettings{
 				Rx1Delay: &ttnpb.RxDelayValue{
@@ -825,7 +825,7 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 					Value: 3,
 				},
 			},
-			Profile: &ttnpb.MACSettingsProfile{},
+			Profile: nil,
 			MACState: func() *ttnpb.MACState {
 				macState := MakeDefaultEU868MACState(
 					ttnpb.Class_CLASS_A,
@@ -858,9 +858,9 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 				FrequencyPlanId:   test.EUFrequencyPlanID,
 				LorawanVersion:    ttnpb.MACVersion_MAC_V1_0_2,
 				LorawanPhyVersion: ttnpb.PHYVersion_RP001_V1_0_2_REV_B,
-				MacSettings:       &ttnpb.MACSettings{},
+				MacSettings:       nil,
 			},
-			Default: &ttnpb.MACSettings{},
+			Default: nil,
 			Profile: &ttnpb.MACSettingsProfile{
 				MacSettings: &ttnpb.MACSettings{
 					Rx1Delay: &ttnpb.RxDelayValue{
@@ -959,7 +959,7 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 					Value: ttnpb.RxDelay_RX_DELAY_14,
 				},
 			},
-			Profile: &ttnpb.MACSettingsProfile{},
+			Profile: nil,
 			MACState: func() *ttnpb.MACState {
 				macState := MakeDefaultEU868MACState(
 					ttnpb.Class_CLASS_A,

@@ -100,8 +100,8 @@ func DeviceClassBTimeout(
 	if t := dev.GetMacSettings().GetClassBTimeout(); t != nil {
 		return ttnpb.StdDurationOrZero(t)
 	}
-	if defaults.ClassBTimeout != nil {
-		return ttnpb.StdDurationOrZero(defaults.ClassBTimeout)
+	if t := defaults.GetClassBTimeout(); t != nil {
+		return ttnpb.StdDurationOrZero(t)
 	}
 	return DefaultClassBTimeout
 }
@@ -122,8 +122,8 @@ func DeviceClassCTimeout(
 	if t := dev.GetMacSettings().GetClassCTimeout(); t != nil {
 		return ttnpb.StdDurationOrZero(t)
 	}
-	if defaults.ClassCTimeout != nil {
-		return ttnpb.StdDurationOrZero(defaults.ClassCTimeout)
+	if t := defaults.GetClassCTimeout(); t != nil {
+		return ttnpb.StdDurationOrZero(t)
 	}
 	return DefaultClassCTimeout
 }
@@ -297,7 +297,7 @@ func DeviceUplinkDwellTime(
 		return &ttnpb.BoolValue{Value: profile.MacSettings.UplinkDwellTime.Value}
 	case dev.GetMacSettings().GetUplinkDwellTime() != nil:
 		return &ttnpb.BoolValue{Value: dev.MacSettings.UplinkDwellTime.Value}
-	case defaults.UplinkDwellTime != nil:
+	case defaults.GetUplinkDwellTime() != nil:
 		return &ttnpb.BoolValue{Value: defaults.UplinkDwellTime.Value}
 	default:
 		return nil
@@ -318,7 +318,7 @@ func DeviceDownlinkDwellTime(
 		return &ttnpb.BoolValue{Value: profile.MacSettings.DownlinkDwellTime.Value}
 	case dev.GetMacSettings().GetDownlinkDwellTime() != nil:
 		return &ttnpb.BoolValue{Value: dev.MacSettings.DownlinkDwellTime.Value}
-	case defaults.DownlinkDwellTime != nil:
+	case defaults.GetDownlinkDwellTime() != nil:
 		return &ttnpb.BoolValue{Value: defaults.DownlinkDwellTime.Value}
 	default:
 		return nil
@@ -381,7 +381,7 @@ func DeviceDefaultRX1Delay(
 		return profile.MacSettings.Rx1Delay.Value
 	case dev.GetMacSettings().GetRx1Delay() != nil:
 		return dev.MacSettings.Rx1Delay.Value
-	case defaults.Rx1Delay != nil:
+	case defaults.GetRx1Delay() != nil:
 		return defaults.Rx1Delay.Value
 	default:
 		return ttnpb.RxDelay(phy.ReceiveDelay1.Seconds())
@@ -400,7 +400,7 @@ func DeviceDesiredRX1Delay(
 		return profile.MacSettings.DesiredRx1Delay.Value
 	case dev.GetMacSettings().GetDesiredRx1Delay() != nil:
 		return dev.MacSettings.DesiredRx1Delay.Value
-	case defaults.DesiredRx1Delay != nil:
+	case defaults.GetDesiredRx1Delay() != nil:
 		return defaults.DesiredRx1Delay.Value
 	default:
 		return DeviceDefaultRX1Delay(dev, phy, defaults, profile)
@@ -419,7 +419,7 @@ func DeviceDesiredADRAckLimitExponent(
 		return &ttnpb.ADRAckLimitExponentValue{Value: profile.MacSettings.DesiredAdrAckLimitExponent.Value}
 	case dev.GetMacSettings().GetDesiredAdrAckLimitExponent() != nil:
 		return &ttnpb.ADRAckLimitExponentValue{Value: dev.MacSettings.DesiredAdrAckLimitExponent.Value}
-	case defaults.DesiredAdrAckLimitExponent != nil:
+	case defaults.GetDesiredAdrAckLimitExponent() != nil:
 		return &ttnpb.ADRAckLimitExponentValue{Value: defaults.DesiredAdrAckLimitExponent.Value}
 	default:
 		return &ttnpb.ADRAckLimitExponentValue{Value: phy.ADRAckLimit}
@@ -438,7 +438,7 @@ func DeviceDesiredADRAckDelayExponent(
 		return &ttnpb.ADRAckDelayExponentValue{Value: profile.MacSettings.DesiredAdrAckDelayExponent.Value}
 	case dev.GetMacSettings().GetDesiredAdrAckDelayExponent() != nil:
 		return &ttnpb.ADRAckDelayExponentValue{Value: dev.MacSettings.DesiredAdrAckDelayExponent.Value}
-	case defaults.DesiredAdrAckDelayExponent != nil:
+	case defaults.GetDesiredAdrAckDelayExponent() != nil:
 		return &ttnpb.ADRAckDelayExponentValue{Value: defaults.DesiredAdrAckDelayExponent.Value}
 	default:
 		return &ttnpb.ADRAckDelayExponentValue{Value: phy.ADRAckDelay}
@@ -456,7 +456,7 @@ func DeviceDefaultRX1DataRateOffset(
 		return profile.MacSettings.Rx1DataRateOffset.Value
 	case dev.GetMacSettings().GetRx1DataRateOffset() != nil:
 		return dev.MacSettings.Rx1DataRateOffset.Value
-	case defaults.Rx1DataRateOffset != nil:
+	case defaults.GetRx1DataRateOffset() != nil:
 		return defaults.Rx1DataRateOffset.Value
 	default:
 		return ttnpb.DataRateOffset_DATA_RATE_OFFSET_0
@@ -474,7 +474,7 @@ func DeviceDesiredRX1DataRateOffset(
 		return profile.MacSettings.DesiredRx1DataRateOffset.Value
 	case dev.GetMacSettings().GetDesiredRx1DataRateOffset() != nil:
 		return dev.MacSettings.DesiredRx1DataRateOffset.Value
-	case defaults.DesiredRx1DataRateOffset != nil:
+	case defaults.GetDesiredRx1DataRateOffset() != nil:
 		return defaults.DesiredRx1DataRateOffset.Value
 	default:
 		return DeviceDefaultRX1DataRateOffset(dev, defaults, profile)
@@ -493,7 +493,7 @@ func DeviceDefaultRX2DataRateIndex(
 		return profile.MacSettings.Rx2DataRateIndex.Value
 	case dev.GetMacSettings().GetRx2DataRateIndex() != nil:
 		return dev.MacSettings.Rx2DataRateIndex.Value
-	case defaults.Rx2DataRateIndex != nil:
+	case defaults.GetRx2DataRateIndex() != nil:
 		return defaults.Rx2DataRateIndex.Value
 	default:
 		return phy.DefaultRx2Parameters.DataRateIndex
@@ -515,7 +515,7 @@ func DeviceDesiredRX2DataRateIndex(
 		return dev.MacSettings.DesiredRx2DataRateIndex.Value
 	case fp.DefaultRx2DataRate != nil:
 		return ttnpb.DataRateIndex(*fp.DefaultRx2DataRate)
-	case defaults.DesiredRx2DataRateIndex != nil:
+	case defaults.GetDesiredRx2DataRateIndex() != nil:
 		return defaults.DesiredRx2DataRateIndex.Value
 	default:
 		return DeviceDefaultRX2DataRateIndex(dev, phy, defaults, profile)
@@ -534,7 +534,7 @@ func DeviceDefaultRX2Frequency(
 		return profile.MacSettings.Rx2Frequency.Value
 	case dev.GetMacSettings().GetRx2Frequency() != nil && dev.MacSettings.Rx2Frequency.Value != 0:
 		return dev.MacSettings.Rx2Frequency.Value
-	case defaults.Rx2Frequency != nil && defaults.Rx2Frequency.Value != 0:
+	case defaults.GetRx2Frequency() != nil && defaults.Rx2Frequency.Value != 0:
 		return defaults.Rx2Frequency.Value
 	default:
 		return phy.DefaultRx2Parameters.Frequency
@@ -556,7 +556,7 @@ func DeviceDesiredRX2Frequency(
 		return dev.MacSettings.DesiredRx2Frequency.Value
 	case fp.Rx2Channel != nil:
 		return fp.Rx2Channel.Frequency
-	case defaults.DesiredRx2Frequency != nil && defaults.DesiredRx2Frequency.Value != 0:
+	case defaults.GetDesiredRx2Frequency() != nil && defaults.DesiredRx2Frequency.Value != 0:
 		return defaults.DesiredRx2Frequency.Value
 	default:
 		return DeviceDefaultRX2Frequency(dev, phy, defaults, profile)
@@ -574,7 +574,7 @@ func DeviceDefaultMaxDutyCycle(
 		return profile.MacSettings.MaxDutyCycle.Value
 	case dev.GetMacSettings().GetMaxDutyCycle() != nil:
 		return dev.MacSettings.MaxDutyCycle.Value
-	case defaults.MaxDutyCycle != nil:
+	case defaults.GetMaxDutyCycle() != nil:
 		return defaults.MaxDutyCycle.Value
 	default:
 		return ttnpb.AggregatedDutyCycle_DUTY_CYCLE_1
@@ -592,7 +592,7 @@ func DeviceDesiredMaxDutyCycle(
 		return profile.MacSettings.DesiredMaxDutyCycle.Value
 	case dev.GetMacSettings().GetDesiredMaxDutyCycle() != nil:
 		return dev.MacSettings.DesiredMaxDutyCycle.Value
-	case defaults.DesiredMaxDutyCycle != nil:
+	case defaults.GetDesiredMaxDutyCycle() != nil:
 		return defaults.DesiredMaxDutyCycle.Value
 	default:
 		return DeviceDefaultMaxDutyCycle(dev, defaults, profile)
@@ -611,7 +611,7 @@ func DeviceDefaultPingSlotFrequency(
 		return profile.MacSettings.PingSlotFrequency.Value
 	case dev.GetMacSettings().GetPingSlotFrequency() != nil && dev.MacSettings.PingSlotFrequency.Value != 0:
 		return dev.MacSettings.PingSlotFrequency.Value
-	case defaults.PingSlotFrequency != nil && defaults.PingSlotFrequency.Value != 0:
+	case defaults.GetPingSlotFrequency() != nil && defaults.PingSlotFrequency.Value != 0:
 		return defaults.PingSlotFrequency.Value
 	case len(phy.PingSlotFrequencies) == 1:
 		return phy.PingSlotFrequencies[0]
@@ -636,7 +636,7 @@ func DeviceDesiredPingSlotFrequency(
 		return dev.MacSettings.DesiredPingSlotFrequency.Value
 	case fp.PingSlot != nil && fp.PingSlot.Frequency != 0:
 		return fp.PingSlot.Frequency
-	case defaults.DesiredPingSlotFrequency != nil && defaults.DesiredPingSlotFrequency.Value != 0:
+	case defaults.GetDesiredPingSlotFrequency() != nil && defaults.DesiredPingSlotFrequency.Value != 0:
 		return defaults.DesiredPingSlotFrequency.Value
 	default:
 		return DeviceDefaultPingSlotFrequency(dev, phy, defaults, profile)
@@ -655,7 +655,7 @@ func DeviceDefaultPingSlotDataRateIndexValue(
 		return profile.MacSettings.PingSlotDataRateIndex
 	case dev.GetMacSettings().GetPingSlotDataRateIndex() != nil:
 		return dev.MacSettings.PingSlotDataRateIndex
-	case defaults.PingSlotDataRateIndex != nil:
+	case defaults.GetPingSlotDataRateIndex() != nil:
 		return defaults.PingSlotDataRateIndex
 	default:
 		// Default to mbed-os and LoRaMac-node behavior.
@@ -679,7 +679,7 @@ func DeviceDesiredPingSlotDataRateIndexValue(
 		return dev.MacSettings.DesiredPingSlotDataRateIndex
 	case fp.DefaultPingSlotDataRate != nil:
 		return &ttnpb.DataRateIndexValue{Value: ttnpb.DataRateIndex(*fp.DefaultPingSlotDataRate)}
-	case defaults.DesiredPingSlotDataRateIndex != nil:
+	case defaults.GetDesiredPingSlotDataRateIndex() != nil:
 		return defaults.DesiredPingSlotDataRateIndex
 	default:
 		return DeviceDefaultPingSlotDataRateIndexValue(dev, phy, defaults, profile)
@@ -698,7 +698,7 @@ func DeviceDefaultBeaconFrequency(
 		return profile.MacSettings.BeaconFrequency.Value
 	case dev.GetMacSettings().GetBeaconFrequency() != nil && dev.MacSettings.BeaconFrequency.Value != 0:
 		return dev.MacSettings.BeaconFrequency.Value
-	case defaults.BeaconFrequency != nil:
+	case defaults.GetBeaconFrequency() != nil:
 		return defaults.BeaconFrequency.Value
 	case len(phy.Beacon.Frequencies) == 1:
 		return phy.Beacon.Frequencies[0]
@@ -720,7 +720,7 @@ func DeviceDesiredBeaconFrequency(
 		return profile.MacSettings.DesiredBeaconFrequency.Value
 	case dev.GetMacSettings().GetDesiredBeaconFrequency() != nil && dev.MacSettings.DesiredBeaconFrequency.Value != 0:
 		return dev.MacSettings.DesiredBeaconFrequency.Value
-	case defaults.DesiredBeaconFrequency != nil && defaults.DesiredBeaconFrequency.Value != 0:
+	case defaults.GetDesiredBeaconFrequency() != nil && defaults.DesiredBeaconFrequency.Value != 0:
 		return defaults.DesiredBeaconFrequency.Value
 	default:
 		return DeviceDefaultBeaconFrequency(dev, phy, defaults, profile)

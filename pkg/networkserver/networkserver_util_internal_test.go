@@ -1602,8 +1602,8 @@ func (env TestEnvironment) AssertJoin(ctx context.Context, conf JoinAssertionCon
 			t, a := test.MustNewTFromContext(ctx)
 			t.Helper()
 
+			var macSettingsProfile *ttnpb.MACSettingsProfile
 			defaultMACSettings := test.Must(env.Config.DefaultMACSettings.Parse())
-			macSettingsProfile := &ttnpb.MACSettingsProfile{}
 
 			defaultLoRaWANVersion := mac.DeviceDefaultLoRaWANVersion(conf.Device)
 
@@ -2191,7 +2191,7 @@ func MakeMACState(dev *ttnpb.EndDevice, defaults *ttnpb.MACSettings, opts ...tes
 		dev,
 		test.FrequencyPlanStore,
 		defaults,
-		&ttnpb.MACSettingsProfile{},
+		nil,
 	)))
 }
 

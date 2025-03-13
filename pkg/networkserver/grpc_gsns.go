@@ -307,7 +307,7 @@ func (ns *NetworkServer) matchAndHandleDataUplink(ctx context.Context, dev *ttnp
 		}
 	}
 
-	profile := &ttnpb.MACSettingsProfile{}
+	var profile *ttnpb.MACSettingsProfile
 	if dev.MacSettingsProfileIds != nil {
 		profile, err = ns.macSettingsProfiles.Get(ctx, dev.GetMacSettingsProfileIds(), []string{"mac_settings"})
 		if err != nil {
@@ -1327,7 +1327,7 @@ func (ns *NetworkServer) handleJoinRequest(ctx context.Context, up *ttnpb.Uplink
 		"data_rate", up.Settings.DataRate,
 	)
 
-	profile := &ttnpb.MACSettingsProfile{}
+	var profile *ttnpb.MACSettingsProfile
 	if matched.MacSettingsProfileIds != nil {
 		profile, err = ns.macSettingsProfiles.Get(ctx, matched.MacSettingsProfileIds, []string{"mac_settings"})
 		if err != nil {
