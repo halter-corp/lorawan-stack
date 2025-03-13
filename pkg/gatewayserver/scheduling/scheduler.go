@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	// QueueDelay indicates the time the gateway needs to recharge the concentrator between items in the queue.
+	// QueueDelay indicates the time to recharge the concentrator and other margins between items in the queue.
 	// This is a conservative value as implemented in the Semtech UDP Packet Forwarder reference implementation,
-	// see https://github.com/Lora-net/packet_forwarder/blob/v4.0.1/lora_pkt_fwd/src/jitqueue.c#L39
-	QueueDelay = 30 * time.Millisecond
+	// see https://github.com/Lora-net/packet_forwarder/blob/v4.0.1/lora_pkt_fwd/src/jitqueue.c#L35-L39
+	QueueDelay = 1500*time.Microsecond + 1000*time.Microsecond + 30000*time.Microsecond
 
 	// ScheduleTimeShort is a short time to send a downlink message to the gateway before it has to be transmitted.
 	// This time is comprised of a lower network latency and QueueDelay. This delay is used to block scheduling when the

@@ -32,6 +32,176 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func TestScheduleAt(t *testing.T) {
+	t.Parallel()
+	a := assertions.New(t)
+	ctx := test.Context()
+	fps := []*frequencyplans.FrequencyPlan{{
+		BandID: band.EU_863_870,
+	}}
+	timeSource := &mockTimeSource{
+		Time: time.Unix(0, 0),
+	}
+	scheduler, err := scheduling.NewScheduler(ctx, fps, true, scheduling.DefaultDutyCycleStyle, nil, timeSource)
+	a.So(err, should.BeNil)
+
+	for i, tc := range []struct {
+		PayloadSize    int
+		Settings       *ttnpb.TxSettings
+		Priority       ttnpb.TxSchedulePriority
+		NPercentileRTT *time.Duration
+		MedianRTT      *time.Duration
+		ExpectedToa    time.Duration
+		ExpectedStarts scheduling.ConcentratorTime
+		ExpectedError  errors.DefinitionInterface
+	}{
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 100,
+			},
+			Priority:    ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa: 41216 * time.Microsecond,
+			// Too late for transmission with ScheduleTimeShort.
+			ExpectedError: scheduling.ErrTooLate,
+		},
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 20000000,
+			},
+			Priority:       ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa:    41216 * time.Microsecond,
+			ExpectedStarts: 20000000000,
+		},
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 20000000,
+			},
+			Priority:    ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa: 41216 * time.Microsecond,
+			// Entirely overlapping with previous transmission.
+			ExpectedError: scheduling.ErrConflict,
+		},
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 20000000 + 41216,
+			},
+			Priority:    ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa: 41216 * time.Microsecond,
+			// Right after previous transmission, not respecting packet forwarder's margin and queue delay.
+			ExpectedError: scheduling.ErrConflict,
+		},
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 20000000 + 41216 + 30000,
+			},
+			Priority:    ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa: 41216 * time.Microsecond,
+			// Too short after previous transmission, not respecting packet forwarder's margin and queue delay.
+			ExpectedError: scheduling.ErrConflict,
+		},
+		{
+			PayloadSize: 10,
+			Settings: &ttnpb.TxSettings{
+				DataRate: &ttnpb.DataRate{
+					Modulation: &ttnpb.DataRate_Lora{
+						Lora: &ttnpb.LoRaDataRate{
+							Bandwidth:       125000,
+							SpreadingFactor: 7,
+							CodingRate:      band.Cr4_5,
+						},
+					},
+				},
+				Frequency: 869525000,
+				Timestamp: 20000000 + 41216 + 32500, // time-on-air + packet forwarder's margins and queue delay
+			},
+			Priority:       ttnpb.TxSchedulePriority_NORMAL,
+			ExpectedToa:    41216 * time.Microsecond,
+			ExpectedStarts: 20000000000 + 41216000 + 32500000,
+		},
+	} {
+		tcok := t.Run(strconv.Itoa(i), func(t *testing.T) {
+			a := assertions.New(t)
+			scheduler.Sync(0, timeSource.Time)
+			d, err := toa.Compute(tc.PayloadSize, tc.Settings)
+			a.So(err, should.BeNil)
+			a.So(d, should.Equal, tc.ExpectedToa)
+			em, _, err := scheduler.ScheduleAt(ctx, scheduling.Options{
+				PayloadSize: tc.PayloadSize,
+				TxSettings:  tc.Settings,
+				Priority:    tc.Priority,
+			})
+			if tc.ExpectedError != nil {
+				if !a.So(err, should.HaveSameErrorDefinitionAs, tc.ExpectedError) {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				return
+			}
+			if !a.So(err, should.BeNil) {
+				t.FailNow()
+			}
+			a.So(em.Starts(), should.Equal, tc.ExpectedStarts)
+		})
+		if !tcok {
+			t.FailNow()
+		}
+	}
+}
+
 func TestScheduleAtWithBandDutyCycle(t *testing.T) {
 	a := assertions.New(t)
 	ctx := test.Context()
