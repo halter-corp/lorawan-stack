@@ -32,7 +32,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestScheduleAt(t *testing.T) {
+func TestScheduleAt(t *testing.T) { //nolint:tparallel
 	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
@@ -202,7 +202,8 @@ func TestScheduleAt(t *testing.T) {
 	}
 }
 
-func TestScheduleAtWithBandDutyCycle(t *testing.T) {
+func TestScheduleAtWithBandDutyCycle(t *testing.T) { //nolint:tparallel
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
@@ -517,7 +518,8 @@ func TestScheduleAtWithBandDutyCycle(t *testing.T) {
 	}
 }
 
-func TestScheduleAtWithFrequencyPlanDutyCycle(t *testing.T) {
+func TestScheduleAtWithFrequencyPlanDutyCycle(t *testing.T) { //nolint:tparallel
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
@@ -606,6 +608,7 @@ func TestScheduleAtWithFrequencyPlanDutyCycle(t *testing.T) {
 }
 
 func TestScheduleAnytime(t *testing.T) {
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
@@ -692,8 +695,11 @@ func TestScheduleAnytime(t *testing.T) {
 
 	// Try schedule another transmission from 1000000 us.
 	// Time-on-air is 991232 us, time-off-air is 1000000 us.
-	// It's 9.91% in a 10% duty-cycle sub-band, almost hitting the limit, so it should be pushed to right after transmission 4.
-	// Transmission starts then at 5041216 (start of 4) + 41216 (time-on-air of 4) + 10000000 (duty-cycle window) - 991232 (this time-on-air).
+	// It's 9.91% in a 10% duty-cycle sub-band, almost hitting the limit, so it should be pushed to
+	// right after transmission 4.
+	// Transmission starts then at:
+	// 5041216 (start of 4) + 41216 (time-on-air of 4) + 10000000 (duty-cycle window) - 991232 (this time-on-air).
+	//
 	// 1: [1000000, 2041216]
 	// 3: [2041216, 3082432]
 	// 2: [4000000, 5041216]
@@ -720,6 +726,7 @@ func TestScheduleAnytime(t *testing.T) {
 }
 
 func TestScheduleAnytimeShort(t *testing.T) {
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
@@ -733,7 +740,7 @@ func TestScheduleAnytimeShort(t *testing.T) {
 		},
 	}}
 
-	settingsAt := func(frequency uint64, sf uint32, time *time.Time, timestamp uint32) *ttnpb.TxSettings {
+	settingsAt := func(frequency uint64, sf uint32, t *time.Time, timestamp uint32) *ttnpb.TxSettings {
 		return &ttnpb.TxSettings{
 			DataRate: &ttnpb.DataRate{
 				Modulation: &ttnpb.DataRate_Lora{
@@ -745,7 +752,7 @@ func TestScheduleAnytimeShort(t *testing.T) {
 				},
 			},
 			Frequency: frequency,
-			Time:      ttnpb.ProtoTime(time),
+			Time:      ttnpb.ProtoTime(t),
 			Timestamp: timestamp,
 		}
 	}
@@ -920,6 +927,7 @@ func TestScheduleAnytimeShort(t *testing.T) {
 }
 
 func TestScheduleAnytimeClassC(t *testing.T) {
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
@@ -1009,9 +1017,10 @@ func TestScheduleAnytimeClassC(t *testing.T) {
 	a.So(time.Duration(em.Starts()), should.Equal, 9*time.Second+scheduling.ScheduleTimeLong)
 }
 
-func TestSchedulerWithMultipleFrequencyPlans(t *testing.T) {
+func TestSchedulerWithMultipleFrequencyPlans(t *testing.T) { //nolint:tparallel
+	t.Parallel()
 	ctx := test.Context()
-	for _, tc := range []struct {
+	for _, tc := range []struct { //nolint:paralleltest
 		Name                 string
 		FrequencyPlans       []*frequencyplans.FrequencyPlan
 		ExpectedSubBandCount int
@@ -1147,7 +1156,8 @@ func TestSchedulerWithMultipleFrequencyPlans(t *testing.T) {
 			Name: "OverlappingSubBandsFromBand",
 			FrequencyPlans: []*frequencyplans.FrequencyPlan{
 				{
-					// This is a fictional test case since currently we don't support mix-band frequency plans (https://github.com/TheThingsNetwork/lorawan-stack/issues/1394).
+					// This is a fictional test case since currently we don't support mix-band frequency plans
+					// (https://github.com/TheThingsNetwork/lorawan-stack/issues/1394).
 					BandID: band.AS_923,
 					TimeOffAir: frequencyplans.TimeOffAir{
 						Duration: time.Second,
@@ -1197,6 +1207,7 @@ func TestSchedulerWithMultipleFrequencyPlans(t *testing.T) {
 }
 
 func TestSchedulingWithMultipleFrequencyPlans(t *testing.T) {
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{
@@ -1308,6 +1319,7 @@ func TestSchedulingWithMultipleFrequencyPlans(t *testing.T) {
 }
 
 func TestScheduleSyncViaUplinkToken(t *testing.T) {
+	t.Parallel()
 	a := assertions.New(t)
 	ctx := test.Context()
 	fps := []*frequencyplans.FrequencyPlan{{
