@@ -4022,7 +4022,7 @@ SDKs are responsible for combining (if desired) the three.
 | `resets_join_nonces` | [`bool`](#bool) |  | Whether the device resets the join and dev nonces (not LoRaWAN compliant). Stored in Join Server. Copied on creation from template identified by version_ids, if any or from the home Network Server device profile, if any. |
 | `root_keys` | [`RootKeys`](#ttn.lorawan.v3.RootKeys) |  | Device root keys. Stored in Join Server. |
 | `net_id` | [`bytes`](#bytes) |  | Home NetID. Stored in Join Server. |
-| `mac_settings` | [`MACSettings`](#ttn.lorawan.v3.MACSettings) |  | Settings for how the Network Server handles MAC layer for this device. Stored in Network Server. |
+| `mac_settings` | [`MACSettings`](#ttn.lorawan.v3.MACSettings) |  | Settings for how the Network Server handles MAC layer for this device. Stored in Network Server. Mutually exclusive with MAC settings profile. |
 | `mac_state` | [`MACState`](#ttn.lorawan.v3.MACState) |  | MAC state of the device. Stored in Network Server. |
 | `pending_mac_state` | [`MACState`](#ttn.lorawan.v3.MACState) |  | Pending MAC state of the device. Stored in Network Server. |
 | `session` | [`Session`](#ttn.lorawan.v3.Session) |  | Current session of the device. Stored in Network Server and Application Server. |
@@ -4048,7 +4048,7 @@ SDKs are responsible for combining (if desired) the three.
 | `last_seen_at` | [`google.protobuf.Timestamp`](#google.protobuf.Timestamp) |  | Timestamp when a device uplink has been last observed. This field is set by the Application Server and stored in the Identity Server. |
 | `serial_number` | [`string`](#string) |  |  |
 | `lora_alliance_profile_ids` | [`LoRaAllianceProfileIdentifiers`](#ttn.lorawan.v3.LoRaAllianceProfileIdentifiers) |  |  |
-| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | MAC settings profile identifiers. |
+| `mac_settings_profile_ids` | [`MACSettingsProfileIdentifiers`](#ttn.lorawan.v3.MACSettingsProfileIdentifiers) |  | MAC settings profile identifiers. Mutually exclusive with MAC settings. |
 
 #### Field Rules
 

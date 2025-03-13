@@ -2408,6 +2408,7 @@ type EndDevice struct {
 	// Home NetID. Stored in Join Server.
 	NetId []byte `protobuf:"bytes,23,opt,name=net_id,json=netId,proto3" json:"net_id,omitempty"`
 	// Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.
+	// Mutually exclusive with MAC settings profile.
 	MacSettings *MACSettings `protobuf:"bytes,24,opt,name=mac_settings,json=macSettings,proto3" json:"mac_settings,omitempty"`
 	// MAC state of the device. Stored in Network Server.
 	MacState *MACState `protobuf:"bytes,25,opt,name=mac_state,json=macState,proto3" json:"mac_state,omitempty"`
@@ -2486,6 +2487,7 @@ type EndDevice struct {
 	SerialNumber           string                          `protobuf:"bytes,55,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
 	LoraAllianceProfileIds *LoRaAllianceProfileIdentifiers `protobuf:"bytes,56,opt,name=lora_alliance_profile_ids,json=loraAllianceProfileIds,proto3" json:"lora_alliance_profile_ids,omitempty"`
 	// MAC settings profile identifiers.
+	// Mutually exclusive with MAC settings.
 	MacSettingsProfileIds *MACSettingsProfileIdentifiers `protobuf:"bytes,58,opt,name=mac_settings_profile_ids,json=macSettingsProfileIds,proto3" json:"mac_settings_profile_ids,omitempty"`
 }
 

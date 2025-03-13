@@ -1101,6 +1101,7 @@ message EndDevice {
     }
   ];
   // Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.
+  // Mutually exclusive with MAC settings profile.
   MACSettings mac_settings = 24;
   // MAC state of the device. Stored in Network Server.
   MACState mac_state = 25;
@@ -1212,6 +1213,7 @@ message EndDevice {
   reserved "label_ids";
 
   // MAC settings profile identifiers.
+  // Mutually exclusive with MAC settings.
   MACSettingsProfileIdentifiers mac_settings_profile_ids = 58;
 
   // next: 59;

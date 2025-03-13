@@ -16447,7 +16447,7 @@
             },
             {
               "name": "mac_settings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.",
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile.",
               "label": "",
               "type": "MACSettings",
               "longType": "MACSettings",
@@ -16803,7 +16803,7 @@
             },
             {
               "name": "mac_settings_profile_ids",
-              "description": "MAC settings profile identifiers.",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings.",
               "label": "",
               "type": "MACSettingsProfileIdentifiers",
               "longType": "MACSettingsProfileIdentifiers",
