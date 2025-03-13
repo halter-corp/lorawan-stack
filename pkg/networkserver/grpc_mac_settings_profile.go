@@ -29,6 +29,7 @@ import (
 var (
 	errMACSettingsProfileAlreadyExists = errors.DefineAlreadyExists("mac_settings_profile_already_exists", "MAC settings profile already exists") // nolint: lll
 	errMACSettingsProfileNotFound      = errors.DefineNotFound("mac_settings_profile_not_found", "MAC settings profile not found")                // nolint: lll
+	errMACSettingsProfileUsed          = errors.DefineFailedPrecondition("mac_settings_profile_used", "MAC settings profile is used")             // nolint: lll
 )
 
 func setTotalHeader(ctx context.Context, total int64) {
@@ -79,7 +80,7 @@ func (m *NsMACSettingsProfileRegistry) Get(ctx context.Context, req *ttnpb.GetMA
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings"}
+	paths := []string{"ids", "mac_settings", "end_devices_ids"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
@@ -102,7 +103,7 @@ func (m *NsMACSettingsProfileRegistry) Update(ctx context.Context, req *ttnpb.Up
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings"}
+	paths := []string{"ids", "mac_settings", "end_devices_ids"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
@@ -134,7 +135,7 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings"}
+	paths := []string{"ids", "mac_settings", "end_devices_ids"}
 	_, err := m.registry.Set(
 		ctx,
 		req.MacSettingsProfileIds,
@@ -142,6 +143,9 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 		func(_ context.Context, profile *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
 			if profile == nil {
 				return nil, nil, errMACSettingsProfileNotFound.New()
+			}
+			if len(profile.EndDevicesIds) > 0 {
+				return nil, nil, errMACSettingsProfileUsed.New()
 			}
 			return nil, nil, nil
 		})
@@ -161,7 +165,7 @@ func (m *NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.List
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings"}
+	paths := []string{"ids", "mac_settings", "end_devices_ids"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
