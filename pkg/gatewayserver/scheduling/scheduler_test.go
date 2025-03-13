@@ -428,7 +428,7 @@ func TestScheduleAtWithBandDutyCycle(t *testing.T) {
 					},
 				},
 				Frequency: 869525000,
-				Timestamp: 20000000,
+				Timestamp: 20000000 + 41216,
 			},
 			Priority:    ttnpb.TxSchedulePriority_NORMAL,
 			ExpectedToa: 41216 * time.Microsecond,
