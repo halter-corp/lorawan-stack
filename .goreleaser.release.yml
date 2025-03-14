@@ -185,7 +185,7 @@ blobs:
     ids:
       - stack
       - cli
-    folder: '{{ .Version }}'
+    directory: '{{ .Version }}'
     extra_files:
       - glob: ./CHANGELOG.md
 
