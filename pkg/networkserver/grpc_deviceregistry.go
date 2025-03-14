@@ -426,7 +426,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 			return nil, err
 		}
 
-		if err = validateProfile(profile, st, fps); err != nil {
+		if err = validateProfile(profile.GetMacSettings(), st, fps); err != nil {
 			return nil, err
 		}
 
@@ -1361,7 +1361,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				if err != nil {
 					return err
 				}
-				macState, err := mac.NewState(st.Device, fps, ns.defaultMACSettings, profile)
+				macState, err := mac.NewState(st.Device, fps, ns.defaultMACSettings, profile.GetMacSettings())
 				if err != nil {
 					return err
 				}
@@ -1523,7 +1523,7 @@ func (ns *NetworkServer) ResetFactoryDefaults(ctx context.Context, req *ttnpb.Re
 					return nil, nil, err
 				}
 			}
-			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings, profile)
+			macState, err := mac.NewState(stored, fps, ns.defaultMACSettings, profile.GetMacSettings())
 			if err != nil {
 				return nil, nil, err
 			}

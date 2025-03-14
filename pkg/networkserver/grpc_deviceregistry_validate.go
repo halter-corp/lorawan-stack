@@ -1057,7 +1057,7 @@ func validateZeroFields(st *setDeviceState) error { // nolint: gocyclo
 }
 
 func validateProfile( // nolint: gocyclo
-	profile *ttnpb.MACSettingsProfile,
+	profile *ttnpb.MACSettings,
 	st *setDeviceState,
 	fps *frequencyplans.Store,
 ) error {
@@ -1065,134 +1065,134 @@ func validateProfile( // nolint: gocyclo
 	if err != nil {
 		return err
 	}
-	if profile.GetMacSettings().GetRx2DataRateIndex() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.Rx2DataRateIndex.Value]
+	if profile.GetRx2DataRateIndex() != nil {
+		_, ok := phy.DataRates[profile.Rx2DataRateIndex.Value]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.rx2_data_rate_index.value")
 		}
 	}
-	if profile.GetMacSettings().GetDesiredRx2DataRateIndex() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.DesiredRx2DataRateIndex.Value]
+	if profile.GetDesiredRx2DataRateIndex() != nil {
+		_, ok := phy.DataRates[profile.DesiredRx2DataRateIndex.Value]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_rx2_data_rate_index.value")
 		}
 	}
-	if profile.GetMacSettings().GetDesiredPingSlotDataRateIndex() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.DesiredPingSlotDataRateIndex.Value]
+	if profile.GetDesiredPingSlotDataRateIndex() != nil {
+		_, ok := phy.DataRates[profile.DesiredPingSlotDataRateIndex.Value]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_ping_slot_data_rate_index.value")
 		}
 	}
-	if profile.GetMacSettings().GetDesiredRelay().GetServed().GetSecondChannel() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.DesiredRelay.GetServed().SecondChannel.DataRateIndex]
+	if profile.GetDesiredRelay().GetServed().GetSecondChannel() != nil {
+		_, ok := phy.DataRates[profile.DesiredRelay.GetServed().SecondChannel.DataRateIndex]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_relay.served.second_channel.data_rate_index") // nolint: lll
 		}
 	}
-	if chIdx := profile.GetMacSettings().GetDesiredRelay().GetServing().GetDefaultChannelIndex(); chIdx != nil {
+	if chIdx := profile.GetDesiredRelay().GetServing().GetDefaultChannelIndex(); chIdx != nil {
 		if chIdx.Value >= uint32(len(phy.Relay.WORChannels)) { // nolint: gosec
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_relay.serving.default_channel_index")
 		}
 	}
-	if profile.GetMacSettings().GetDesiredRelay().GetServing().GetSecondChannel() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.DesiredRelay.GetServing().SecondChannel.DataRateIndex]
+	if profile.GetDesiredRelay().GetServing().GetSecondChannel() != nil {
+		_, ok := phy.DataRates[profile.DesiredRelay.GetServing().SecondChannel.DataRateIndex]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_relay.serving.second_channel.data_rate_index") // nolint: lll
 		}
 	}
-	if profile.GetMacSettings().GetAdr().GetDynamic().GetMaxDataRateIndex() != nil {
-		drIdx := profile.MacSettings.Adr.GetDynamic().MaxDataRateIndex.Value
+	if profile.GetAdr().GetDynamic().GetMaxDataRateIndex() != nil {
+		drIdx := profile.Adr.GetDynamic().MaxDataRateIndex.Value
 		_, ok := phy.DataRates[drIdx]
 		if !ok || drIdx > phy.MaxADRDataRateIndex {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.dynamic.max_data_rate_index")
 		}
 	}
-	if profile.GetMacSettings().GetAdr().GetDynamic().GetMinDataRateIndex() != nil {
-		drIdx := profile.MacSettings.Adr.GetDynamic().MinDataRateIndex.Value
+	if profile.GetAdr().GetDynamic().GetMinDataRateIndex() != nil {
+		drIdx := profile.Adr.GetDynamic().MinDataRateIndex.Value
 		_, ok := phy.DataRates[drIdx]
 		if !ok || drIdx > phy.MaxADRDataRateIndex {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.dynamic.min_data_rate_index")
 		}
 	}
-	if profile.GetMacSettings().GetAdr().GetDynamic().GetMaxTxPowerIndex() != nil {
-		if profile.MacSettings.Adr.GetDynamic().MaxTxPowerIndex.Value > uint32(phy.MaxTxPowerIndex()) {
+	if profile.GetAdr().GetDynamic().GetMaxTxPowerIndex() != nil {
+		if profile.Adr.GetDynamic().MaxTxPowerIndex.Value > uint32(phy.MaxTxPowerIndex()) {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.dynamic.max_tx_power_index")
 		}
 	}
-	if profile.GetMacSettings().GetAdr().GetDynamic().GetMinTxPowerIndex() != nil {
-		if profile.MacSettings.Adr.GetDynamic().MinTxPowerIndex.Value > uint32(phy.MaxTxPowerIndex()) {
+	if profile.GetAdr().GetDynamic().GetMinTxPowerIndex() != nil {
+		if profile.Adr.GetDynamic().MinTxPowerIndex.Value > uint32(phy.MaxTxPowerIndex()) {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.dynamic.min_tx_power_index")
 		}
 	}
 	if !phy.SupportsDynamicADR {
-		if profile.GetMacSettings().GetAdr().GetDynamic() != nil {
+		if profile.GetAdr().GetDynamic() != nil {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.dynamic")
 		}
 	} else {
-		if profile.GetMacSettings().GetAdr().GetDynamic() != nil {
-			minDRI := profile.GetMacSettings().GetAdr().GetDynamic().GetMinDataRateIndex()
-			maxDRI := profile.GetMacSettings().GetAdr().GetDynamic().GetMaxDataRateIndex()
+		if profile.GetAdr().GetDynamic() != nil {
+			minDRI := profile.GetAdr().GetDynamic().GetMinDataRateIndex()
+			maxDRI := profile.GetAdr().GetDynamic().GetMaxDataRateIndex()
 			if minDRI != nil && maxDRI != nil && maxDRI.Value < minDRI.Value {
 				return newInvalidFieldValueError("mac_settings.adr.mode.dynamic.max_data_rate_index.value")
 			}
 
-			minNbTrans := profile.GetMacSettings().GetAdr().GetDynamic().GetMinNbTrans()
-			maxNbTrans := profile.GetMacSettings().GetAdr().GetDynamic().GetMaxNbTrans()
+			minNbTrans := profile.GetAdr().GetDynamic().GetMinNbTrans()
+			maxNbTrans := profile.GetAdr().GetDynamic().GetMaxNbTrans()
 			if minNbTrans != nil && maxNbTrans != nil && maxNbTrans.Value < minNbTrans.Value {
 				return newInvalidFieldValueError("mac_settings.adr.mode.dynamic.max_nb_trans")
 			}
 
 			for drIdx := ttnpb.DataRateIndex_DATA_RATE_0; drIdx <= ttnpb.DataRateIndex_DATA_RATE_15; drIdx++ {
-				minOverrides := mac.DataRateIndexOverridesOf(profile.GetMacSettings().GetAdr().GetDynamic().GetOverrides(), drIdx).GetMinNbTrans() // nolint: lll
-				maxOverrides := mac.DataRateIndexOverridesOf(profile.GetMacSettings().GetAdr().GetDynamic().GetOverrides(), drIdx).GetMaxNbTrans() // nolint: lll
+				minOverrides := mac.DataRateIndexOverridesOf(profile.GetAdr().GetDynamic().GetOverrides(), drIdx).GetMinNbTrans() // nolint: lll
+				maxOverrides := mac.DataRateIndexOverridesOf(profile.GetAdr().GetDynamic().GetOverrides(), drIdx).GetMaxNbTrans() // nolint: lll
 				if minOverrides != nil && maxOverrides != nil && maxOverrides.Value < minOverrides.Value {
 					return newInvalidFieldValueError(fmt.Sprintf("mac_settings.adr.mode.dynamic.overrides.data_rate_%d.max_nb_trans", drIdx)) // nolint: lll
 				}
 			}
 		}
 	}
-	if profile.GetMacSettings().GetAdr().GetStatic() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.Adr.GetStatic().DataRateIndex]
+	if profile.GetAdr().GetStatic() != nil {
+		_, ok := phy.DataRates[profile.Adr.GetStatic().DataRateIndex]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.static.data_rate_index")
 		}
-		if profile.MacSettings.Adr.GetStatic().TxPowerIndex > uint32(phy.MaxTxPowerIndex()) {
+		if profile.Adr.GetStatic().TxPowerIndex > uint32(phy.MaxTxPowerIndex()) {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.adr.mode.static.tx_power_index")
 		}
 	}
-	if profile.GetMacSettings().GetUplinkDwellTime() != nil {
+	if profile.GetUplinkDwellTime() != nil {
 		if !phy.TxParamSetupReqSupport {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.uplink_dwell_time.value")
 		}
 	}
-	if profile.GetMacSettings().GetDownlinkDwellTime() != nil {
+	if profile.GetDownlinkDwellTime() != nil {
 		if !phy.TxParamSetupReqSupport {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.downlink_dwell_time.value")
 		}
 	}
-	if profile.GetMacSettings().GetRelay().GetServed().GetSecondChannel() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.Relay.GetServed().SecondChannel.DataRateIndex]
+	if profile.GetRelay().GetServed().GetSecondChannel() != nil {
+		_, ok := phy.DataRates[profile.Relay.GetServed().SecondChannel.DataRateIndex]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.relay.served.second_channel.data_rate_index")
 		}
 	}
-	if chIdx := profile.GetMacSettings().GetRelay().GetServing().GetDefaultChannelIndex(); chIdx != nil {
+	if chIdx := profile.GetRelay().GetServing().GetDefaultChannelIndex(); chIdx != nil {
 		if chIdx.Value >= uint32(len(phy.Relay.WORChannels)) { // nolint: gosec
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.relay.serving.default_channel_index")
 		}
 	}
-	if profile.GetMacSettings().GetRelay().GetServing().GetSecondChannel() != nil {
-		_, ok := phy.DataRates[profile.MacSettings.Relay.GetServing().SecondChannel.DataRateIndex]
+	if profile.GetRelay().GetServing().GetSecondChannel() != nil {
+		_, ok := phy.DataRates[profile.Relay.GetServing().SecondChannel.DataRateIndex]
 		if !ok {
 			return newInvalidFieldValueError("mac_settings_profile.mac_settings.relay.serving.second_channel.data_rate_index")
 		}
 	}
-	if len(profile.GetMacSettings().GetFactoryPresetFrequencies()) > 0 {
+	if len(profile.GetFactoryPresetFrequencies()) > 0 {
 		switch phy.CFListType {
 		case ttnpb.CFListType_FREQUENCIES:
 			// Factory preset frequencies in bands which provide frequencies as part of the CFList
 			// are interpreted as being used both for uplinks and downlinks.
-			for _, frequency := range profile.MacSettings.FactoryPresetFrequencies {
+			for _, frequency := range profile.FactoryPresetFrequencies {
 				_, inSubBand := fp.FindSubBand(frequency)
 				for _, sb := range phy.SubBands {
 					if sb.MinFrequency <= frequency && frequency <= sb.MaxFrequency {
@@ -1211,7 +1211,7 @@ func validateProfile( // nolint: gocyclo
 			for _, ch := range phy.UplinkChannels {
 				uplinkChannels[ch.Frequency] = struct{}{}
 			}
-			for _, frequency := range profile.MacSettings.FactoryPresetFrequencies {
+			for _, frequency := range profile.FactoryPresetFrequencies {
 				if _, ok := uplinkChannels[frequency]; !ok {
 					return newInvalidFieldValueError("mac_settings_profile.mac_settings.factory_preset_frequencies")
 				}
@@ -1221,22 +1221,22 @@ func validateProfile( // nolint: gocyclo
 		}
 	}
 	if st.Device.GetSupportsClassB() {
-		if profile.GetMacSettings().GetPingSlotFrequency().GetValue() == 0 {
+		if profile.GetPingSlotFrequency().GetValue() == 0 {
 			if len(phy.PingSlotFrequencies) == 0 {
 				return newInvalidFieldValueError("mac_settings_profile.mac_settings.ping_slot_frequency.value")
 			}
 		}
-		if profile.GetMacSettings().GetDesiredPingSlotFrequency().GetValue() == 0 {
+		if profile.GetDesiredPingSlotFrequency().GetValue() == 0 {
 			if len(phy.PingSlotFrequencies) == 0 {
 				return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_ping_slot_frequency.value")
 			}
 		}
-		if profile.GetMacSettings().GetBeaconFrequency().GetValue() == 0 {
+		if profile.GetBeaconFrequency().GetValue() == 0 {
 			if len(phy.Beacon.Frequencies) == 0 {
 				return newInvalidFieldValueError("mac_settings_profile.mac_settings.beacon_frequency.value")
 			}
 		}
-		if profile.GetMacSettings().GetDesiredBeaconFrequency().GetValue() == 0 {
+		if profile.GetDesiredBeaconFrequency().GetValue() == 0 {
 			if len(phy.Beacon.Frequencies) == 0 {
 				return newInvalidFieldValueError("mac_settings_profile.mac_settings.desired_beacon_frequency.value")
 			}

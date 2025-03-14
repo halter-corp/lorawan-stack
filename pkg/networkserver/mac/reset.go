@@ -41,7 +41,7 @@ func HandleResetInd(
 	pld *ttnpb.MACCommand_ResetInd,
 	fps *frequencyplans.Store,
 	defaults *ttnpb.MACSettings,
-	profile *ttnpb.MACSettingsProfile,
+	profile *ttnpb.MACSettings,
 ) (events.Builders, error) {
 	if pld == nil {
 		return nil, ErrNoPayload.New()

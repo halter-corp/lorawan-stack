@@ -673,7 +673,7 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 		Name     string
 		Device   *ttnpb.EndDevice
 		Default  *ttnpb.MACSettings
-		Profile  *ttnpb.MACSettingsProfile
+		Profile  *ttnpb.MACSettings
 		MACState *ttnpb.MACState
 	}{
 		{
@@ -861,59 +861,57 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 				MacSettings:       nil,
 			},
 			Default: nil,
-			Profile: &ttnpb.MACSettingsProfile{
-				MacSettings: &ttnpb.MACSettings{
-					Rx1Delay: &ttnpb.RxDelayValue{
-						Value: ttnpb.RxDelay_RX_DELAY_13,
-					},
-					Rx1DataRateOffset: &ttnpb.DataRateOffsetValue{
-						Value: 1,
-					},
-					Rx2DataRateIndex: &ttnpb.DataRateIndexValue{
-						Value: ttnpb.DataRateIndex_DATA_RATE_5,
-					},
-					Rx2Frequency: &ttnpb.FrequencyValue{
-						Value: 869525000,
-					},
-					MaxDutyCycle: &ttnpb.AggregatedDutyCycleValue{
-						Value: ttnpb.AggregatedDutyCycle_DUTY_CYCLE_1,
-					},
-					PingSlotFrequency: &ttnpb.ZeroableFrequencyValue{
-						Value: 869525000,
-					},
-					BeaconFrequency: &ttnpb.ZeroableFrequencyValue{
-						Value: 869525000,
-					},
-					DesiredMaxEirp: &ttnpb.DeviceEIRPValue{
-						Value: ttnpb.DeviceEIRP_DEVICE_EIRP_16,
-					},
-					DesiredRx1Delay: &ttnpb.RxDelayValue{
-						Value: ttnpb.RxDelay_RX_DELAY_13,
-					},
-					DesiredRx1DataRateOffset: &ttnpb.DataRateOffsetValue{
-						Value: 1,
-					},
-					DesiredRx2DataRateIndex: &ttnpb.DataRateIndexValue{
-						Value: ttnpb.DataRateIndex_DATA_RATE_5,
-					},
-					DesiredRx2Frequency: &ttnpb.FrequencyValue{
-						Value: 869525000,
-					},
-					DesiredMaxDutyCycle: &ttnpb.AggregatedDutyCycleValue{
-						Value: ttnpb.AggregatedDutyCycle_DUTY_CYCLE_1,
-					},
-					DesiredPingSlotFrequency: &ttnpb.ZeroableFrequencyValue{
-						Value: 869525000,
-					},
-					DesiredBeaconFrequency: &ttnpb.ZeroableFrequencyValue{
-						Value: 869525000,
-					},
-					DesiredAdrAckLimitExponent: &ttnpb.ADRAckLimitExponentValue{
-						Value: 3,
-					},
-					DesiredAdrAckDelayExponent: &ttnpb.ADRAckDelayExponentValue{
-						Value: 3,
-					},
+			Profile: &ttnpb.MACSettings{
+				Rx1Delay: &ttnpb.RxDelayValue{
+					Value: ttnpb.RxDelay_RX_DELAY_13,
+				},
+				Rx1DataRateOffset: &ttnpb.DataRateOffsetValue{
+					Value: 1,
+				},
+				Rx2DataRateIndex: &ttnpb.DataRateIndexValue{
+					Value: ttnpb.DataRateIndex_DATA_RATE_5,
+				},
+				Rx2Frequency: &ttnpb.FrequencyValue{
+					Value: 869525000,
+				},
+				MaxDutyCycle: &ttnpb.AggregatedDutyCycleValue{
+					Value: ttnpb.AggregatedDutyCycle_DUTY_CYCLE_1,
+				},
+				PingSlotFrequency: &ttnpb.ZeroableFrequencyValue{
+					Value: 869525000,
+				},
+				BeaconFrequency: &ttnpb.ZeroableFrequencyValue{
+					Value: 869525000,
+				},
+				DesiredMaxEirp: &ttnpb.DeviceEIRPValue{
+					Value: ttnpb.DeviceEIRP_DEVICE_EIRP_16,
+				},
+				DesiredRx1Delay: &ttnpb.RxDelayValue{
+					Value: ttnpb.RxDelay_RX_DELAY_13,
+				},
+				DesiredRx1DataRateOffset: &ttnpb.DataRateOffsetValue{
+					Value: 1,
+				},
+				DesiredRx2DataRateIndex: &ttnpb.DataRateIndexValue{
+					Value: ttnpb.DataRateIndex_DATA_RATE_5,
+				},
+				DesiredRx2Frequency: &ttnpb.FrequencyValue{
+					Value: 869525000,
+				},
+				DesiredMaxDutyCycle: &ttnpb.AggregatedDutyCycleValue{
+					Value: ttnpb.AggregatedDutyCycle_DUTY_CYCLE_1,
+				},
+				DesiredPingSlotFrequency: &ttnpb.ZeroableFrequencyValue{
+					Value: 869525000,
+				},
+				DesiredBeaconFrequency: &ttnpb.ZeroableFrequencyValue{
+					Value: 869525000,
+				},
+				DesiredAdrAckLimitExponent: &ttnpb.ADRAckLimitExponentValue{
+					Value: 3,
+				},
+				DesiredAdrAckDelayExponent: &ttnpb.ADRAckDelayExponentValue{
+					Value: 3,
 				},
 			},
 			MACState: func() *ttnpb.MACState {
@@ -987,11 +985,9 @@ func TestNewStateMacSettingsOrder(t *testing.T) {
 					Value: ttnpb.RxDelay_RX_DELAY_14,
 				},
 			},
-			Profile: &ttnpb.MACSettingsProfile{
-				MacSettings: &ttnpb.MACSettings{
-					DesiredRx1Delay: &ttnpb.RxDelayValue{
-						Value: ttnpb.RxDelay_RX_DELAY_15,
-					},
+			Profile: &ttnpb.MACSettings{
+				DesiredRx1Delay: &ttnpb.RxDelayValue{
+					Value: ttnpb.RxDelay_RX_DELAY_15,
 				},
 			},
 			MACState: func() *ttnpb.MACState {

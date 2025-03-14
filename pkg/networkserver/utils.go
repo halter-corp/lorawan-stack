@@ -126,7 +126,7 @@ func nextUnconfirmedNetworkInitiatedDownlinkAt(
 	dev *ttnpb.EndDevice,
 	phy *band.Band,
 	defaults *ttnpb.MACSettings,
-	profile *ttnpb.MACSettingsProfile,
+	profile *ttnpb.MACSettings,
 ) (time.Time, bool) {
 	switch {
 	case dev.GetMacState() == nil:
@@ -172,7 +172,7 @@ func nextConfirmedNetworkInitiatedDownlinkAt(
 	dev *ttnpb.EndDevice,
 	phy *band.Band,
 	defaults *ttnpb.MACSettings,
-	profile *ttnpb.MACSettingsProfile,
+	profile *ttnpb.MACSettings,
 ) (time.Time, bool) {
 	if dev.GetMacState() == nil {
 		log.FromContext(ctx).Warn("Insufficient data to compute next network-initiated confirmed downlink slot")
@@ -245,7 +245,7 @@ func nextDataDownlinkSlot( // nolint: gocyclo
 	phy *band.Band,
 	defaults *ttnpb.MACSettings,
 	earliestAt time.Time,
-	profile *ttnpb.MACSettingsProfile,
+	profile *ttnpb.MACSettings,
 ) (downlinkSlot, bool) {
 	if dev.GetMacState() == nil {
 		return nil, false

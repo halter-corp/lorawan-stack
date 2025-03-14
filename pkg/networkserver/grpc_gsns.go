@@ -322,7 +322,7 @@ func (ns *NetworkServer) matchAndHandleDataUplink(ctx context.Context, dev *ttnp
 		dev.MacState != nil &&
 		devAddr.Equal(types.MustDevAddr(dev.Session.DevAddr).OrZero()) &&
 		macspec.UseLegacyMIC(cmacFMatchResult.LoRaWANVersion) == macspec.UseLegacyMIC(dev.MacState.LorawanVersion) &&
-		(cmacFMatchResult.FullFCnt == FullFCnt(uint16(pld.FHdr.FCnt), dev.Session.LastFCntUp, mac.DeviceSupports32BitFCnt(dev, ns.defaultMACSettings, profile)) || // nolint: gosec, lll
+		(cmacFMatchResult.FullFCnt == FullFCnt(uint16(pld.FHdr.FCnt), dev.Session.LastFCntUp, mac.DeviceSupports32BitFCnt(dev, ns.defaultMACSettings, profile.GetMacSettings())) || // nolint: gosec, lll
 			cmacFMatchResult.FullFCnt == pld.FHdr.FCnt) {
 		fNwkSIntKey, err := cryptoutil.UnwrapAES128Key(ctx, dev.Session.Keys.FNwkSIntKey, ns.KeyService())
 		if err != nil {
@@ -339,12 +339,12 @@ func (ns *NetworkServer) matchAndHandleDataUplink(ctx context.Context, dev *ttnp
 			case cmacFMatchResult.FullFCnt < dev.Session.LastFCntUp:
 				if pld.FHdr.FCtrl.Ack ||
 					dev.Session.LastFCntUp != cmacFMatchResult.LastFCnt ||
-					!mac.DeviceResetsFCnt(dev, ns.defaultMACSettings, profile) {
+					!mac.DeviceResetsFCnt(dev, ns.defaultMACSettings, profile.GetMacSettings()) {
 					return nil, false, nil
 				}
 				ctx = log.NewContextWithField(ctx, "f_cnt_reset", true)
 
-				macState, err := mac.NewState(dev, fps, ns.defaultMACSettings, profile)
+				macState, err := mac.NewState(dev, fps, ns.defaultMACSettings, profile.GetMacSettings())
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Warn("Failed to generate new MAC state")
 					return nil, false, nil
@@ -554,7 +554,7 @@ macLoop:
 		var err error
 		switch cmd.Cid {
 		case ttnpb.MACCommandIdentifier_CID_RESET:
-			evs, err = mac.HandleResetInd(ctx, dev, cmd.GetResetInd(), fps, ns.defaultMACSettings, profile)
+			evs, err = mac.HandleResetInd(ctx, dev, cmd.GetResetInd(), fps, ns.defaultMACSettings, profile.GetMacSettings())
 		case ttnpb.MACCommandIdentifier_CID_LINK_CHECK:
 			if !deduplicated {
 				deferredMACHandlers = append(deferredMACHandlers, makeDeferredMACHandler(dev, mac.HandleLinkCheckReq))
@@ -1335,7 +1335,7 @@ func (ns *NetworkServer) handleJoinRequest(ctx context.Context, up *ttnpb.Uplink
 			return err
 		}
 	}
-	macState, err := mac.NewState(matched, fps, ns.defaultMACSettings, profile)
+	macState, err := mac.NewState(matched, fps, ns.defaultMACSettings, profile.GetMacSettings())
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Warn("Failed to reset device's MAC state")
 		return err

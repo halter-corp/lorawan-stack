@@ -143,7 +143,7 @@ func (ns *NetworkServer) nextDataDownlinkTaskAt(ctx context.Context, dev *ttnpb.
 			return time.Time{}, nil
 		}
 	}
-	slot, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, profile)
+	slot, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, profile.GetMacSettings())
 	if !ok {
 		return time.Time{}, nil
 	}
@@ -623,7 +623,7 @@ func (ns *NetworkServer) generateDataDownlink(ctx context.Context, dev *ttnpb.En
 			dev,
 			phy,
 			ns.defaultMACSettings,
-			profile,
+			profile.GetMacSettings(),
 		)
 		if !ok {
 			return nil, genState, ErrCorruptedMACState.
@@ -1969,7 +1969,7 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 					}
 				}
 
-				if !mac.DeviceScheduleDownlinks(dev, ns.defaultMACSettings, profile) {
+				if !mac.DeviceScheduleDownlinks(dev, ns.defaultMACSettings, profile.GetMacSettings()) {
 					logger.Debug("Downlink slot skipped since scheduling is disabled")
 					return dev, nil, nil
 				}
@@ -2192,7 +2192,7 @@ func (ns *NetworkServer) processDownlinkTask(ctx context.Context, consumerID str
 				}
 				var earliestAt time.Time
 				for {
-					v, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, profile)
+					v, ok := nextDataDownlinkSlot(ctx, dev, phy, ns.defaultMACSettings, earliestAt, profile.GetMacSettings())
 					if !ok {
 						return dev, nil, nil
 					}
