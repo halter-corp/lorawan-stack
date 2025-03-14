@@ -157,7 +157,8 @@ type NetworkServer struct {
 	*component.Component
 	ctx context.Context
 
-	devices DeviceRegistry
+	devices             DeviceRegistry
+	macSettingsProfiles MACSettingsProfileRegistry
 
 	batchDevices       ttnpb.NsEndDeviceBatchRegistryServer
 	relayConfiguration ttnpb.NsRelayConfigurationServiceServer
@@ -292,6 +293,7 @@ func New(c *component.Component, conf *Config, opts ...Option) (*NetworkServer, 
 		batchDevices:             &nsEndDeviceBatchRegistry{devices: conf.Devices},
 		relayConfiguration:       &nsRelayConfigurationService{devices: conf.Devices, frequencyPlans: c.FrequencyPlansStore},
 		macSettingsProfile:       &NsMACSettingsProfileRegistry{registry: conf.MACSettingsProfileRegistry},
+		macSettingsProfiles:      conf.MACSettingsProfileRegistry,
 		downlinkTasks:            conf.DownlinkTaskQueue.Queue,
 		downlinkPriorities:       downlinkPriorities,
 		defaultMACSettings:       defaultMACSettings,

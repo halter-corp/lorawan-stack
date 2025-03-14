@@ -1489,6 +1489,26 @@
       ]
     }
   },
+  "mac_settings_profile_ids": {
+    "_root": [
+      "ns",
+      "ns"
+    ],
+    "application_ids": {
+      "_root": [
+        "ns",
+        "ns"
+      ],
+      "application_id": [
+        "ns",
+        "ns"
+      ]
+    },
+    "profile_id": [
+      "ns",
+      "ns"
+    ]
+  },
   "mac_state": {
     "_root": [
       "ns",

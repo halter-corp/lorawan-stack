@@ -429,6 +429,15 @@ func TestDeviceRegistrySet(t *testing.T) {
 		}
 	}
 
+	macSettingsProfileID := &ttnpb.MACSettingsProfileIdentifiers{
+		ApplicationIds: &ttnpb.ApplicationIdentifiers{
+			ApplicationId: "test-app-id",
+		},
+		ProfileId: "test-mac-settings-profile-id",
+	}
+
+	macSettingsProfileOpt := EndDeviceOptions.WithMacSettingsProfileIds(macSettingsProfileID)
+
 	for createDevice, tcs := range map[*ttnpb.EndDevice][]struct {
 		SetDevice      SetDeviceRequest
 		RequiredRights []ttnpb.Right
@@ -496,7 +505,20 @@ func TestDeviceRegistrySet(t *testing.T) {
 					customMACSettingsOpt,
 				),
 			},
+			{
+				SetDevice: *MakeOTAASetDeviceRequest([]test.EndDeviceOption{
+					macSettingsProfileOpt,
+				},
+					"mac_settings_profile_ids",
+				),
 
+				ReturnedDevice: MakeOTAAEndDevice(
+					macSettingsProfileOpt,
+				),
+				StoredDevice: MakeOTAAEndDevice(
+					macSettingsProfileOpt,
+				),
+			},
 			{
 				SetDevice: *MakeOTAASetDeviceRequest([]test.EndDeviceOption{
 					activateOpt,
@@ -857,6 +879,17 @@ func TestDeviceRegistrySet(t *testing.T) {
 						clock.Add(time.Nanosecond)
 					}
 
+					macSettingsProfile := &ttnpb.MACSettingsProfile{
+						Ids:         macSettingsProfileID,
+						MacSettings: customMACSettings,
+					}
+					profile, err := env.MACSettingsProfileRegistry.Set(ctx, macSettingsProfileID, []string{"ids", "mac_settings"},
+						func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
+							return macSettingsProfile, []string{"ids", "mac_settings"}, nil
+						})
+					a.So(err, should.BeNil)
+					a.So(profile, should.Resemble, macSettingsProfile)
+
 					now := clock.Now()
 					withTimestamps := withCreatedAt.Compose(
 						test.EndDeviceOptions.WithUpdatedAt(timestamppb.New(now)),
@@ -1167,7 +1200,7 @@ func TestDeviceRegistryResetFactoryDefaults(t *testing.T) {
 						}
 						var newErr error
 						defaultMACSettings := test.Must(DefaultConfig.DefaultMACSettings.Parse())
-						macState, newErr = mac.NewState(created, fps, defaultMACSettings)
+						macState, newErr = mac.NewState(created, fps, defaultMACSettings, nil)
 						if newErr != nil {
 							a.So(err, should.NotBeNil)
 							a.So(err, should.HaveSameErrorDefinitionAs, newErr)

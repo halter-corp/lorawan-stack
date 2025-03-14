@@ -3650,6 +3650,31 @@ func (dst *EndDevice) SetFields(src *EndDevice, paths ...string) error {
 					dst.LoraAllianceProfileIds = nil
 				}
 			}
+		case "mac_settings_profile_ids":
+			if len(subs) > 0 {
+				var newDst, newSrc *MACSettingsProfileIdentifiers
+				if (src == nil || src.MacSettingsProfileIds == nil) && dst.MacSettingsProfileIds == nil {
+					continue
+				}
+				if src != nil {
+					newSrc = src.MacSettingsProfileIds
+				}
+				if dst.MacSettingsProfileIds != nil {
+					newDst = dst.MacSettingsProfileIds
+				} else {
+					newDst = &MACSettingsProfileIdentifiers{}
+					dst.MacSettingsProfileIds = newDst
+				}
+				if err := newDst.SetFields(newSrc, subs...); err != nil {
+					return err
+				}
+			} else {
+				if src != nil {
+					dst.MacSettingsProfileIds = src.MacSettingsProfileIds
+				} else {
+					dst.MacSettingsProfileIds = nil
+				}
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)

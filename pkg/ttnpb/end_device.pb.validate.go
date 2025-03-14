@@ -3713,6 +3713,18 @@ func (m *EndDevice) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "mac_settings_profile_ids":
+
+			if v, ok := interface{}(m.GetMacSettingsProfileIds()).(interface{ ValidateFields(...string) error }); ok {
+				if err := v.ValidateFields(subs...); err != nil {
+					return EndDeviceValidationError{
+						field:  "mac_settings_profile_ids",
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		default:
 			return EndDeviceValidationError{
 				field:  name,

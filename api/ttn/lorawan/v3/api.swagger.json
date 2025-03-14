@@ -21865,7 +21865,7 @@
             },
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
             },
             "mac_state": {
               "$ref": "#/definitions/v3MACState",
@@ -21981,6 +21981,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -23300,7 +23304,7 @@
         },
         "mac_settings": {
           "$ref": "#/definitions/v3MACSettings",
-          "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+          "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
         },
         "mac_state": {
           "$ref": "#/definitions/v3MACState",
@@ -23416,6 +23420,10 @@
         },
         "lora_alliance_profile_ids": {
           "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+        },
+        "mac_settings_profile_ids": {
+          "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+          "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
         }
       },
       "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -23780,7 +23788,7 @@
             },
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
             },
             "mac_state": {
               "$ref": "#/definitions/v3MACState",
@@ -23896,6 +23904,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -24083,7 +24095,7 @@
             },
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
             },
             "mac_state": {
               "$ref": "#/definitions/v3MACState",
@@ -24199,6 +24211,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -25774,7 +25790,7 @@
             },
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
             },
             "mac_state": {
               "$ref": "#/definitions/v3MACState",
@@ -25890,6 +25906,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
@@ -27803,7 +27823,7 @@
             },
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
-              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server."
+              "description": "Settings for how the Network Server handles MAC layer for this device. Stored in Network Server.\nMutually exclusive with MAC settings profile."
             },
             "mac_state": {
               "$ref": "#/definitions/v3MACState",
@@ -27919,6 +27939,10 @@
             },
             "lora_alliance_profile_ids": {
               "$ref": "#/definitions/v3LoRaAllianceProfileIdentifiers"
+            },
+            "mac_settings_profile_ids": {
+              "$ref": "#/definitions/v3MACSettingsProfileIdentifiers",
+              "description": "MAC settings profile identifiers.\nMutually exclusive with MAC settings."
             }
           },
           "description": "Defines an End Device registration and its state on the network.\nThe persistence of the EndDevice is divided between the Network Server, Application Server and Join Server.\nSDKs are responsible for combining (if desired) the three."
