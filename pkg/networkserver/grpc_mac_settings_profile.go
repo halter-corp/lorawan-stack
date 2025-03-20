@@ -17,7 +17,6 @@ package networkserver
 
 import (
 	"context"
-	"slices"
 	"strconv"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
@@ -109,7 +108,7 @@ func (m *NsMACSettingsProfileRegistry) Update(ctx context.Context, req *ttnpb.Up
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
-	if slices.Contains(paths, "end_devices_ids") {
+	if ttnpb.HasAnyField(paths, "end_devices_ids") {
 		return nil, errInvalidFieldMask.WithAttributes("field_mask", "end_devices_ids")
 	}
 	profile, err := m.registry.Set(
