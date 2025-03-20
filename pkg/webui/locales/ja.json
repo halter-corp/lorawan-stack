@@ -2744,6 +2744,7 @@
   "error:pkg/networkserver:encrypt_mac": "MACコマンドの暗号化失敗",
   "error:pkg/networkserver:f_cnt_too_low": "FCnt `{f_cnt}` が最小値 `{min_f_cnt}` より小さいです",
   "error:pkg/networkserver:field_is_zero": "フィールド `{name}` はゼロです",
+  "error:pkg/networkserver:field_mask": "",
   "error:pkg/networkserver:field_not_zero": "フィールド `{name}` はゼロではありません",
   "error:pkg/networkserver:field_value": "フィールド `{field}` の値が無効",
   "error:pkg/networkserver:fixed_paths": "アプリケーションダウンリンクに無効な固定パスが設定されています",

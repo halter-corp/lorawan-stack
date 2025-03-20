@@ -8270,6 +8270,15 @@
       "file": "device_state.go"
     }
   },
+  "error:pkg/networkserver:field_mask": {
+    "translations": {
+      "en": "invalid field mask"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
   "error:pkg/networkserver:field_not_zero": {
     "translations": {
       "en": "field `{name}` is not zero"

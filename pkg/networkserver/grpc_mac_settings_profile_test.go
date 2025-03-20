@@ -511,6 +511,10 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 		t.Helper()
 		return assertions.New(t).So(errors.IsNotFound(err), should.BeTrue)
 	}
+	invalidFieldMaskErrorAssertion := func(t *testing.T, err error) bool {
+		t.Helper()
+		return assertions.New(t).So(errors.IsInvalidArgument(err), should.BeTrue)
+	}
 
 	registeredProfileIDs := &ttnpb.MACSettingsProfileIdentifiers{
 		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
@@ -604,6 +608,38 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 			SetCalls:         0,
 		},
 		{
+			Name: "Invalid field mask",
+			ContextFunc: func(ctx context.Context) context.Context {
+				return rights.NewContext(ctx, &rights.Rights{
+					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
+						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{
+							ApplicationId: "test-app-id",
+						}): ttnpb.RightsFrom(
+							ttnpb.Right_RIGHT_APPLICATION_DEVICES_WRITE,
+						),
+					}),
+				})
+			},
+			SetFunc: func(
+				ctx context.Context,
+				_ *ttnpb.MACSettingsProfileIdentifiers,
+				_ []string,
+				_ func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
+			) (*ttnpb.MACSettingsProfile, error) {
+				err := errors.New("SetFunc must not be called")
+				test.MustTFromContext(ctx).Error(err)
+				return nil, err
+			},
+			ProfileRequest: &ttnpb.UpdateMACSettingsProfileRequest{
+				MacSettingsProfileIds: registeredProfileIDs,
+				MacSettingsProfile:    registeredProfile,
+				FieldMask:             ttnpb.FieldMask("mac_settings", "end_devices_ids"),
+			},
+			ProfileAssertion: nilProfileAssertion,
+			ErrorAssertion:   invalidFieldMaskErrorAssertion,
+			SetCalls:         0,
+		},
+		{
 			Name: "Update",
 			ContextFunc: func(ctx context.Context) context.Context {
 				return rights.NewContext(ctx, &rights.Rights{
@@ -626,7 +662,6 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 				a.So(ids, should.Resemble, ids)
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"mac_settings",
-					"end_devices_ids",
 				})
 				profile, sets, err := f(ctx, ttnpb.Clone(registeredProfile))
 				a.So(sets, should.HaveSameElementsDeep, paths)
@@ -636,7 +671,7 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 			ProfileRequest: &ttnpb.UpdateMACSettingsProfileRequest{
 				MacSettingsProfileIds: registeredProfileIDs,
 				MacSettingsProfile:    registeredProfile,
-				FieldMask:             ttnpb.FieldMask("mac_settings", "end_devices_ids"),
+				FieldMask:             ttnpb.FieldMask("mac_settings"),
 			},
 			ProfileAssertion: func(t *testing.T, profile *ttnpb.UpdateMACSettingsProfileResponse) bool {
 				t.Helper()

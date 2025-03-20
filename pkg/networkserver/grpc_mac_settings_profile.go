@@ -17,6 +17,7 @@ package networkserver
 
 import (
 	"context"
+	"slices"
 	"strconv"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
@@ -30,6 +31,7 @@ var (
 	errMACSettingsProfileAlreadyExists = errors.DefineAlreadyExists("mac_settings_profile_already_exists", "MAC settings profile already exists") // nolint: lll
 	errMACSettingsProfileNotFound      = errors.DefineNotFound("mac_settings_profile_not_found", "MAC settings profile not found")                // nolint: lll
 	errMACSettingsProfileUsed          = errors.DefineFailedPrecondition("mac_settings_profile_used", "MAC settings profile is used")             // nolint: lll
+	errInvalidFieldMask                = errors.DefineInvalidArgument("field_mask", "invalid field mask")
 )
 
 func setTotalHeader(ctx context.Context, total int64) {
@@ -103,9 +105,12 @@ func (m *NsMACSettingsProfileRegistry) Update(ctx context.Context, req *ttnpb.Up
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings", "end_devices_ids"}
+	paths := []string{"ids", "mac_settings"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
+	}
+	if slices.Contains(paths, "end_devices_ids") {
+		return nil, errInvalidFieldMask.WithAttributes("field_mask", "end_devices_ids")
 	}
 	profile, err := m.registry.Set(
 		ctx,
