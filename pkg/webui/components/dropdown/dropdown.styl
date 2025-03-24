@@ -19,7 +19,7 @@ ul.dropdown
   border-radius: $br.l
   border: 1px solid var(--c-border-neutral-light)
   list-style-type: none
-  background: var(--c-bg-neutral-extralight)
+  background: light-dark(var(--c-bg-neutral-extralight), var(--c-bg-neutral-light))
   box-shadow: 0px 3px 16px 0px rgba(0, 0, 0, .06)
   position: absolute
   padding: $cs.xs
@@ -111,7 +111,7 @@ ul.dropdown
 
   hr
     height: 1px
-    background-color: var(--c-border-neutral-light)
+    background-color: light-dark(var(--c-border-neutral-light), var(--c-border-neutral-normal))
     margin: $cs.xs 0
 
   li.dropdown-header-item
@@ -146,10 +146,10 @@ ul.dropdown
       border-radius: $br.m
 
       &-active
-        color: var(--c-text-neutral-extralight)
+        color: light-dark(var(--c-text-neutral-extralight), var(--c-text-neutral-light))
 
       &:hover:not(.button-active)
-        background: var(--c-bg-neutral-light)
+        background: light-dark(var(--c-bg-neutral-light), var(--c-bg-neutral-normal))
 
     .icon
       margin-right: $cs.xs

@@ -29,6 +29,7 @@ import {
   IconShieldLock,
   IconLockOpen,
   IconMailCog,
+  IconBrush,
 } from '@ttn-lw/components/icon'
 import SideNavigation from '@ttn-lw/components/sidebar/side-menu'
 
@@ -131,7 +132,14 @@ const GeneralSideNavigation = () => {
           )}
           {showProfileSettings && (
             <SideNavigation.Item
-              title={'Email notifications'}
+              title={sharedMessages.theme}
+              path="/user-settings/theme"
+              icon={IconBrush}
+            />
+          )}
+          {showProfileSettings && (
+            <SideNavigation.Item
+              title={sharedMessages.emailNotifications}
               path="/user-settings/email-notifications-settings"
               icon={IconMailCog}
             />

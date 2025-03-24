@@ -152,12 +152,7 @@ ace.define(
     exports.cssClass = 'ace-ttn-dark'
     exports.cssText = `
 .ace-ttn-dark .ace_gutter {
-  background: var(--c-bg-neutral-bold);
   color: var(--c-text-neutral-light);
-}
-.ace-ttn-dark {
-  background: var(--c-bg-neutral-heavy);
-  color: var(--c-text-neutral-min);
 }
 // begin language
 .ace-ttn-dark .ace_string {
@@ -217,12 +212,8 @@ ace.define(
 .ace-ttn-dark .ace_cursor {
   color: var(--c-text-neutral-min);
 }
-.ace-ttn-dark.ace_focus .ace_marker-layer .ace_active-line {
-  background: var(--c-bg-brand-extralight);
-  opacity: 0.2;
-}
 .ace-ttn-dark .ace_marker-layer .ace_active-line {
-  background: var(--c-bg-neutral-bold);
+  background: var(--c-bg-neutral-extalight);
 }
 .ace-ttn-dark .ace_marker-layer .ace_selection {
   background: var(--c-bg-info-normal);
@@ -244,7 +235,7 @@ ace.define(
   border: 1px solid var(--c-border-neutral-bold);
 }
 .ace-ttn-dark .ace_gutter-active-line {
-  background-color: var(--c-bg-neutral-semibold);
+  background-color: var(--c-bg-neutral-normal);
 }
 .ace-ttn-dark .ace_marker-layer .ace_selected-word {
   border: 1px solid var(--c-border-brand-norma);

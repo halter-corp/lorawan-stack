@@ -41,6 +41,7 @@ const Notification = ({
   success,
   messageValues = {},
   children,
+  dark,
   'data-test-id': dataTestId,
 }) => {
   const classname = classnames(style.notification, className, {
@@ -49,6 +50,7 @@ const Notification = ({
     [style.info]: info,
     [style.small]: small,
     [style.success]: success,
+    [style.dark]: dark,
     [style.withDetails]: Boolean(details),
   })
 
@@ -80,6 +82,7 @@ Notification.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
   content: PropTypes.oneOfType([PropTypes.message, PropTypes.error, PropTypes.string]),
+  dark: PropTypes.bool,
   'data-test-id': PropTypes.string,
   details: PropTypes.error,
   error: PropTypes.bool,
@@ -104,6 +107,7 @@ Notification.defaultProps = {
   success: false,
   messageValues: undefined,
   details: undefined,
+  dark: false,
 }
 
 export default Notification

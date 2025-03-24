@@ -64,29 +64,49 @@ const getScrollRestorationKey = location => {
   return `${pathname}${page ? `?page=${page}` : ''}`
 }
 
-const Layout = () => (
-  <>
-    <ScrollRestoration getKey={getScrollRestorationKey} />
-    <ToastContainer />
-    <ErrorView errorRender={errorRender}>
-      <React.Fragment>
-        <Helmet
-          titleTemplate={`%s - ${siteTitle ? `${siteTitle} - ` : ''}${siteName}`}
-          defaultTitle={`${siteTitle ? `${siteTitle} - ` : ''}${siteName}`}
-        />
-        <div className={style.container}>
-          <section className={style.content}>
-            <div className={style.main}>
-              <Logo className={style.loginLogo} unlockSize />
-              <Outlet />
-            </div>
-          </section>
-          <section className={style.visual} />
-        </div>
-      </React.Fragment>
-    </ErrorView>
-  </>
-)
+const Layout = () => {
+  const darkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  const toggleTheme = theme => {
+    const htmlElement = document.documentElement
+
+    if (theme === 'dark') {
+      htmlElement.classList.add('dark')
+      htmlElement.classList.remove('light')
+    } else {
+      htmlElement.classList.add('light')
+      htmlElement.classList.remove('dark')
+    }
+  }
+
+  useEffect(() => {
+    toggleTheme(darkTheme ? 'dark' : 'light')
+  }, [darkTheme])
+
+  return (
+    <>
+      <ScrollRestoration getKey={getScrollRestorationKey} />
+      <ToastContainer />
+      <ErrorView errorRender={errorRender}>
+        <React.Fragment>
+          <Helmet
+            titleTemplate={`%s - ${siteTitle ? `${siteTitle} - ` : ''}${siteName}`}
+            defaultTitle={`${siteTitle ? `${siteTitle} - ` : ''}${siteName}`}
+          />
+          <div className={style.container}>
+            <section className={style.content}>
+              <div className={style.main}>
+                <Logo className={style.loginLogo} unlockSize />
+                <Outlet />
+              </div>
+            </section>
+            <section className={style.visual} />
+          </div>
+        </React.Fragment>
+      </ErrorView>
+    </>
+  )
+}
 
 const AccountRoot = () => {
   const user = useSelector(selectUser)

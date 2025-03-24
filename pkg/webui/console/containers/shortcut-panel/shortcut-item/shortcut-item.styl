@@ -14,8 +14,8 @@
 
 .shortcut
   padding: $cs.s $cs.m
-  color: var(--c-text-brand-normal)
-  background-color: var(--c-bg-brand-light)
+  color: light-dark(var(--c-text-brand-normal), var(--c-text-brand-light))
+  background-color: light-dark(var(--c-bg-brand-light), var(--c-bg-brand-bold))
   border-radius: $br.l
   height: 4.5rem
   width: 100%
@@ -30,11 +30,11 @@
     padding: $cs.xxs $cs.xs
 
   .icon
-    color: var(--c-icon-brand-normal)
+    color: light-dark(var(--c-icon-brand-normal), var(--c-text-brand-light))
 
   &:hover
     cursor: pointer
-    background-color: var(--c-bg-brand-semilight)
+    background-color: light-dark(var(--c-bg-brand-semilight), var(--c-bg-brand-heavy))
 
   &-panel
     height: unset
