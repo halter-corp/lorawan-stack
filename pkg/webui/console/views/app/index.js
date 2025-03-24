@@ -90,7 +90,7 @@ const Layout = () => {
   const siteName = selectApplicationSiteName()
   const main = useRef()
 
-  const { height: splitFrameHeight } = useContext(EventSplitFrameContext)
+  const { height: splitFrameHeight, isMounted } = useContext(EventSplitFrameContext)
 
   useEffect(() => {
     if (main.current) {
@@ -129,7 +129,10 @@ const Layout = () => {
                     <div
                       className={style.stage}
                       id="stage"
-                      style={{ paddingBottom: splitFrameHeight }}
+                      style={{
+                        paddingBottom:
+                          splitFrameHeight === 0 && isMounted ? '3rem' : splitFrameHeight,
+                      }}
                     >
                       <Outlet />
                     </div>

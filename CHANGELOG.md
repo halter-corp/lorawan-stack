@@ -23,6 +23,7 @@ For details about compatibility between different releases, see the **Commitment
 ### Fixed
 
 - Downlink scheduling conflicts by gateways that require up to 32.5 ms margin between downlink transmissions (this includes the UDP Packet Forwarder and other packet forwarders that behave similarly).
+- Live data button covers content on the page.
 
 ### Security
 
