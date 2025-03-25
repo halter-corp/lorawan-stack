@@ -705,8 +705,6 @@ message MACSettingsProfile {
   ];
   // MAC settings.
   MACSettings mac_settings = 2 [(validate.rules).message.required = true];
-  // Associated end device identifiers.
-  repeated EndDeviceIdentifiers end_devices_ids = 3;
 }
 
 // MACState represents the state of MAC layer of the device.

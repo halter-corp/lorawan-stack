@@ -3243,7 +3243,6 @@ func (m *MACSettings) SetFromFlags(flags *pflag.FlagSet, prefix string) (paths [
 func AddSelectFlagsForMACSettingsProfile(flags *pflag.FlagSet, prefix string, hidden bool) {
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("mac-settings", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("mac-settings", prefix), true), flagsplugin.WithHidden(hidden)))
 	AddSelectFlagsForMACSettings(flags, flagsplugin.Prefix("mac-settings", prefix), hidden)
-	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("end-devices-ids", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("end-devices-ids", prefix), false), flagsplugin.WithHidden(hidden)))
 }
 
 // SelectFromFlags outputs the fieldmask paths forMACSettingsProfile message from select flags.
@@ -3258,11 +3257,6 @@ func PathsFromSelectFlagsForMACSettingsProfile(flags *pflag.FlagSet, prefix stri
 	} else {
 		paths = append(paths, selectPaths...)
 	}
-	if val, selected, err := flagsplugin.GetBool(flags, flagsplugin.Prefix("end_devices_ids", prefix)); err != nil {
-		return nil, err
-	} else if selected && val {
-		paths = append(paths, flagsplugin.Prefix("end_devices_ids", prefix))
-	}
 	return paths, nil
 }
 
@@ -3270,7 +3264,6 @@ func PathsFromSelectFlagsForMACSettingsProfile(flags *pflag.FlagSet, prefix stri
 func AddSetFlagsForMACSettingsProfile(flags *pflag.FlagSet, prefix string, hidden bool) {
 	AddSetFlagsForMACSettingsProfileIdentifiers(flags, flagsplugin.Prefix("ids", prefix), true)
 	AddSetFlagsForMACSettings(flags, flagsplugin.Prefix("mac-settings", prefix), hidden)
-	// FIXME: Skipping EndDevicesIds because repeated messages are currently not supported.
 }
 
 // SetFromFlags sets the MACSettingsProfile message from flags.
@@ -3295,7 +3288,6 @@ func (m *MACSettingsProfile) SetFromFlags(flags *pflag.FlagSet, prefix string) (
 			paths = append(paths, setPaths...)
 		}
 	}
-	// FIXME: Skipping EndDevicesIds because it does not seem to implement AddSetFlags.
 	return paths, nil
 }
 

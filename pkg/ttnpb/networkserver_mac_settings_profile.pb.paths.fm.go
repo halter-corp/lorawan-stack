@@ -4,7 +4,6 @@ package ttnpb
 
 var CreateMACSettingsProfileRequestFieldPathsNested = []string{
 	"mac_settings_profile",
-	"mac_settings_profile.end_devices_ids",
 	"mac_settings_profile.ids",
 	"mac_settings_profile.ids.application_ids",
 	"mac_settings_profile.ids.application_ids.application_id",
@@ -218,7 +217,6 @@ var CreateMACSettingsProfileRequestFieldPathsTopLevel = []string{
 }
 var CreateMACSettingsProfileResponseFieldPathsNested = []string{
 	"mac_settings_profile",
-	"mac_settings_profile.end_devices_ids",
 	"mac_settings_profile.ids",
 	"mac_settings_profile.ids.application_ids",
 	"mac_settings_profile.ids.application_ids.application_id",
@@ -444,7 +442,6 @@ var GetMACSettingsProfileRequestFieldPathsTopLevel = []string{
 }
 var GetMACSettingsProfileResponseFieldPathsNested = []string{
 	"mac_settings_profile",
-	"mac_settings_profile.end_devices_ids",
 	"mac_settings_profile.ids",
 	"mac_settings_profile.ids.application_ids",
 	"mac_settings_profile.ids.application_ids.application_id",
@@ -659,7 +656,6 @@ var GetMACSettingsProfileResponseFieldPathsTopLevel = []string{
 var UpdateMACSettingsProfileRequestFieldPathsNested = []string{
 	"field_mask",
 	"mac_settings_profile",
-	"mac_settings_profile.end_devices_ids",
 	"mac_settings_profile.ids",
 	"mac_settings_profile.ids.application_ids",
 	"mac_settings_profile.ids.application_ids.application_id",
@@ -879,7 +875,6 @@ var UpdateMACSettingsProfileRequestFieldPathsTopLevel = []string{
 }
 var UpdateMACSettingsProfileResponseFieldPathsNested = []string{
 	"mac_settings_profile",
-	"mac_settings_profile.end_devices_ids",
 	"mac_settings_profile.ids",
 	"mac_settings_profile.ids.application_ids",
 	"mac_settings_profile.ids.application_ids.application_id",
