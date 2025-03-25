@@ -411,8 +411,8 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 	}
 
 	var (
-		profile                  *ttnpb.MACSettingsProfile
-		removeMacSettingsProfile bool
+		profile                   *ttnpb.MACSettingsProfile
+		macSettingsProfileChanged bool
 	)
 
 	if st.HasSetField(
@@ -442,9 +442,8 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 			// If mac_settings_profile_ids is set, mac_settings must not be set.
 			st.Device.MacSettings = nil
 			st.AddSetFields(macSettingsFields...)
-		} else {
-			removeMacSettingsProfile = true
 		}
+		macSettingsProfileChanged = true
 	}
 
 	if err := validateADR(st); err != nil {
@@ -1446,19 +1445,43 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				)
 			}
 		}
-		if removeMacSettingsProfile {
-			if stored.MacSettingsProfileIds != nil {
-				profile, err = ns.macSettingsProfiles.Get(
-					ctx,
-					stored.MacSettingsProfileIds,
-					[]string{"ids", "mac_settings"},
-				)
-				if err != nil {
-					return err
-				}
+		if macSettingsProfileChanged && !(stored.MacSettingsProfileIds == nil && st.Device.MacSettingsProfileIds == nil) {
+			id := st.Device.MacSettingsProfileIds
+			if id == nil {
+				id = stored.MacSettingsProfileIds
+			}
+
+			profile, err = ns.macSettingsProfiles.Get(
+				ctx,
+				id,
+				[]string{"ids", "mac_settings", "end_devices_count"},
+			)
+			if err != nil {
+				return err
+			}
+
+			// Mac Settings profile is added
+			if stored.MacSettingsProfileIds == nil && st.Device.MacSettingsProfileIds != nil {
+				profile.EndDevicesCount++
+			}
+
+			// Mac Settings profile is deleted
+			if stored.MacSettingsProfileIds != nil && st.Device.MacSettingsProfileIds == nil {
+				profile.EndDevicesCount--
 
 				st.Device.MacSettings = profile.MacSettings
 				st.AddSetFields(macSettingsFields...)
+			}
+
+			_, err := ns.macSettingsProfiles.Set(
+				ctx,
+				id,
+				[]string{"end_devices_count"},
+				func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
+					return profile, []string{"end_devices_count"}, nil
+				})
+			if err != nil {
+				return err
 			}
 		}
 
