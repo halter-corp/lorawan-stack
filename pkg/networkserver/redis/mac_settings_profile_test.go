@@ -88,7 +88,8 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 				ResetsFCnt:               &ttnpb.BoolValue{Value: false},
 				FactoryPresetFrequencies: frequencies,
 			},
-		}, []string{"ids", "mac_settings"}, nil
+			EndDevicesCount: 42,
+		}, []string{"ids", "mac_settings", "end_devices_count"}, nil
 	}
 
 	updateFieldMaskProfileFunc := func(_ context.Context, pb *ttnpb.MACSettingsProfile,
@@ -117,7 +118,8 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 			MacSettings: &ttnpb.MACSettings{
 				ResetsFCnt: &ttnpb.BoolValue{Value: true},
 			},
-		}, []string{"ids", "mac_settings"}, nil
+			EndDevicesCount: 42,
+		}, []string{"ids", "mac_settings", "end_devices_count"}, nil
 	}
 
 	t.Run("GetNonExisting", func(t *testing.T) {
@@ -147,7 +149,7 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		a.So(retrieved.MacSettings.ResetsFCnt, should.NotBeNil)
 		a.So(retrieved.MacSettings.ResetsFCnt.Value, should.BeTrue)
 
-		updated, err := registry.Set(ctx, ids1, []string{"ids", "mac_settings"}, updateProfileFunc)
+		updated, err := registry.Set(ctx, ids1, []string{"ids", "mac_settings", "end_devices_count"}, updateProfileFunc)
 		a.So(err, should.BeNil)
 		a.So(updated, should.NotBeNil)
 		a.So(updated.Ids, should.Resemble, ids1)
@@ -155,6 +157,7 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		a.So(updated.MacSettings.ResetsFCnt, should.NotBeNil)
 		a.So(updated.MacSettings.ResetsFCnt.Value, should.BeFalse)
 		a.So(updated.MacSettings.FactoryPresetFrequencies, should.Resemble, frequencies)
+		a.So(updated.EndDevicesCount, should.Equal, 42)
 
 		updated2, err := registry.Set(ctx, ids1, []string{"ids", "mac_settings"}, updateFieldMaskProfileFunc)
 		a.So(err, should.BeNil)
@@ -173,15 +176,16 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 	t.Run("List", func(t *testing.T) {
 		t.Parallel()
 		a, ctx := test.New(t)
-		profile, err := registry.Set(ctx, ids2, []string{"ids", "mac_settings"}, listProfileFunc)
+		profile, err := registry.Set(ctx, ids2, []string{"ids", "mac_settings", "end_devices_count"}, listProfileFunc)
 		a.So(err, should.BeNil)
 		a.So(profile, should.NotBeNil)
 		a.So(profile.Ids, should.Resemble, ids2)
 		a.So(profile.MacSettings, should.NotBeNil)
 		a.So(profile.MacSettings.ResetsFCnt, should.NotBeNil)
 		a.So(profile.MacSettings.ResetsFCnt.Value, should.BeTrue)
+		a.So(profile.EndDevicesCount, should.Equal, 42)
 
-		profiles, err := registry.List(ctx, ids2.ApplicationIds, []string{"ids", "mac_settings"})
+		profiles, err := registry.List(ctx, ids2.ApplicationIds, []string{"ids", "mac_settings", "end_devices_count"})
 		a.So(err, should.BeNil)
 		a.So(profiles, should.HaveLength, 1)
 		a.So(profiles[0], should.NotBeNil)
@@ -189,6 +193,7 @@ func TestMACSettingsProfileRegistry(t *testing.T) {
 		a.So(profiles[0].MacSettings, should.NotBeNil)
 		a.So(profiles[0].MacSettings.ResetsFCnt, should.NotBeNil)
 		a.So(profiles[0].MacSettings.ResetsFCnt.Value, should.BeTrue)
+		a.So(profiles[0].EndDevicesCount, should.Equal, 42)
 	})
 
 	t.Run("Pagination", func(t *testing.T) {

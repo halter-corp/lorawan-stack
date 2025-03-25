@@ -8333,6 +8333,15 @@
       "file": "grpc_mac_settings_profile.go"
     }
   },
+  "error:pkg/networkserver:mac_settings_profile_used": {
+    "translations": {
+      "en": "MAC settings profile is used"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
   "error:pkg/networkserver:no_downlink": {
     "translations": {
       "en": "no downlink to send"
