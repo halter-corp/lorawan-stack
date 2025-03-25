@@ -55,10 +55,6 @@ func TestMACSettingsProfileRegistryGet(t *testing.T) {
 		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
 		ProfileId:      "test-profile-id",
 	}
-	endDevicesIDs := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-		DeviceId:       "dev-01",
-	}
 
 	for _, tc := range []struct {
 		Name             string
@@ -181,19 +177,17 @@ func TestMACSettingsProfileRegistryGet(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"ids",
 					"mac_settings",
-					"end_devices_ids",
 				})
 				return ttnpb.Clone(&ttnpb.MACSettingsProfile{
 					Ids: ids,
 					MacSettings: &ttnpb.MACSettings{
 						ResetsFCnt: &ttnpb.BoolValue{Value: true},
 					},
-					EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 				}), nil
 			},
 			ProfileRequest: &ttnpb.GetMACSettingsProfileRequest{
 				MacSettingsProfileIds: registeredProfileIDs,
-				FieldMask:             ttnpb.FieldMask("ids", "mac_settings", "end_devices_ids"),
+				FieldMask:             ttnpb.FieldMask("ids", "mac_settings"),
 			},
 			ProfileAssertion: func(t *testing.T, profile *ttnpb.GetMACSettingsProfileResponse) bool {
 				t.Helper()
@@ -207,7 +201,6 @@ func TestMACSettingsProfileRegistryGet(t *testing.T) {
 					MacSettings: &ttnpb.MACSettings{
 						ResetsFCnt: &ttnpb.BoolValue{Value: true},
 					},
-					EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 				})
 			},
 			ErrorAssertion: nilErrorAssertion,
@@ -282,11 +275,6 @@ func TestMACSettingsProfileRegistryCreate(t *testing.T) {
 		return assertions.New(t).So(errors.IsAlreadyExists(err), should.BeTrue)
 	}
 
-	endDevicesIDs := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-		DeviceId:       "dev-01",
-	}
-
 	registeredProfile := &ttnpb.MACSettingsProfile{
 		Ids: &ttnpb.MACSettingsProfileIdentifiers{
 			ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
@@ -295,7 +283,6 @@ func TestMACSettingsProfileRegistryCreate(t *testing.T) {
 		MacSettings: &ttnpb.MACSettings{
 			ResetsFCnt: &ttnpb.BoolValue{Value: true},
 		},
-		EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 	}
 
 	for _, tc := range []struct {
@@ -520,10 +507,6 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
 		ProfileId:      "test-profile-id",
 	}
-	endDevicesIDs := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-		DeviceId:       "dev-01",
-	}
 
 	registeredProfile := &ttnpb.MACSettingsProfile{
 		Ids: &ttnpb.MACSettingsProfileIdentifiers{
@@ -533,7 +516,6 @@ func TestMACSettingsProfileRegistryUpdate(t *testing.T) {
 		MacSettings: &ttnpb.MACSettings{
 			ResetsFCnt: &ttnpb.BoolValue{Value: true},
 		},
-		EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 	}
 
 	for _, tc := range []struct {
@@ -791,18 +773,10 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 		t.Helper()
 		return assertions.New(t).So(profile, should.Resemble, &ttnpb.DeleteMACSettingsProfileResponse{})
 	}
-	profileUsedErrorAssertion := func(t *testing.T, err error) bool {
-		t.Helper()
-		return assertions.New(t).So(errors.IsFailedPrecondition(err), should.BeTrue)
-	}
 
 	registeredProfileIDs := &ttnpb.MACSettingsProfileIdentifiers{
 		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
 		ProfileId:      "test-profile-id",
-	}
-	endDevicesIDs := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-		DeviceId:       "dev-01",
 	}
 
 	registeredProfile := &ttnpb.MACSettingsProfile{
@@ -813,16 +787,6 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 		MacSettings: &ttnpb.MACSettings{
 			ResetsFCnt: &ttnpb.BoolValue{Value: true},
 		},
-	}
-	registeredProfile2 := &ttnpb.MACSettingsProfile{
-		Ids: &ttnpb.MACSettingsProfileIdentifiers{
-			ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-			ProfileId:      "test-profile-id",
-		},
-		MacSettings: &ttnpb.MACSettings{
-			ResetsFCnt: &ttnpb.BoolValue{Value: true},
-		},
-		EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 	}
 
 	for _, tc := range []struct {
@@ -916,7 +880,6 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"ids",
 					"mac_settings",
-					"end_devices_ids",
 				})
 				profile, sets, err := f(ctx, ttnpb.Clone(registeredProfile))
 				a.So(sets, should.BeNil)
@@ -954,7 +917,6 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"ids",
 					"mac_settings",
-					"end_devices_ids",
 				})
 				profile, sets, err := f(ctx, nil)
 				a.So(sets, should.HaveSameElementsDeep, []string{})
@@ -966,44 +928,6 @@ func TestMACSettingsProfileRegistryDelete(t *testing.T) {
 			},
 			ProfileAssertion: nilProfileAssertion,
 			ErrorAssertion:   notFoundErrorAssertion,
-			SetCalls:         1,
-		},
-		{
-			Name: "Delete MAC settings profile with end devices",
-			ContextFunc: func(ctx context.Context) context.Context {
-				return rights.NewContext(ctx, &rights.Rights{
-					ApplicationRights: *rights.NewMap(map[string]*ttnpb.Rights{
-						unique.ID(test.Context(), &ttnpb.ApplicationIdentifiers{
-							ApplicationId: "test-app-id",
-						}): ttnpb.RightsFrom(
-							ttnpb.Right_RIGHT_APPLICATION_DEVICES_WRITE,
-						),
-					}),
-				})
-			},
-			SetFunc: func(
-				ctx context.Context,
-				ids *ttnpb.MACSettingsProfileIdentifiers,
-				paths []string,
-				f func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error),
-			) (*ttnpb.MACSettingsProfile, error) {
-				a := assertions.New(test.MustTFromContext(ctx))
-				a.So(ids, should.Resemble, ids)
-				a.So(paths, should.HaveSameElementsDeep, []string{
-					"ids",
-					"mac_settings",
-					"end_devices_ids",
-				})
-				profile, sets, err := f(ctx, ttnpb.Clone(registeredProfile2))
-				a.So(sets, should.BeNil)
-				a.So(profile, should.BeNil)
-				return profile, err
-			},
-			ProfileRequest: &ttnpb.DeleteMACSettingsProfileRequest{
-				MacSettingsProfileIds: registeredProfileIDs,
-			},
-			ProfileAssertion: nilProfileAssertion,
-			ErrorAssertion:   profileUsedErrorAssertion,
 			SetCalls:         1,
 		},
 	} {
@@ -1079,10 +1003,6 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 	registeredProfileIDs := &ttnpb.MACSettingsProfileIdentifiers{
 		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
 		ProfileId:      "test-profile-id",
-	}
-	endDevicesIDs := &ttnpb.EndDeviceIdentifiers{
-		ApplicationIds: &ttnpb.ApplicationIdentifiers{ApplicationId: "test-app-id"},
-		DeviceId:       "dev-01",
 	}
 
 	for _, tc := range []struct {
@@ -1243,14 +1163,12 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 				a.So(paths, should.HaveSameElementsDeep, []string{
 					"ids",
 					"mac_settings",
-					"end_devices_ids",
 				})
 				return []*ttnpb.MACSettingsProfile{ttnpb.Clone(&ttnpb.MACSettingsProfile{
 					Ids: registeredProfileIDs,
 					MacSettings: &ttnpb.MACSettings{
 						ResetsFCnt: &ttnpb.BoolValue{Value: true},
 					},
-					EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 				})}, nil
 			},
 			PaginationFunc: func(
@@ -1267,7 +1185,7 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 			},
 			ProfileRequest: &ttnpb.ListMACSettingsProfilesRequest{
 				ApplicationIds: registeredProfileIDs.ApplicationIds,
-				FieldMask:      ttnpb.FieldMask("ids", "mac_settings", "end_devices_ids"),
+				FieldMask:      ttnpb.FieldMask("ids", "mac_settings"),
 				Limit:          2,
 				Page:           1,
 			},
@@ -1286,7 +1204,6 @@ func TestMACSettingsProfileRegistryList(t *testing.T) {
 					MacSettings: &ttnpb.MACSettings{
 						ResetsFCnt: &ttnpb.BoolValue{Value: true},
 					},
-					EndDevicesIds: []*ttnpb.EndDeviceIdentifiers{endDevicesIDs},
 				}})
 			},
 			ErrorAssertion:  nilErrorAssertion,

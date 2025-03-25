@@ -81,7 +81,7 @@ func (m *NsMACSettingsProfileRegistry) Get(ctx context.Context, req *ttnpb.GetMA
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings", "end_devices_ids"}
+	paths := []string{"ids", "mac_settings"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
@@ -139,7 +139,7 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings", "end_devices_ids"}
+	paths := []string{"ids", "mac_settings"}
 	_, err := m.registry.Set(
 		ctx,
 		req.MacSettingsProfileIds,
@@ -147,9 +147,6 @@ func (m *NsMACSettingsProfileRegistry) Delete(ctx context.Context, req *ttnpb.De
 		func(_ context.Context, profile *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
 			if profile == nil {
 				return nil, nil, errMACSettingsProfileNotFound.New()
-			}
-			if len(profile.EndDevicesIds) > 0 {
-				return nil, nil, errMACSettingsProfileUsed.New()
 			}
 			return nil, nil, nil
 		})
@@ -169,7 +166,7 @@ func (m *NsMACSettingsProfileRegistry) List(ctx context.Context, req *ttnpb.List
 	); err != nil {
 		return nil, err
 	}
-	paths := []string{"ids", "mac_settings", "end_devices_ids"}
+	paths := []string{"ids", "mac_settings"}
 	if req.FieldMask != nil {
 		paths = req.FieldMask.GetPaths()
 	}
