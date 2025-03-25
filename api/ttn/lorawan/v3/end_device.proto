@@ -705,6 +705,8 @@ message MACSettingsProfile {
   ];
   // MAC settings.
   MACSettings mac_settings = 2 [(validate.rules).message.required = true];
+  // Associated end devices counter.
+  uint32 end_devices_count = 3;
 }
 
 // MACState represents the state of MAC layer of the device.

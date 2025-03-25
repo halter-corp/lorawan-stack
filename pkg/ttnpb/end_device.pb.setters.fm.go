@@ -2564,6 +2564,16 @@ func (dst *MACSettingsProfile) SetFields(src *MACSettingsProfile, paths ...strin
 					dst.MacSettings = nil
 				}
 			}
+		case "end_devices_count":
+			if len(subs) > 0 {
+				return fmt.Errorf("'end_devices_count' has no subfields, but %s were specified", subs)
+			}
+			if src != nil {
+				dst.EndDevicesCount = src.EndDevicesCount
+			} else {
+				var zero uint32
+				dst.EndDevicesCount = zero
+			}
 
 		default:
 			return fmt.Errorf("invalid field: '%s'", name)

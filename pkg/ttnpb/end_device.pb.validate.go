@@ -2608,6 +2608,8 @@ func (m *MACSettingsProfile) ValidateFields(paths ...string) error {
 				}
 			}
 
+		case "end_devices_count":
+			// no validation rules for EndDevicesCount
 		default:
 			return MACSettingsProfileValidationError{
 				field:  name,

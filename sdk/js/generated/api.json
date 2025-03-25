@@ -18731,6 +18731,18 @@
                   }
                 ]
               }
+            },
+            {
+              "name": "end_devices_count",
+              "description": "Associated end devices counter.",
+              "label": "",
+              "type": "uint32",
+              "longType": "uint32",
+              "fullType": "uint32",
+              "ismap": false,
+              "isoneof": false,
+              "oneofdecl": "",
+              "defaultValue": ""
             }
           ]
         },

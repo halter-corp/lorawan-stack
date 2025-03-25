@@ -919,6 +919,7 @@ var MACSettingsFieldPathsTopLevel = []string{
 	"use_adr",
 }
 var MACSettingsProfileFieldPathsNested = []string{
+	"end_devices_count",
 	"ids",
 	"ids.application_ids",
 	"ids.application_ids.application_id",
@@ -1128,6 +1129,7 @@ var MACSettingsProfileFieldPathsNested = []string{
 }
 
 var MACSettingsProfileFieldPathsTopLevel = []string{
+	"end_devices_count",
 	"ids",
 	"mac_settings",
 }
