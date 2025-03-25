@@ -17,7 +17,6 @@ package networkserver
 import (
 	"bytes"
 	"context"
-	"slices"
 	"strings"
 
 	"go.thethings.network/lorawan-stack/v3/pkg/auth/rights"
@@ -430,7 +429,7 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 			profile, err = ns.macSettingsProfiles.Get(
 				ctx,
 				st.Device.MacSettingsProfileIds,
-				[]string{"ids", "mac_settings", "end_devices_ids"},
+				[]string{"ids", "mac_settings"},
 			)
 			if err != nil {
 				return nil, err
@@ -438,23 +437,6 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 
 			if err = validateProfile(profile.GetMacSettings(), st, fps); err != nil {
 				return nil, err
-			}
-
-			if !slices.ContainsFunc(profile.EndDevicesIds, func(id *ttnpb.EndDeviceIdentifiers) bool {
-				return id.ApplicationIds.ApplicationId == st.Device.Ids.ApplicationIds.ApplicationId &&
-					id.DeviceId == st.Device.Ids.DeviceId
-			}) {
-				profile.EndDevicesIds = append(profile.EndDevicesIds, st.Device.Ids)
-				_, err := ns.macSettingsProfiles.Set(
-					ctx,
-					st.Device.MacSettingsProfileIds,
-					[]string{"end_devices_ids"},
-					func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
-						return profile, []string{"end_devices_ids"}, nil
-					})
-				if err != nil {
-					return nil, err
-				}
 			}
 
 			// If mac_settings_profile_ids is set, mac_settings must not be set.
@@ -1469,31 +1451,10 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				profile, err = ns.macSettingsProfiles.Get(
 					ctx,
 					stored.MacSettingsProfileIds,
-					[]string{"ids", "mac_settings", "end_devices_ids"},
+					[]string{"ids", "mac_settings"},
 				)
 				if err != nil {
 					return err
-				}
-				idx := slices.IndexFunc(profile.EndDevicesIds, func(id *ttnpb.EndDeviceIdentifiers) bool {
-					return id.ApplicationIds.ApplicationId == st.Device.Ids.ApplicationIds.ApplicationId &&
-						id.DeviceId == st.Device.Ids.DeviceId
-				})
-				if idx >= 0 {
-					if idx == len(profile.EndDevicesIds)-1 {
-						profile.EndDevicesIds = profile.EndDevicesIds[:idx]
-					} else {
-						profile.EndDevicesIds = append(profile.EndDevicesIds[:idx], profile.EndDevicesIds[idx+1:]...)
-					}
-					_, err := ns.macSettingsProfiles.Set(
-						ctx,
-						stored.MacSettingsProfileIds,
-						[]string{"end_devices_ids"},
-						func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
-							return profile, []string{"end_devices_ids"}, nil
-						})
-					if err != nil {
-						return err
-					}
 				}
 
 				st.Device.MacSettings = profile.MacSettings
