@@ -16,10 +16,10 @@ import React, { useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { createSelector } from 'reselect'
 
+import VerticalScrollFader from '@ttn-lw/components/vertical-scroll-fader'
 import Status from '@ttn-lw/components/status'
 import Button from '@ttn-lw/components/button'
 import { IconPlus } from '@ttn-lw/components/icon'
-import ScrollFader from '@ttn-lw/components/scroll-fader'
 
 import FetchTable from '@ttn-lw/containers/fetch-table'
 
@@ -123,7 +123,7 @@ const RecentEndDevices = () => {
       </div>
     </div>
   ) : (
-    <ScrollFader
+    <VerticalScrollFader
       className={style.scrollGradient}
       faderHeight="4rem"
       topFaderOffset="3rem"
@@ -143,7 +143,7 @@ const RecentEndDevices = () => {
         headerClassName={style.devicesPanelOuterTableHeader}
         panelStyle
       />
-    </ScrollFader>
+    </VerticalScrollFader>
   )
 }
 

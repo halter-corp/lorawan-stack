@@ -86,6 +86,8 @@ const FetchTable = props => {
     headerClassName,
     panelStyle,
     filtersClassName,
+    smallCells,
+    tableClassName,
   } = props
 
   const globalPageSize = useSelector(selectPageSize)
@@ -334,6 +336,8 @@ const FetchTable = props => {
           className={className}
           headerClassName={headerClassName}
           panelStyle={panelStyle}
+          small={smallCells}
+          tableClassName={tableClassName}
         />
       </Overlay>
     </div>
@@ -374,6 +378,8 @@ FetchTable.propTypes = {
   searchPlaceholderMessage: PropTypes.message,
   searchQueryMaxLength: PropTypes.number,
   searchable: PropTypes.bool,
+  smallCells: PropTypes.bool,
+  tableClassName: PropTypes.string,
   tableTitle: PropTypes.message,
   tabs: PropTypes.arrayOf(
     PropTypes.shape({
@@ -408,6 +414,8 @@ FetchTable.defaultProps = {
   headerClassName: undefined,
   panelStyle: false,
   filtersClassName: undefined,
+  smallCells: false,
+  tableClassName: undefined,
 }
 
 export default FetchTable

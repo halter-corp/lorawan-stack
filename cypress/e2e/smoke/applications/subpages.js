@@ -61,7 +61,7 @@ const applicationSubpages = defineSmokeTest('check all application sub-pages', (
   cy.findByLabelText('Formatter type').should('be.visible')
   cy.findByRole('button', { name: 'Save changes' })
 
-  cy.findByRole('button', { name: /Integrations/ }).click()
+  cy.findByRole('button', { name: /Other integrations/ }).click()
 
   cy.findByRole('link', { name: /MQTT/ }).click()
   cy.findByText('Connection information').should('be.visible')

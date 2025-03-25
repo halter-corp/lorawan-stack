@@ -17,6 +17,7 @@ import classnames from 'classnames'
 
 import Overlay from '@ttn-lw/components/overlay'
 import Pagination from '@ttn-lw/components/pagination'
+import HorizontalScrollFader from '@ttn-lw/components/horizontal-scroll-fader'
 
 import PropTypes from '@ttn-lw/lib/prop-types'
 import getByPath from '@ttn-lw/lib/get-by-path'
@@ -49,6 +50,7 @@ const Tabular = ({
   disableSorting,
   onSortRequest,
   panelStyle,
+  tableClassName,
 }) => {
   const handlePageChange = useCallback(
     page => {
@@ -169,21 +171,23 @@ const Tabular = ({
   ) : null
 
   return (
-    <div className={classnames(style.container, className)}>
-      <Overlay visible={loading} loading={loading} className={style.overlay}>
-        <Table minWidth={minWidth}>
-          <Table.Head className={headerClassName} panelStyle={panelStyle}>
-            {columns}
-          </Table.Head>
-          <Table.Body loading={loading} empty={rows.length === 0} emptyMessage={emptyMessage}>
-            {rows}
-          </Table.Body>
-        </Table>
-        <Table.Footer loading={loading} empty={rows.length === 0}>
-          {pagination}
-        </Table.Footer>
-      </Overlay>
-    </div>
+    <HorizontalScrollFader light faderWidth="5rem">
+      <div className={classnames(style.container, className)}>
+        <Overlay visible={loading} loading={loading} className={style.overlay}>
+          <Table minWidth={minWidth} className={tableClassName}>
+            <Table.Head className={headerClassName} panelStyle={panelStyle}>
+              {columns}
+            </Table.Head>
+            <Table.Body loading={loading} empty={rows.length === 0} emptyMessage={emptyMessage}>
+              {rows}
+            </Table.Body>
+          </Table>
+          <Table.Footer loading={loading} empty={rows.length === 0}>
+            {pagination}
+          </Table.Footer>
+        </Overlay>
+      </div>
+    </HorizontalScrollFader>
   )
 }
 
@@ -256,9 +260,10 @@ Tabular.propTypes = {
   rowHrefSelector: PropTypes.func,
   /** A selector to determine the `key` prop of the rendered rows. */
   rowKeySelector: PropTypes.func,
-  /** A flag specifying the height of data cells. */
   setPageSize: PropTypes.func,
+  /** A flag specifying the height of data cells. */
   small: PropTypes.bool,
+  tableClassName: PropTypes.string,
   /** The total number of available entries. */
   totalCount: PropTypes.number,
 }
@@ -285,6 +290,7 @@ Tabular.defaultProps = {
   disableSorting: false,
   headerClassName: undefined,
   panelStyle: false,
+  tableClassName: undefined,
 }
 
 export { Tabular as default, Table }

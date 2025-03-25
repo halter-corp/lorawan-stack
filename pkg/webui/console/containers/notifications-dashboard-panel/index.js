@@ -17,10 +17,10 @@ import { useSelector } from 'react-redux'
 import { createSelector } from 'reselect'
 import { defineMessages } from 'react-intl'
 
+import VerticalScrollFader from '@ttn-lw/components/vertical-scroll-fader'
 import Icon, { IconInbox } from '@ttn-lw/components/icon'
 import Panel from '@ttn-lw/components/panel'
 import Status from '@ttn-lw/components/status'
-import ScrollFader from '@ttn-lw/components/scroll-fader'
 
 import FetchTable from '@ttn-lw/containers/fetch-table'
 
@@ -129,7 +129,12 @@ const NotificationsDashboardPanel = () => {
           />
         </div>
       ) : (
-        <ScrollFader className={style.scrollFader} faderHeight="4rem" topFaderOffset="3rem" light>
+        <VerticalScrollFader
+          className={style.scrollFader}
+          faderHeight="4rem"
+          topFaderOffset="3rem"
+          light
+        >
           <FetchTable
             entity="notifications"
             headers={headers}
@@ -140,7 +145,7 @@ const NotificationsDashboardPanel = () => {
             paginated={false}
             panelStyle
           />
-        </ScrollFader>
+        </VerticalScrollFader>
       )}
     </Panel>
   )

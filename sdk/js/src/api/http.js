@@ -100,7 +100,7 @@ class Http {
     try {
       if (isStream) {
         const url = this._stackConfig.getComponentUrlByName(parsedComponent) + endpoint
-        return subscribeToHttpStream(payload, url)
+        return subscribeToHttpStream(payload, url, method)
       }
 
       const config = {
