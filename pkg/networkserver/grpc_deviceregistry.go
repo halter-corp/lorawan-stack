@@ -1445,10 +1445,12 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				)
 			}
 		}
-		if macSettingsProfileChanged && !(stored.MacSettingsProfileIds == nil && st.Device.MacSettingsProfileIds == nil) {
+		if macSettingsProfileChanged &&
+			!(stored.GetMacSettingsProfileIds() == nil &&
+				st.Device.MacSettingsProfileIds == nil) {
 			id := st.Device.MacSettingsProfileIds
 			if id == nil {
-				id = stored.MacSettingsProfileIds
+				id = stored.GetMacSettingsProfileIds()
 			}
 
 			profile, err = ns.macSettingsProfiles.Get(
@@ -1460,14 +1462,15 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 				return err
 			}
 
+			var changed string
 			// Mac Settings profile is added
-			if stored.MacSettingsProfileIds == nil && st.Device.MacSettingsProfileIds != nil {
-				profile.EndDevicesCount++
+			if stored.GetMacSettingsProfileIds() == nil && st.Device.MacSettingsProfileIds != nil {
+				changed = "inc"
 			}
 
 			// Mac Settings profile is deleted
-			if stored.MacSettingsProfileIds != nil && st.Device.MacSettingsProfileIds == nil {
-				profile.EndDevicesCount--
+			if stored.GetMacSettingsProfileIds() != nil && st.Device.MacSettingsProfileIds == nil {
+				changed = "dec"
 
 				st.Device.MacSettings = profile.MacSettings
 				st.AddSetFields(macSettingsFields...)
@@ -1476,9 +1479,17 @@ func (ns *NetworkServer) Set(ctx context.Context, req *ttnpb.SetEndDeviceRequest
 			_, err := ns.macSettingsProfiles.Set(
 				ctx,
 				id,
-				[]string{"end_devices_count"},
-				func(context.Context, *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
-					return profile, []string{"end_devices_count"}, nil
+				[]string{"ids", "mac_settings", "end_devices_count"},
+				func(_ context.Context, existing *ttnpb.MACSettingsProfile) (*ttnpb.MACSettingsProfile, []string, error) {
+					switch changed {
+					case "inc":
+						existing.EndDevicesCount++
+					case "dec":
+						if existing.EndDevicesCount > 0 {
+							existing.EndDevicesCount--
+						}
+					}
+					return existing, []string{"ids", "mac_settings", "end_devices_count"}, nil
 				})
 			if err != nil {
 				return err
