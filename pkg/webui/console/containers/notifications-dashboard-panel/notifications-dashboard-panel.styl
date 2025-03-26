@@ -30,11 +30,15 @@
     color: var(--c-text-neutral-light)
 
   &-total
-    color: var(--c-text-neutral-min)
+    color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
     background-color: var(--c-bg-brand-normal)
-    padding: $cs.xxs $cs.xs
-    line-height: 1
-    border-radius: $br.xxs
+    width: 1.5rem
+    height: 1.5rem
+    border-radius: 50%
+    display: flex
+    justify-content: center
+    align-items: center
+    padding-bottom: 1px
 
 .status
   position: absolute

@@ -18,14 +18,14 @@ import classnames from 'classnames'
 import PropTypes from '@ttn-lw/lib/prop-types'
 import combineRefs from '@ttn-lw/lib/combine-refs'
 
-import style from './scroll-fader.styl'
+import style from './vertical-scroll-fader.styl'
 
-// ScrollFader is a component that fades out the content of a container when it
+// VerticalScrollFader is a component that fades out the content of a container when it
 // is scrolled. It is used for scrollable elements that need some visual
 // indication that they are scrollable, but do not have a scrollbar.
 // The indication only shows when the content is scrolled.
 
-const ScrollFader = React.forwardRef(
+const VerticalScrollFader = React.forwardRef(
   ({ children, className, fadeHeight, light, faderHeight, topFaderOffset }, ref) => {
     const internalRef = useRef()
     const combinedRef = combineRefs([ref, internalRef])
@@ -107,7 +107,7 @@ const ScrollFader = React.forwardRef(
   },
 )
 
-ScrollFader.propTypes = {
+VerticalScrollFader.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   fadeHeight: PropTypes.number,
@@ -116,7 +116,7 @@ ScrollFader.propTypes = {
   topFaderOffset: PropTypes.string,
 }
 
-ScrollFader.defaultProps = {
+VerticalScrollFader.defaultProps = {
   className: undefined,
   fadeHeight: 40,
   faderHeight: '1rem',
@@ -124,4 +124,4 @@ ScrollFader.defaultProps = {
   topFaderOffset: '0',
 }
 
-export default ScrollFader
+export default VerticalScrollFader

@@ -27,7 +27,7 @@ const Cell = ({ className, align, small, width, children, panelStyle, ...rest })
     [style.cellCentered]: align === 'center',
     [style.cellLeft]: align === 'left',
     [style.cellRight]: align === 'right',
-    [style.cellSmall]: small,
+    [style.cellDataSmall]: small,
   })
 
   const widthStyle =

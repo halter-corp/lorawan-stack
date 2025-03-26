@@ -3837,6 +3837,12 @@ func (x *EndDevice) MarshalProtoJSON(s *jsonplugin.MarshalState) {
 		// NOTE: LoRaAllianceProfileIdentifiers does not seem to implement MarshalProtoJSON.
 		golang.MarshalMessage(s, x.LoraAllianceProfileIds)
 	}
+	if x.MacSettingsProfileIds != nil || s.HasField("mac_settings_profile_ids") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("mac_settings_profile_ids")
+		// NOTE: MACSettingsProfileIdentifiers does not seem to implement MarshalProtoJSON.
+		golang.MarshalMessage(s, x.MacSettingsProfileIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -4172,6 +4178,16 @@ func (x *EndDevice) UnmarshalProtoJSON(s *jsonplugin.UnmarshalState) {
 			var v LoRaAllianceProfileIdentifiers
 			golang.UnmarshalMessage(s, &v)
 			x.LoraAllianceProfileIds = &v
+		case "mac_settings_profile_ids", "macSettingsProfileIds":
+			s.AddField("mac_settings_profile_ids")
+			if s.ReadNil() {
+				x.MacSettingsProfileIds = nil
+				return
+			}
+			// NOTE: MACSettingsProfileIdentifiers does not seem to implement UnmarshalProtoJSON.
+			var v MACSettingsProfileIdentifiers
+			golang.UnmarshalMessage(s, &v)
+			x.MacSettingsProfileIds = &v
 		}
 	})
 }

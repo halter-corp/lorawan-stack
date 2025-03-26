@@ -8267,7 +8267,7 @@
     },
     "description": {
       "package": "pkg/networkserver",
-      "file": "grpc_deviceregistry.go"
+      "file": "device_state.go"
     }
   },
   "error:pkg/networkserver:field_not_zero": {
@@ -8276,7 +8276,7 @@
     },
     "description": {
       "package": "pkg/networkserver",
-      "file": "grpc_deviceregistry.go"
+      "file": "device_state.go"
     }
   },
   "error:pkg/networkserver:field_value": {

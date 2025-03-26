@@ -232,6 +232,7 @@ const CollaboratorForm = props => {
             type="button"
             icon={IconTrash}
             disabled={deleteDisabled}
+            secondary
             danger
             naked
             message={

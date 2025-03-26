@@ -18,6 +18,7 @@ import { defineMessages, useIntl } from 'react-intl'
 
 import { APPLICATION, END_DEVICE, GATEWAY, ORGANIZATION } from '@console/constants/entities'
 
+import VerticalScrollFader from '@ttn-lw/components/vertical-scroll-fader'
 import Icon, {
   IconSearch,
   IconArrowUp,
@@ -26,7 +27,6 @@ import Icon, {
   IconX,
   entityIcons,
 } from '@ttn-lw/components/icon'
-import ScrollFader from '@ttn-lw/components/scroll-fader'
 
 import Message from '@ttn-lw/lib/components/message'
 
@@ -207,7 +207,7 @@ const SearchPanel = ({
         <Icon className={style.xOut} icon={IconX} onClick={onClose} />
       </div>
       <Overlay visible={searchResultsFetching} loading spinnerMessage={sharedMessages.searching}>
-        <ScrollFader className={style.list} ref={listRef}>
+        <VerticalScrollFader className={style.list} ref={listRef}>
           {topEntitiesFetching && (
             <div className={style.loading}>
               <Spinner after={0}>
@@ -295,7 +295,7 @@ const SearchPanel = ({
             }
             return acc
           }, [])}
-        </ScrollFader>
+        </VerticalScrollFader>
       </Overlay>
       <div className={style.footer}>
         <div className="d-flex al-center gap-cs-xs">

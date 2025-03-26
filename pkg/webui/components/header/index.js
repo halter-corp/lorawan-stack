@@ -49,6 +49,7 @@ const Header = ({
   ...rest
 }) => {
   const LinkComponent = safe ? 'a' : Link
+  const darkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
   return (
     <header
       {...rest}
@@ -60,7 +61,7 @@ const Header = ({
       {alwaysShowLogo ? (
         <div className="d-flex al-center gap-cs-xs">
           <LinkComponent to="/" href="/">
-            <Logo className={style.logo} />
+            <Logo className={style.logo} dark={darkTheme} />
           </LinkComponent>
         </div>
       ) : (
@@ -86,7 +87,7 @@ const Header = ({
           <div className="d-none lg-xl:d-flex al-center gap-cs-xs">
             <Button secondary icon={IconLayoutSidebarLeftExpand} onClick={onMenuClick} />
             <LinkComponent to="/" href="/">
-              <Logo className={style.logo} />
+              <Logo className={style.logo} dark={darkTheme} />
             </LinkComponent>
           </div>
         </>

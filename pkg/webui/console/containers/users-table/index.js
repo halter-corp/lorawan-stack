@@ -218,6 +218,7 @@ const UsersTable = props => {
               onClick={details.delete}
               message={m.revokeInvitation}
               icon={IconTrash}
+              primary
               danger
               naked
             />

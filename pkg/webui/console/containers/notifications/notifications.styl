@@ -59,16 +59,20 @@
         display: block
 
   .total-notifications
-    border-radius: $br.l
+    border-radius: 50%
+    width: 1.5rem
+    height: 1.5rem
     background-color: var(--c-bg-brand-normal)
-    color: var(--c-text-neutral-min)
-    padding: 0 .45rem
+    color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
+    padding-bottom: 1px
     margin-left: $cs.xxs
     font-size: $fs.s
     position: relative
-    height: 90%
     line-height: 1.7
     top: 2px
+    display: flex
+    justify-content: center
+    align-items: center
 
   &-action
     display: flex
@@ -130,15 +134,15 @@
       background-color: unset
 
     .notification-preview-title
-      color: var(--c-text-neutral-min)
+      color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
       +media-query($bp['md-lg'])
         color: var(--c-text-neutral-heavy)
 
       .notification-time
-        color: var(--c-text-neutral-min)
+        color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
 
     .notification-preview-content
-      color: var(--c-text-neutral-min)
+      color: light-dark(var(--c-text-neutral-min), var(--c-text-neutral-heavy))
       +media-query($bp['md-lg'])
         color: var(--c-text-neutral-light)
 

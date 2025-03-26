@@ -61,6 +61,7 @@ import {
   selectUserRights,
   selectUserIsAdmin,
 } from '@console/store/selectors/user'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import style from './app.styl'
 
@@ -82,6 +83,11 @@ const Layout = () => {
   const { search } = useLocation()
   const page = new URLSearchParams(search).get('page')
   const user = useSelector(selectUser)
+  const consolePreferences = useSelector(selectConsolePreferences)
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const fetching = useSelector(selectUserFetching)
   const error = useSelector(selectUserError)
   const rights = useSelector(selectUserRights)
@@ -90,13 +96,26 @@ const Layout = () => {
   const siteName = selectApplicationSiteName()
   const main = useRef()
 
-  const { height: splitFrameHeight } = useContext(EventSplitFrameContext)
+  const { height: splitFrameHeight, isMounted } = useContext(EventSplitFrameContext)
+
+  const toggleTheme = theme => {
+    const htmlElement = document.documentElement
+
+    if (theme === 'dark') {
+      htmlElement.classList.add('dark')
+      htmlElement.classList.remove('light')
+    } else {
+      htmlElement.classList.add('light')
+      htmlElement.classList.remove('dark')
+    }
+  }
 
   useEffect(() => {
+    toggleTheme(darkTheme ? 'dark' : 'light')
     if (main.current) {
       main.current.scrollTop = 0
     }
-  }, [page])
+  }, [page, darkTheme])
 
   return (
     <SidebarContextProvider>
@@ -129,7 +148,10 @@ const Layout = () => {
                     <div
                       className={style.stage}
                       id="stage"
-                      style={{ paddingBottom: splitFrameHeight }}
+                      style={{
+                        paddingBottom:
+                          splitFrameHeight === 0 && isMounted ? '3rem' : splitFrameHeight,
+                      }}
                     >
                       <Outlet />
                     </div>

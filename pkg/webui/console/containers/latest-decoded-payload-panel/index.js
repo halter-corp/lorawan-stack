@@ -53,6 +53,7 @@ import {
   selectDeviceModelFetching,
 } from '@console/store/selectors/device-repository'
 import { selectDeviceByIds, selectDeviceFetching } from '@console/store/selectors/devices'
+import { selectConsolePreferences } from '@console/store/selectors/user-preferences'
 
 import style from './latest-decoded-payload-panel.styl'
 
@@ -95,6 +96,11 @@ const LatestDecodedPayloadPanel = ({ appId, events, shortCutLinkPath, className,
   const [copied, setCopied] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [latestEvent, setLatestEvent] = useState(null)
+  const consolePreferences = useSelector(selectConsolePreferences)
+  const darkTheme =
+    consolePreferences.console_theme === 'CONSOLE_THEME_DARK' ||
+    (consolePreferences.console_theme === 'CONSOLE_THEME_SYSTEM' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   const dispatch = useDispatch()
 
   const _timer = useRef(null)
@@ -301,6 +307,7 @@ const LatestDecodedPayloadPanel = ({ appId, events, shortCutLinkPath, className,
               name="latest_decoded_payload"
               maxLines={Infinity}
               minLines={minLines}
+              darkTheme={darkTheme}
               readOnly
             />
           </div>
@@ -318,6 +325,7 @@ const LatestDecodedPayloadPanel = ({ appId, events, shortCutLinkPath, className,
       imageFetching,
       isDevice,
       modalVisible,
+      darkTheme,
     ],
   )
 

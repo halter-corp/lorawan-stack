@@ -120,6 +120,13 @@ const AppSideNavigation = () => {
             icon={IconLiveData}
           />
         )}
+        {mayCreateOrEditApplicationIntegrations.check(rights) && (
+          <SideNavigation.Item
+            title={sharedMessages.webhooks}
+            path={`/applications/${appId}/integrations/webhooks`}
+            icon={IconWebhook}
+          />
+        )}
         {maySetApplicationPayloadFormatters.check(rights) && (
           <SideNavigation.Item title={sharedMessages.payloadFormatters} icon={IconPayloadFormat}>
             <SideNavigation.Item
@@ -134,17 +141,26 @@ const AppSideNavigation = () => {
             />
           </SideNavigation.Item>
         )}
+        {mayViewOrEditApplicationCollaborators.check(rights) && (
+          <SideNavigation.Item
+            title={sharedMessages.collaborators}
+            path={`/applications/${appId}/collaborators`}
+            icon={IconCollaborators}
+          />
+        )}
+        {mayViewOrEditApplicationApiKeys.check(rights) && (
+          <SideNavigation.Item
+            title={sharedMessages.apiKeys}
+            path={`/applications/${appId}/api-keys`}
+            icon={IconApiKeys}
+          />
+        )}
         {mayCreateOrEditApplicationIntegrations.check(rights) && (
-          <SideNavigation.Item title={sharedMessages.integrations} icon={IconIntegration}>
+          <SideNavigation.Item title={sharedMessages.otherIntegrations} icon={IconIntegration}>
             <SideNavigation.Item
               title={sharedMessages.mqtt}
               path={`/applications/${appId}/integrations/mqtt`}
               icon={IconPuzzle}
-            />
-            <SideNavigation.Item
-              title={sharedMessages.webhooks}
-              path={`/applications/${appId}/integrations/webhooks`}
-              icon={IconWebhook}
             />
             {mayAddPubSubIntegrations.check(natsDisabled, mqttDisabled) && (
               <SideNavigation.Item
@@ -161,20 +177,6 @@ const AppSideNavigation = () => {
               />
             )}
           </SideNavigation.Item>
-        )}
-        {mayViewOrEditApplicationCollaborators.check(rights) && (
-          <SideNavigation.Item
-            title={sharedMessages.collaborators}
-            path={`/applications/${appId}/collaborators`}
-            icon={IconCollaborators}
-          />
-        )}
-        {mayViewOrEditApplicationApiKeys.check(rights) && (
-          <SideNavigation.Item
-            title={sharedMessages.apiKeys}
-            path={`/applications/${appId}/api-keys`}
-            icon={IconApiKeys}
-          />
         )}
         {mayEditBasicApplicationInfo.check(rights) && (
           <SideNavigation.Item

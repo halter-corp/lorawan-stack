@@ -17,12 +17,14 @@
   // Overwriting react-select styling in global scope.
 
   // stylelint-disable
+  :global(.select__single-value)
+    color: light-dark(inherit, var(--c-text-neutral-heavy))
   :global(.select__option)
     padding: $cs.xs $cs.s
   :global(.select__option--is-selected)
     background-color: var(--c-text-brand-normal)
   :global(.select__option--is-focused:not(.select__option--is-selected))
-    background-color: var(--c-bg-neutral-semilight)
+    background-color: light-dark(var(--c-bg-neutral-semilight), var(--c-bg-neutral-normal))
   :global(.select__control--is-focused)
     box-shadow: none
     border-color: var(--c-text-brand-normal)
@@ -32,7 +34,10 @@
     width: 100%
     min-height: $default-input-height
     border-radius: $br.xs
+    border: 1px solid var(--c-border-neutral-normal)
+    background: var(--c-bg-neutral-min)
   :global(.select__menu)
+    background: light-dark(var(--c-bg-neutral-min), var(--c-bg-neutral-light))
     z-index: $zi.dropdown
   :global(.select__dropdown-indicator)
     padding: 4px

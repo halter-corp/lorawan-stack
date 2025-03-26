@@ -24,6 +24,7 @@ import GenericNotFound from '@ttn-lw/lib/components/full-view-error/not-found'
 import ProfileSettings from '@console/views/user-settings-profile'
 import UserApiKeys from '@console/views/user-api-keys'
 import ChangePassword from '@console/views/user-settings-password'
+import ThemeSettings from '@console/views/user-settings-theme'
 import EmailNotificationsSettings from '@console/views/user-settings-email-notifications'
 import SessionManagement from '@console/views/user-settings-sessions'
 import OAuthClientAuthorizations from '@console/views/user-settings-oauth-client-authorizations'
@@ -43,6 +44,7 @@ const UserSettings = () => {
       <Routes>
         <Route path="profile" Component={ProfileSettings} />
         <Route path="password" Component={ChangePassword} />
+        <Route path="theme" Component={ThemeSettings} />
         <Route path="email-notifications-settings" Component={EmailNotificationsSettings} />
         <Route path="api-keys/*" Component={UserApiKeys} />
         <Route path="sessions/*" Component={SessionManagement} />

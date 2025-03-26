@@ -28,6 +28,8 @@ import EmailNotificationsForm from '@console/containers/email-notifications-form
 
 import Require from '@console/lib/components/require'
 
+import sharedMessages from '@ttn-lw/lib/shared-messages'
+
 import { mayViewOrEditUserSettings } from '@console/lib/feature-checks'
 
 import { getUser } from '@console/store/actions/users'
@@ -35,7 +37,7 @@ import { getUser } from '@console/store/actions/users'
 import { selectUserId } from '@console/store/selectors/logout'
 
 const m = defineMessages({
-  emailNotifications: 'Email notifications',
+  emailNotificationsSettings: 'Email notifications settings',
   customizeEmailNotifications:
     'Customize the notifications for which you receive emails. To see all your notifications, head to the <Link>notifications panel</Link>.',
 })
@@ -44,8 +46,8 @@ const EmailNotificationsSettings = () => {
   useBreadcrumbs(
     'user-settings.email-notifications-settings',
     <Breadcrumb
-      path={`/user-settings/email-notifications-settings`}
-      content={'Email notifications settings'}
+      path="/user-settings/email-notifications-settings"
+      content={m.emailNotificationsSettings}
     />,
   )
 
@@ -56,7 +58,7 @@ const EmailNotificationsSettings = () => {
       <RequireRequest requestAction={getUser(userId, ['email_notification_preferences'])}>
         <div className="container container--xl grid">
           <div className="lg:item-6 lg:item-start-4 item-12 item-start-1">
-            <PageTitle title={m.emailNotifications} className="mb-0" />
+            <PageTitle title={sharedMessages.emailNotifications} className="mb-0" />
             <Message
               content={m.customizeEmailNotifications}
               values={{

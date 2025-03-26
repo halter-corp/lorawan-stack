@@ -117,6 +117,7 @@ const userPreferences = (state = initialState, { type, payload }) => {
         consolePreferences: {
           ...state.consolePreferences,
           ...payload.console_preferences,
+          console_theme: payload.console_preferences.console_theme || 'CONSOLE_THEME_SYSTEM',
         },
       }
     case 'SET_PAGE_SIZE':

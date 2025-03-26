@@ -4084,6 +4084,8 @@ func AddSelectFlagsForEndDevice(flags *pflag.FlagSet, prefix string, hidden bool
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("serial-number", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("serial-number", prefix), false), flagsplugin.WithHidden(hidden)))
 	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("lora-alliance-profile-ids", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("lora-alliance-profile-ids", prefix), true), flagsplugin.WithHidden(hidden)))
 	// NOTE: lora_alliance_profile_ids (LoRaAllianceProfileIdentifiers) does not seem to have select flags.
+	flags.AddFlag(flagsplugin.NewBoolFlag(flagsplugin.Prefix("mac-settings-profile-ids", prefix), flagsplugin.SelectDesc(flagsplugin.Prefix("mac-settings-profile-ids", prefix), true), flagsplugin.WithHidden(hidden)))
+	AddSelectFlagsForMACSettingsProfileIdentifiers(flags, flagsplugin.Prefix("mac-settings-profile-ids", prefix), hidden)
 }
 
 // SelectFromFlags outputs the fieldmask paths forEndDevice message from select flags.
@@ -4385,6 +4387,16 @@ func PathsFromSelectFlagsForEndDevice(flags *pflag.FlagSet, prefix string) (path
 		paths = append(paths, flagsplugin.Prefix("lora_alliance_profile_ids", prefix))
 	}
 	// NOTE: lora_alliance_profile_ids (LoRaAllianceProfileIdentifiers) does not seem to have select flags.
+	if val, selected, err := flagsplugin.GetBool(flags, flagsplugin.Prefix("mac_settings_profile_ids", prefix)); err != nil {
+		return nil, err
+	} else if selected && val {
+		paths = append(paths, flagsplugin.Prefix("mac_settings_profile_ids", prefix))
+	}
+	if selectPaths, err := PathsFromSelectFlagsForMACSettingsProfileIdentifiers(flags, flagsplugin.Prefix("mac_settings_profile_ids", prefix)); err != nil {
+		return nil, err
+	} else {
+		paths = append(paths, selectPaths...)
+	}
 	return paths, nil
 }
 
@@ -4440,6 +4452,7 @@ func AddSetFlagsForEndDevice(flags *pflag.FlagSet, prefix string, hidden bool) {
 	flags.AddFlag(flagsplugin.NewTimestampFlag(flagsplugin.Prefix("last-seen-at", prefix), "", flagsplugin.WithHidden(hidden)))
 	flags.AddFlag(flagsplugin.NewStringFlag(flagsplugin.Prefix("serial-number", prefix), "", flagsplugin.WithHidden(hidden)))
 	// FIXME: Skipping LoraAllianceProfileIds because it does not seem to implement AddSetFlags.
+	AddSetFlagsForMACSettingsProfileIdentifiers(flags, flagsplugin.Prefix("mac-settings-profile-ids", prefix), hidden)
 }
 
 // SetFromFlags sets the EndDevice message from flags.
@@ -4767,5 +4780,15 @@ func (m *EndDevice) SetFromFlags(flags *pflag.FlagSet, prefix string) (paths []s
 		paths = append(paths, flagsplugin.Prefix("serial_number", prefix))
 	}
 	// FIXME: Skipping LoraAllianceProfileIds because it does not seem to implement AddSetFlags.
+	if changed := flagsplugin.IsAnyPrefixSet(flags, flagsplugin.Prefix("mac_settings_profile_ids", prefix)); changed {
+		if m.MacSettingsProfileIds == nil {
+			m.MacSettingsProfileIds = &MACSettingsProfileIdentifiers{}
+		}
+		if setPaths, err := m.MacSettingsProfileIds.SetFromFlags(flags, flagsplugin.Prefix("mac_settings_profile_ids", prefix)); err != nil {
+			return nil, err
+		} else {
+			paths = append(paths, setPaths...)
+		}
+	}
 	return paths, nil
 }

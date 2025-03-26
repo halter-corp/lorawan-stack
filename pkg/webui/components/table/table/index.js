@@ -40,7 +40,12 @@ Empty.defaultProps = {
 
 const Head = ({ className, panelStyle, children, ...props }) => (
   <>
-    <div {...props} className={classnames(className, style.sectionHeader)}>
+    <div
+      {...props}
+      className={classnames(className, style.sectionHeader, {
+        [style.panelStyle]: panelStyle,
+      })}
+    >
       {children}
     </div>
   </>

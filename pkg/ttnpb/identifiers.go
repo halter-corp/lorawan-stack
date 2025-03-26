@@ -107,6 +107,22 @@ func (ids *MACSettingsProfileIdentifiers) IsZero() bool {
 	return ids.ProfileId == "" && ids.ApplicationIds == nil
 }
 
+// FieldIsZero returns whether path p is zero.
+func (ids *MACSettingsProfileIdentifiers) FieldIsZero(p string) bool {
+	if ids == nil {
+		return true
+	}
+	switch p {
+	case "application_ids":
+		return ids.ApplicationIds == nil
+	case "application_ids.application_id":
+		return ids.ApplicationIds.FieldIsZero("application_id")
+	case "profile_id":
+		return ids.ProfileId == ""
+	}
+	panic(fmt.Sprintf("unknown path '%s'", p))
+}
+
 // GetOrganizationOrUserIdentifiers returns the OrganizationIdentifiers as *OrganizationOrUserIdentifiers.
 func (ids *OrganizationIdentifiers) GetOrganizationOrUserIdentifiers() *OrganizationOrUserIdentifiers {
 	if ids == nil {
