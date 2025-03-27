@@ -2358,6 +2358,11 @@ func (x *MACSettingsProfile) MarshalProtoJSON(s *jsonplugin.MarshalState) {
 		s.WriteObjectField("mac_settings")
 		x.MacSettings.MarshalProtoJSON(s.WithField("mac_settings"))
 	}
+	if x.EndDevicesCount != 0 || s.HasField("end_devices_count") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("end_devices_count")
+		s.WriteUint32(x.EndDevicesCount)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2392,6 +2397,9 @@ func (x *MACSettingsProfile) UnmarshalProtoJSON(s *jsonplugin.UnmarshalState) {
 			}
 			x.MacSettings = &MACSettings{}
 			x.MacSettings.UnmarshalProtoJSON(s.WithField("mac_settings", true))
+		case "end_devices_count", "endDevicesCount":
+			s.AddField("end_devices_count")
+			x.EndDevicesCount = s.ReadUint32()
 		}
 	})
 }

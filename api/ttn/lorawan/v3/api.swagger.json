@@ -26661,6 +26661,11 @@
         "mac_settings": {
           "$ref": "#/definitions/v3MACSettings",
           "description": "MAC settings."
+        },
+        "end_devices_count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Associated end devices counter."
         }
       }
     },
@@ -27978,6 +27983,11 @@
             "mac_settings": {
               "$ref": "#/definitions/v3MACSettings",
               "description": "MAC settings."
+            },
+            "end_devices_count": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Associated end devices counter."
             }
           },
           "description": "The MAC settings profile to create.",

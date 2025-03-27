@@ -8270,6 +8270,15 @@
       "file": "device_state.go"
     }
   },
+  "error:pkg/networkserver:field_mask": {
+    "translations": {
+      "en": "invalid field mask"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
   "error:pkg/networkserver:field_not_zero": {
     "translations": {
       "en": "field `{name}` is not zero"
@@ -8318,6 +8327,15 @@
   "error:pkg/networkserver:mac_settings_profile_not_found": {
     "translations": {
       "en": "MAC settings profile not found"
+    },
+    "description": {
+      "package": "pkg/networkserver",
+      "file": "grpc_mac_settings_profile.go"
+    }
+  },
+  "error:pkg/networkserver:mac_settings_profile_used": {
+    "translations": {
+      "en": "MAC settings profile is used"
     },
     "description": {
       "package": "pkg/networkserver",

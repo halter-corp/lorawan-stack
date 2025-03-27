@@ -11,9 +11,12 @@ For details about compatibility between different releases, see the **Commitment
 
 ### Added
 
+- Support to associate/disassociate MAC settings profiles to end devices
+  - This feature is experimental and subject to change.
+
 ### Changed
 
-- Support wildcards in the supported hosts for TLS certifictes obtained via ACME (`tls.acme.hosts`).
+- Support wildcards in the supported hosts for TLS certificates obtained via ACME (`tls.acme.hosts`).
 - Increase downlink capacity by raising duty-cycle budgets per priority.
 
 ### Deprecated

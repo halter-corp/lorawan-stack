@@ -437,6 +437,7 @@ func TestDeviceRegistrySet(t *testing.T) {
 	}
 
 	macSettingsProfileOpt := EndDeviceOptions.WithMacSettingsProfileIds(macSettingsProfileID)
+	emptyMacSettingsProfileOpt := EndDeviceOptions.WithMacSettingsProfileIds(nil)
 
 	for createDevice, tcs := range map[*ttnpb.EndDevice][]struct {
 		SetDevice      SetDeviceRequest
@@ -809,6 +810,50 @@ func TestDeviceRegistrySet(t *testing.T) {
 
 				ReturnedDevice: multicastClassBMACSettingsOpt(MakeMulticastEndDevice(ttnpb.Class_CLASS_B, defaultMACSettings, false, activeSessionOptsWithStartedAt, nil)),
 				StoredDevice:   multicastClassBMACSettingsOpt(MakeMulticastEndDevice(ttnpb.Class_CLASS_B, defaultMACSettings, true, activeSessionOptsWithStartedAt, nil)),
+			},
+		},
+		// Update with MAC settings profile
+		MakeOTAAEndDevice(): {
+			{
+				SetDevice: *makeUpdateDeviceRequest([]test.EndDeviceOption{
+					EndDeviceOptions.WithLorawanVersion(ttnpb.MACVersion_MAC_V1_0_3),
+					EndDeviceOptions.WithLorawanPhyVersion(ttnpb.PHYVersion_RP001_V1_0_3_REV_A),
+					EndDeviceOptions.WithDefaultFrequencyPlanID(),
+					macSettingsProfileOpt,
+				},
+					"frequency_plan_id",
+					"lorawan_version",
+					"lorawan_phy_version",
+					"mac_settings_profile_ids",
+				),
+
+				ReturnedDevice: MakeOTAAEndDevice(
+					EndDeviceOptions.WithLorawanVersion(ttnpb.MACVersion_MAC_V1_0_3),
+					EndDeviceOptions.WithLorawanPhyVersion(ttnpb.PHYVersion_RP001_V1_0_3_REV_A),
+					EndDeviceOptions.WithDefaultFrequencyPlanID(),
+					macSettingsProfileOpt,
+				),
+				StoredDevice: MakeOTAAEndDevice(
+					EndDeviceOptions.WithLorawanVersion(ttnpb.MACVersion_MAC_V1_0_3),
+					EndDeviceOptions.WithLorawanPhyVersion(ttnpb.PHYVersion_RP001_V1_0_3_REV_A),
+					EndDeviceOptions.WithDefaultFrequencyPlanID(),
+					macSettingsProfileOpt,
+				),
+			},
+		},
+		// Update with empty MAC settings profile
+		MakeOTAAEndDevice(macSettingsProfileOpt): {
+			{
+				SetDevice: *makeUpdateDeviceRequest([]test.EndDeviceOption{
+					emptyMacSettingsProfileOpt,
+				},
+					"mac_settings_profile_ids",
+				),
+
+				ReturnedDevice: MakeOTAAEndDevice(),
+				StoredDevice: MakeOTAAEndDevice(
+					customMACSettingsOpt,
+				),
 			},
 		},
 	} {
