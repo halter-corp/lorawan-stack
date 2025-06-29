@@ -864,6 +864,8 @@ func DeviceDesiredChannels(
 		for _, ch := range chs {
 			if ch.UplinkFrequency == stdCh.Frequency {
 				ch.EnableUplink = true
+				ch.MinDataRateIndex = ttnpb.DataRateIndex(stdCh.DataRate)
+				ch.MaxDataRateIndex = ttnpb.DataRateIndex(stdCh.DataRate)
 				break
 			}
 		}
