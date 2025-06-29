@@ -338,26 +338,6 @@ func TestScheduleAtWithBandDutyCycle(t *testing.T) { //nolint:tparallel
 			ExpectedError: scheduling.ErrDwellTime,
 		},
 		{
-			PayloadSize: 16,
-			Settings: &ttnpb.TxSettings{
-				DataRate: &ttnpb.DataRate{
-					Modulation: &ttnpb.DataRate_Lora{
-						Lora: &ttnpb.LoRaDataRate{
-							Bandwidth:       125000,
-							SpreadingFactor: 7,
-							CodingRate:      band.Cr4_5,
-						},
-					},
-				},
-				Frequency: 868100000,
-				Time:      timestamppb.New(time.Unix(0, int64(1*time.Second))),
-			},
-			Priority:       ttnpb.TxSchedulePriority_HIGHEST,
-			MedianRTT:      durationPtr(200 * time.Millisecond),
-			ExpectedToa:    51456 * time.Microsecond,
-			ExpectedStarts: 1000000000 - 200000000/2,
-		},
-		{
 			SyncWithGatewayAbsolute: true,
 			PayloadSize:             16,
 			Settings: &ttnpb.TxSettings{

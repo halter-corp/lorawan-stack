@@ -290,7 +290,6 @@ var (
 	)
 	errNoClockSync           = errors.DefineUnavailable("no_clock_sync", "no clock sync")
 	errNoAbsoluteGatewayTime = errors.DefineAborted("no_absolute_gateway_time", "no absolute gateway time")
-	errNoServerTime          = errors.DefineAborted("no_server_time", "no server time")
 )
 
 // Options define options for scheduling downlink.
@@ -337,14 +336,7 @@ func (s *Scheduler) ScheduleAt(ctx context.Context, opts Options) (res Emission,
 		var ok bool
 		starts, ok = s.clock.FromGatewayTime(*ttnpb.StdTime(opts.Time))
 		if !ok {
-			if medianRTT == nil {
-				return Emission{}, 0, errNoAbsoluteGatewayTime.New()
-			}
-			serverTime, ok := s.clock.FromServerTime(*ttnpb.StdTime(opts.Time))
-			if !ok {
-				return Emission{}, 0, errNoServerTime.New()
-			}
-			starts = serverTime - ConcentratorTime(*medianRTT/2)
+			return Emission{}, 0, errNoAbsoluteGatewayTime.New()
 		}
 	} else {
 		starts = s.clock.FromTimestampTime(opts.Timestamp)
