@@ -17,6 +17,8 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,6 +29,8 @@ import (
 	"go.thethings.network/lorawan-stack/v3/pkg/ttnpb"
 	storeutil "go.thethings.network/lorawan-stack/v3/pkg/util/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 // Application is the application model in the database.
@@ -118,11 +122,13 @@ func applicationToPB(m *Application, fieldMask ...string) (*ttnpb.Application, e
 
 type applicationStore struct {
 	*baseStore
+	cache *expirable.LRU[string, *Application]
 }
 
 func newApplicationStore(baseStore *baseStore) *applicationStore {
 	return &applicationStore{
 		baseStore: baseStore,
+		cache:     expirable.NewLRU[string, *Application](100, nil, time.Minute*60),
 	}
 }
 
@@ -340,6 +346,16 @@ func (s *applicationStore) GetApplication(
 	))
 	defer span.End()
 
+	cacheKey := fmt.Sprintf("%s:%s", id.GetApplicationId(), strings.Join(fieldMask, ":"))
+	model, ok := s.cache.Get(cacheKey)
+	if ok {
+		pb, err := applicationToPB(model, fieldMask...)
+		if err != nil {
+			return nil, err
+		}
+		return pb, nil
+	}
+
 	model, err := s.getApplicationModelBy(
 		ctx, s.selectWithID(ctx, id.GetApplicationId()), fieldMask,
 	)
@@ -351,6 +367,7 @@ func (s *applicationStore) GetApplication(
 		}
 		return nil, err
 	}
+	s.cache.Add(cacheKey, model)
 	pb, err := applicationToPB(model, fieldMask...)
 	if err != nil {
 		return nil, err

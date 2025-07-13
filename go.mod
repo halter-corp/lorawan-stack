@@ -39,6 +39,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hellofresh/health-go/v5 v5.5.3
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/iancoleman/strcase v0.3.0
