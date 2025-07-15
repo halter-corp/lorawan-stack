@@ -17,7 +17,10 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -118,11 +121,15 @@ func applicationToPB(m *Application, fieldMask ...string) (*ttnpb.Application, e
 
 type applicationStore struct {
 	*baseStore
+	cacheStore *expirable.LRU[string, Application]
 }
 
 func newApplicationStore(baseStore *baseStore) *applicationStore {
+	const cacheSize = 1024
+	const cacheTTL = 10 * time.Minute
 	return &applicationStore{
-		baseStore: baseStore,
+		baseStore:  baseStore,
+		cacheStore: expirable.NewLRU[string, Application](cacheSize, nil, cacheTTL),
 	}
 }
 
@@ -340,18 +347,27 @@ func (s *applicationStore) GetApplication(
 	))
 	defer span.End()
 
-	model, err := s.getApplicationModelBy(
-		ctx, s.selectWithID(ctx, id.GetApplicationId()), fieldMask,
-	)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil, store.ErrApplicationNotFound.WithAttributes(
-				"application_id", id.GetApplicationId(),
-			)
+	var app *Application
+	cacheKey := fmt.Sprintf("%s:%s", id.GetApplicationId(), strings.Join(fieldMask, ":"))
+	if s.cacheStore != nil {
+		if cachedApp, ok := s.cacheStore.Get(cacheKey); ok {
+			app = &cachedApp
 		}
-		return nil, err
 	}
-	pb, err := applicationToPB(model, fieldMask...)
+	if app == nil {
+		model, err := s.getApplicationModelBy(ctx, s.selectWithID(ctx, id.GetApplicationId()), fieldMask)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return nil, store.ErrApplicationNotFound.WithAttributes("application_id", id.GetApplicationId())
+			}
+			return nil, err
+		}
+		app = model
+	}
+	if s.cacheStore != nil {
+		s.cacheStore.Add(cacheKey, *app)
+	}
+	pb, err := applicationToPB(app, fieldMask...)
 	if err != nil {
 		return nil, err
 	}
@@ -446,6 +462,7 @@ func (s *applicationStore) UpdateApplication(
 	))
 	defer span.End()
 
+	s.cacheStore.Purge()
 	model, err := s.getApplicationModelBy(
 		ctx, s.selectWithID(ctx, pb.GetIds().GetApplicationId()), fieldMask,
 	)
@@ -477,6 +494,7 @@ func (s *applicationStore) DeleteApplication(ctx context.Context, id *ttnpb.Appl
 	))
 	defer span.End()
 
+	s.cacheStore.Purge()
 	model, err := s.getApplicationModelBy(ctx, s.selectWithID(ctx, id.GetApplicationId()), store.FieldMask{"ids"})
 	if err != nil {
 		if errors.IsNotFound(err) {
