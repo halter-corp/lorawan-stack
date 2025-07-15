@@ -17,6 +17,7 @@ package store
 import (
 	"context"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -55,10 +56,10 @@ type euiStore struct {
 	applicationStore *applicationStore
 }
 
-func newEUIStore(baseStore *baseStore) *euiStore {
+func newEUIStore(baseStore *baseStore, cacheStore *lru.Cache[string, Application]) *euiStore {
 	return &euiStore{
 		baseStore:        baseStore,
-		applicationStore: newApplicationStore(baseStore),
+		applicationStore: newApplicationStore(baseStore, cacheStore),
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"go.thethings.network/lorawan-stack/v3/pkg/errors"
@@ -113,18 +114,18 @@ func (s *baseStore) transact(ctx context.Context, fc func(context.Context, bun.I
 	return nil
 }
 
-func newStore(baseStore *baseStore) *Store {
+func newStore(baseStore *baseStore, cacheStore *lru.Cache[string, Application]) *Store {
 	return &Store{
 		baseStore: baseStore,
 
 		apiKeyStore:          newAPIKeyStore(baseStore),
-		applicationStore:     newApplicationStore(baseStore),
+		applicationStore:     newApplicationStore(baseStore, cacheStore),
 		clientStore:          newClientStore(baseStore),
 		contactInfoStore:     newContactInfoStore(baseStore),
 		emailValidationStore: newEmailValidationStore(baseStore),
 		endDeviceStore:       newEndDeviceStore(baseStore),
 		entitySearch:         newEntitySearch(baseStore),
-		euiStore:             newEUIStore(baseStore),
+		euiStore:             newEUIStore(baseStore, cacheStore),
 		gatewayStore:         newGatewayStore(baseStore),
 		invitationStore:      newInvitationStore(baseStore),
 		loginTokenStore:      newLoginTokenStore(baseStore),
@@ -144,7 +145,11 @@ func NewStore(ctx context.Context, db *bun.DB) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newStore(baseDB.baseStore()), nil
+	cacheStore, err := lru.New[string, Application](1024)
+	if err != nil {
+		return nil, err
+	}
+	return newStore(baseDB.baseStore(), cacheStore), nil
 }
 
 // Store is the combined store of all the individual stores.
@@ -185,7 +190,8 @@ func (s *Store) Transact(ctx context.Context, fc func(context.Context, store.Sto
 		err = s.baseStore.transact(ctx, func(ctx context.Context, idb bun.IDB) error {
 			baseStore := s.baseDB.baseStore()
 			baseStore.DB = idb
-			return fc(ctx, newStore(baseStore))
+			cacheStore := s.cacheStore
+			return fc(ctx, newStore(baseStore, cacheStore))
 		})
 		if !errors.Is(err, storeutil.ErrUnavailable) {
 			break

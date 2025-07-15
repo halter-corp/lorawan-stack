@@ -39,7 +39,7 @@ type entityStore struct {
 func newEntityStore(baseStore *baseStore) *entityStore {
 	return &entityStore{
 		baseStore:         baseStore,
-		applicationStore:  &applicationStore{baseStore},
+		applicationStore:  &applicationStore{baseStore, nil},
 		clientStore:       &clientStore{baseStore},
 		endDeviceStore:    &endDeviceStore{baseStore},
 		gatewayStore:      &gatewayStore{baseStore},
