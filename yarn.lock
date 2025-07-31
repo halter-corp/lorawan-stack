@@ -2333,6 +2333,11 @@
     polished "^4.2.2"
     uuid "^9.0.0"
 
+"@storybook/addon-actions@9.0.8":
+  version "9.0.8"
+  resolved "https://registry.yarnpkg.com/@storybook/addon-actions/-/addon-actions-9.0.8.tgz#0a9a044c31dd20e5aaa22eb0cb4e36771f40def8"
+  integrity sha512-LFePu7PPnWN0Il/uoUpmA5T0J0C7d6haJIbg0pXrjxW2MQVSYXE4S4LSUz8fOImltBDV3xAl6tLPYHFj6VcrOA==
+
 "@storybook/addon-backgrounds@8.4.5":
   version "8.4.5"
   resolved "https://registry.yarnpkg.com/@storybook/addon-backgrounds/-/addon-backgrounds-8.4.5.tgz#3d93d24d0b8e77d6d5bad78bae4c8621ee27c5d1"
@@ -12289,7 +12294,7 @@ tslib@2, tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.6.2:
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 "ttn-lw@file:sdk/js":
-  version "3.32.2"
+  version "3.33.0"
   dependencies:
     arraybuffer-to-string "^1.0.2"
     auto-bind "^5.0.1"

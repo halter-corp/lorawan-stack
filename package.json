@@ -24,7 +24,7 @@
     "@storybook/addon-designs": "8.0.4",
     "@storybook/addon-essentials": "8.4.5",
     "@storybook/addon-mdx-gfm": "8.4.5",
-    "@storybook/addon-actions": "8.4.5",
+    "@storybook/addon-actions": "9.0.8",
     "@storybook/cli": "8.4.5",
     "@storybook/react": "8.4.5",
     "@storybook/react-webpack5": "8.4.5",
